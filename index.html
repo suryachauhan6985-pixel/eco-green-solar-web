@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Eco Green Solar ERP — Web</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><i class="fa-solid fa-bolt bolt"></i><span>ECO GREEN SOLAR</span></div>
+    <div class="nav-scroll" id="navScroll"></div>
+    <div class="profile-box">
+      <div class="avatar">S</div>
+      <div>
+        <div class="role">Super Admin</div>
+        <div class="user">@sumit</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+   <div class="mobile-topbar">
+  <div class="mobile-topbar-row">
+    <button class="hamburger" onclick="openSidebar()"><i class="fa-solid fa-bars"></i></button>
+    <div class="brand"><i class="fa-solid fa-bolt bolt"></i><span>ECO GREEN SOLAR</span></div>
+    <div class="avatar" style="width:34px;height:34px;font-size:13px;">S</div>
+  </div>
+  <div class="search-mini mobile-search"><i class="fa-solid fa-magnifying-glass"></i><input placeholder="Quick search anything..."></div>
+</div>
+
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">Dashboard</h1>
+        <div class="sub" id="pageSub">Live overview of stock &amp; operations</div>
+      </div>
+      <div class="search-mini"><i class="fa-solid fa-magnifying-glass"></i><input placeholder="Quick search anything..."></div>
+    </div>
+
+    <div class="content" id="content"><!-- page HTML injected here by js/app.js --></div>
+
+    <footer class="note">Eco Green Solar ERP — Web Preview • UI-only mockup, no backend/login connected yet</footer>
+  </div>
+</div>
+
+<!-- Generic modal (used for Live User Sessions popup etc.) -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <h3 id="modalTitle">Title</h3>
+      <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- Shared in-memory data stores (loaded first so page scripts can use them) -->
+<script src="js/data/purchase-data.js"></script>
+<!-- NEW: talks to the backend API (server.js), which reads the same MariaDB
+     database the desktop .py app uses. Must load before dashboard.js/masters.js. -->
+<script src="js/data/api.js"></script>
+<!-- Each page's markup + data lives in its own file, like dashboard.py / masters.py in the desktop app -->
+<script src="js/pages/dashboard.js"></script>
+<script src="js/pages/masters.js"></script>
+<script src="js/pages/purchase.js"></script>
+<script src="js/pages/sales.js"></script>
+<script src="js/pages/stockassign.js"></script>
+<script src="js/pages/purchaseregister.js"></script>
+<script src="js/pages/saleregister.js"></script>
+<script src="js/pages/reports.js"></script>
+<script src="js/pages/returns.js"></script>
+<script src="js/pages/partyledger.js"></script>
+<script src="js/pages/lowstock.js"></script>
+<script src="js/pages/backup.js"></script>
+<!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
+<script src="js/app.js"></script>
+</body>
+</html>

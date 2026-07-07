@@ -1,0 +1,577 @@
+:root{
+  --bg:#111111; --nav:#1A1A1A; --input-bg:#2D2D2D; --panel:#1E1E1E; --panel-alt:#1A1A1A;
+  --card:#1F1F1F; --table-bg:#151515; --table-header:#202020;
+  --txt:#FFFFFF; --txt-muted:#8A8F98; --txt-label:#BDC3C7;
+  --border:#2D2D2D; --border-light:#3E3E3E;
+  --gold:#D4AF37; --gold-dim:#B6952C; --blue:#3B8ED0; --green:#27AE60;
+  --red:#E74C3C; --orange:#F39C12; --purple:#8E44AD;
+  --radius:10px;
+  --sidebar-w:230px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  background:var(--bg); color:var(--txt);
+  font-family:'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--input-bg);border-radius:5px;}
+::-webkit-scrollbar-thumb:hover{background:var(--blue);}
+
+/* ---------- Shell layout ---------- */
+.shell{display:flex;min-height:100vh;}
+
+.sidebar{
+  width:var(--sidebar-w); min-width:var(--sidebar-w);
+  background:var(--nav); border-right:2px solid var(--border);
+  display:flex; flex-direction:column; padding:16px 12px;
+  position:fixed; top:0; bottom:0; left:0; z-index:40;
+  transition:transform .25s ease;
+}
+.brand{
+  display:flex; align-items:center; gap:10px; justify-content:center;
+  padding:6px 4px 18px; border-bottom:1px solid var(--border); margin-bottom:14px;
+}
+.brand .bolt{color:var(--blue); font-size:20px;}
+.brand span{font-weight:800; letter-spacing:.5px; color:var(--blue); font-size:14px;}
+
+.nav-scroll{overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:6px; padding-right:2px;}
+.nav-btn{
+  display:flex; align-items:center; gap:10px;
+  background:#252525; color:var(--txt); border:1px solid var(--border-light);
+  padding:10px 12px; border-radius:8px; font-size:12.5px; font-weight:600; text-align:left;
+  white-space:nowrap;
+}
+.nav-btn i{width:16px; text-align:center; color:var(--txt);}
+.nav-btn:hover{background:var(--nav); border-color:var(--blue);}
+.nav-btn.active{background:var(--purple); border-color:var(--purple); color:#fff;}
+
+.profile-box{
+  margin-top:12px; padding-top:12px; border-top:1px solid var(--border);
+  display:flex; align-items:center; gap:10px;
+}
+.avatar{
+  width:40px;height:40px;border-radius:50%; background:var(--gold); color:#1A1A1A;
+  display:flex;align-items:center;justify-content:center; font-weight:800; border:2px solid var(--gold-dim);
+  flex-shrink:0;
+}
+.profile-box .role{color:var(--gold); font-size:12px; font-weight:700;}
+.profile-box .user{color:var(--txt-muted); font-size:10.5px;}
+
+.mobile-topbar{
+  display:none; flex-direction:column; gap:10px; position:sticky; top:0; z-index:30;
+  background:var(--nav); border-bottom:2px solid var(--border);
+  padding:10px 14px;
+}
+.mobile-topbar-row{
+  display:flex; align-items:center; justify-content:space-between; width:100%;
+}
+.mobile-search{
+  width:100%; min-width:0;
+}
+.mobile-topbar .brand{border:none; padding:0; margin:0;}
+.hamburger{
+  background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt);
+  width:38px;height:38px;border-radius:8px; display:flex;align-items:center;justify-content:center; font-size:16px;
+}
+.overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:35;}
+
+.main{margin-left:var(--sidebar-w); flex:1; min-width:0; display:flex; flex-direction:column;}
+.topbar{
+  display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+  padding:14px 22px; border-bottom:1px solid var(--border); background:var(--bg);
+  position:sticky; top:0; z-index:20;
+}
+.topbar h1{font-size:17px; margin:0; font-weight:800; color:var(--blue);}
+.topbar .sub{color:var(--txt-muted); font-size:12px; margin-top:2px;}
+.search-mini{
+  display:flex; align-items:center; gap:8px; background:var(--input-bg);
+  border:1px solid var(--border-light); border-radius:25px; padding:15px 12px; min-width:420px;
+}
+.search-mini input{background:transparent;border:none;color:var(--txt);outline:none;font-size:12.5px;width:100%;}
+.search-mini i{color:var(--txt-muted);}
+
+.content{padding:22px; flex:1;}
+.page-head{display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;}
+.page-head i{font-size:18px;}
+.page-head h2{font-size:18px; margin:0; font-weight:800;}
+.page-head .hint{color:var(--txt-muted); font-size:11.5px; font-style:italic; width:100%; margin-top:-6px;}
+
+/* Cards / stats */
+.stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px;}
+.stat-card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; display:flex; flex-direction:column; gap:6px;}
+.stat-card .top{display:flex; align-items:center; justify-content:space-between;}
+.stat-card .label{color:var(--txt-muted); font-size:12px; font-weight:600;}
+.stat-card .value{font-size:26px; font-weight:800;}
+.stat-card i{font-size:18px; opacity:.85;}
+.stat-card.available{border-left:4px solid #2ECC71;}
+.stat-card.assigned{border-left:4px solid var(--blue);}
+.stat-card.sold{border-left:4px solid var(--red);}
+.stat-card.damaged{border-left:4px solid var(--orange);}
+
+.panel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:18px; min-width:0;}
+.panel h3{margin:0 0 14px; font-size:14px; color:var(--gold); font-weight:800; display:flex; align-items:center; gap:8px;}
+.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:18px; min-width:0;}
+.grid-2 > *{min-width:0;}
+
+/* ---------- Dashboard panels ----------
+   Desktop (PC, >900px): "User Sessions" moves into the header/topbar (like
+   the desktop .py app), so this container is a single full-width column and
+   the User Sessions panel is hidden here.
+   Mobile (<=900px): unchanged — behaves exactly like the old grid-2 (both
+   panels stacked, User Sessions panel visible). */
+.dashboard-grid{display:grid; grid-template-columns:1fr; gap:18px; min-width:0;}
+.dashboard-grid > *{min-width:0;}
+
+/* Hide the in-page "User Sessions" panel on desktop only — it lives in the
+   header/topbar instead (see .topbar-live-btn below). */
+@media (min-width:901px){
+  .dash-usersession-panel{display:none;}
+}
+
+/* ---------- Header/topbar "Live Users" widget (desktop/PC only) ----------
+   Injected into .topbar by js/pages/dashboard.js while the Dashboard page is
+   active. .topbar itself is already hidden on mobile (see max-width:900px
+   rule below), so this widget only ever shows on the PC layout. */
+.topbar-extra{display:flex; align-items:center; margin-left:auto;}
+.topbar-live-btn{
+  display:flex; align-items:center; gap:9px;
+  background:var(--input-bg); border:1px solid var(--border-light); border-radius:25px;
+  padding:8px 14px; color:var(--txt); font-size:12.5px; font-weight:700;
+  white-space:nowrap;
+}
+.topbar-live-btn .dot{width:9px;height:9px;border-radius:50%; background:#2ECC71; box-shadow:0 0 8px #2ECC71; flex-shrink:0;}
+.topbar-live-btn strong{font-size:12.5px;}
+.topbar-live-btn small{display:block; color:var(--txt-muted); font-size:10.5px; font-weight:500; margin-top:1px;}
+.topbar-live-btn i.chevron{color:var(--txt-muted); margin-left:2px;}
+.topbar-live-btn:hover{border-color:var(--blue);}
+
+/* Forms */
+.form-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+.field{display:flex; flex-direction:column; gap:6px;}
+.field label{font-size:12px; color:var(--txt-label); font-weight:600;}
+.field label .req{color:var(--red);}
+.field input, .field select, .field textarea{
+  background:var(--input-bg); border:1px solid var(--border); color:var(--txt);
+  padding:9px 10px; border-radius:7px; font-size:13px; width:100%; outline:none;
+}
+.field input:focus, .field select:focus, .field textarea:focus{border-color:var(--blue);}
+.field textarea{resize:vertical; min-height:70px; font-family:'Courier New',monospace; color:var(--orange); background:#111;}
+.field.span-2{grid-column:span 2;}
+.field.span-3{grid-column:span 3;}
+.field.span-full{grid-column:1/-1;}
+.form-grid.cols-2{grid-template-columns:repeat(2,1fr);}
+
+.btn{display:inline-flex; align-items:center; gap:8px; border:none; border-radius:8px; padding:10px 18px; font-weight:700; font-size:13px; color:#fff;}
+.btn i{font-size:13px;}
+.btn-blue{background:var(--blue);}
+.btn-green{background:var(--green);}
+.btn-red{background:var(--red);}
+.btn-gold{background:var(--gold); color:#1a1a1a;}
+.btn-ghost{background:var(--input-bg); color:var(--txt); border:1px solid var(--border-light);}
+.btn:hover{filter:brightness(1.1);}
+.actions-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;}
+
+.toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px;}
+.toolbar .grow{flex:1; min-width:160px;}
+.toolbar label{font-size:11.5px; color:var(--txt-label); font-weight:700; margin-right:-4px;}
+.toolbar input, .toolbar select{background:var(--input-bg); border:1px solid var(--border); color:var(--txt); padding:8px 10px; border-radius:7px; font-size:12.5px;}
+
+/* ---------- Tables: real tables everywhere, scroll horizontally inside their own box ---------- */
+.table-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius);}
+/* Global quick-search (topbar): rows jo current search text match nahi karti unhe hide karta hai */
+tbody tr.search-hide{display:none !important;}
+table{border-collapse:collapse; width:100%; min-width:640px; background:var(--table-bg); font-size:12.5px;}
+thead th{background:var(--table-header); color:var(--blue); padding:10px 12px; text-align:left; font-weight:700; white-space:nowrap; border-bottom:1px solid var(--border); position:sticky; top:0;}
+thead th i{margin-left:6px; color:var(--txt-muted); font-size:10px; cursor:pointer;}
+
+/* ---------- Excel-style column header filters ----------
+   Click the funnel icon in a <th> to open a checkbox list of that column's
+   unique values (like Excel AutoFilter). Used on the Dashboard's
+   Category-wise Snapshot table (js/pages/dashboard.js). */
+.th-filter-btn{
+  background:transparent; border:none; color:var(--txt-muted); font-size:10px;
+  margin-left:6px; cursor:pointer; padding:3px 5px; border-radius:5px; vertical-align:middle;
+}
+.th-filter-btn:hover{color:var(--blue); background:rgba(59,142,208,.15);}
+.th-filter-btn.active{color:var(--gold); background:rgba(212,175,55,.15);}
+
+.th-filter-menu{
+  position:fixed; z-index:70;
+  background:var(--panel); border:1px solid var(--border-light); border-radius:8px;
+  min-width:190px; max-width:240px; padding:10px; box-shadow:0 10px 30px rgba(0,0,0,.5);
+  font-weight:400; white-space:normal; color:var(--txt); text-transform:none;
+}
+.th-filter-search input{
+  width:100%; background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt);
+  border-radius:6px; padding:6px 8px; font-size:12px; margin-bottom:8px; outline:none; box-sizing:border-box;
+}
+.th-filter-list{max-height:160px; overflow-y:auto; margin-bottom:8px;}
+.th-filter-item{display:flex; align-items:center; gap:8px; font-size:12px; font-weight:500; padding:4px 2px; cursor:pointer;}
+.th-filter-item input{margin:0; cursor:pointer;}
+.th-filter-selectall{border-bottom:1px solid var(--border); padding-bottom:7px; margin-bottom:6px; font-weight:700;}
+.th-filter-actions{display:flex; justify-content:flex-end; gap:8px;}
+.th-filter-actions .btn{padding:6px 12px; font-size:11.5px;}
+tbody td{padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap; color:var(--txt);}
+tbody tr:hover{background:#1c1c1c;}
+.pill{padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; display:inline-block;}
+.pill.available{background:rgba(46,204,113,.15); color:#2ECC71;}
+.pill.assigned{background:rgba(59,142,208,.15); color:var(--blue);}
+.pill.sold{background:rgba(231,76,60,.15); color:var(--red);}
+.pill.damaged{background:rgba(243,156,18,.15); color:var(--orange);}
+.gold-txt{color:var(--gold); font-weight:700;}
+
+/* ---------- Two-column form + edit-panel layout (Purchase / Sales) ----------
+   NOTE: .split-two is just a plain wrapper (becomes the sliding "viewport"
+   on mobile). .split-two-track is the REAL layout container — a 2-column
+   grid on desktop, a horizontal flex slider on mobile. We deliberately do
+   NOT use display:contents anywhere here — it's unreliable across mobile
+   browsers when combined with dynamic class toggling and was the cause of
+   the edit panel rendering blank. */
+.split-two{min-width:0;}
+.split-two-track{
+  display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; min-width:0;
+}
+.split-two-track > *{min-width:0;}
+.edit-panel{border-top:3px solid var(--orange);}
+.edit-panel.sales-edit{border-top-color:var(--purple);}
+.edit-panel h3{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.edit-panel .role-tag{color:var(--txt-muted); font-weight:600; font-size:11px;}
+
+/* The "Edit / Modify" toggle button (page header) and the "New Purchase/Sale
+   Entry" back-button inside the edit panel only make sense on the mobile
+   one-page-at-a-time layout. On desktop both panels are already visible
+   together, so neither element is shown. */
+.btn-toggle-edit{display:none;}
+.edit-panel-actions{display:none;}
+
+.search-row{display:flex; gap:8px; margin-bottom:16px;}
+.search-row input{flex:1; background:var(--input-bg); border:1px solid var(--border); color:var(--txt); padding:9px 10px; border-radius:7px; font-size:13px; outline:none;}
+.search-row input:focus{border-color:var(--blue);}
+
+.field input[readonly]{color:var(--txt-muted); cursor:not-allowed;}
+
+.proof-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.proof-row .proof-name{color:var(--txt-muted); font-size:12px; flex:1; min-width:140px;}
+.proof-row .btn{padding:8px 12px; font-size:12px;}
+
+.line-list{
+  background:var(--table-bg); border:1px solid var(--border); border-radius:7px;
+  min-height:64px; max-height:120px; overflow-y:auto; padding:6px; font-size:12.5px;
+}
+.line-list .empty{color:var(--txt-muted); font-style:italic; padding:8px;}
+.line-list .line-item{
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
+  background:var(--card); border:1px solid transparent; border-radius:6px;
+  padding:7px 10px; margin-bottom:5px; cursor:pointer; color:var(--txt);
+}
+.line-list .line-item:hover{border-color:var(--border-light);}
+.line-list .line-item.selected{border-color:var(--blue); background:#1c2733;}
+.line-list .line-item .qty-badge{color:var(--gold); font-weight:700; margin-left:8px;}
+.line-btns{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
+.line-btns .btn{padding:8px 12px; font-size:12px;}
+
+@media (max-width:1100px){
+  .split-two-track{grid-template-columns:1fr;}
+}
+
+/* Subtabs (Masters) */
+.subtabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+.subtab{background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt); padding:8px 16px; border-radius:7px; font-size:12.5px; font-weight:700;}
+.subtab.active{background:var(--blue); border-color:var(--blue);}
+.subtab-panel{display:none;}
+.subtab-panel.active{display:block;}
+
+.banner{display:flex; align-items:center; gap:12px; background:rgba(231,76,60,.12); border:1px solid var(--red); border-radius:var(--radius); padding:12px 16px; margin-bottom:18px; font-size:13px;}
+.banner i{color:var(--red); font-size:18px;}
+
+footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:16px; opacity:.7;}
+
+/* ---------- Live-session style button (dashboard) ---------- */
+.live-btn{
+  display:flex; align-items:center; gap:12px; width:100%; background:var(--card);
+  border:1px solid var(--border); border-radius:var(--radius); padding:16px; color:var(--txt);
+}
+.live-btn .dot{width:10px;height:10px;border-radius:50%; background:#2ECC71; box-shadow:0 0 8px #2ECC71;}
+.live-btn strong{font-size:13.5px;}
+.live-btn small{display:block; color:var(--txt-muted); font-size:11.5px; margin-top:2px;}
+.live-btn i.chevron{margin-left:auto; color:var(--txt-muted);}
+.live-btn:hover{border-color:var(--blue);}
+
+/* ---------- Modal ---------- */
+.modal-overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:60; align-items:center; justify-content:center; padding:16px;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:var(--panel); border:1px solid var(--border-light); border-radius:var(--radius); width:100%; max-width:480px; max-height:80vh; overflow:auto; box-shadow:0 12px 40px rgba(0,0,0,.5);}
+.modal-head{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:14px 18px; border-bottom:1px solid var(--border);}
+.modal-head h3{margin:0; font-size:15px; color:var(--gold); font-weight:800; flex:1 1 auto; min-width:0; overflow-wrap:break-word; word-break:break-word;}
+.modal-close{background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt); width:30px;height:30px;min-width:30px;border-radius:7px; flex:0 0 auto;}
+.modal-body{padding:16px 18px;}
+
+/* =================== RESPONSIVE =================== */
+@media (max-width: 900px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .overlay.show{display:block;}
+  .mobile-topbar{display:flex;}
+  .main{margin-left:0;}
+  .topbar{display:none;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+  .form-grid{grid-template-columns:repeat(2,1fr);}
+  .field.span-2, .field.span-3{grid-column:span 2;}
+  .grid-2{grid-template-columns:1fr;}
+  .content{padding:14px;}
+
+  /* ---- Purchase / Sales: mobile shows ONE page at a time, sliding in
+     from the side, instead of both entry + edit panels stacked together. ---- */
+  .btn-toggle-edit{display:inline-flex; flex-basis:100%; margin-top:8px;}
+  .edit-panel-actions{display:block; margin-bottom:14px;}
+
+  .split-two{
+    position:relative;
+    overflow:hidden;         /* viewport: hides the half of the track that's off-screen */
+  }
+  .split-two-track{
+    display:flex;
+    align-items:flex-start;
+    width:200%;              /* two panels side by side, each = 100% of the screen */
+    transition:transform .32s ease;
+    transform:translateX(0); /* default: entry panel showing */
+  }
+  .split-two-track > .panel{
+    width:50%;
+    flex:0 0 50%;
+    margin-bottom:0;
+  }
+  /* Edit toggle button removes "edit-closed" from #purSplit/#saleSplit ->
+     slide the track left by half its width so the edit panel comes into view. */
+  .split-two:not(.edit-closed) .split-two-track{
+    transform:translateX(-52%);
+  }
+
+  /* Tables stay real tables on mobile too (matches the desktop software) —
+     they just scroll horizontally inside .table-wrap instead of turning
+     into stacked cards. */
+  .table-wrap{-webkit-overflow-scrolling:touch;}
+}
+@media (max-width: 700px){
+  .form-grid.cols-2{grid-template-columns:1fr;}
+}
+@media (max-width: 560px){
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .form-grid{grid-template-columns:1fr;}
+  .form-grid.cols-2{grid-template-columns:1fr;}
+  .field.span-2, .field.span-3{grid-column:span 1;}
+  .stat-card .value{font-size:21px;}
+}
+
+/* =================== Party Ledger page =================== */
+.pl-grid{display:grid; grid-template-columns:320px 1fr; gap:18px; align-items:start; min-width:0;}
+.pl-grid > *{min-width:0;}
+@media (max-width:900px){ .pl-grid{grid-template-columns:1fr;} }
+
+/* Desktop only: the right panel (search + party list + selected-party
+   summary) should behave like the desktop app's fixed-size panel with a
+   QListWidget inside — top (search/toolbar) and bottom (selected-party
+   row + summary) stay put, and ONLY the party list in the middle scrolls
+   vertically, filling whatever empty space is left instead of shrinking
+   to fit its own content. On mobile the panel still grows/shrinks
+   naturally with the page, since the whole page scrolls there anyway. */
+@media (min-width:901px){
+  .pl-right{
+    height:calc(100vh - 190px); /* nudge this if your topbar/footer height differs */
+    display:flex;
+    flex-direction:column;
+  }
+  .pl-right > h3{flex:0 0 auto;}
+  .pl-toolbar{flex:0 0 auto;}
+  .party-list{
+    flex:1 1 auto;
+    min-height:0;
+    max-height:none !important;
+    overflow-y:auto;
+    overflow-x:hidden;
+  }
+  .pl-header-row, .mini-stat-grid, .pl-empty-hint{flex:0 0 auto;}
+}
+
+.pl-left{background:var(--panel); border-radius:var(--radius); padding:16px; display:flex; flex-direction:column; gap:10px; border:1px solid var(--border);}
+.pl-left h3{margin:0; font-size:16px; color:var(--purple); font-weight:800; display:flex; align-items:center; gap:8px;}
+.pl-left .pl-sub{color:var(--txt-muted); font-size:11px; font-style:italic; margin:-4px 0 4px;}
+.pl-left .btn{width:100%; justify-content:flex-start;}
+
+.pl-right{background:var(--panel); border:1px solid var(--purple); border-radius:var(--radius); padding:16px; min-width:0;}
+.pl-right > h3{margin:0 0 12px; font-size:15px; color:var(--purple); font-weight:800; display:flex; flex-wrap:wrap; gap:6px; align-items:baseline;}
+
+.pl-toolbar{display:flex; gap:10px; align-items:center; background:var(--panel-alt); border:1px solid var(--border); border-radius:8px; padding:9px 12px; margin-bottom:12px; flex-wrap:wrap;}
+.pl-toolbar input{flex:1; min-width:140px; background:transparent; border:none; color:var(--txt); outline:none; font-size:13px;}
+.pl-toolbar select{background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt); padding:7px 10px; border-radius:6px; font-size:12.5px;}
+.pl-toolbar i{color:var(--purple);}
+
+.party-list{list-style:none; margin:0 0 14px; padding:0; background:var(--table-bg); border:1px solid var(--border); border-radius:8px; max-height:320px; overflow-y:auto;}
+.party-item{display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid #232323; cursor:pointer; flex-wrap:wrap;}
+.party-item:last-child{border-bottom:none;}
+.party-item:hover{background:#232323;}
+.party-item.selected{background:#5B2C6F; color:#fff;}
+.party-item.selected .p-tag{background:rgba(255,255,255,.18);}
+.party-item.unregistered{color:var(--txt-muted);}
+.party-item i{color:var(--purple); width:16px; text-align:center;}
+.party-item.selected i{color:#fff;}
+.party-item .p-name{flex:1; font-size:13px; font-weight:600; min-width:120px;}
+.party-item .p-tag{font-size:10.5px; padding:3px 9px; border-radius:20px; font-weight:700; background:rgba(255,255,255,.08); white-space:nowrap;}
+.party-item .p-tag.supplier{color:#2ECC71;}
+.party-item .p-tag.customer{color:var(--blue);}
+.party-item .p-tag.both{color:var(--gold);}
+.party-item .p-badge-unreg{font-size:10px; font-style:italic; color:var(--txt-muted); white-space:nowrap;}
+
+.pl-header-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
+.pl-header-row .p-title{flex:1; font-size:14px; font-weight:800; color:var(--txt); min-width:180px;}
+
+.mini-stat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px;}
+.mini-stat{background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px;}
+.mini-stat .m-label{color:var(--txt-muted); font-size:11px; font-weight:700;}
+.mini-stat .m-val{font-size:20px; font-weight:800; margin-top:2px;}
+.mini-stat.in{border-left:3px solid #2ECC71;} .mini-stat.in .m-val{color:#2ECC71;}
+.mini-stat.out{border-left:3px solid var(--red);} .mini-stat.out .m-val{color:var(--red);}
+.mini-stat.bal{border-left:3px solid var(--gold);} .mini-stat.bal .m-val{color:var(--gold);}
+@media (max-width:560px){.mini-stat-grid{grid-template-columns:1fr;}}
+
+.pl-empty-hint{color:var(--txt-muted); font-size:12.5px; font-style:italic; padding:16px; text-align:center;}
+
+/* Reusable "maximized dialog" pattern — matches the desktop app's
+   dialog.showMaximized() behaviour, where every popup window opens as a
+   full window instead of a small floating box, and the page behind it is
+   locked (not visible/scrollable) while it's open.
+   Add class="modal-overlay modal-fullscreen" (in addition to the normal
+   modal-overlay markup) to ANY dialog — current or future — that should
+   open fully maximized on every screen size (mobile AND desktop), instead
+   of the small centered popup style. Currently used by Create/Edit Ledger
+   and the Ledger Statement dialogs in Party Ledger; use the same class on
+   any new big dialog added later (Purchase/Sales edit popups etc.) to get
+   the same maximized behaviour automatically. */
+.modal-overlay.modal-fullscreen{padding:0; align-items:stretch; justify-content:stretch;}
+.modal-overlay.modal-fullscreen .modal-box{
+  width:100%; height:100%; max-width:100%; max-height:100%;
+  border-radius:0; margin:0; display:flex; flex-direction:column;
+}
+.modal-overlay.modal-fullscreen .modal-head{flex:0 0 auto;}
+.modal-overlay.modal-fullscreen .modal-body{flex:1 1 auto; overflow-y:auto;}
+.modal-overlay.modal-fullscreen .modal-box .form-grid,
+.modal-overlay.modal-fullscreen .modal-box .actions-row{max-width:640px;}
+
+/* Locks the underlying page in place while a fullscreen modal is open, so
+   scrolling inside the modal never bleeds through to the page behind it. */
+body.no-scroll{overflow:hidden; height:100%;}
+
+/* Keyboard-selected row inside the statement drill-down table (Arrow keys +
+   Enter to drill in, Backspace to go back — mirrors the desktop app). */
+#stmtTbody tr.kbd-active{outline:2px solid var(--blue); outline-offset:-2px; background:#1c2733;}
+
+.stmt-head{display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+.stmt-actions{display:flex; gap:8px; flex-wrap:wrap;}
+
+.stmt-profile{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; background:var(--panel-alt); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:14px;}
+.stmt-profile .pf-item{display:flex; flex-direction:column; gap:3px; min-width:0;}
+.stmt-profile .pf-label{color:var(--txt-muted); font-size:11px; font-weight:700;}
+.stmt-profile .pf-val{color:var(--txt); font-size:13px; font-weight:700; word-break:break-word;}
+.stmt-profile .pf-val.accent{color:var(--blue);}
+@media (max-width:700px){.stmt-profile{grid-template-columns:1fr 1fr;}}
+@media (max-width:480px){.stmt-profile{grid-template-columns:1fr;}}
+
+.stmt-unreg{color:var(--orange); font-style:italic; font-size:13px; background:var(--panel-alt); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:14px;}
+
+.stmt-nav{display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap;}
+.stmt-nav .breadcrumb{color:var(--purple); font-size:13px; font-weight:700;}
+.stmt-nav .hint{color:var(--txt-muted); font-size:11px; font-style:italic; margin-left:auto;}
+
+.stmt-table-row{cursor:pointer;}
+.stmt-table-row:hover{background:#1c2733;}
+.stmt-table-row.leaf{cursor:default;}
+.stmt-table-row.leaf:hover{background:inherit;}
+
+/* ---------- Lightweight toast (used across pages for "UI preview" actions) ---------- */
+.toast-wrap{position:fixed; bottom:20px; right:20px; z-index:80; display:flex; flex-direction:column; gap:8px; max-width:calc(100% - 40px);}
+.toast{background:var(--panel); border:1px solid var(--purple); color:var(--txt); padding:10px 16px; border-radius:8px; font-size:12.5px; box-shadow:0 8px 24px rgba(0,0,0,.4); opacity:0; transform:translateY(8px); transition:all .25s ease;}
+.toast.show{opacity:1; transform:translateY(0);}
+@media (max-width:560px){
+  .toast-wrap{left:16px; right:16px; bottom:16px; align-items:stretch;}
+}
+@media (max-width:480px){
+  .modal-head{padding:12px 14px;}
+  .modal-head h3{font-size:13px; line-height:1.35;}
+  .modal-close{width:28px; height:28px; min-width:28px; font-size:12px;}
+}
+
+/* =================== LOGIN SCREEN ===================
+   Injected + controlled entirely by js/app.js (createLoginOverlay /
+   showLoginOverlay / showApp). Matches the desktop .py app's LoginWidget:
+   centered card, logo, username/password, "Remember me", Sign In button. */
+.login-overlay{
+  position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle at 30% 20%, #254d2f 0%, #222121 70%);
+  padding:20px;
+}
+.login-card{
+  width:100%; max-width:480px; background:var(--panel); border:1px solid #1A301E; border-radius:25px;
+  padding:15px 35px 200px; box-shadow:0 20px 60px rgba(0,0,0,.55);
+  display:flex; flex-direction:column; gap:25px;
+}
+.login-logo{display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:6px;}
+.login-logo i{color:var(--blue); font-size:22px;}
+.login-logo span{color:var(--blue); font-weight:800; font-size:20px; letter-spacing:.5px;}
+.login-field{display:flex; flex-direction:column; gap:6px;}
+.login-field label{font-size:12px; color:var(--txt-label); font-weight:600;}
+.login-field input{
+  background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt);
+  padding:10px 12px; border-radius:20px; font-size:13px; outline:none; width:100%; box-sizing:border-box;
+}
+.login-field input:focus{border-color:var(--blue);}
+.login-pwd-wrap{position:relative;}
+.login-pwd-wrap input{padding-right:38px;}
+.login-toggle-pwd{
+  position:absolute; right:8px; top:50%; transform:translateY(-50%);
+  background:transparent; border:none; border-radius: 50px; color:#b4afa6; font-size:12px; padding:2px 4px 2px 4px; cursor:pointer;
+}
+.login-toggle-pwd.active{color:var(--gold);}
+.login-remember{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--txt-label); cursor:pointer; user-select:none;}
+.login-remember input{cursor:pointer;}
+.login-btn{
+  background:#077e11; color:#fff; border:none; padding:12px; font-weight:700; font-size:14px;
+  border-radius:20px; cursor:pointer; margin-top:4px;
+}
+.login-btn:hover{filter:brightness(1.08);}
+.login-error{
+  display:none; color:var(--red); font-size:11.5px; background:rgba(231,76,60,.12);
+  border:1px solid var(--red); border-radius:20px; padding:8px 10px;
+}
+.login-error.show{display:block;}
+
+.brand-logo{height:32px; width:auto; object-fit:contain;}
+.login-logo .brand-logo{height:100px;}
+
+
+/* =================== PROFILE MENU (sidebar avatar) ===================
+   Clicking .profile-box (avatar + name in sidebar) opens this dropdown,
+   matching the desktop .py app's show_profile_menu(): header with
+   @username/role, then "Switch User" and "Logout". Positioned via JS
+   (fixed, anchored above the avatar) so it isn't clipped by the sidebar. */
+.profile-box{cursor:pointer;}
+.profile-box:hover{background:rgba(255,255,255,.03); border-radius:8px;}
+.profile-menu{
+  position:fixed; z-index:90; min-width:200px;
+  background:var(--panel); border:1px solid var(--border-light); border-radius:8px;
+  padding:6px; box-shadow:0 10px 30px rgba(0,0,0,.5);
+}
+.profile-menu-header{padding:8px 12px 9px; border-bottom:1px solid var(--border); margin-bottom:5px;}
+.profile-menu-header .name{color:#fff; font-size:13px; font-weight:800;}
+.profile-menu-header .role{color:var(--gold); font-size:11px; font-weight:700; margin-top:2px;}
+.profile-menu-item{
+  display:flex; align-items:center; gap:10px; width:100%; background:transparent; border:none;
+  color:#fff; font-size:12px; font-weight:600; padding:9px 12px; border-radius:5px; cursor:pointer; text-align:left;
+}
+.profile-menu-item i{width:14px; text-align:center; color:#fff;}
+.profile-menu-item:hover{background:var(--input-bg);}
+.profile-menu-item.danger i, .profile-menu-item.danger{color:var(--red);}

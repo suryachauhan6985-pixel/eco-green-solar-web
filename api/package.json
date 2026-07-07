@@ -1,0 +1,14 @@
+{
+  "name": "eco-green-solar-web-api",
+  "version": "1.0.0",
+  "description": "Backend API connecting the Eco Green Solar web app to the shared MariaDB database",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "mysql2": "^3.10.0"
+  }
+}
