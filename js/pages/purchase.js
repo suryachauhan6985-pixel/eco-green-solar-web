@@ -67,8 +67,8 @@ window.PAGES.purchase = {
               </div>
             </div>
 
-            <div class="field span-full"><label>Scan / Paste Serial Numbers <span class="req">*</span></label>
-              <textarea id="purSerials" placeholder="One serial per line — paste comma/space separated, it auto-splits"></textarea>
+            <div class="field span-full"><label>Serial Numbers <span class="req">*</span></label>
+              <textarea id="purSerials" placeholder="One serial per line, it auto-splits"></textarea>
             </div>
 
             <div class="field span-full">
@@ -131,7 +131,7 @@ window.PAGES.purchase = {
               </div>
             </div>
 
-            <div class="field span-full"><label>Serials <span class="req">*</span></label><textarea id="purEditSerials" placeholder="Loaded serials will appear here after Find"></textarea></div>
+            <div class="field span-full"><label>Serial Numbers <span class="req">*</span></label><textarea id="purEditSerials" placeholder="Loaded serials will appear here after Find"></textarea></div>
           </div>
 
           <div class="actions-row">
