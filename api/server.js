@@ -218,6 +218,19 @@ app.get('/api/purchase/wattages', route(async (req, res) => {
   res.json(rows.map(r => r.watt));
 }));
 
+// Given a comma-separated list of serial numbers, returns which ones already
+// exist in stock_ledger — mirrors Python's process_purchase_inward() check:
+// "SELECT COUNT(*) FROM stock_ledger WHERE serial_no=%s" run per serial.
+app.get('/api/purchase/check-serials', route(async (req, res) => {
+  const serials = (req.query.serials || '').split(',').map((s) => s.trim()).filter(Boolean);
+  if (!serials.length) return res.json([]);
+  const [rows] = await pool.query(
+    `SELECT serial_no FROM stock_ledger WHERE serial_no IN (?)`,
+    [serials]
+  );
+  res.json(rows.map((r) => r.serial_no));
+}));
+
 // ---------------------------------------------------------------------------
 // LEDGERS (Supplier / Customer master) — mirrors db.py's
 // search_ledgers_for_autocomplete() / find_ledger_by_shortname() /
