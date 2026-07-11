@@ -20,9 +20,11 @@ app.use(express.static(path.join(__dirname, '..')));
 // DB Connection Pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST || '192.168.0.123',
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || 'admin',
   database: process.env.DB_NAME || 'eco_green_solar_erp',
+  ssl: process.env.DB_SSL === 'true' ? { minVersion: 'TLSv1.2' } : undefined,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
