@@ -95,6 +95,33 @@ app.get('/api/dashboard/summary', route(async (req, res) => {
   });
 }));
 // ---------------------------------------------------------------------------
+// AUTH — real login verification against the `users` table (same table +
+// same exact-match rule the desktop .py app uses in
+// database/db.py -> validate_user_credentials():
+//   SELECT role FROM users WHERE username=%s AND password=%s
+// Previously there was NO login endpoint at all — the frontend accepted
+// any non-empty username/password without checking the DB. This endpoint
+// fixes that: it looks up the user, and only returns success if the
+// username AND password match a row. The role returned comes from the DB,
+// not from anything the client sends.
+// ---------------------------------------------------------------------------
+app.post('/api/auth/login', route(async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Please enter both username and password.' });
+  }
+  const uname = username.trim().toLowerCase();
+  const [rows] = await pool.query(
+    `SELECT role FROM users WHERE username = ? AND password = ?`,
+    [uname, password]
+  );
+  if (!rows.length) {
+    return res.status(401).json({ error: 'Incorrect Username or Password.' });
+  }
+  res.json({ success: true, username: uname, role: rows[0].role });
+}));
+
+// ---------------------------------------------------------------------------
 // MASTER MANAGEMENT SYSTEM ENDPOINTS
 // ---------------------------------------------------------------------------
 
@@ -159,6 +186,34 @@ app.delete('/api/masters/subtypes', route(async (req, res) => {
   const [result] = await pool.query(`DELETE FROM subtypes WHERE category_name = ? AND subtype_name = ?`, [category_name, subtype_name]);
   if (result.affectedRows === 0) return res.status(400).json({ error: 'Subtype not found.' });
   res.json({ success: true });
+}));
+
+// ---------------------------------------------------------------------------
+// PURCHASE INWARD — cascading dropdown fetch (Category -> Brand -> Wattage),
+// same logic as the desktop app's db.py: get_brands_for_category() and
+// get_wattages_for_brand_category(). Both read straight from the `items`
+// table (unlike the global /api/masters/brands above, these are filtered).
+// ---------------------------------------------------------------------------
+
+// Brands registered under one category (used when Category dropdown changes)
+app.get('/api/purchase/brands/:category', route(async (req, res) => {
+  const { category } = req.params;
+  const [rows] = await pool.query(
+    `SELECT DISTINCT brand_name FROM items WHERE category = ? AND brand_name IS NOT NULL AND brand_name <> '' ORDER BY brand_name ASC`,
+    [category]
+  );
+  res.json(rows.map(r => r.brand_name));
+}));
+
+// Wattages registered for one category+brand combo (used when Brand dropdown changes)
+app.get('/api/purchase/wattages', route(async (req, res) => {
+  const { category, brand } = req.query;
+  if (!category || !brand) return res.json([]);
+  const [rows] = await pool.query(
+    `SELECT DISTINCT watt FROM items WHERE category = ? AND brand_name = ? AND watt IS NOT NULL AND watt > 0 ORDER BY watt ASC`,
+    [category, brand]
+  );
+  res.json(rows.map(r => r.watt));
 }));
 
 // ---------------------------------------------------------------------------
