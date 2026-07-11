@@ -36,12 +36,13 @@ window.PAGES.purchase = {
           <h3><i class="fa-solid fa-file-invoice"></i> New Purchase Entry</h3>
           <div class="form-grid cols-2">
             <div class="field"><label>Category <span class="req">*</span></label>
-              <select id="purCat"><option>Solar Panel</option><option>Inverter</option><option>Battery</option></select></div>
+              <select id="purCat"><option value="">Loading...</option></select></div>
             <div class="field"><label>Brand <span class="req">*</span></label>
-              <select id="purBrand"><option>Waaree</option><option>Adani</option><option>Vikram Solar</option></select></div>
-            <div class="field"><label>Wattage <span class="req">*</span></label><input id="purWatt" placeholder="e.g. 545"></div>
+              <select id="purBrand"><option value="">-- Select Category First --</option></select></div>
+            <div class="field"><label>Wattage <span class="req">*</span></label>
+              <select id="purWatt"><option value="">-- Select Brand First --</option></select></div>
             <div class="field"><label>Type <span class="req">*</span></label>
-              <select id="purType"><option>Mono PERC</option><option>Bifacial</option></select></div>
+              <select id="purType"><option value="">-- Select Category First --</option></select></div>
 
             <div class="field"><label>Supplier Short Code</label><input id="purSuppShort" placeholder="Optional short code"></div>
             <div class="field"><label>Supplier Name <span class="req">*</span></label><input id="purSupp" placeholder="Supplier / Party"></div>
@@ -252,6 +253,74 @@ SN00123458</textarea>
         state.files.forEach((f) => window.open(URL.createObjectURL(f), '_blank'));
       });
     }
+
+    // ---------------- Category -> Brand -> Wattage cascading dropdowns,
+    // fetched live from the database (same source the desktop app's
+    // get_categories() / get_brands_for_category() / get_wattages_for_brand_category()
+    // / get_subtypes_by_category() read from). Category change refreshes
+    // BOTH Brand and Type together (Type/Subtype only depends on Category,
+    // not on Brand/Wattage - exactly like ui/purchase.py). Brand change
+    // refreshes Wattage.
+    function fillSelect(selectEl, items, placeholder) {
+      if (!items || !items.length) {
+        selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+        return;
+      }
+      selectEl.innerHTML = items.map((v) => `<option value="${v}">${v}</option>`).join('');
+    }
+
+    const purCatEl = $('purCat'), purBrandEl = $('purBrand'), purWattEl = $('purWatt'), purTypeEl = $('purType');
+
+    async function loadPurCategories() {
+      try {
+        const cats = await window.Api.get('/masters/categories');
+        fillSelect(purCatEl, cats.map((c) => c.name), 'No categories found');
+      } catch (e) {
+        fillSelect(purCatEl, [], 'Failed to load categories');
+      }
+      await refreshPurBrandsAndType();
+    }
+
+    async function refreshPurBrandsAndType() {
+      const cat = purCatEl.value;
+      if (!cat) {
+        fillSelect(purBrandEl, [], '-- Select Category First --');
+        fillSelect(purTypeEl, [], '-- Select Category First --');
+        await refreshPurWattages();
+        return;
+      }
+      try {
+        const brands = await window.Api.get(`/purchase/brands/${encodeURIComponent(cat)}`);
+        fillSelect(purBrandEl, brands, 'No brands under this category');
+      } catch (e) {
+        fillSelect(purBrandEl, [], 'Failed to load brands');
+      }
+      try {
+        const subtypes = await window.Api.get(`/masters/subtypes/${encodeURIComponent(cat)}`);
+        fillSelect(purTypeEl, subtypes.length ? subtypes : ['Others'], 'Others');
+      } catch (e) {
+        fillSelect(purTypeEl, ['Others'], 'Others');
+      }
+      await refreshPurWattages();
+    }
+
+    async function refreshPurWattages() {
+      const cat = purCatEl.value, brand = purBrandEl.value;
+      if (!cat || !brand) {
+        fillSelect(purWattEl, [], '-- Select Brand First --');
+        return;
+      }
+      try {
+        const watts = await window.Api.get(`/purchase/wattages?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}`);
+        fillSelect(purWattEl, watts.length ? watts : ['N/A'], 'N/A');
+      } catch (e) {
+        fillSelect(purWattEl, ['N/A'], 'N/A');
+      }
+    }
+
+    purCatEl.addEventListener('change', refreshPurBrandsAndType);
+    purBrandEl.addEventListener('change', refreshPurWattages);
+    loadPurCategories();
 
     // ---------------- NEW PURCHASE panel state ----------------
     const purLines = [];

@@ -183,9 +183,11 @@ window.attachColumnFilters = function (table) {
   // =================== LOGIN SCREEN ===================
   // Matches the desktop .py app's LoginWidget: a centered card (logo,
   // username, password w/ show-hide toggle, "Remember Me", Sign In) that
-  // covers the whole app until the person signs in. This is a UI preview
-  // with no real backend, so any non-empty username+password is accepted —
-  // the goal is to reproduce the *flow*, not real authentication.
+  // covers the whole app until the person signs in. Credentials are now
+  // verified against the real DB via POST /api/auth/login (same users
+  // table + same exact-match rule as the desktop app's
+  // validate_user_credentials()). The role is returned by the server, not
+  // chosen by the person, so it can no longer be spoofed from the UI.
   const shellEl = document.querySelector('.shell');
   let loginOverlay = null;
 
@@ -233,13 +235,6 @@ window.attachColumnFilters = function (table) {
             <button type="button" class="login-toggle-pwd" id="loginTogglePwd"><i class="fa-solid fa-eye"></i></button>
           </div>
         </div>
-        <div class="login-field">
-          <label>Role</label>
-          <select id="loginRole" style="width:100%; background:var(--input-bg,#2D2D2D); color:#fff; border:1px solid var(--border,#3A3A3A); border-radius:6px; padding:9px 10px;">
-            <option value="SuperAdmin">SuperAdmin</option>
-            <option value="User">User</option>
-          </select>
-        </div>
         <label class="login-remember"><input type="checkbox" id="loginRemember"> Remember Me on this Computer</label>
         <div class="login-error" id="loginError">Please enter both username and password.</div>
         <button type="button" class="login-btn" id="loginSubmit">Sign In</button>
@@ -253,14 +248,13 @@ window.attachColumnFilters = function (table) {
     const errorBox = loginOverlay.querySelector('#loginError');
     const submitBtn = loginOverlay.querySelector('#loginSubmit');
 
-    const roleSelect = loginOverlay.querySelector('#loginRole');
-
-    // Prefill remembered username, mirrors the desktop app's "Remember Me".
+    // Prefill remembered username only (never the password), mirrors the
+    // desktop app's "Remember Me" for convenience — the password still has
+    // to be entered and verified against the DB every time.
     try {
       if (localStorage.getItem('egs_remember') === '1') {
         userInput.value = localStorage.getItem('egs_user') || '';
         rememberChk.checked = true;
-        roleSelect.value = localStorage.getItem('egs_role') || 'SuperAdmin';
       }
     } catch (e) { /* localStorage unavailable — just skip prefill */ }
 
@@ -271,29 +265,48 @@ window.attachColumnFilters = function (table) {
       toggleBtn.innerHTML = showing ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
     });
 
-    function attemptLogin() {
+    async function attemptLogin() {
       const user = userInput.value.trim();
       const pwd = pwdInput.value.trim();
-      const role = roleSelect.value;
       if (!user || !pwd) {
         errorBox.textContent = 'Please enter both username and password.';
         errorBox.classList.add('show');
         return;
       }
       errorBox.classList.remove('show');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Signing In...';
       try {
-        if (rememberChk.checked) {
-          localStorage.setItem('egs_remember', '1');
-          localStorage.setItem('egs_user', user);
-          localStorage.setItem('egs_role', role);
-        } else {
-          localStorage.removeItem('egs_remember');
-          localStorage.removeItem('egs_user');
-          localStorage.removeItem('egs_role');
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: user, password: pwd }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          errorBox.textContent = data.error || 'Incorrect Username or Password.';
+          errorBox.classList.add('show');
+          return;
         }
-      } catch (e) { /* localStorage unavailable — Remember Me just won't persist */ }
-      updateProfileDisplay(user, role);
-      showApp();
+        // Verified by the DB — role comes from the server, never from the UI.
+        try {
+          if (rememberChk.checked) {
+            localStorage.setItem('egs_remember', '1');
+            localStorage.setItem('egs_user', data.username);
+          } else {
+            localStorage.removeItem('egs_remember');
+            localStorage.removeItem('egs_user');
+          }
+        } catch (e) { /* localStorage unavailable — Remember Me just won't persist */ }
+        updateProfileDisplay(data.username, data.role);
+        showApp();
+      } catch (e) {
+        errorBox.textContent = 'Could not reach the server. Please try again.';
+        errorBox.classList.add('show');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign In';
+      }
     }
 
     submitBtn.addEventListener('click', attemptLogin);
@@ -423,20 +436,12 @@ window.attachColumnFilters = function (table) {
 
   window.go = go;
 
-  // ---------- Start: show login screen first (auto-login if remembered) ----------
+  // ---------- Start: always show login screen, password is always verified ----------
+  // "Remember Me" only prefills the username (see buildLoginOverlay above) —
+  // it no longer skips DB verification. Every session must pass through
+  // POST /api/auth/login before the app is shown.
   buildLoginOverlay();
-  let autoLoggedIn = false;
-  try {
-    if (localStorage.getItem('egs_remember') === '1' && localStorage.getItem('egs_user')) {
-      updateProfileDisplay(localStorage.getItem('egs_user'), localStorage.getItem('egs_role') || 'SuperAdmin');
-      showApp();
-      autoLoggedIn = true;
-    }
-  } catch (e) { /* localStorage unavailable — fall back to showing login */ }
-  if (!autoLoggedIn) {
-    window.currentUserRole = 'SuperAdmin';
-    showLoginOverlay();
-  }
+  showLoginOverlay();
 
   // Start on Dashboard
   go('dashboard');
