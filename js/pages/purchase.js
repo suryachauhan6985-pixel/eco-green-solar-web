@@ -68,9 +68,7 @@ window.PAGES.purchase = {
             </div>
 
             <div class="field span-full"><label>Scan / Paste Serial Numbers <span class="req">*</span></label>
-              <textarea id="purSerials" placeholder="One serial per line — paste comma/space separated, it auto-splits">SN00123456
-SN00123457
-SN00123458</textarea>
+              <textarea id="purSerials" placeholder="One serial per line — paste comma/space separated, it auto-splits"></textarea>
             </div>
 
             <div class="field span-full">
@@ -150,6 +148,13 @@ SN00123458</textarea>
   init() {
     const $ = (id) => document.getElementById(id);
     const PD = window.PurchaseData;
+
+    // Mirrors ui/serial_widgets.py's parse_serial_numbers(): split on ANY
+    // separator (space, comma, tab, pipe, semicolon, newline) and keep only
+    // letters/digits/hyphens — not just comma/newline like PD.splitSerials.
+    function splitSerials(text) {
+      return String(text || '').match(/[A-Za-z0-9-]+/g) || [];
+    }
 
     // ---------------- Role restriction: only SuperAdmin can view/modify the
     // "Purchase Invoice Modification" panel — mirrors ui/purchase.py's
@@ -372,10 +377,9 @@ SN00123458</textarea>
     wireSupplierAutocomplete($('purSuppShort'), purSuppShortList, 'short');
 
     // ---------------- Serial box: auto-newline on delimiter ----------------
-    // Mirrors Python's SerialTextEdit.keyPressEvent(): as soon as the user
-    // types a comma, space, tab, pipe, or semicolon, that key is swallowed
-    // and a newline is inserted instead — so serials always land one per
-    // line as you type, not just when pasting.
+    // Mirrors ui/serial_widgets.py's SerialTextEdit.keyPressEvent(): typing
+    // a comma, space, tab, pipe, or semicolon immediately breaks the line so
+    // every serial ends up one-per-line as you scan/type them.
     const purSerialsBox = $('purSerials');
     purSerialsBox.addEventListener('keydown', (e) => {
       if ([',', ' ', '|', ';', 'Tab'].includes(e.key)) {
@@ -387,6 +391,21 @@ SN00123458</textarea>
         const pos = before.length + (needsNewline ? 1 : 0);
         purSerialsBox.setSelectionRange(pos, pos);
       }
+    });
+    // Pasting a comma/space separated block also gets normalized to one
+    // serial per line, mirroring insertFromMimeData().
+    purSerialsBox.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const pasted = (e.clipboardData || window.clipboardData).getData('text');
+      const normalized = splitSerials(pasted).join('\n');
+      const before = purSerialsBox.value.slice(0, purSerialsBox.selectionStart);
+      const after = purSerialsBox.value.slice(purSerialsBox.selectionEnd);
+      const prefix = before && !before.endsWith('\n') ? '\n' : '';
+      purSerialsBox.value = before + prefix + normalized + '\n' + after;
+    });
+    // Leaving the box does one final cleanup pass, mirroring focusOutEvent().
+    purSerialsBox.addEventListener('blur', () => {
+      purSerialsBox.value = splitSerials(purSerialsBox.value).join('\n');
     });
 
     // ---------------- NEW PURCHASE panel state ----------------
@@ -441,31 +460,35 @@ SN00123458</textarea>
         window.openModal('Validation Error', '<p>Add at least one Invoice Product Line before saving.</p>');
         return;
       }
+      // Split pasted serials across the product lines in order, same qty
+      // grouping the desktop app does (line 1 takes its qty worth, then
+      // line 2, and so on).
+      const allSerials = splitSerials($('purSerials').value);
 
-      const allSerials = PD.splitSerials($('purSerials').value);
-
-      // Check 1: total Qty across all product lines must exactly match the
-      // number of serial numbers entered — same rule as Python's
-      // build_current_purchase_line(): "len(serials) != int(qty_str)".
+      // ---- Check 1: Qty match — mirrors build_current_purchase_line()'s
+      // "Quantity mismatch" rule: total Qty across all product lines must
+      // equal exactly how many serials were entered — not less, not more.
       const totalQty = purLines.reduce((sum, ln) => sum + (Number(ln.qty) || 0), 0);
       if (allSerials.length !== totalQty) {
         window.openModal('Quantity Mismatch',
-          `<p>Total Qty across product lines is <strong>${totalQty}</strong>, but <strong>${allSerials.length}</strong> serial number(s) were entered. These must match exactly — not more, not less.</p>`);
+          `<p>Total Qty across product lines is <strong>${totalQty}</strong>, but <strong>${allSerials.length}</strong> serial number(s) were entered. These must match exactly.</p>`);
         return;
       }
 
-      // Check 2: duplicate serial numbers within what was just typed/pasted —
-      // mirrors Python's "len(serials) != len(set(serials))".
+      // ---- Check 2: duplicate serial within this invoice itself — mirrors
+      // process_purchase_inward()'s "Same serial number is present in
+      // multiple product lines" check.
       const seen = new Set(), innerDupes = new Set();
       allSerials.forEach((sn) => { if (seen.has(sn)) innerDupes.add(sn); seen.add(sn); });
       if (innerDupes.size) {
         window.openModal('Duplicate Serial Error',
-          `<p>These serial numbers are repeated in your entry: ${[...innerDupes].join(', ')}</p>`);
+          `<p>These serial numbers are repeated in this invoice: ${[...innerDupes].join(', ')}</p>`);
         return;
       }
 
-      // Check 3: serial numbers that already exist in the stock_ledger table —
-      // mirrors Python's process_purchase_inward() "already_exists" DB check.
+      // ---- Check 3: already exists in stock (real DB check) — mirrors
+      // process_purchase_inward()'s "Inward Blocked! ... already exist in
+      // the database" check against stock_ledger.
       let alreadyExists = [];
       try {
         alreadyExists = await window.Api.get(`/purchase/check-serials?serials=${encodeURIComponent(allSerials.join(','))}`);
@@ -479,8 +502,6 @@ SN00123458</textarea>
         return;
       }
 
-      // Split serials across the product lines in order, same qty grouping
-      // the desktop app does (line 1 takes its qty worth, then line 2, ...).
       let cursor = 0;
       const lines = purLines.map((ln) => {
         const qty = Number(ln.qty) || 0;
