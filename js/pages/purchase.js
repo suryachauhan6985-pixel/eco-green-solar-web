@@ -44,11 +44,11 @@ window.PAGES.purchase = {
             <div class="field"><label>Type <span class="req">*</span></label>
               <select id="purType"><option value="">-- Select Category First --</option></select></div>
 
-            <div class="field"><label>Supplier Short Code</label><input id="purSuppShort" placeholder="Optional short code"></div>
-            <div class="field"><label>Supplier Name <span class="req">*</span></label><input id="purSupp" placeholder="Supplier / Party"></div>
-            <div class="field"><label>Mobile</label><input id="purSuppMobile" placeholder="Auto-fills from ledger" readonly></div>
-            <div class="field"><label>GSTIN</label><input id="purSuppGstin" placeholder="Auto-fills from ledger" readonly></div>
-            <div class="field span-full"><label>Address</label><input id="purSuppAddr" placeholder="Auto-fills from ledger" readonly></div>
+            <div class="field"><label>Supplier Short Code</label><input id="purSuppShort" placeholder="Optional short code" list="purSuppShortList" autocomplete="off"><datalist id="purSuppShortList"></datalist></div>
+            <div class="field"><label>Supplier Name <span class="req">*</span></label><input id="purSupp" placeholder="Supplier / Party" list="purSuppNameList" autocomplete="off"><datalist id="purSuppNameList"></datalist></div>
+            <div class="field"><label>Mobile</label><input id="purSuppMobile" placeholder="Auto-fills from ledger (editable)"></div>
+            <div class="field"><label>GSTIN</label><input id="purSuppGstin" placeholder="Auto-fills from ledger (editable)"></div>
+            <div class="field span-full"><label>Address</label><input id="purSuppAddr" placeholder="Auto-fills from ledger (editable)"></div>
 
             <div class="field"><label>Invoice No <span class="req">*</span></label><input id="purInv" placeholder="INV-2026-001"></div>
             <div class="field"><label>Pallet ID</label><input id="purPallet" placeholder="Optional"></div>
@@ -321,6 +321,55 @@ SN00123458</textarea>
     purCatEl.addEventListener('change', refreshPurBrandsAndType);
     purBrandEl.addEventListener('change', refreshPurWattages);
     loadPurCategories();
+
+    // ---------------- Supplier ledger live autocomplete + autofill ----------
+    // Mirrors attach_ledger_autocomplete() / attach_ledger_shortname_lookup()
+    // in ui/purchase.py: as the user types in Supplier Name or Short Code we
+    // (1) live-fetch matching ledgers from the DB to feed the suggestion list
+    // (QCompleter -> here, a <datalist>), and (2) auto-fill Mobile/Address/
+    // GSTIN the instant the typed text exactly matches a known ledger name or
+    // short code — same as the desktop app's trigger_name_autofill() /
+    // trigger_full_autofill(). The auto-filled fields stay fully EDITABLE
+    // (no readonly), exactly like the desktop QLineEdit fields, so the user
+    // can still type/override any of them by hand for this one invoice.
+    const purSuppNameList = $('purSuppNameList');
+    const purSuppShortList = $('purSuppShortList');
+    let suppSearchTimer = null;
+
+    async function searchSupplierLedgers(q) {
+      try { return await window.Api.get(`/ledgers?type=Supplier&q=${encodeURIComponent(q)}`); }
+      catch (e) { return []; }
+    }
+
+    function fillSupplierDatalist(listEl, ledgers, key) {
+      listEl.innerHTML = ledgers.map((l) => `<option value="${String(l[key] || '').replace(/"/g, '&quot;')}">`).join('');
+    }
+
+    function applyLedgerToSupplierFields(l) {
+      $('purSupp').value = l.name || '';
+      $('purSuppShort').value = l.short || '';
+      $('purSuppMobile').value = l.mobile && l.mobile !== '-' ? l.mobile : '';
+      $('purSuppAddr').value = l.address && l.address !== '-' ? l.address : '';
+      $('purSuppGstin').value = l.gstin && l.gstin !== '-' ? l.gstin : '';
+    }
+
+    function wireSupplierAutocomplete(inputEl, listEl, matchKey) {
+      inputEl.addEventListener('input', () => {
+        const text = inputEl.value;
+        clearTimeout(suppSearchTimer);
+        suppSearchTimer = setTimeout(async () => {
+          const ledgers = await searchSupplierLedgers(text);
+          fillSupplierDatalist(listEl, ledgers, matchKey);
+          // Exact match (case-insensitive), same rule as Python's
+          // trigger_name_autofill / trigger_full_autofill.
+          const exact = ledgers.find((l) => String(l[matchKey] || '').trim().toLowerCase() === text.trim().toLowerCase());
+          if (exact) applyLedgerToSupplierFields(exact);
+        }, 250); // debounce: fetch only after user pauses typing, not on every keystroke
+      });
+    }
+
+    wireSupplierAutocomplete($('purSupp'), purSuppNameList, 'name');
+    wireSupplierAutocomplete($('purSuppShort'), purSuppShortList, 'short');
 
     // ---------------- NEW PURCHASE panel state ----------------
     const purLines = [];

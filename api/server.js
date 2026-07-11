@@ -20,18 +20,12 @@ app.use(express.static(path.join(__dirname, '..')));
 // DB Connection Pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST || '192.168.0.123',
-  port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || 'admin',
   database: process.env.DB_NAME || 'eco_green_solar_erp',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  // TiDB Cloud (aur kai cloud DB providers) SSL/TLS ke bina connection allow
-  // nahi karte ("insecure transport" error). DB_SSL=true set hone par SSL
-  // enable ho jayega; local MariaDB (192.168.0.123) ke liye ye env var set
-  // nahi hoga to normal (bina SSL) connect hota rahega.
-  ssl: process.env.DB_SSL === 'true' ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined,
 });
 
 // Helper for error handling
@@ -220,6 +214,46 @@ app.get('/api/purchase/wattages', route(async (req, res) => {
     [category, brand]
   );
   res.json(rows.map(r => r.watt));
+}));
+
+// ---------------------------------------------------------------------------
+// LEDGERS (Supplier / Customer master) — mirrors db.py's
+// search_ledgers_for_autocomplete() / find_ledger_by_shortname() /
+// find_ledger_by_name_or_shortname() from the desktop app. Used for the live
+// autocomplete + auto-fill on the Purchase (Supplier) form, and reusable for
+// Sales (Customer) the same way.
+//   GET /api/ledgers?type=Supplier&q=sur   -> up to 25 matches while typing
+//   GET /api/ledgers?type=Supplier         -> full list (q omitted/empty)
+// ---------------------------------------------------------------------------
+app.get('/api/ledgers', route(async (req, res) => {
+  const q = (req.query.q || '').trim();
+  const type = req.query.type && req.query.type !== 'All' ? req.query.type : null;
+
+  let sql = `SELECT id, ledger_name, short_name, ledger_type, mobile, address, gstin FROM ledgers`;
+  const params = [];
+  const where = [];
+
+  if (q) {
+    where.push(`(ledger_name LIKE ? OR short_name LIKE ?)`);
+    params.push(`%${q}%`, `%${q}%`);
+  }
+  if (type) {
+    where.push(`(ledger_type = ? OR ledger_type = 'Both')`);
+    params.push(type);
+  }
+  if (where.length) sql += ` WHERE ${where.join(' AND ')}`;
+  sql += ` ORDER BY ledger_name ASC LIMIT ${q ? 25 : 200}`;
+
+  const [rows] = await pool.query(sql, params);
+  res.json(rows.map((r) => ({
+    id: r.id,
+    name: r.ledger_name,
+    short: r.short_name,
+    type: r.ledger_type,
+    mobile: r.mobile,
+    address: r.address,
+    gstin: r.gstin,
+  })));
 }));
 
 // ---------------------------------------------------------------------------
