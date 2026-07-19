@@ -54,7 +54,7 @@ window.PAGES.purchase = {
             <div class="field"><label>Pallet ID</label><input id="purPallet" placeholder="Optional"></div>
             <div class="field"><label>Qty <span class="req">*</span></label><input id="purQty" type="number" placeholder="0"></div>
             <div class="field"><label>Warehouse <span class="req">*</span></label>
-              <select id="purWh"><option>Main NAS Warehouse</option><option>Rajkot Godown</option></select></div>
+              <select id="purWh"><option value="">Loading...</option></select></div>
             <div class="field span-full"><label>Purchase Date <span class="req">*</span></label><input id="purDate" type="date"></div>
 
             <div class="field span-full"><label>Proof Attachment (Invoice PDF/Image)</label>
@@ -100,15 +100,16 @@ window.PAGES.purchase = {
             <div class="field"><label>Invoice No <span class="req">*</span></label><input id="purEditInv" placeholder="Invoice number"></div>
             <div class="field"><label>Pallet ID</label><input id="purEditPallet" placeholder="Pallet number"></div>
             <div class="field"><label>Warehouse <span class="req">*</span></label>
-              <select id="purEditWh"><option>Main NAS Warehouse</option><option>Rajkot Godown</option></select></div>
+              <select id="purEditWh"><option value="">Loading...</option></select></div>
 
             <div class="field"><label>Category <span class="req">*</span></label>
-              <select id="purEditCat"><option>Solar Panel</option><option>Inverter</option><option>Battery</option></select></div>
+              <select id="purEditCat"><option value="">Loading...</option></select></div>
             <div class="field"><label>Brand <span class="req">*</span></label>
-              <select id="purEditBrand"><option>Waaree</option><option>Adani</option><option>Vikram Solar</option></select></div>
-            <div class="field"><label>Wattage <span class="req">*</span></label><input id="purEditWatt" placeholder="e.g. 545"></div>
+              <select id="purEditBrand"><option value="">-- Select Category First --</option></select></div>
+            <div class="field"><label>Wattage <span class="req">*</span></label>
+              <select id="purEditWatt"><option value="">-- Select Brand First --</option></select></div>
             <div class="field"><label>Type <span class="req">*</span></label>
-              <select id="purEditType"><option>Mono PERC</option><option>Bifacial</option></select></div>
+              <select id="purEditType"><option value="">-- Select Category First --</option></select></div>
 
             <div class="field span-full"><label>Date <span class="req">*</span></label><input id="purEditDate" type="date"></div>
 
@@ -327,6 +328,41 @@ window.PAGES.purchase = {
     purBrandEl.addEventListener('change', refreshPurWattages);
     loadPurCategories();
 
+    // ---------------- Warehouse dropdown(s) — fetched live from
+    // /api/masters/warehouses (same Warehouses master the Masters page
+    // manages), same source the desktop app's get_warehouses() reads from.
+    // Previously this was hardcoded to "Main NAS Warehouse" / "Rajkot Godown"
+    // regardless of what warehouses actually exist in the database.
+    const purWhEl = $('purWh'), purEditWhEl = $('purEditWh');
+
+    // Generic helper: fetch a list from the API (array of strings, or array
+    // of objects with a .name), optionally force an extra "injectValue" into
+    // the list (used so a value already saved on an old invoice never just
+    // disappears from an edit dropdown even if it's no longer in the master
+    // table), then fill the given <select>.
+    async function fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue) {
+      let items = [];
+      try {
+        const raw = await window.Api.get(apiPath);
+        items = (raw || []).map((it) => (it && typeof it === 'object' ? it.name : it)).map(String);
+      } catch (e) {
+        items = [];
+      }
+      if (injectValue !== undefined && injectValue !== null && injectValue !== '' && !items.includes(String(injectValue))) {
+        items.push(String(injectValue));
+      }
+      fillSelect(selectEl, items, emptyLabel);
+      if (injectValue !== undefined && injectValue !== null && injectValue !== '') {
+        selectEl.value = String(injectValue);
+      }
+    }
+
+    async function loadPurWarehouses(injectEditValue) {
+      await fillSelectFromApi(purWhEl, '/masters/warehouses', 'No warehouses found');
+      await fillSelectFromApi(purEditWhEl, '/masters/warehouses', 'No warehouses found', injectEditValue);
+    }
+    loadPurWarehouses();
+
     // ---------------- Supplier ledger live autocomplete + autofill ----------
     // Mirrors attach_ledger_autocomplete() / attach_ledger_shortname_lookup()
     // in ui/purchase.py: as the user types in Supplier Name or Short Code we
@@ -346,8 +382,24 @@ window.PAGES.purchase = {
       catch (e) { return []; }
     }
 
+    // Dedicated short-code search — mirrors the desktop app's
+    // attach_ledger_shortname_lookup(), which only ever matches against
+    // short_name (never the full ledger name). The combined /api/ledgers
+    // search above matches name OR short_name together, so a ledger whose
+    // NAME happened to match the typed text (but has no/blank short code)
+    // could crowd real short-code matches out of the result list — which is
+    // why only one supplier's short code (e.g. "DSP") was ever suggested.
+    // Hitting /api/ledgers/shortcodes instead guarantees every ledger that
+    // actually has a short code is eligible to show up.
+    async function searchSupplierShortCodes(q) {
+      try { return await window.Api.get(`/ledgers/shortcodes?type=Supplier&q=${encodeURIComponent(q)}`); }
+      catch (e) { return []; }
+    }
+
     function fillSupplierDatalist(listEl, ledgers, key) {
-      listEl.innerHTML = ledgers.map((l) => `<option value="${String(l[key] || '').replace(/"/g, '&quot;')}">`).join('');
+      listEl.innerHTML = ledgers
+        .filter((l) => String(l[key] || '').trim() !== '')
+        .map((l) => `<option value="${String(l[key]).replace(/"/g, '&quot;')}">`).join('');
     }
 
     function applyLedgerToSupplierFields(l) {
@@ -358,12 +410,12 @@ window.PAGES.purchase = {
       $('purSuppGstin').value = l.gstin && l.gstin !== '-' ? l.gstin : '';
     }
 
-    function wireSupplierAutocomplete(inputEl, listEl, matchKey) {
+    function wireSupplierAutocomplete(inputEl, listEl, matchKey, searchFn) {
       inputEl.addEventListener('input', () => {
         const text = inputEl.value;
         clearTimeout(suppSearchTimer);
         suppSearchTimer = setTimeout(async () => {
-          const ledgers = await searchSupplierLedgers(text);
+          const ledgers = await searchFn(text);
           fillSupplierDatalist(listEl, ledgers, matchKey);
           // Exact match (case-insensitive), same rule as Python's
           // trigger_name_autofill / trigger_full_autofill.
@@ -371,10 +423,18 @@ window.PAGES.purchase = {
           if (exact) applyLedgerToSupplierFields(exact);
         }, 250); // debounce: fetch only after user pauses typing, not on every keystroke
       });
+      // Also show the full/matching list as soon as the field gets focus
+      // (mirrors QCompleter's popup, which is populated up front rather
+      // than only after the first keystroke).
+      inputEl.addEventListener('focus', async () => {
+        if (inputEl.value.trim()) return; // input() above already covers non-empty case
+        const ledgers = await searchFn('');
+        fillSupplierDatalist(listEl, ledgers, matchKey);
+      });
     }
 
-    wireSupplierAutocomplete($('purSupp'), purSuppNameList, 'name');
-    wireSupplierAutocomplete($('purSuppShort'), purSuppShortList, 'short');
+    wireSupplierAutocomplete($('purSupp'), purSuppNameList, 'name', searchSupplierLedgers);
+    wireSupplierAutocomplete($('purSuppShort'), purSuppShortList, 'short', searchSupplierShortCodes);
 
     // ---------------- Serial box: auto-newline on delimiter ----------------
     // Mirrors ui/serial_widgets.py's SerialTextEdit.keyPressEvent(): typing
@@ -537,6 +597,73 @@ window.PAGES.purchase = {
     if (isAdmin) {
       wireLineSelection(purEditLineList);
       wireProofButtons('purEditProofFile', 'purBtnEditAttach', null, 'purBtnViewEditProof', 'purEditProofName', purEditProof);
+
+      // ---------------- Edit panel: Category -> Brand/Type -> Wattage,
+      // fetched live from the database exactly like the New Purchase Entry
+      // form (mirrors ui/purchase.py's sync_edit_purchase_brands() /
+      // sync_edit_purchase_wattages() / sync_edit_purchase_types()).
+      // Previously these three dropdowns were hardcoded to a fixed 2-3
+      // option list unrelated to the real Categories/Brands/Subtypes
+      // masters. `injectValue` keeps an already-saved historical value
+      // visible/selected even if it's no longer part of the current master
+      // data (same "add item if missing" behaviour as the desktop combo).
+      const purEditCatEl = $('purEditCat'), purEditBrandEl = $('purEditBrand'), purEditWattEl = $('purEditWatt'), purEditTypeEl = $('purEditType');
+
+      async function refreshPurEditBrandsAndType(injectBrand, injectType) {
+        const cat = purEditCatEl.value;
+        if (!cat) {
+          fillSelect(purEditBrandEl, [], '-- Select Category First --');
+          fillSelect(purEditTypeEl, [], '-- Select Category First --');
+          await refreshPurEditWattages();
+          return;
+        }
+        await fillSelectFromApi(purEditBrandEl, `/purchase/brands/${encodeURIComponent(cat)}`, 'No brands under this category', injectBrand);
+        try {
+          const subtypes = await window.Api.get(`/masters/subtypes/${encodeURIComponent(cat)}`);
+          const list = subtypes.length ? subtypes.slice() : ['Others'];
+          if (injectType && !list.includes(injectType)) list.push(injectType);
+          fillSelect(purEditTypeEl, list, 'Others');
+          if (injectType) purEditTypeEl.value = injectType;
+        } catch (e) {
+          fillSelect(purEditTypeEl, injectType ? [injectType] : ['Others'], 'Others');
+        }
+        await refreshPurEditWattages();
+      }
+
+      async function refreshPurEditWattages(injectWatt) {
+        const cat = purEditCatEl.value, brand = purEditBrandEl.value;
+        if (!cat || !brand) {
+          fillSelect(purEditWattEl, [], '-- Select Brand First --');
+          return;
+        }
+        await fillSelectFromApi(purEditWattEl, `/purchase/wattages?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}`, 'N/A', injectWatt);
+      }
+
+      purEditCatEl.addEventListener('change', () => refreshPurEditBrandsAndType());
+      purEditBrandEl.addEventListener('change', () => refreshPurEditWattages());
+
+      // Loads Category -> Brand -> Wattage -> Type -> Warehouse for the
+      // edit panel in one go, keeping whatever the loaded invoice line
+      // actually had selected (used by findPurchaseInvoiceForEditing below).
+      async function loadEditCascadeForLine(line) {
+        if (!line) return;
+        await fillSelectFromApi(purEditCatEl, '/masters/categories', 'No categories found', line.cat);
+        await fillSelectFromApi(purEditBrandEl, `/purchase/brands/${encodeURIComponent(purEditCatEl.value)}`, 'No brands under this category', line.brand);
+        try {
+          const subtypes = await window.Api.get(`/masters/subtypes/${encodeURIComponent(purEditCatEl.value)}`);
+          const list = subtypes.length ? subtypes.slice() : ['Others'];
+          if (line.type && !list.includes(line.type)) list.push(line.type);
+          fillSelect(purEditTypeEl, list, 'Others');
+          purEditTypeEl.value = line.type || '';
+        } catch (e) {
+          fillSelect(purEditTypeEl, line.type ? [line.type] : ['Others'], 'Others');
+        }
+        await fillSelectFromApi(purEditWattEl, `/purchase/wattages?category=${encodeURIComponent(purEditCatEl.value)}&brand=${encodeURIComponent(purEditBrandEl.value)}`, 'N/A', line.watt);
+        await fillSelectFromApi(purEditWhEl, '/masters/warehouses', 'No warehouses found', line.warehouse);
+      }
+
+      // Initial fill so the panel isn't empty before any invoice is found.
+      fillSelectFromApi(purEditCatEl, '/masters/categories', 'No categories found');
       $('purBtnKeepProof').addEventListener('click', () => {
         purEditProof.files = [];
         $('purEditProofFile').value = '';
@@ -574,7 +701,7 @@ window.PAGES.purchase = {
       // every product line + all its serials into the edit panel. This same
       // function backs both the "Find" button and the Purchase Register's
       // double-click-to-edit redirect.
-      findPurchaseInvoiceForEditing = function (term) {
+      findPurchaseInvoiceForEditing = async function (term) {
         if (!term) {
           window.openModal('Search Required', '<p>Type an Invoice No, Supplier Name, or Short Name to search first.</p>');
           return false;
@@ -588,7 +715,6 @@ window.PAGES.purchase = {
         $('purEditSupp').value = inv.supplier;
         $('purEditInv').value = inv.invoiceNo;
         $('purEditPallet').value = inv.pallet || '';
-        $('purEditWh').value = inv.lines[0] ? inv.lines[0].warehouse : $('purEditWh').value;
         $('purEditDate').value = PD.isoFromDMY(inv.date);
         $('purEditProofName').textContent = inv.proofName || 'No proof selected';
         purEditProof.files = [];
@@ -596,12 +722,12 @@ window.PAGES.purchase = {
         purEditLines.length = 0;
         inv.lines.forEach((ln) => purEditLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse, qty: ln.qty }));
         renderLineList(purEditLineList, purEditLines, 'Find an invoice above to load its lines.');
-        if (purEditLines.length) {
-          $('purEditCat').value = purEditLines[0].cat;
-          $('purEditBrand').value = purEditLines[0].brand;
-          $('purEditWatt').value = purEditLines[0].watt || '';
-          $('purEditType').value = purEditLines[0].type;
-        }
+        // Category/Brand/Wattage/Type/Warehouse dropdowns all reload live
+        // from the database here, pre-selecting whatever this invoice's
+        // first line actually had (and keeping that value visible even if
+        // it's since been removed from the masters) — mirrors the desktop
+        // app's sync_edit_purchase_* methods instead of the old fixed lists.
+        await loadEditCascadeForLine(purEditLines[0]);
         const allSerials = inv.lines.reduce((acc, ln) => acc.concat(ln.serials || []), []);
         $('purEditSerials').value = allSerials.join('\n');
 

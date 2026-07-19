@@ -274,6 +274,42 @@ app.get('/api/ledgers', route(async (req, res) => {
 }));
 
 // ---------------------------------------------------------------------------
+// SUPPLIER/CUSTOMER SHORT CODE LOOKUP — used by the Purchase (and Sales)
+// "Short Code" field autocomplete. Mirrors the desktop app's
+// attach_ledger_shortname_lookup(), which builds its suggestion list ONLY
+// from ledgers.short_name (never ledger_name). The combined /api/ledgers
+// endpoint above matches ledger_name OR short_name together, which is fine
+// for the Supplier Name field, but for the Short Code field it let ledgers
+// that only matched by NAME (with a blank short_name) crowd out the ones
+// that actually had a matching short code — so only one supplier's short
+// code (e.g. "DSP") was ever suggested, even though many suppliers exist.
+//   GET /api/ledgers/shortcodes?type=Supplier&q=ds   -> up to 25 matches
+//   GET /api/ledgers/shortcodes?type=Supplier        -> full list (q omitted)
+// ---------------------------------------------------------------------------
+app.get('/api/ledgers/shortcodes', route(async (req, res) => {
+  const q = (req.query.q || '').trim();
+  const type = req.query.type && req.query.type !== 'All' ? req.query.type : null;
+
+  let sql = `SELECT id, ledger_name, short_name, ledger_type, mobile, address, gstin FROM ledgers WHERE short_name IS NOT NULL AND short_name <> ''`;
+  const params = [];
+
+  if (q) { sql += ` AND short_name LIKE ?`; params.push(`%${q}%`); }
+  if (type) { sql += ` AND (ledger_type = ? OR ledger_type = 'Both')`; params.push(type); }
+  sql += ` ORDER BY short_name ASC LIMIT ${q ? 25 : 200}`;
+
+  const [rows] = await pool.query(sql, params);
+  res.json(rows.map((r) => ({
+    id: r.id,
+    name: r.ledger_name,
+    short: r.short_name,
+    type: r.ledger_type,
+    mobile: r.mobile,
+    address: r.address,
+    gstin: r.gstin,
+  })));
+}));
+
+// ---------------------------------------------------------------------------
 // PARTY LEDGER — mirrors ui/party_ledger.py + database/db.py exactly:
 //   GET    /api/ledgers/directory   -> reload_party_list()
 //   POST   /api/ledgers             -> add_new_ledger()
