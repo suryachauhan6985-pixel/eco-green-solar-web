@@ -1009,6 +1009,99 @@ app.post('/api/sales/dispatch', route(async (req, res) => {
 }));
 
 // ---------------------------------------------------------------------------
+// RETURN & DAMAGE — mirrors ui/returns.py's ReturnsPage.process_adjustment()
+// exactly: scan serials, apply one of two actions:
+//   1) "Sales Return (Make Available)" — only allowed if current status is
+//      'Sold'. Resets customer/order/invoice/date fields back to '-' and
+//      tags chalan_no with a '[RETURNED] ' prefix (same ghost-data cleanup
+//      the desktop app does), status -> 'Available'.
+//   2) "Mark as Damaged / Scrapped" — blocked if current status is 'Sold'
+//      (must Sales-Return it back to Available first), status -> 'Damaged'.
+// Whole-batch validation: if ANY scanned serial fails (not found / wrong
+// status for the chosen action), the ENTIRE adjustment is blocked — nothing
+// is written — exactly like the desktop app's "ADJUSTMENT BLOCKED" message.
+// ---------------------------------------------------------------------------
+app.post('/api/returns', route(async (req, res) => {
+  const actionType = String(req.body.actionType || '').trim();
+  const remarks = String(req.body.remarks || '').trim();
+  const actionDate = String(req.body.date || '').trim();
+  const serials = Array.isArray(req.body.serials) ? req.body.serials.map((s) => String(s).trim()).filter(Boolean) : [];
+
+  if (!['Sales Return (Make Available)', 'Mark as Damaged / Scrapped'].includes(actionType)) {
+    return res.status(400).json({ error: 'Invalid Action Type.' });
+  }
+  if (!remarks || !actionDate || !serials.length) {
+    return res.status(400).json({ error: 'Remarks, Date, and Serials are mandatory.' });
+  }
+  if (new Set(serials).size !== serials.length) {
+    return res.status(400).json({ error: 'The entry queue contains identical duplicates.' });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const invalidSerials = [];
+    const validUpdates = [];
+    for (const sn of serials) {
+      const [rows] = await conn.query(`SELECT status FROM stock_ledger WHERE serial_no=? FOR UPDATE`, [sn]);
+      if (!rows.length) {
+        invalidSerials.push(`'${sn}' (Not found in Database Ledger)`);
+        continue;
+      }
+      const { status } = rows[0];
+      if (actionType === 'Sales Return (Make Available)' && status !== 'Sold') {
+        invalidSerials.push(`'${sn}' (Cannot return, current status is '${status}', not 'Sold')`);
+      } else if (actionType === 'Mark as Damaged / Scrapped' && status === 'Sold') {
+        invalidSerials.push(`'${sn}' (Cannot mark damaged directly, perform Sales Return first.)`);
+      } else {
+        validUpdates.push({ sn, newStatus: actionType === 'Sales Return (Make Available)' ? 'Available' : 'Damaged' });
+      }
+    }
+
+    if (invalidSerials.length) {
+      await conn.rollback();
+      return res.status(400).json({ error: 'ADJUSTMENT BLOCKED:\n\n' + invalidSerials.join('\n') });
+    }
+
+    for (const { sn, newStatus } of validUpdates) {
+      if (newStatus === 'Available') {
+        await conn.query(
+          `UPDATE stock_ledger
+             SET status='Available',
+                 chalan_no = CONCAT('[RETURNED] ', COALESCE(chalan_no, '')),
+                 customer_name='-',
+                 order_no='-',
+                 sales_invoice='-',
+                 invoice_date='-',
+                 sales_date='-'
+           WHERE serial_no=?`, [sn]
+        );
+      } else {
+        await conn.query(`UPDATE stock_ledger SET status='Damaged' WHERE serial_no=?`, [sn]);
+      }
+    }
+
+    await conn.commit();
+    try {
+      const oldDetails = `Action: ${actionType} | Date: ${actionDate}`;
+      const newDetails = `Remarks: ${remarks} | Serials: ${serials.join(', ')}`;
+      await pool.query(
+        `INSERT INTO audit_logs (transaction_type, reference_no, action_by, action_timestamp, old_details, new_details) VALUES ('RETURN_ADJUST', ?, 'User', ?, ?, ?)`,
+        [remarks.slice(0, 50), ledgerTimestamp(), oldDetails, newDetails]
+      );
+    } catch (e) { /* audit log is best-effort, never block the adjustment on it */ }
+
+    res.json({ success: true, actionType, count: validUpdates.length });
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+}));
+
+// ---------------------------------------------------------------------------
 // STOCK ASSIGN — mirrors ui/assign_stock.py exactly: reserve stock for a
 // person WITHOUT selling it (marks stock_ledger rows 'Assigned' instead of
 // 'Sold'), a live Assigned Register, and two release paths:

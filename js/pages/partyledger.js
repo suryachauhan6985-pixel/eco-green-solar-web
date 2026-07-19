@@ -58,6 +58,7 @@ window.PAGES.partyledger = {
         <div class="pl-header-row">
           <div class="p-title" id="plHeaderTitle">Select a Party from the list to view details</div>
           <button class="btn btn-blue" id="btnEditLedger" style="display:none; padding:7px 12px; font-size:12px;"><i class="fa-solid fa-pen"></i> Edit Ledger</button>
+          <button class="btn btn-gold" id="btnRegisterLedger" style="display:none; padding:7px 12px; font-size:12px;"><i class="fa-solid fa-user-plus"></i> Register Ledger</button>
           <button class="btn btn-green" id="btnOpenStatement" style="display:none; padding:7px 12px; font-size:12px;"><i class="fa-solid fa-up-right-from-square"></i> Open Statement</button>
           <button class="btn btn-red" id="btnDeleteLedger" style="display:none; padding:7px 12px; font-size:12px;"><i class="fa-solid fa-trash"></i> Delete Ledger</button>
         </div>
@@ -214,6 +215,14 @@ window.PAGES.partyledger = {
         `${p.partyName}${p.shortName ? ' / ' + p.shortName : ''}  (${p.type} Ledger Selected)`;
       document.getElementById('btnEditLedger').style.display = p.ledgerId ? 'inline-flex' : 'none';
       document.getElementById('btnDeleteLedger').style.display = p.ledgerId ? 'inline-flex' : 'none';
+      // Unregistered parties (legacy names sourced only from stock_ledger
+      // transactions, no row in the `ledgers` table) have nothing to edit
+      // or delete — same as the desktop app (has_registered_ledger gate).
+      // Instead offer "Register Ledger": opens the same Create-Ledger form
+      // pre-filled with this name/type, so SuperAdmin can properly create
+      // it as a real ledger in one click (once created, it automatically
+      // replaces the legacy "(unregistered)" entry in this list).
+      document.getElementById('btnRegisterLedger').style.display = !p.ledgerId ? 'inline-flex' : 'none';
       document.getElementById('btnOpenStatement').style.display = 'inline-flex';
       document.getElementById('plEmptyHint').style.display = 'none';
       document.getElementById('plSummaryGrid').style.display = 'grid';
@@ -306,8 +315,12 @@ window.PAGES.partyledger = {
       lfGstinInput.value = editing && editing.gstin !== '-' ? editing.gstin || '' : '';
       lfMode.value = editing && ['Customer', 'Supplier'].includes(editing.type) ? editing.type : 'Customer';
       updateLedgerFormMode();
+      // "editing" is truthy both for a real Edit (has ledgerId) and for a
+      // Register (pre-filling an unregistered party's name into a fresh
+      // Create form) — only the former is really "editing" an existing row.
+      const isRealEdit = !!(editing && editing.ledgerId);
       document.getElementById('ledgerFormTitle').innerHTML =
-        `<i class="fa-solid fa-address-book"></i>&nbsp; ${editing ? 'Edit Ledger' : 'Create New Ledger'}`;
+        `<i class="fa-solid fa-address-book"></i>&nbsp; ${isRealEdit ? 'Edit Ledger' : editing ? 'Register Ledger' : 'Create New Ledger'}`;
       lfOverlay.classList.add('show');
       lockPageScroll();
       attachLedgerFormEscape();
@@ -326,6 +339,10 @@ window.PAGES.partyledger = {
     document.getElementById('btnEditLedger').addEventListener('click', () => {
       if (!isAdmin) { window.openModal('Access Denied', '<p>Only SuperAdmin can edit ledgers.</p>'); return; }
       if (selected && selected.ledgerId) openLedgerForm(selected);
+    });
+    document.getElementById('btnRegisterLedger').addEventListener('click', () => {
+      if (!isAdmin) { window.openModal('Access Denied', '<p>Only SuperAdmin can register ledgers.</p>'); return; }
+      if (selected && !selected.ledgerId) openLedgerForm(selected);
     });
     document.getElementById('lfCancel').addEventListener('click', closeLedgerForm);
     document.getElementById('closeLedgerForm').addEventListener('click', closeLedgerForm);
