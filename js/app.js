@@ -445,4 +445,8 @@ window.attachColumnFilters = function (table) {
 
   // Start on Dashboard
   go('dashboard');
+
+  // Footer credit line — always show the current year, no manual updates needed.
+  const footerYearEl = document.getElementById('footerYear');
+  if (footerYearEl) footerYearEl.textContent = new Date().getFullYear();
 })();
