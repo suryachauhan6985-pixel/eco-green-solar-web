@@ -64,10 +64,42 @@ window.PAGES.dashboard = {
         const fmt = (n) => Number(n || 0).toLocaleString('en-IN');
         const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-        setText('dashAvailableVal', fmt(data.available));
-        setText('dashAssignedVal', fmt(data.assigned));
-        setText('dashSoldVal', fmt(data.sold));
-        setText('dashDamagedVal', fmt(data.damaged));
+        // Count-up animation for the 4 big stat cards (Available / Assigned /
+        // Sold / Damaged): instead of the final number just appearing, it
+        // ramps up to it with a quick counting motion — runs fresh every
+        // time the Dashboard loads, so it plays again on every refresh or
+        // reopen of the site, not just once.
+        //
+        // It does NOT always start counting from 0 — for a number in the
+        // thousands/lakhs that would mean a huge, unnatural jump every
+        // frame. Instead it starts from a small gap just below the final
+        // value (same feel as "28 -> 33"), scaled to the number's size:
+        //   final 33        -> starts ~28   (gap 5, the floor)
+        //   final 12,400     -> starts ~12,380 (gap ~15% capped at 60)
+        //   final 3,40,000   -> starts ~3,39,940 (gap capped at 60)
+        // so it always reads as a short, natural "counting up the last bit",
+        // never a long sweep from zero.
+        function animateCountUp(el, endValue, duration = 900) {
+          if (!el) return;
+          const target = Number(endValue) || 0;
+          const gap = Math.min(60, Math.max(5, Math.round(target * 0.15)));
+          const start = Math.max(0, target - gap);
+          const startTime = performance.now();
+          function tick(now) {
+            const progress = Math.min((now - startTime) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic — fast start, gentle landing
+            const current = Math.round(start + (target - start) * eased);
+            el.textContent = current.toLocaleString('en-IN');
+            if (progress < 1) requestAnimationFrame(tick);
+            else el.textContent = target.toLocaleString('en-IN');
+          }
+          requestAnimationFrame(tick);
+        }
+
+        animateCountUp(document.getElementById('dashAvailableVal'), data.available);
+        animateCountUp(document.getElementById('dashAssignedVal'), data.assigned);
+        animateCountUp(document.getElementById('dashSoldVal'), data.sold);
+        animateCountUp(document.getElementById('dashDamagedVal'), data.damaged);
         setText('dashLowStockCount', `${data.lowStockCount || 0} items`);
 
          const snapshotBody = document.getElementById('dashSnapshotBody');
