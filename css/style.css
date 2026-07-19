@@ -181,8 +181,17 @@ button{font-family:inherit;cursor:pointer;}
 .toolbar label{font-size:11.5px; color:var(--txt-label); font-weight:700; margin-right:-4px;}
 .toolbar input, .toolbar select{background:var(--input-bg); border:1px solid var(--border); color:var(--txt); padding:8px 10px; border-radius:7px; font-size:12.5px;}
 
-/* ---------- Tables: real tables everywhere, scroll horizontally inside their own box ---------- */
-.table-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius);}
+/* ---------- Tables: real tables everywhere, scroll horizontally inside their own box ----------
+   .table-wrap is capped to a height that fits under the topbar/page-head/toolbar, and scrolls
+   BOTH ways internally. That keeps its horizontal scrollbar pinned to the bottom of this box
+   (which is always on-screen) instead of the bottom of the whole table — so you never have to
+   scroll the page down just to reach the horizontal scrollbar. Nudge the calc() below if your
+   topbar/page-head/toolbar height differs. */
+.table-wrap{
+  overflow-x:auto; overflow-y:auto;
+  max-height:calc(100vh - 230px);
+  border:1px solid var(--border); border-radius:var(--radius);
+}
 /* Global quick-search (topbar): rows jo current search text match nahi karti unhe hide karta hai */
 tbody tr.search-hide{display:none !important;}
 table{border-collapse:collapse; width:100%; min-width:640px; background:var(--table-bg); font-size:12.5px;}
@@ -355,7 +364,7 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
   /* Tables stay real tables on mobile too (matches the desktop software) —
      they just scroll horizontally inside .table-wrap instead of turning
      into stacked cards. */
-  .table-wrap{-webkit-overflow-scrolling:touch;}
+  .table-wrap{-webkit-overflow-scrolling:touch; max-height:calc(100vh - 190px);}
 }
 @media (max-width: 700px){
   .form-grid.cols-2{grid-template-columns:1fr;}
