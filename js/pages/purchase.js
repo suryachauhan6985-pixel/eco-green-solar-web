@@ -2,9 +2,10 @@
 // Mirrors ui/purchase.py from the desktop app: a "New Purchase Entry" form on
 // the left, plus a SuperAdmin "Purchase Invoice Modification" edit panel on
 // the right (Find an invoice -> fields load -> Apply Modifications / Delete).
-// This is a UI-only preview: nothing is sent to a server or saved anywhere.
-// All interactions below (add/remove line, find, attach proof, save) only
-// update the page in memory so the screen behaves correctly for demoing.
+// "Execute Stock Inward" / "Find" / "Apply Modifications" / "Delete Invoice"
+// all hit the real backend now (/api/purchase/*, see server.js), which reads
+// and writes the same stock_ledger table the desktop .py app uses — nothing
+// here is an in-memory preview any more.
 //
 // Desktop: both panels sit side by side always (no toggle button, no
 // "New Purchase Entry" back-button — CSS hides both on wide screens).
@@ -25,7 +26,7 @@ window.PAGES.purchase = {
       <button class="btn btn-gold btn-toggle-edit" type="button" id="purBtnToggleEdit">
         <i class="fa-solid fa-pen-to-square"></i> <span id="purToggleEditLabel">Edit / Modify Invoice</span>
       </button>
-      <div class="hint">UI preview only — Execute / Apply buttons don't save anywhere yet, no backend is connected.</div>
+      <div class="hint">Execute Stock Inward saves directly to the database; Find / Apply Modifications / Delete work on live records.</div>
     </div>
 
     <div class="split-two edit-closed" id="purSplit">
@@ -569,21 +570,31 @@ window.PAGES.purchase = {
         cursor += qty;
         return { cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse, qty, serials };
       });
-      PD.addInvoice({
-        invoiceNo: $('purInv').value.trim(),
-        date: PD.dmyFromISO($('purDate').value) || $('purDate').value,
-        supplier: $('purSupp').value.trim(),
-        supplierShort: $('purSuppShort').value.trim(),
-        supplierMobile: $('purSuppMobile').value.trim(),
-        supplierGstin: $('purSuppGstin').value.trim(),
-        supplierAddress: $('purSuppAddr').value.trim(),
-        pallet: $('purPallet').value.trim(),
-        proofName: purProof.files.length ? (purProof.files.length === 1 ? purProof.files[0].name : `${purProof.files.length} files`) : '-',
-        lines,
-      });
-      if (window.showToast) window.showToast('Purchase invoice saved to the register.');
-      window.openModal('Success', `<p>Purchase invoice <strong>${$('purInv').value.trim()}</strong> saved with ${purLines.length} product line(s) and ${allSerials.length} serial(s). It now appears in the Purchase Register.</p>`);
-      clearPurchaseForm();
+
+      const invoiceNo = $('purInv').value.trim();
+      const saveBtn = $('purBtnSave');
+      saveBtn.disabled = true;
+      try {
+        await window.Api.post('/purchase', {
+          invoiceNo,
+          date: PD.dmyFromISO($('purDate').value) || $('purDate').value,
+          supplier: $('purSupp').value.trim(),
+          supplierShort: $('purSuppShort').value.trim(),
+          supplierMobile: $('purSuppMobile').value.trim(),
+          supplierGstin: $('purSuppGstin').value.trim(),
+          supplierAddress: $('purSuppAddr').value.trim(),
+          pallet: $('purPallet').value.trim(),
+          proofName: purProof.files.length ? (purProof.files.length === 1 ? purProof.files[0].name : `${purProof.files.length} files`) : '-',
+          lines,
+        });
+        if (window.showToast) window.showToast('Purchase invoice saved to the database.');
+        window.openModal('Success', `<p>Purchase invoice <strong>${invoiceNo}</strong> saved with ${purLines.length} product line(s) and ${allSerials.length} serial(s). It now appears in the Purchase Register.</p>`);
+        clearPurchaseForm();
+      } catch (err) {
+        window.openModal('Save Failed', `<p>${err.message || 'Could not save this purchase invoice. Please try again.'}</p>`);
+      } finally {
+        saveBtn.disabled = false;
+      }
     });
 
     // ---------------- EDIT PANEL state ----------------
@@ -591,6 +602,7 @@ window.PAGES.purchase = {
     const purEditProof = { files: [] };
     const purEditLineList = $('purEditLineList');
     let loadedInvoiceNo = null; // invoice currently loaded in the edit panel, null until Find succeeds
+    let loadedOriginalSerials = []; // every serial this invoice had at load time (for diffing on Apply)
     let clearEditPanel = () => {};
     let findPurchaseInvoiceForEditing = () => false;
 
@@ -675,6 +687,7 @@ window.PAGES.purchase = {
         $('purEditDate').value = '';
         purEditLines.length = 0;
         loadedInvoiceNo = null;
+        loadedOriginalSerials = [];
         renderLineList(purEditLineList, purEditLines, 'Find an invoice above to load its lines.');
         purEditProof.files = [];
         $('purEditProofFile').value = '';
@@ -706,21 +719,24 @@ window.PAGES.purchase = {
           window.openModal('Search Required', '<p>Type an Invoice No, Supplier Name, or Short Name to search first.</p>');
           return false;
         }
-        const inv = PD.findForEdit(term);
-        if (!inv) {
-          window.openModal('Not Found', '<p>No purchase invoice records found matching Invoice No / Supplier Name / Short Name.</p>');
+        let inv;
+        try {
+          inv = await window.Api.get(`/purchase/find?term=${encodeURIComponent(term)}`);
+        } catch (err) {
+          window.openModal('Not Found', `<p>${err.message || 'No purchase invoice records found matching Invoice No / Supplier Name / Short Name.'}</p>`);
           return false;
         }
         loadedInvoiceNo = inv.invoiceNo;
+        loadedOriginalSerials = inv.allSerials || [];
         $('purEditSupp').value = inv.supplier;
         $('purEditInv').value = inv.invoiceNo;
         $('purEditPallet').value = inv.pallet || '';
         $('purEditDate').value = PD.isoFromDMY(inv.date);
-        $('purEditProofName').textContent = inv.proofName || 'No proof selected';
+        $('purEditProofName').textContent = inv.proofName && inv.proofName !== '-' ? inv.proofName : 'No proof selected';
         purEditProof.files = [];
 
         purEditLines.length = 0;
-        inv.lines.forEach((ln) => purEditLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse, qty: ln.qty }));
+        inv.lines.forEach((ln) => purEditLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse, qty: ln.qty, serials: ln.serials }));
         renderLineList(purEditLineList, purEditLines, 'Find an invoice above to load its lines.');
         // Category/Brand/Wattage/Type/Warehouse dropdowns all reload live
         // from the database here, pre-selecting whatever this invoice's
@@ -739,7 +755,7 @@ window.PAGES.purchase = {
         findPurchaseInvoiceForEditing($('purSearchInv').value.trim());
       });
 
-      $('purBtnApply').addEventListener('click', () => {
+      $('purBtnApply').addEventListener('click', async () => {
         if (!$('purEditSupp').value.trim() || !$('purEditInv').value.trim()) {
           window.openModal('Validation Error', '<p>Supplier and Invoice No are required before applying modifications.</p>');
           return;
@@ -759,30 +775,50 @@ window.PAGES.purchase = {
           cursor += qty;
           return { cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse, qty, serials };
         });
-        PD.applyEdit(loadedInvoiceNo, {
-          invoiceNo: $('purEditInv').value.trim(),
-          date: PD.dmyFromISO($('purEditDate').value) || $('purEditDate').value,
-          supplier: $('purEditSupp').value.trim(),
-          pallet: $('purEditPallet').value.trim(),
-          proofName: purEditProof.files.length ? (purEditProof.files.length === 1 ? purEditProof.files[0].name : `${purEditProof.files.length} files`) : $('purEditProofName').textContent,
-          lines,
-        });
-        loadedInvoiceNo = $('purEditInv').value.trim();
-        if (window.showToast) window.showToast('Purchase invoice updated.');
-        window.openModal('Saved', `<p>Purchase invoice <strong>${loadedInvoiceNo}</strong> updated. It's now flagged <strong>Edited: Yes</strong> in the Purchase Register.</p>`);
+
+        const applyBtn = $('purBtnApply');
+        applyBtn.disabled = true;
+        try {
+          const result = await window.Api.put(`/purchase/${encodeURIComponent(loadedInvoiceNo)}`, {
+            invoiceNo: $('purEditInv').value.trim(),
+            date: PD.dmyFromISO($('purEditDate').value) || $('purEditDate').value,
+            supplier: $('purEditSupp').value.trim(),
+            pallet: $('purEditPallet').value.trim(),
+            // Only send a new proof name if a replacement file was actually
+            // attached this time — null tells the backend to keep whatever
+            // attachment the invoice already had (mirrors "Keep Existing").
+            proofName: purEditProof.files.length
+              ? (purEditProof.files.length === 1 ? purEditProof.files[0].name : `${purEditProof.files.length} files`)
+              : null,
+            lines,
+            originalSerials: loadedOriginalSerials,
+          });
+          loadedInvoiceNo = result.invoiceNo;
+          loadedOriginalSerials = allSerials;
+          if (window.showToast) window.showToast('Purchase invoice updated.');
+          window.openModal('Saved', `<p>Purchase invoice <strong>${loadedInvoiceNo}</strong> updated. It's now flagged <strong>Edited: Yes</strong> in the Purchase Register.</p>`);
+        } catch (err) {
+          window.openModal('Update Failed', `<p>${err.message || 'Could not apply modifications. Please try again.'}</p>`);
+        } finally {
+          applyBtn.disabled = false;
+        }
       });
 
-      $('purBtnDelete').addEventListener('click', () => {
+      $('purBtnDelete').addEventListener('click', async () => {
         if (!loadedInvoiceNo) {
           window.openModal('Not Found', '<p>Find an invoice first before trying to delete it.</p>');
           return;
         }
         const invNo = loadedInvoiceNo;
         if (!window.confirm(`Are you sure you want to permanently delete purchase invoice ${invNo}? This removes it from the Purchase Register too.`)) return;
-        PD.deleteInvoice(invNo);
-        if (window.showToast) window.showToast(`Purchase invoice ${invNo} deleted.`);
-        clearEditPanel();
-        window.openModal('Deleted', `<p>Purchase invoice <strong>${invNo}</strong> deleted successfully.</p>`);
+        try {
+          await window.Api.delete(`/purchase/${encodeURIComponent(invNo)}`);
+          if (window.showToast) window.showToast(`Purchase invoice ${invNo} deleted.`);
+          clearEditPanel();
+          window.openModal('Deleted', `<p>Purchase invoice <strong>${invNo}</strong> deleted successfully.</p>`);
+        } catch (err) {
+          window.openModal('Delete Failed', `<p>${err.message || 'Could not delete this purchase invoice. Please try again.'}</p>`);
+        }
       });
     } else {
       // Non-SuperAdmin: keep the panel's fields visible but non-interactive,

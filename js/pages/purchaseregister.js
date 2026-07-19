@@ -5,8 +5,9 @@
 // list), and double-clicking a row jumps to Purchase Inward with that
 // invoice loaded into the edit panel, autofilled, ready to modify — exactly
 // like double_clicked -> open_selected_ledger -> edit flow in the .py app.
-// Data comes from window.PurchaseData (js/data/purchase-data.js) so this
-// page always reflects whatever Purchase Inward has saved/edited/deleted.
+// Rows come live from GET /api/purchase/register (same GROUP BY query as
+// load_data() in registers.py), so this page always reflects whatever
+// Purchase Inward has saved/edited/deleted in the real database.
 window.PAGES = window.PAGES || {};
 
 window.PAGES.purchaseregister = {
@@ -58,12 +59,20 @@ window.PAGES.purchaseregister = {
     fromEl.value = toISO(firstOfMonth);
     toEl.value = toISO(today);
 
-    // Category dropdown, built from whatever categories currently exist in data.
-    PD.getCategories().forEach((cat) => {
-      const opt = document.createElement('option');
-      opt.textContent = cat;
-      catEl.appendChild(opt);
-    });
+    // Category dropdown — live from the Categories master (same source the
+    // Purchase Inward form's Category dropdown uses), not a list derived
+    // from whatever purchase rows happen to already be loaded.
+    async function loadCategoryFilter() {
+      try {
+        const cats = await window.Api.get('/masters/categories');
+        cats.forEach((c) => {
+          const opt = document.createElement('option');
+          opt.textContent = c.name;
+          catEl.appendChild(opt);
+        });
+      } catch (e) { /* dropdown just stays "All Categories" on failure */ }
+    }
+    loadCategoryFilter();
 
     document.querySelectorAll('#pregFrom, #pregTo').forEach((el) => {
       el.addEventListener('click', () => { if (el.showPicker) { try { el.showPicker(); } catch (e) {} } });
@@ -92,13 +101,20 @@ window.PAGES.purchaseregister = {
       return values.some((v) => String(v || '').toLowerCase().includes(term));
     }
 
-    function loadData() {
+    async function loadData() {
       const selectedCat = catEl.value;
-      allRows = PD.registerRows().filter((r) => {
-        if (selectedCat !== 'All Categories' && r.category !== selectedCat) return false;
-        if (!inDateRange(r.date)) return false;
-        return matchesSearch(rowToValues(r));
-      });
+      let rows = [];
+      try {
+        const path = selectedCat && selectedCat !== 'All Categories'
+          ? `/purchase/register?category=${encodeURIComponent(selectedCat)}`
+          : '/purchase/register';
+        rows = await window.Api.get(path);
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load purchase records from the database.</td></tr>`;
+        allRows = [];
+        return;
+      }
+      allRows = rows.filter((r) => inDateRange(r.date) && matchesSearch(rowToValues(r)));
       renderTable();
     }
 
