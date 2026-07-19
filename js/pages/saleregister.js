@@ -1,4 +1,16 @@
 // js/pages/saleregister.js
+// Mirrors ui/registers.py -> SaleRegisterPage from the desktop app:
+// From/To date range + Category + free-text Search filter the rows, every
+// column header also gets an Excel-style AutoFilter (funnel icon -> checkbox
+// list), and double-clicking a row jumps to Project Sales with that
+// challan/order loaded into the edit panel, autofilled, ready to modify —
+// exactly like double_clicked -> open_selected_ledger -> edit flow in the
+// .py app. Rows come live from GET /api/sales/register (same GROUP BY query
+// as load_data() in registers.py's SaleRegisterPage), so this page always
+// reflects whatever Project Sales has dispatched/edited/deleted in the real
+// database. No more in-memory/mock window.SalesData — that preview dataset
+// is retired here, same as Purchase Register's window.PurchaseData.invoices
+// was retired in favour of /api/purchase/register.
 window.PAGES = window.PAGES || {};
 
 window.PAGES.saleregister = {
@@ -11,7 +23,7 @@ window.PAGES.saleregister = {
       <div><label>From</label> <input type="date" id="sregFrom"></div>
       <div><label>To</label> <input type="date" id="sregTo"></div>
       <div><label>Category</label> <select id="sregCategory"><option>All Categories</option></select></div>
-      <div class="grow"><input id="sregSearch" placeholder="Search challan, customer, order no..." style="width:100%;"></div>
+      <div class="grow"><input id="sregSearch" placeholder="Search challan, customer, order no, invoice, serial..." style="width:100%;"></div>
       <button class="btn btn-ghost" type="button" id="sregBtnClearFilters"><i class="fa-solid fa-filter"></i> Clear Column Filters</button>
       <button class="btn btn-green" type="button" id="sregBtnExport"><i class="fa-solid fa-file-excel"></i> Export</button>
       <button class="btn btn-ghost" type="button" id="sregBtnRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button>
@@ -25,86 +37,91 @@ window.PAGES.saleregister = {
         <th data-col="Category">Category <button class="th-filter-btn" data-col="Category" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Brand">Brand <button class="th-filter-btn" data-col="Brand" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Qty">Qty <button class="th-filter-btn" data-col="Qty" type="button"><i class="fa-solid fa-filter"></i></button></th>
-        <th data-col="Invoice">Invoice <button class="th-filter-btn" data-col="Invoice" type="button"><i class="fa-solid fa-filter"></i></button></th>
+        <th data-col="Sales Invoice">Sales Invoice <button class="th-filter-btn" data-col="Sales Invoice" type="button"><i class="fa-solid fa-filter"></i></button></th>
+        <th data-col="First Serial">First Serial <button class="th-filter-btn" data-col="First Serial" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Edited?">Edited? <button class="th-filter-btn" data-col="Edited?" type="button"><i class="fa-solid fa-filter"></i></button></th>
       </tr></thead>
       <tbody id="sregBody"></tbody>
     </table></div>
-    <div class="hint" style="margin-top:8px;">Double-click any record to open it directly in Project Sales modification panel.</div>
+    <div class="hint" style="margin-top:8px;">Double-click any record to open it directly in Project Sales modification panel. Column header par filter icon se bhi filter kar sakte hain.</div>
   `,
 
   init() {
     const $ = (id) => document.getElementById(id);
+    const PD = window.PurchaseData;
+
     const tbody = $('sregBody');
     const fromEl = $('sregFrom');
     const toEl = $('sregTo');
     const catEl = $('sregCategory');
     const searchEl = $('sregSearch');
 
-    // Default dates system mirroring purchase module exactly
+    // Default range: 1st of this month -> today, same default as the desktop page.
     const today = new Date();
     const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     function toISO(d) { return d.toISOString().slice(0, 10); }
     fromEl.value = toISO(firstOfMonth);
     toEl.value = toISO(today);
 
+    // Category dropdown — live from the Categories master (same source
+    // Project Sales' own Category dropdown uses), not derived from whatever
+    // sale rows happen to already be loaded.
+    async function loadCategoryFilter() {
+      try {
+        const cats = await window.Api.get('/masters/categories');
+        cats.forEach((c) => {
+          const opt = document.createElement('option');
+          opt.textContent = c.name;
+          catEl.appendChild(opt);
+        });
+      } catch (e) { /* dropdown just stays "All Categories" on failure */ }
+    }
+    loadCategoryFilter();
+
     document.querySelectorAll('#sregFrom, #sregTo').forEach((el) => {
       el.addEventListener('click', () => { if (el.showPicker) { try { el.showPicker(); } catch (e) {} } });
     });
 
-    let allRows = [];    
-    let activeFilters = {}; 
+    let allRows = []; // date/category/search-filtered rows, before column (Excel-style) filters
+    const activeFilters = {}; // { colLabel: Set of allowed values }
     let openMenuEl = null;
-    const columns = ['Challan No', 'Date', 'Customer', 'Order No', 'Category', 'Brand', 'Qty', 'Invoice', 'Edited?'];
+    const columns = ['Challan No', 'Date', 'Customer', 'Order No', 'Category', 'Brand', 'Qty', 'Sales Invoice', 'First Serial', 'Edited?'];
 
-    function parseDMY(str) {
-      const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(String(str || ''));
-      if (!m) return 0;
-      return new Date(+m[3], +m[2] - 1, +m[1]).getTime();
+    function rowToValues(r) {
+      return [r.challanNo, r.date, r.customer, r.orderNo, r.category, r.brand, String(r.qty), r.invoice || '-', r.firstSerial, r.edited ? 'Yes' : 'No'];
     }
 
     function inDateRange(dmy) {
-      const t = parseDMY(dmy);
+      const t = PD.parseDMY(dmy);
       if (!t) return false;
       const from = fromEl.value ? new Date(fromEl.value).getTime() : -Infinity;
       const to = toEl.value ? new Date(toEl.value).getTime() : Infinity;
       return t >= from && t <= to;
     }
 
-    function rowToValues(r) {
-      return [r.challanNo, r.date, r.customer, r.orderNo, r.category, r.brand, String(r.qty), r.invoice || '-', r.edited || 'No'];
-    }
-
-    // INSTANT LOCAL LOADING BLOCK (Same as purchase core engine architecture)
-    function loadData() {
-      const data = window.SalesData ? window.SalesData.getAll() : [];
-      
-      // Dynamic category setup
-      const cats = new Set(data.map(r => r.category).filter(Boolean));
-      catEl.innerHTML = '<option>All Categories</option>';
-      cats.forEach(c => {
-        const opt = document.createElement('option');
-        opt.textContent = c;
-        catEl.appendChild(opt);
-      });
-
-      filterBaseDataset(data);
-    }
-
-    function filterBaseDataset(data) {
-      const selectedCat = catEl.value;
+    function matchesSearch(values) {
       const term = searchEl.value.trim().toLowerCase();
+      if (!term) return true;
+      return values.some((v) => String(v || '').toLowerCase().includes(term));
+    }
 
-      allRows = data.filter((r) => {
-        if (selectedCat !== 'All Categories' && r.category !== selectedCat) return false;
-        if (!inDateRange(r.date)) return false;
-        
-        const values = rowToValues(r);
-        if (term && !values.some((v) => String(v || '').toLowerCase().includes(term))) return false;
-        
-        return true;
-      });
-
+    // INSTANT LIVE LOADING — same shape as Purchase Register's loadData():
+    // hits GET /api/sales/register (real stock_ledger data), not any
+    // in-memory mock.
+    async function loadData() {
+      const selectedCat = catEl.value;
+      let rows = [];
+      try {
+        const path = selectedCat && selectedCat !== 'All Categories'
+          ? `/sales/register?category=${encodeURIComponent(selectedCat)}`
+          : '/sales/register';
+        rows = await window.Api.get(path);
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load sales records from the database.</td></tr>`;
+        allRows = [];
+        return;
+      }
+      allRows = rows.filter((r) => inDateRange(r.date) && matchesSearch(rowToValues(r)));
       renderTable();
     }
 
@@ -114,12 +131,10 @@ window.PAGES.saleregister = {
 
     function renderTable() {
       const visible = allRows.filter((r) => isRowVisible(rowToValues(r)));
-      
       if (!visible.length) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--txt-muted); font-style:italic;">No sales records found for the selected filters.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--txt-muted); font-style:italic;">No sales records found for the selected filters.</td></tr>`;
         return;
       }
-
       tbody.innerHTML = visible.map((r) => `
         <tr class="sreg-row" data-challan="${r.challanNo}" style="cursor:pointer;" title="Double-click to edit this order">
           <td data-label="Challan No" class="gold-txt">${r.challanNo}</td>
@@ -129,21 +144,17 @@ window.PAGES.saleregister = {
           <td data-label="Category">${r.category}</td>
           <td data-label="Brand">${r.brand}</td>
           <td data-label="Qty">${r.qty}</td>
-          <td data-label="Invoice">${r.invoice || '-'}</td>
-          <td data-label="Edited?" ${r.edited === 'Yes' ? 'class="gold-txt"' : ''}>${r.edited || 'No'}</td>
+          <td data-label="Sales Invoice">${r.invoice || '-'}</td>
+          <td data-label="First Serial">${r.firstSerial}</td>
+          <td data-label="Edited?" ${r.edited ? 'class="gold-txt"' : ''}>${r.edited ? 'Yes' : 'No'}</td>
         </tr>`).join('');
     }
 
-    [fromEl, toEl, catEl].forEach((el) => el.addEventListener('change', () => {
-      if (window.SalesData) filterBaseDataset(window.SalesData.getAll());
-    }));
-    
-    searchEl.addEventListener('input', () => {
-      if (window.SalesData) filterBaseDataset(window.SalesData.getAll());
-    });
-
+    [fromEl, toEl, catEl].forEach((el) => el.addEventListener('change', loadData));
+    searchEl.addEventListener('input', loadData);
     $('sregBtnRefresh').addEventListener('click', loadData);
 
+    // ---------- double-click a row -> Project Sales, edit panel, autofilled ----------
     tbody.addEventListener('dblclick', (e) => {
       const row = e.target.closest('.sreg-row');
       if (!row) return;
@@ -154,17 +165,28 @@ window.PAGES.saleregister = {
       }, 100);
     });
 
-    // Excel filter setup logic block
+    // ---------- Excel-style header filters (same mechanism as Purchase Register) ----------
     const filterBtns = document.querySelectorAll('.th-filter-btn');
+
     function uniqueValues(col) {
       const i = columns.indexOf(col);
       return Array.from(new Set(allRows.map((r) => rowToValues(r)[i])));
     }
-
+    function applyAllFilters() {
+      renderTable();
+      filterBtns.forEach((btn) => btn.classList.toggle('active', !!activeFilters[btn.dataset.col]));
+    }
     function closeMenu() {
       if (openMenuEl) { openMenuEl.remove(); openMenuEl = null; }
     }
-
+    function positionMenu(menu, btn) {
+      const rect = btn.getBoundingClientRect();
+      const menuWidth = 210;
+      let left = rect.left;
+      if (left + menuWidth > window.innerWidth - 10) left = window.innerWidth - menuWidth - 10;
+      menu.style.left = Math.max(10, left) + 'px';
+      menu.style.top = (rect.bottom + 4) + 'px';
+    }
     function openMenuFor(btn) {
       const col = btn.dataset.col;
       closeMenu();
@@ -173,18 +195,12 @@ window.PAGES.saleregister = {
 
       const menu = document.createElement('div');
       menu.className = 'th-filter-menu show';
-      menu.style.position = 'fixed';
-      
-      const rect = btn.getBoundingClientRect();
-      menu.style.left = Math.min(rect.left, window.innerWidth - 220) + 'px';
-      menu.style.top = (rect.bottom + window.scrollY + 5) + 'px';
-
       menu.innerHTML = `
         <div class="th-filter-search"><input type="text" placeholder="Search..."></div>
         <label class="th-filter-item th-filter-selectall">
           <input type="checkbox" ${selected.size === values.length ? 'checked' : ''}> <span>Select All</span>
         </label>
-        <div class="th-filter-list" style="max-height:180px; overflow-y:auto;">
+        <div class="th-filter-list">
           ${values.map(v => `
             <label class="th-filter-item">
               <input type="checkbox" value="${v}" ${selected.has(v) ? 'checked' : ''}> <span>${v}</span>
@@ -196,6 +212,7 @@ window.PAGES.saleregister = {
         </div>`;
 
       document.body.appendChild(menu);
+      positionMenu(menu, btn);
       openMenuEl = menu;
       openMenuEl.dataset.forCol = col;
 
@@ -215,14 +232,14 @@ window.PAGES.saleregister = {
       menu.querySelector('.th-filter-clear').addEventListener('click', () => {
         delete activeFilters[col];
         closeMenu();
-        renderTable();
+        applyAllFilters();
       });
       menu.querySelector('.th-filter-ok').addEventListener('click', () => {
         const checked = itemCbs().filter((cb) => cb.checked).map((cb) => cb.value);
         if (checked.length === values.length) delete activeFilters[col];
         else activeFilters[col] = new Set(checked);
         closeMenu();
-        renderTable();
+        applyAllFilters();
       });
       menu.addEventListener('click', (e) => e.stopPropagation());
     }
@@ -235,13 +252,37 @@ window.PAGES.saleregister = {
         if (!wasOpenForThisBtn) openMenuFor(btn);
       });
     });
-
     document.addEventListener('click', closeMenu);
-    $('sregBtnClearFilters').addEventListener('click', () => { 
-      activeFilters = {}; 
-      if (window.SalesData) filterBaseDataset(window.SalesData.getAll()); 
+    window.addEventListener('scroll', closeMenu, true);
+    window.addEventListener('resize', closeMenu);
+
+    $('sregBtnClearFilters').addEventListener('click', () => {
+      Object.keys(activeFilters).forEach((k) => delete activeFilters[k]);
+      applyAllFilters();
+    });
+
+    $('sregBtnExport').addEventListener('click', () => {
+      const visible = allRows.filter((r) => isRowVisible(rowToValues(r)));
+      if (!visible.length) {
+        window.openModal('No Records', '<p>No data available to export with the current filters.</p>');
+        return;
+      }
+      const header = columns.join(',');
+      const lines = visible.map((r) => rowToValues(r).map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','));
+      const csv = [header, ...lines].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      a.href = url;
+      a.download = `Sale_Register_${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      if (window.showToast) window.showToast('Sale Register exported.');
     });
 
     loadData();
-  }
+  },
 };
