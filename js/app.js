@@ -208,6 +208,39 @@ window.attachColumnFilters = function (table) {
     if (shellEl) shellEl.style.display = 'flex';
   }
 
+  // ---------- Session persistence (fixes "refresh -> back to login screen") ----------
+  // Earlier, login state lived only in memory, so any page refresh wiped it
+  // and forced the username/password to be typed again — "Remember Me" only
+  // ever prefilled the username, it never actually kept anyone signed in.
+  // Now, a successful login is saved as a small {username, role} session:
+  //   - sessionStorage: always, so a refresh/reopen of THIS TAB stays signed
+  //     in until the tab/browser is closed.
+  //   - localStorage too, ONLY if "Remember Me" is checked, so the session
+  //     also survives closing and reopening the browser entirely.
+  // No password is ever stored, only the already-verified username + role.
+  const SESSION_KEY = 'egs_session';
+  function saveSession(username, role, persist) {
+    const payload = JSON.stringify({ username, role });
+    try { sessionStorage.setItem(SESSION_KEY, payload); } catch (e) { /* storage unavailable */ }
+    try {
+      if (persist) localStorage.setItem(SESSION_KEY, payload);
+      else localStorage.removeItem(SESSION_KEY);
+    } catch (e) { /* storage unavailable */ }
+  }
+  function loadSession() {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (data && data.username && data.role) return data;
+    } catch (e) { /* corrupt/unavailable storage — just fall through to login */ }
+    return null;
+  }
+  function clearSession() {
+    try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
+    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+  }
+
   function showLoginOverlay() {
     if (!loginOverlay) buildLoginOverlay();
     const pwdInput = document.getElementById('loginPassword');
@@ -298,6 +331,7 @@ window.attachColumnFilters = function (table) {
             localStorage.removeItem('egs_user');
           }
         } catch (e) { /* localStorage unavailable — Remember Me just won't persist */ }
+        saveSession(data.username, data.role, rememberChk.checked);
         updateProfileDisplay(data.username, data.role);
         showApp();
       } catch (e) {
@@ -327,6 +361,7 @@ window.attachColumnFilters = function (table) {
 
   function endSessionAndShowLogin() {
     closeProfileMenu();
+    clearSession();
     showLoginOverlay();
   }
 
@@ -436,12 +471,20 @@ window.attachColumnFilters = function (table) {
 
   window.go = go;
 
-  // ---------- Start: always show login screen, password is always verified ----------
-  // "Remember Me" only prefills the username (see buildLoginOverlay above) —
-  // it no longer skips DB verification. Every session must pass through
-  // POST /api/auth/login before the app is shown.
+  // ---------- Start: restore a saved session if one exists, otherwise show login ----------
+  // "Remember Me" only prefills the username (see buildLoginOverlay above) if
+  // no session was restored — the password still has to be verified through
+  // POST /api/auth/login the first time. After that, this saved session is
+  // what keeps someone signed in across refreshes/reopens instead of asking
+  // for username/password every single time.
   buildLoginOverlay();
-  showLoginOverlay();
+  const restoredSession = loadSession();
+  if (restoredSession) {
+    updateProfileDisplay(restoredSession.username, restoredSession.role);
+    showApp();
+  } else {
+    showLoginOverlay();
+  }
 
   // Start on Dashboard
   go('dashboard');
