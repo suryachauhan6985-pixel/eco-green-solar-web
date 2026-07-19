@@ -320,6 +320,35 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
 .modal-close{background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt); width:30px;height:30px;min-width:30px;border-radius:7px; flex:0 0 auto;}
 .modal-body{padding:16px 18px;}
 
+/* ---------- Confirm Dialog (replaces native window.confirm/alert popups,
+   styled like the desktop app's ui/notify.py custom dialogs: dark rounded
+   card, coloured accent border + icon per "kind", Cancel/Confirm buttons) ---------- */
+.confirm-overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:70; align-items:center; justify-content:center; padding:16px;}
+.confirm-overlay.show{display:flex;}
+.confirm-card{
+  background:var(--panel); border:1px solid var(--confirm-accent, var(--gold)); border-radius:14px;
+  width:100%; max-width:420px; box-shadow:0 14px 44px rgba(0,0,0,.55); padding:20px 20px 16px;
+  animation:confirmPop .15s ease-out;
+}
+@keyframes confirmPop{ from{ transform:scale(.96); opacity:0; } to{ transform:scale(1); opacity:1; } }
+.confirm-row{display:flex; gap:14px; align-items:flex-start;}
+.confirm-icon{
+  width:38px; height:38px; min-width:38px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:18px; background:color-mix(in srgb, var(--confirm-accent, var(--gold)) 16%, transparent);
+  color:var(--confirm-accent, var(--gold));
+}
+.confirm-text{flex:1 1 auto; min-width:0;}
+.confirm-title{margin:0 0 6px; font-size:14.5px; font-weight:800; color:var(--confirm-accent, var(--gold)); word-break:break-word;}
+.confirm-msg{margin:0; font-size:13px; color:var(--txt); line-height:1.5; white-space:pre-line; word-break:break-word;}
+.confirm-btns{display:flex; justify-content:flex-end; gap:8px; margin-top:18px;}
+.confirm-btns button{
+  border-radius:7px; padding:7px 20px; font-weight:700; font-size:12.5px; cursor:pointer; min-width:76px;
+  border:1px solid var(--confirm-accent, var(--gold)); background:var(--input-bg); color:var(--txt);
+}
+.confirm-btns button:hover{background:var(--confirm-accent, var(--gold)); color:#fff;}
+.confirm-btns button.confirm-primary{background:var(--confirm-accent, var(--gold)); color:#fff;}
+.confirm-btns button.confirm-primary:hover{filter:brightness(1.1);}
+
 /* =================== RESPONSIVE =================== */
 @media (max-width: 900px){
   .sidebar{transform:translateX(-100%);}

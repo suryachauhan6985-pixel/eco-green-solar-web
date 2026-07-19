@@ -7,8 +7,15 @@
 // Release" panel: a live table of everything currently assigned, which you
 // click to load into the Release section — Release to Firm (cancels the
 // assignment, stock goes back to Available) or Release to Customer (also
-// frees the stock, then would hand off to the Sales page pre-filled).
-// This is a UI-only preview: nothing is sent to a server or saved anywhere.
+// frees the stock, then hands off to the Sales page pre-filled, exactly
+// like the desktop app's releaseToCustomerRequested signal).
+//
+// Connected to the real backend (/api/stockassign/*, see server.js), which
+// reads/writes the same stock_ledger table the desktop .py app uses —
+// Category/Brand/Wattage/Type load live from the database (same source as
+// Purchase/Sales), the "Available: N" hint is a real live count, and
+// Reserve / Release actually commit to the database. Nothing here is an
+// in-memory/mock preview any more.
 //
 // Desktop: both panels sit side by side always (no toggle button — CSS
 // hides it on wide screens). Mobile (<=900px): only ONE panel is visible at
@@ -28,7 +35,7 @@ window.PAGES.stockassign = {
       <button class="btn btn-gold btn-toggle-edit" type="button" id="assignBtnToggleEdit">
         <i class="fa-solid fa-warehouse"></i> <span id="assignToggleEditLabel">View Assigned Register</span>
       </button>
-      <div class="hint">UI preview only — Reserve / Release buttons don't save anywhere yet, no backend is connected.</div>
+      <div class="hint">Connected to Live Production Database via Node API.</div>
     </div>
 
     <div class="split-two edit-closed" id="assignSplit">
@@ -39,17 +46,18 @@ window.PAGES.stockassign = {
           <h3><i class="fa-solid fa-hand-holding"></i> Reserve / Assign Stock</h3>
           <div class="form-grid cols-2">
             <div class="field"><label>Category <span class="req">*</span></label>
-              <select id="assignCat"><option>Solar Panel</option><option>Inverter</option><option>Battery</option></select></div>
+              <select id="assignCat"><option value="">Loading...</option></select></div>
             <div class="field"><label>Brand <span class="req">*</span></label>
-              <select id="assignBrand"><option>Waaree</option><option>Adani</option><option>Vikram Solar</option></select></div>
-            <div class="field"><label>Wattage <span class="req">*</span></label><input id="assignWatt" placeholder="e.g. 545"></div>
+              <select id="assignBrand"><option value="">-- Select Category First --</option></select></div>
+            <div class="field"><label>Wattage <span class="req">*</span></label>
+              <select id="assignWatt"><option value="">-- Select Brand First --</option></select></div>
             <div class="field"><label>Type <span class="req">*</span></label>
-              <select id="assignType"><option>Mono PERC</option><option>Bifacial</option></select></div>
+              <select id="assignType"><option value="">-- Select Category First --</option></select></div>
 
-            <div class="field"><label>Person Short Code</label><input id="assignPersonShort" placeholder="Ledger short name (optional)"></div>
-            <div class="field"><label>Assign To (Person/Customer) <span class="req">*</span></label><input id="assignPerson" placeholder="Person / customer to reserve for"></div>
-            <div class="field"><label>Mobile</label><input id="assignPersonMobile" placeholder="Auto-fills from ledger" readonly></div>
-            <div class="field span-full"><label>Address</label><input id="assignPersonAddress" placeholder="Auto-fills from ledger" readonly></div>
+            <div class="field"><label>Person Short Code</label><input id="assignPersonShort" placeholder="Ledger short name (optional)" list="assignPersonShortList" autocomplete="off"><datalist id="assignPersonShortList"></datalist></div>
+            <div class="field"><label>Assign To (Person/Customer) <span class="req">*</span></label><input id="assignPerson" placeholder="Person / customer to reserve for" list="assignPersonList" autocomplete="off"><datalist id="assignPersonList"></datalist></div>
+            <div class="field"><label>Mobile</label><input id="assignPersonMobile" placeholder="Auto-fills from ledger (editable)"></div>
+            <div class="field span-full"><label>Address</label><input id="assignPersonAddress" placeholder="Auto-fills from ledger (editable)"></div>
 
             <div class="field"><label>Reference No <span class="req">*</span></label><input id="assignRef" placeholder="e.g. AR-2026-014"></div>
             <div class="field"><label>Assign Date <span class="req">*</span></label><input id="assignDate" type="date"></div>
@@ -128,6 +136,7 @@ window.PAGES.stockassign = {
 
   init() {
     const $ = (id) => document.getElementById(id);
+    const PD = window.PurchaseData;
 
     // ---------------- Date fields: click anywhere to open the native
     // calendar (not just the small icon), and block manual keyboard/paste
@@ -162,6 +171,14 @@ window.PAGES.stockassign = {
     });
 
     // ---------------- shared helpers ----------------
+    function fillSelect(selectEl, items, placeholder) {
+      if (!items || !items.length) {
+        selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+        return;
+      }
+      selectEl.innerHTML = items.map((v) => `<option value="${v}">${v}</option>`).join('');
+    }
+
     function renderLineList(container, lines, emptyText) {
       if (!lines.length) {
         container.innerHTML = `<div class="empty">${emptyText}</div>`;
@@ -214,14 +231,141 @@ window.PAGES.stockassign = {
       });
     }
 
-    // Deterministic "demo available qty" so the hint number reacts to the
-    // selected Category/Brand/Wattage/Type, without a real backend.
-    function demoAvailableFor(cat, brand, watt, type) {
-      const key = `${cat}|${brand}|${watt}|${type}`;
-      let hash = 0;
-      for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
-      return 8 + (hash % 45);
+    // ---------------- Category -> Brand -> Wattage -> Type cascading
+    // dropdowns, fetched live from the database — same source + chain as
+    // js/pages/sales.js (get_categories() / get_brands_for_category() /
+    // get_wattages_for_brand_category() / get_types_for_category_brand_watt()
+    // on the desktop app's side).
+    const assignCatEl = $('assignCat'), assignBrandEl = $('assignBrand'), assignWattEl = $('assignWatt'), assignTypeEl = $('assignType');
+
+    let categoryWattRules = {};
+    async function loadCategoryWattRules() {
+      try {
+        const cats = await window.Api.get('/masters/categories');
+        categoryWattRules = {};
+        (cats || []).forEach((c) => { categoryWattRules[c.name] = !!c.watt_mandatory; });
+      } catch (e) { categoryWattRules = {}; }
     }
+    function isWattMandatory(cat) { return !!categoryWattRules[cat]; }
+
+    async function loadAssignCategories() {
+      try {
+        const cats = await window.Api.get('/masters/categories');
+        fillSelect(assignCatEl, (cats || []).map((c) => c.name), 'No categories found');
+      } catch (e) {
+        fillSelect(assignCatEl, [], 'Failed to load categories');
+      }
+      await refreshAssignBrandsAndWatt();
+    }
+
+    async function refreshAssignBrandsAndWatt() {
+      const cat = assignCatEl.value;
+      if (!cat) {
+        fillSelect(assignBrandEl, [], '-- Select Category First --');
+        fillSelect(assignWattEl, [], '-- Select Brand First --');
+        await refreshAssignType();
+        return;
+      }
+      try {
+        const brands = await window.Api.get(`/purchase/brands/${encodeURIComponent(cat)}`);
+        fillSelect(assignBrandEl, brands, 'No brands under this category');
+      } catch (e) {
+        fillSelect(assignBrandEl, [], 'Failed to load brands');
+      }
+      await refreshAssignWattage();
+    }
+
+    async function refreshAssignWattage() {
+      const cat = assignCatEl.value, brand = assignBrandEl.value;
+      if (!cat || !brand) {
+        fillSelect(assignWattEl, [], '-- Select Brand First --');
+        await refreshAssignType();
+        return;
+      }
+      try {
+        const watts = await window.Api.get(`/purchase/wattages?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}`);
+        fillSelect(assignWattEl, watts.length ? watts : ['N/A'], 'N/A');
+      } catch (e) {
+        fillSelect(assignWattEl, ['N/A'], 'N/A');
+      }
+      await refreshAssignType();
+    }
+
+    async function refreshAssignType() {
+      const cat = assignCatEl.value, brand = assignBrandEl.value, wattVal = assignWattEl.value;
+      if (!cat) { fillSelect(assignTypeEl, [], '-- Select Category First --'); return; }
+      const watt = (wattVal && wattVal !== 'N/A' && !isNaN(Number(wattVal))) ? Number(wattVal) : 0;
+      let types = [];
+      if (brand) {
+        try { types = await window.Api.get(`/sales/types?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}&watt=${watt}`); }
+        catch (e) { types = []; }
+      }
+      if (!types.length) {
+        try {
+          const subtypes = await window.Api.get(`/masters/subtypes/${encodeURIComponent(cat)}`);
+          types = subtypes.length ? subtypes : ['Others'];
+        } catch (e) { types = ['Others']; }
+      }
+      fillSelect(assignTypeEl, types, 'Others');
+      refreshAvailableHint();
+    }
+
+    assignCatEl.addEventListener('change', async () => { await refreshAssignBrandsAndWatt(); refreshAvailableHint(); });
+    assignBrandEl.addEventListener('change', async () => { await refreshAssignWattage(); refreshAvailableHint(); });
+    assignWattEl.addEventListener('change', async () => { await refreshAssignType(); refreshAvailableHint(); });
+    assignTypeEl.addEventListener('change', refreshAvailableHint);
+    loadAssignCategories();
+    loadCategoryWattRules();
+
+    // ---------------- Assign-To ledger live autocomplete + autofill ----------
+    // Mirrors attach_ledger_autocomplete() / attach_ledger_shortname_lookup()
+    // in ui/assign_stock.py (type filter "Customer", same as Sales): as the
+    // user types in Assign-To or Short Code we live-fetch matching ledgers
+    // to feed the suggestion dropdown, and auto-fill Mobile/Address the
+    // instant the typed text exactly matches a known ledger name/short code.
+    const assignPersonList = $('assignPersonList');
+    const assignPersonShortList = $('assignPersonShortList');
+    let personSearchTimer = null;
+
+    async function searchPersonLedgers(q) {
+      try { return await window.Api.get(`/ledgers?type=Customer&q=${encodeURIComponent(q)}`); }
+      catch (e) { return []; }
+    }
+    async function searchPersonShortCodes(q) {
+      try { return await window.Api.get(`/ledgers/shortcodes?type=Customer&q=${encodeURIComponent(q)}`); }
+      catch (e) { return []; }
+    }
+    function fillPersonDatalist(listEl, ledgers, key) {
+      listEl.innerHTML = ledgers
+        .filter((l) => String(l[key] || '').trim() !== '')
+        .map((l) => `<option value="${String(l[key]).replace(/"/g, '&quot;')}">`).join('');
+    }
+    function applyLedgerToPersonFields(l) {
+      $('assignPerson').value = l.name || '';
+      $('assignPersonShort').value = l.short || '';
+      $('assignPersonMobile').value = l.mobile && l.mobile !== '-' ? l.mobile : '';
+      $('assignPersonAddress').value = l.address && l.address !== '-' ? l.address : '';
+      if (!$('assignRef').value.trim() && l.short) $('assignRef').value = l.short;
+    }
+    function wirePersonAutocomplete(inputEl, listEl, matchKey, searchFn) {
+      inputEl.addEventListener('input', () => {
+        const text = inputEl.value;
+        clearTimeout(personSearchTimer);
+        personSearchTimer = setTimeout(async () => {
+          const ledgers = await searchFn(text);
+          fillPersonDatalist(listEl, ledgers, matchKey);
+          const exact = ledgers.find((l) => String(l[matchKey] || '').trim().toLowerCase() === text.trim().toLowerCase());
+          if (exact) applyLedgerToPersonFields(exact);
+        }, 250);
+      });
+      inputEl.addEventListener('focus', async () => {
+        if (inputEl.value.trim()) return;
+        const ledgers = await searchFn('');
+        fillPersonDatalist(listEl, ledgers, matchKey);
+      });
+    }
+    wirePersonAutocomplete($('assignPerson'), assignPersonList, 'name', searchPersonLedgers);
+    wirePersonAutocomplete($('assignPersonShort'), assignPersonShortList, 'short', searchPersonShortCodes);
 
     // ---------------- NEW ASSIGNMENT panel state ----------------
     const assignLines = [];
@@ -231,16 +375,24 @@ window.PAGES.stockassign = {
     wireLineSelection(assignLineList);
     wireProofButtons('assignProofFile', 'assignBtnAttach', 'assignBtnClearProof', 'assignBtnViewProof', 'assignProofName', assignProof);
 
-    function refreshAvailableHint() {
-      const cat = $('assignCat').value, brand = $('assignBrand').value;
-      const watt = $('assignWatt').value.trim(), type = $('assignType').value;
+    // Live "Available: N" hint — real count from the database (item's
+    // Available stock minus whatever is already queued up in this form's
+    // own product lines), mirrors refresh_available_qty_hint().
+    async function refreshAvailableHint() {
+      const cat = assignCatEl.value, brand = assignBrandEl.value;
+      const wattVal = assignWattEl.value, type = assignTypeEl.value;
       const hintEl = $('assignQtyAvailable');
-      if (!cat || !brand || !type) {
+      const watt = (wattVal && wattVal !== 'N/A' && !isNaN(Number(wattVal))) ? Number(wattVal) : 0;
+      if (!cat || !brand || !type || (isWattMandatory(cat) && !watt)) {
         hintEl.textContent = 'Available: -';
         hintEl.style.color = 'var(--txt-muted)';
         return;
       }
-      const total = demoAvailableFor(cat, brand, watt, type);
+      let total = 0;
+      try {
+        const resp = await window.Api.get(`/stockassign/available?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}&watt=${watt}&type=${encodeURIComponent(type)}`);
+        total = resp.available || 0;
+      } catch (e) { total = 0; }
       const usedInLines = assignLines
         .filter((l) => l.cat === cat && l.brand === brand && l.watt === watt && l.type === type)
         .reduce((sum, l) => sum + Number(l.qty), 0);
@@ -248,25 +400,43 @@ window.PAGES.stockassign = {
       hintEl.textContent = `Available: ${remaining}`;
       hintEl.style.color = remaining > 0 ? '#2ECC71' : 'var(--red)';
     }
-    ['assignCat', 'assignBrand', 'assignWatt', 'assignType'].forEach((id) => {
-      $(id).addEventListener('input', refreshAvailableHint);
-      $(id).addEventListener('change', refreshAvailableHint);
-    });
     refreshAvailableHint();
 
-    $('assignBtnAddLine').addEventListener('click', () => {
-      const cat = $('assignCat').value, brand = $('assignBrand').value, watt = $('assignWatt').value.trim();
-      const type = $('assignType').value, qty = $('assignQty').value.trim();
-      if (!qty || Number(qty) <= 0) {
-        window.openModal('Validation Error', '<p>Enter a valid Quantity before adding a product line.</p>');
+    $('assignBtnAddLine').addEventListener('click', async () => {
+      const cat = assignCatEl.value, brand = assignBrandEl.value, wattVal = assignWattEl.value;
+      const type = assignTypeEl.value, qty = $('assignQty').value.trim();
+      const watt = (wattVal && wattVal !== 'N/A' && !isNaN(Number(wattVal))) ? Number(wattVal) : 0;
+
+      if (!cat || !brand || !type || !qty) {
+        window.openModal('Validation Error', '<p>Category, Brand, Type and Qty are required for the product line.</p>');
         return;
       }
-      const total = demoAvailableFor(cat, brand, watt, type);
+      if (isWattMandatory(cat) && !watt) {
+        window.openModal('Validation Error', `<p>Wattage/Capacity is mandatory for '${cat}' product lines.</p>`);
+        return;
+      }
+      if (!/^\d+$/.test(qty) || Number(qty) <= 0) {
+        window.openModal('Validation Error', '<p>Quantity must be a valid positive number.</p>');
+        return;
+      }
+
+      let total = 0;
+      try {
+        const resp = await window.Api.get(`/stockassign/available?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}&watt=${watt}&type=${encodeURIComponent(type)}`);
+        total = resp.available || 0;
+        if (!resp.itemId) {
+          window.openModal('Product Not Found', '<p>Selected product master was not found. Please create/check the master item first.</p>');
+          return;
+        }
+      } catch (e) {
+        window.openModal('Server Error', '<p>Could not verify available stock against the database. Please try again.</p>');
+        return;
+      }
       const usedInLines = assignLines
         .filter((l) => l.cat === cat && l.brand === brand && l.watt === watt && l.type === type)
         .reduce((sum, l) => sum + Number(l.qty), 0);
       if (Number(qty) > total - usedInLines) {
-        window.openModal('Stock Not Available', `<p>Only ${total - usedInLines} unit(s) of ${brand} | ${watt ? watt + 'W' : 'N/A'} | ${type} are currently Available to reserve. Cannot assign ${qty}.</p>`);
+        window.openModal('Stock Not Available', `<p>Only ${total - usedInLines} unit(s) of ${brand} | ${watt ? watt + 'W' : 'N/A'} | ${type} are currently Available to reserve (Total Available: ${total}${usedInLines ? `, already added in this form: ${usedInLines}` : ''}). Cannot assign ${qty}.</p>`);
         return;
       }
       assignLines.push({ cat, brand, watt, type, qty });
@@ -284,7 +454,8 @@ window.PAGES.stockassign = {
 
     function clearAssignForm() {
       ['assignPersonShort', 'assignPerson', 'assignPersonMobile', 'assignPersonAddress', 'assignRef', 'assignRemarks', 'assignQty'].forEach((id) => { $(id).value = ''; });
-      $('assignWatt').value = '';
+      assignCatEl.selectedIndex = 0;
+      refreshAssignBrandsAndWatt();
       $('assignDate').valueAsDate = new Date();
       assignLines.length = 0;
       renderLineList(assignLineList, assignLines, 'No product lines added yet — fill the fields above and click "Add Product Line".');
@@ -295,28 +466,65 @@ window.PAGES.stockassign = {
     }
     $('assignBtnClearForm').addEventListener('click', clearAssignForm);
 
-    $('assignBtnSave').addEventListener('click', () => {
+    $('assignBtnSave').addEventListener('click', async () => {
+      const person = $('assignPerson').value.trim();
+      const reference = $('assignRef').value.trim();
+      const date = PD.dmyFromISO($('assignDate').value) || '-';
+      const remarks = $('assignRemarks').value.trim() || '-';
+      const proofName = assignProof.files.length
+        ? (assignProof.files.length === 1 ? assignProof.files[0].name : `${assignProof.files.length} files`)
+        : '-';
+
       const missing = [];
-      if (!$('assignPerson').value.trim()) missing.push('Assign To (Person/Customer)');
-      if (!$('assignRef').value.trim()) missing.push('Reference No');
-      if (!assignLines.length && !$('assignQty').value.trim()) missing.push('Quantity (or add at least one product line)');
+      if (!person) missing.push('Assign To (Person/Customer)');
+      if (!reference) missing.push('Reference No');
       if (missing.length) {
         window.openModal('Validation Error', `<p>Please fill: ${missing.join(', ')}.</p>`);
         return;
       }
-      window.openModal('Preview Only', '<p>This is a UI preview — the assignment looks good, but no backend is connected yet, so nothing was actually reserved. On the real app, matching serials are auto-picked and marked \'Assigned\' (removed from Available stock) right now.</p>');
+
+      // If the current form fields still hold an un-added line (qty
+      // filled but "Add Product Line" never clicked), add it now first —
+      // mirrors process_stock_assignment()'s own auto-add-current-line step.
+      if ($('assignQty').value.trim()) {
+        $('assignBtnAddLine').click();
+        window.openModal('Line Pending', '<p>Product line details were found in the form and validated — please click <strong>Reserve / Assign Stock</strong> again to save.</p>');
+        return;
+      }
+      if (!assignLines.length) {
+        window.openModal('Validation Error', '<p>Add at least one product line (or fill Quantity) before reserving stock.</p>');
+        return;
+      }
+
+      const saveBtn = $('assignBtnSave');
+      saveBtn.disabled = true;
+      try {
+        const result = await window.Api.post('/stockassign', {
+          person,
+          personShort: $('assignPersonShort').value.trim(),
+          mobile: $('assignPersonMobile').value.trim(),
+          address: $('assignPersonAddress').value.trim(),
+          reference, date, remarks, proofName,
+          lines: assignLines.map((l) => ({ cat: l.cat, brand: l.brand, watt: l.watt, type: l.type, qty: Number(l.qty) })),
+        });
+        if (window.showToast) window.showToast('Stock reserved successfully!');
+        window.openModal('Success', `<p>Stock reserved for <strong>${person}</strong> with ${result.lineCount} product line(s) and ${result.serialCount} serial(s).</p>`);
+        clearAssignForm();
+        loadAssignedRegister();
+      } catch (err) {
+        window.openModal('Reservation Error', `<p style="color:var(--red); white-space:pre-line;">${err.message}</p>`);
+      } finally {
+        saveBtn.disabled = false;
+      }
     });
 
-    // ---------------- ASSIGNED REGISTER (demo data) ----------------
-    const demoRegisterRows = [
-      { ref: 'AR-2026-014', person: 'Ramesh Site Team', date: '01-07-2026', brand: 'Waaree', watt: '545', type: 'Mono PERC', qty: '5' },
-      { ref: 'AR-2026-013', person: 'Shah Enterprises', date: '28-06-2026', brand: 'Adani', watt: '', type: 'Mono PERC', qty: '2' },
-    ];
+    // ---------------- ASSIGNED REGISTER (live from the database) ----------------
+    let registerRows = [];
     const assignRegBody = $('assignRegBody');
 
     function renderRegisterTable() {
       const term = $('assignSearchReg').value.trim().toLowerCase();
-      const rows = demoRegisterRows.filter((r) => !term || Object.values(r).some((v) => String(v).toLowerCase().includes(term)));
+      const rows = registerRows.filter((r) => !term || Object.values(r).some((v) => String(v).toLowerCase().includes(term)));
       if (!rows.length) {
         assignRegBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--txt-muted); font-style:italic;">No assigned stock found.</td></tr>`;
         return;
@@ -333,60 +541,100 @@ window.PAGES.stockassign = {
         </tr>
       `).join('');
     }
-    renderRegisterTable();
+
+    async function loadAssignedRegister() {
+      try {
+        registerRows = await window.Api.get('/stockassign/register');
+      } catch (e) {
+        registerRows = [];
+      }
+      renderRegisterTable();
+    }
+    loadAssignedRegister();
     $('assignSearchReg').addEventListener('input', renderRegisterTable);
-    $('assignBtnRefreshReg').addEventListener('click', renderRegisterTable);
+    $('assignBtnRefreshReg').addEventListener('click', loadAssignedRegister);
 
     // ---------------- RELEASE panel state ----------------
     let loadedRef = null;
+    let loadedReleaseLines = [];
     const assignRelLines = $('assignRelLines');
 
     function clearReleasePanel() {
       loadedRef = null;
+      loadedReleaseLines = [];
       $('assignRelRef').value = '-';
       assignRelLines.innerHTML = '<div class="empty">Click a row above to load its lines.</div>';
       $('assignRelCustomer').value = '';
       $('assignRelOrder').value = '';
     }
 
-    assignRegBody.addEventListener('click', (e) => {
+    assignRegBody.addEventListener('click', async (e) => {
       const row = e.target.closest('.assign-reg-row');
       if (!row) return;
       const ref = row.dataset.ref;
-      const data = demoRegisterRows.find((r) => r.ref === ref);
-      if (!data) return;
-      loadedRef = ref;
-      $('assignRelRef').value = ref;
-      assignRelLines.innerHTML = `
-        <div class="line-item">
-          <span>${data.brand} ${data.watt ? '• ' + data.watt + 'W' : '• N/A'} • ${data.type}</span>
-          <span class="qty-badge">Qty ${data.qty}</span>
-        </div>`;
-      $('assignRelCustomer').value = data.person;
-      $('assignRelOrder').value = ref;
-      window.openModal('Assignment Loaded', `<p>Loaded demo data for <strong>${ref}</strong> into the release panel below (preview only — not a real database lookup yet).</p>`);
+      let data;
+      try {
+        data = await window.Api.get(`/stockassign/lines/${encodeURIComponent(ref)}`);
+      } catch (err) {
+        window.openModal('Not Found', `<p>${err.message || 'This assignment could not be found (it may have already been released).'}</p>`);
+        return;
+      }
+      loadedRef = data.reference;
+      loadedReleaseLines = data.lines || [];
+      $('assignRelRef').value = data.reference;
+      renderLineList(assignRelLines, loadedReleaseLines, 'Click a row above to load its lines.');
+      $('assignRelCustomer').value = data.person || '';
+      $('assignRelOrder').value = data.reference;
+      window.openModal('Assignment Loaded', `<p>Loaded <strong>${data.reference}</strong> into the release panel below — ${loadedReleaseLines.length} product line(s), ${data.allSerials.length} serial(s).</p>`);
     });
 
-    $('assignBtnReleaseFirm').addEventListener('click', () => {
+    $('assignBtnReleaseFirm').addEventListener('click', async () => {
       if (!loadedRef) {
         window.openModal('Nothing Loaded', '<p>Click an assignment row above first to load it for release.</p>');
         return;
       }
-      window.openModal('Preview Only', `<p>This is a UI preview — assignment <strong>${loadedRef}</strong> would be cancelled and its stock returned to the Available pool, but no backend is connected yet, so nothing was actually released.</p>`);
-      clearReleasePanel();
+      const ok = await window.confirmDialog('Confirm Release', `Cancel assignment '${loadedRef}' and return its stock to Available?`, { kind: 'question', okLabel: 'Release' });
+      if (!ok) return;
+      try {
+        const result = await window.Api.post('/stockassign/release-firm', { reference: loadedRef });
+        if (window.showToast) window.showToast('Assignment released to Available stock.');
+        window.openModal('Released', `<p>Assignment cancelled and ${result.serialCount} serial(s) returned to the Available pool.</p>`);
+        clearReleasePanel();
+        loadAssignedRegister();
+      } catch (err) {
+        window.openModal('Release Error', `<p>${err.message || 'Failed to release this assignment.'}</p>`);
+      }
     });
 
-    $('assignBtnReleaseCustomer').addEventListener('click', () => {
+    $('assignBtnReleaseCustomer').addEventListener('click', async () => {
       if (!loadedRef) {
         window.openModal('Nothing Loaded', '<p>Click an assignment row above first to load it for release.</p>');
         return;
       }
-      if (!$('assignRelCustomer').value.trim() || !$('assignRelOrder').value.trim()) {
+      const customer = $('assignRelCustomer').value.trim();
+      const orderNo = $('assignRelOrder').value.trim();
+      if (!customer || !orderNo) {
         window.openModal('Validation Error', '<p>Release Customer and Release Order No are required.</p>');
         return;
       }
-      window.openModal('Preview Only', `<p>This is a UI preview — stock for <strong>${loadedRef}</strong> would be released and you'd be redirected to Project Sales with Customer, Order No, and product lines pre-filled, ready to just add a Challan No and dispatch. No backend is connected yet, so nothing was actually released.</p>`);
-      clearReleasePanel();
+      // Mirrors release_to_customer(): mobile/address handed to Sales come
+      // from THIS form's own Mobile/Address fields (whichever person is
+      // currently loaded up top), same coupling as the desktop app.
+      const mobile = $('assignPersonMobile').value.trim();
+      const address = $('assignPersonAddress').value.trim();
+      const reference = loadedRef;
+      try {
+        const result = await window.Api.post('/stockassign/release-customer', { reference, customer, orderNo });
+        if (window.showToast) window.showToast('Stock released — loaded into Project Sales.');
+        clearReleasePanel();
+        loadAssignedRegister();
+        window.go('sales');
+        if (window.SalesPageAPI && typeof window.SalesPageAPI.prefillFromAssign === 'function') {
+          window.SalesPageAPI.prefillFromAssign(customer, orderNo, mobile, address, result.lines || []);
+        }
+      } catch (err) {
+        window.openModal('Release Error', `<p>${err.message || 'Failed to release this assignment.'}</p>`);
+      }
     });
   },
 };

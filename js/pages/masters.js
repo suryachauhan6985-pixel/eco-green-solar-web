@@ -478,7 +478,7 @@ window.PAGES.masters = {
       const btn = e.target.closest(".m-cat-delete");
       if (!btn) return;
       const cat = btn.dataset.cat;
-      if (!window.confirm(`Delete category '${cat}' permanently? This will also remove its subtypes.`)) return;
+      if (!(await window.confirmDanger('Delete Category', `Delete category '${cat}' permanently? This will also remove its subtypes.`))) return;
       try {
         const res = await fetch(`${API_BASE}/masters/categories/${encodeURIComponent(cat)}`, {
           method: "DELETE",
@@ -536,7 +536,7 @@ window.PAGES.masters = {
     }
     $("mBtnCancelSubEdit").addEventListener("click", resetSubForm);
 
-    $("mastersSubtypeBody").addEventListener("click", (e) => {
+    $("mastersSubtypeBody").addEventListener("click", async (e) => {
       const editBtn = e.target.closest(".m-sub-edit");
       if (editBtn) {
         editingSubOldName = editBtn.dataset.name;
@@ -549,7 +549,7 @@ window.PAGES.masters = {
       if (delBtn) {
         const name = delBtn.dataset.name;
         const cat = $("mSubTargetCat").value;
-        if (!window.confirm(`Delete subtype '${name}' under '${cat}'?`)) return;
+        if (!(await window.confirmDanger('Delete Subtype', `Delete subtype '${name}' under '${cat}'?`))) return;
         fetch(`${API_BASE}/masters/subtypes`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
@@ -613,7 +613,7 @@ window.PAGES.masters = {
     }
     $("mBtnCancelUomEdit").addEventListener("click", resetUomForm);
 
-    $("mastersUomBody").addEventListener("click", (e) => {
+    $("mastersUomBody").addEventListener("click", async (e) => {
       const editBtn = e.target.closest(".m-uom-edit");
       if (editBtn) {
         editingUomOldName = editBtn.dataset.name;
@@ -627,7 +627,7 @@ window.PAGES.masters = {
       const delBtn = e.target.closest(".m-uom-delete");
       if (delBtn) {
         const name = delBtn.dataset.name;
-        if (!window.confirm(`Delete unit '${name}'?`)) return;
+        if (!(await window.confirmDanger('Delete Unit', `Delete unit '${name}'?`))) return;
         fetch(`${API_BASE}/masters/units`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
@@ -691,7 +691,7 @@ window.PAGES.masters = {
     }
     $("mBtnCancelWhEdit").addEventListener("click", resetWhForm);
 
-    $("mastersWarehouseBody").addEventListener("click", (e) => {
+    $("mastersWarehouseBody").addEventListener("click", async (e) => {
       const editBtn = e.target.closest(".m-wh-edit");
       if (editBtn) {
         editingWhOldName = editBtn.dataset.name;
@@ -705,7 +705,7 @@ window.PAGES.masters = {
       const delBtn = e.target.closest(".m-wh-delete");
       if (delBtn) {
         const name = delBtn.dataset.name;
-        if (!window.confirm(`Delete warehouse '${name}'?`)) return;
+        if (!(await window.confirmDanger('Delete Warehouse', `Delete warehouse '${name}'?`))) return;
         fetch(`${API_BASE}/masters/warehouses`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },

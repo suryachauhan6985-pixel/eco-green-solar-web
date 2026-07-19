@@ -810,7 +810,7 @@ window.PAGES.purchase = {
           return;
         }
         const invNo = loadedInvoiceNo;
-        if (!window.confirm(`Are you sure you want to permanently delete purchase invoice ${invNo}? This removes it from the Purchase Register too.`)) return;
+        if (!(await window.confirmDanger('Delete Purchase Invoice', `Are you sure you want to permanently delete purchase invoice ${invNo}? This removes it from the Purchase Register too.`))) return;
         try {
           await window.Api.delete(`/purchase/${encodeURIComponent(invNo)}`);
           if (window.showToast) window.showToast(`Purchase invoice ${invNo} deleted.`);

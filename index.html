@@ -62,6 +62,26 @@
   </div>
 </div>
 
+<!-- Confirm dialog (replaces native window.confirm() popups everywhere —
+     see window.confirmDialog() in js/app.js). Same custom-card look as the
+     generic modal above, just with an icon + accent colour per "kind" and
+     Cancel/Confirm buttons, mirroring the desktop app's ui/notify.py. -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-card" id="confirmCard">
+    <div class="confirm-row">
+      <div class="confirm-icon" id="confirmIcon"><i class="fa-solid fa-question"></i></div>
+      <div class="confirm-text">
+        <h3 class="confirm-title" id="confirmTitle">Please Confirm</h3>
+        <p class="confirm-msg" id="confirmMsg"></p>
+      </div>
+    </div>
+    <div class="confirm-btns">
+      <button type="button" id="confirmBtnCancel">Cancel</button>
+      <button type="button" class="confirm-primary" id="confirmBtnOk">OK</button>
+    </div>
+  </div>
+</div>
+
 <!-- Shared in-memory data stores (loaded first so page scripts can use them) -->
 <script src="js/data/purchase-data.js"></script>
 <!-- NEW: talks to the backend API (server.js), which reads the same MariaDB

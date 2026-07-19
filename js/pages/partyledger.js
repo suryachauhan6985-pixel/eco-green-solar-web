@@ -363,7 +363,7 @@ window.PAGES.partyledger = {
     document.getElementById('btnDeleteLedger').addEventListener('click', async () => {
       if (!isAdmin) { window.openModal('Access Denied', '<p>Only SuperAdmin can delete ledgers.</p>'); return; }
       if (!selected || !selected.ledgerId) return;
-      if (!window.confirm(`Delete the Ledger '${selected.partyName}'?`)) return;
+      if (!(await window.confirmDanger('Delete Ledger', `Delete the Ledger '${selected.partyName}'?`))) return;
       try {
         const res = await fetch(`${API_BASE}/ledgers/${selected.ledgerId}`, { method: 'DELETE' });
         const data = await res.json();
@@ -480,7 +480,7 @@ window.PAGES.partyledger = {
       });
 
       if (duplicates.length) {
-        const proceed = window.confirm(`${duplicates.length} ledger(s) already exist and will be skipped. Import only new ledgers?`);
+        const proceed = await window.confirmDialog('Duplicates Found', `${duplicates.length} ledger(s) already exist and will be skipped. Import only new ledgers?`, { kind: 'warning', okLabel: 'Import New Only' });
         if (!proceed) return;
       }
       if (!incoming.length) { window.openModal('Nothing to Import', '<p>All ledgers already exist.</p>'); return; }

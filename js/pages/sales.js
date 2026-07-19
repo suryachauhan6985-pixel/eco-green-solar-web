@@ -241,7 +241,7 @@ window.PAGES.sales = {
       container.innerHTML = lines.map((ln, idx) => `
         <div class="line-item" data-idx="${idx}">
           <span>${ln.cat} • ${ln.brand} ${ln.watt ? '• ' + ln.watt + 'W' : ''} • ${ln.type}</span>
-          <span class="qty-badge">Qty ${ln.serials ? ln.serials.length : ln.qty}</span>
+          <span class="qty-badge">Qty ${(ln.serials && ln.serials.length) ? ln.serials.length : (ln.qty || 0)}</span>
         </div>
       `).join('');
     }
@@ -697,7 +697,7 @@ window.PAGES.sales = {
           return;
         }
         const orderNo = loadedOrderNo;
-        if (!window.confirm(`Permanently delete this sale transaction (Order '${orderNo}')? All its serials will revert back to Available stock. This cannot be undone.`)) return;
+        if (!(await window.confirmDanger('Delete Sale Transaction', `Permanently delete this sale transaction (Order '${orderNo}')? All its serials will revert back to Available stock. This cannot be undone.`))) return;
         try {
           const result = await window.Api.delete(`/sales/delete/${encodeURIComponent(orderNo)}`);
           if (window.showToast) window.showToast('Transaction completely rolled back.');
@@ -719,13 +719,36 @@ window.PAGES.sales = {
           $('saleSearchOrder').value = reference;
           findSalesOrderForEditing(reference);
         },
+        prefillFromAssign,
       };
     } else {
       window.SalesPageAPI = {
         loadChallanForEdit() {
           window.openModal('Locked', '<p>Only a SuperAdmin can modify sales invoices.</p>');
         },
+        prefillFromAssign,
       };
+    }
+
+    // ---------------- Prefill from Stock Assign "Release to Customer" ------
+    // Mirrors ui/sales.py's prefill_from_assignment(): called when a
+    // reserved (Assigned) stock is released to a customer, so the user only
+    // needs to add a Challan No and confirm — the usual strict dispatch
+    // validation still applies. Lines carry a Qty but no scanned serials
+    // yet (the release already returned the stock to Available), so the
+    // user re-adds each line's serials the normal way before dispatching.
+    function prefillFromAssign(customerName, orderNo, mobile, address, lines) {
+      saleSplit.classList.add('edit-closed');
+      clearSalesForm();
+      $('saleCust').value = customerName || '';
+      $('saleCustMobile').value = mobile || '';
+      $('saleCustAddr').value = address || '';
+      $('saleOrder').value = orderNo || '';
+      (lines || []).forEach((line) => {
+        saleLines.push({ cat: line.cat, brand: line.brand, watt: line.watt, type: line.type, qty: line.qty, serials: [] });
+      });
+      renderLineList(saleLineList, saleLines, 'No product lines added yet — fill the fields above and click "Add Product Line".');
+      window.openModal('Assignment Released', '<p>Reserved stock loaded into this Sales form. Please scan/enter serials for each product line, fill Challan No, and confirm dispatch.</p>');
     }
   },
 };

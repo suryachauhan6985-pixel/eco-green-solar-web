@@ -393,13 +393,15 @@ window.attachColumnFilters = function (table) {
 
     profileMenuEl = menu;
 
-    menu.querySelector('#profileLogout').addEventListener('click', () => {
+    menu.querySelector('#profileLogout').addEventListener('click', async () => {
       closeProfileMenu();
-      if (window.confirm('Are you sure you want to logout?')) endSessionAndShowLogin();
+      const ok = await window.confirmDialog('Confirm Logout', 'Are you sure you want to logout?', { kind: 'question', okLabel: 'Logout' });
+      if (ok) endSessionAndShowLogin();
     });
-    menu.querySelector('#profileSwitchUser').addEventListener('click', () => {
+    menu.querySelector('#profileSwitchUser').addEventListener('click', async () => {
       closeProfileMenu();
-      if (window.confirm('This will close the current session so another user can login. Continue?')) endSessionAndShowLogin();
+      const ok = await window.confirmDialog('Switch User', 'This will close the current session so another user can login. Continue?', { kind: 'question', okLabel: 'Continue' });
+      if (ok) endSessionAndShowLogin();
     });
     menu.addEventListener('click', (e) => e.stopPropagation());
   }
@@ -468,6 +470,54 @@ window.attachColumnFilters = function (table) {
     if (event && event.target !== event.currentTarget) return;
     document.getElementById('modalOverlay').classList.remove('show');
   };
+
+  // ---------- Confirm Dialog (drop-in replacement for window.confirm(),
+  // mirrors ui/notify.py's custom question/confirm_danger dialogs: a
+  // rounded card with a coloured accent border + icon, and Cancel/Confirm
+  // buttons — never the native browser "site says" popup. ----------
+  const KIND_STYLE = {
+    question: { color: 'var(--purple)', icon: 'fa-circle-question' },
+    danger: { color: 'var(--red)', icon: 'fa-triangle-exclamation' },
+    warning: { color: 'var(--gold)', icon: 'fa-triangle-exclamation' },
+    info: { color: 'var(--blue)', icon: 'fa-circle-info' },
+  };
+  let confirmResolver = null;
+
+  function closeConfirmDialog(result) {
+    document.getElementById('confirmOverlay').classList.remove('show');
+    if (confirmResolver) { const r = confirmResolver; confirmResolver = null; r(result); }
+  }
+
+  // window.confirmDialog(title, message, opts?) -> Promise<boolean>
+  // opts: { kind: 'question'|'danger'|'warning'|'info', okLabel, cancelLabel }
+  window.confirmDialog = function (title, message, opts) {
+    opts = opts || {};
+    const kind = KIND_STYLE[opts.kind] ? opts.kind : 'question';
+    const style = KIND_STYLE[kind];
+    const card = document.getElementById('confirmCard');
+    card.style.setProperty('--confirm-accent', style.color);
+    document.getElementById('confirmIcon').innerHTML = `<i class="fa-solid ${style.icon}"></i>`;
+    document.getElementById('confirmTitle').textContent = title || 'Please Confirm';
+    document.getElementById('confirmMsg').textContent = message || '';
+    const okBtn = document.getElementById('confirmBtnOk');
+    const cancelBtn = document.getElementById('confirmBtnCancel');
+    okBtn.textContent = opts.okLabel || 'Yes';
+    cancelBtn.textContent = opts.cancelLabel || 'Cancel';
+    document.getElementById('confirmOverlay').classList.add('show');
+    return new Promise((resolve) => {
+      confirmResolver = resolve;
+      okBtn.onclick = () => closeConfirmDialog(true);
+      cancelBtn.onclick = () => closeConfirmDialog(false);
+    });
+  };
+  // Convenience wrapper matching notify.py's confirm_danger() — destructive
+  // actions (delete etc.), red accent, defaults to "Yes"/"Cancel".
+  window.confirmDanger = function (title, message) {
+    return window.confirmDialog(title, message, { kind: 'danger', okLabel: 'Yes, Delete' });
+  };
+  document.getElementById('confirmOverlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeConfirmDialog(false);
+  });
 
   window.go = go;
 
