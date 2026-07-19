@@ -1,18 +1,19 @@
 // js/pages/partyledger.js
-// Mirrors the desktop app's ui/party_ledger.py page:
+// Mirrors the desktop app's ui/party_ledger.py page exactly, backed by the
+// real MariaDB `ledgers` + `stock_ledger` tables (same DB the desktop app
+// uses) instead of the earlier hardcoded preview data:
 //   - Left panel: "Party Ledger Control" (Create Ledger / Refresh / Import / Template)
-//   - Right panel: search + type filter toolbar, party directory list,
-//     selected-party action row (Edit Ledger / Open Statement / Delete Ledger),
-//     inline Inward/Outward/Net-Balance summary
+//   - Right panel: search + type filter toolbar, party directory list
+//     (registered ledgers + unregistered legacy names merged, same as
+//     reload_party_list()), selected-party action row (Edit Ledger / Open
+//     Statement / Delete Ledger), inline Inward/Outward/Net-Balance summary
 //   - "Ledger Account Statement" modal: profile card + summary cards +
 //     Month -> Date -> Voucher -> Serial No. drill-down table (exactly like
 //     PartyStatementDialog in the desktop app)
 //   - "Create / Edit Ledger" modal: same fields as LedgerFormDialog
 //
-// IMPORTANT: This is a UI-only preview. All data below is dummy/sample data
-// kept in memory for this page instance. No ledger is actually created,
-// edited, or deleted, and no export/import actually happens — every such
-// action just shows a small toast confirming it's a UI preview.
+// Only SuperAdmin can create/edit/delete ledgers or import from Excel —
+// same role gate as the desktop app (current_role == "SuperAdmin").
 window.PAGES = window.PAGES || {};
 
 window.PAGES.partyledger = {
@@ -32,6 +33,7 @@ window.PAGES.partyledger = {
         <button class="btn btn-ghost" id="btnRefreshParties"><i class="fa-solid fa-sync"></i> Refresh List</button>
         <button class="btn btn-ghost" id="btnImportLedgers" style="background:#1F7A4D;"><i class="fa-solid fa-file-import"></i> Import Ledgers from Excel</button>
         <button class="btn btn-ghost" id="btnDownloadTemplate" style="background:#4B6584;"><i class="fa-solid fa-download"></i> Download Excel Template</button>
+        <input type="file" id="plImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
       </div>
 
       <!-- RIGHT: Ledgers Directory -->
@@ -88,7 +90,7 @@ window.PAGES.partyledger = {
               <input id="lfName" placeholder="Full ledger / party name">
             </div>
             <div class="field">
-              <label id="lfShortLabel">Short Name / Order No.</label>
+              <label id="lfShortLabel">Short Name:</label>
               <input id="lfShort" placeholder="Short keyword e.g. RAJ, ABC" style="color:var(--gold); font-weight:700;">
             </div>
             <div class="field">
@@ -123,7 +125,6 @@ window.PAGES.partyledger = {
           <div class="stmt-head">
             <div class="stmt-actions">
               <button class="btn btn-green" id="btnExportStatement" style="padding:7px 12px; font-size:12px;"><i class="fa-solid fa-file-excel"></i> Export Statement</button>
-              <button class="btn btn-green" id="btnEditTransaction" style="display:none; padding:7px 12px; font-size:12px;"><i class="fa-solid fa-up-right-from-square"></i> Edit Transaction</button>
             </div>
           </div>
 
@@ -153,155 +154,137 @@ window.PAGES.partyledger = {
   `,
 
   init() {
-    // ---------------------------------------------------------------
-    // Dummy data — UI preview only, nothing here is persisted anywhere.
-    // ---------------------------------------------------------------
-    const LEDGERS = [
-      { id: 1, name: 'Sunrise Traders', short: '', type: 'Supplier', mobile: '9825012345', address: 'Rajkot, Gujarat', gstin: '24ABCDE1234F1Z5' },
-      { id: 2, name: 'Patel Residence', short: 'NP-88231', type: 'Customer', mobile: '9021098765', address: 'Surat, Gujarat', gstin: '-' },
-      { id: 3, name: 'Adani Distributors', short: '', type: 'Supplier', mobile: '9998877665', address: 'Ahmedabad, Gujarat', gstin: '24ADANI9988K1Z2' },
-      { id: 4, name: 'Vikram Energy', short: '', type: 'Supplier', mobile: '9911223344', address: 'Rajkot, Gujarat', gstin: '24VIKRM5566L1Z9' },
-    ];
+    const API_BASE = window.API_BASE || 'http://192.168.0.123:5000/api';
+    const currentRole = window.currentUserRole || 'SuperAdmin';
+    const isAdmin = currentRole === 'SuperAdmin';
 
-    const TXNS = {
-      'Sunrise Traders': [
-        { movement: 'IN', date: '28-06-2026', ref: 'INV-2026-041', category: 'Solar Panel', warehouse: 'Main NAS Warehouse', serials: [
-          { sn: 'SN00998821', item: 'Waaree 545W Mono PERC', status: 'Available' },
-          { sn: 'SN00998822', item: 'Waaree 545W Mono PERC', status: 'Sold' },
-          { sn: 'SN00998823', item: 'Waaree 545W Mono PERC', status: 'Available' },
-        ]},
-        { movement: 'IN', date: '15-06-2026', ref: 'INV-2026-038', category: 'Inverter', warehouse: 'Main NAS Warehouse', serials: [
-          { sn: 'SN00887001', item: 'Adani 5KW Hybrid', status: 'Sold' },
-          { sn: 'SN00887002', item: 'Adani 5KW Hybrid', status: 'Available' },
-        ]},
-        { movement: 'IN', date: '20-05-2026', ref: 'INV-2026-030', category: 'Battery', warehouse: 'Rajkot Godown', serials: [
-          { sn: 'SN00776001', item: 'Luminous 150Ah Tubular', status: 'Available' },
-        ]},
-      ],
-      'Patel Residence': [
-        { movement: 'OUT', date: '30-06-2026', ref: 'CH-2026-118', extra: { invoice: 'SI-6621', order: 'NP-88231' }, category: 'Solar Panel', warehouse: 'Main NAS Warehouse', serials: [
-          { sn: 'SN00998821', item: 'Waaree 545W Mono PERC', status: 'Sold' },
-          { sn: 'SN00998822', item: 'Waaree 545W Mono PERC', status: 'Sold' },
-        ]},
-        { movement: 'OUT', date: '10-06-2026', ref: 'CH-2026-101', extra: { invoice: 'SI-6590', order: 'NP-88231' }, category: 'Inverter', warehouse: 'Main NAS Warehouse', serials: [
-          { sn: 'SN00887001', item: 'Adani 5KW Hybrid', status: 'Sold' },
-        ]},
-      ],
-      'Adani Distributors': [
-        { movement: 'IN', date: '25-06-2026', ref: 'INV-2026-040', category: 'Inverter', warehouse: 'Rajkot Godown', serials: [
-          { sn: 'SN00887744', item: 'Adani 5KW Hybrid', status: 'Available' },
-          { sn: 'SN00887745', item: 'Adani 5KW Hybrid', status: 'Available' },
-        ]},
-      ],
-      'Vikram Energy': [
-        { movement: 'IN', date: '19-06-2026', ref: 'INV-2026-039', category: 'Battery', warehouse: 'Main NAS Warehouse', serials: [
-          { sn: 'SN00776633', item: 'Vikram 200Ah Tubular', status: 'Damaged' },
-        ]},
-      ],
-      'Shah Enterprises': [
-        { movement: 'OUT', date: '29-06-2026', ref: 'CH-2026-117', extra: { invoice: 'SI-6608', order: 'NP-88109' }, category: 'Inverter', warehouse: 'Rajkot Godown', serials: [
-          { sn: 'SN00990011', item: 'Adani 3KW On-Grid', status: 'Sold' },
-        ]},
-      ],
-    };
-
-    function buildDirectory() {
-      const dir = [];
-      const seen = new Set();
-      LEDGERS.forEach((l) => { dir.push({ name: l.name, type: l.type, ledger: l }); seen.add(l.name); });
-      Object.keys(TXNS).forEach((name) => {
-        if (seen.has(name)) return;
-        const hasIn = TXNS[name].some((r) => r.movement === 'IN');
-        const hasOut = TXNS[name].some((r) => r.movement === 'OUT');
-        dir.push({ name, type: hasIn && hasOut ? 'Both' : hasIn ? 'Supplier' : 'Customer', ledger: null });
-      });
-      dir.sort((a, b) => a.name.localeCompare(b.name));
-      return dir;
-    }
-    const directory = buildDirectory();
-    let selected = null;
+    let directory = [];   // [{ displayName, partyName, shortName, type, ledgerId, mobile, address, gstin }]
+    let selected = null;  // one entry from `directory`
+    let selectedRows = []; // flat statement rows for the currently selected party (cached)
 
     const listEl = document.getElementById('partyList');
     const searchEl = document.getElementById('plSearch');
     const typeEl = document.getElementById('plTypeFilter');
 
+    // ---------------- Directory (list) ----------------
+    async function loadDirectory() {
+      listEl.innerHTML = `<li class="pl-empty-hint">Loading parties…</li>`;
+      try {
+        const params = new URLSearchParams({
+          search: searchEl.value.trim(),
+          type: typeEl.value,
+        });
+        const res = await fetch(`${API_BASE}/ledgers/directory?${params.toString()}`);
+        if (!res.ok) throw new Error('Could not load party directory.');
+        directory = await res.json();
+        renderList();
+      } catch (err) {
+        listEl.innerHTML = `<li class="pl-empty-hint">${err.message}</li>`;
+      }
+    }
+
     function renderList() {
-      const term = searchEl.value.trim().toLowerCase();
-      const typeChoice = typeEl.value;
       listEl.innerHTML = '';
-      const filtered = directory.filter((p) => {
-        if (term && !p.name.toLowerCase().includes(term)) return false;
-        if (typeChoice === 'Suppliers Only' && !['Supplier', 'Both'].includes(p.type)) return false;
-        if (typeChoice === 'Customers Only' && !['Customer', 'Both'].includes(p.type)) return false;
-        return true;
-      });
-      if (!filtered.length) {
+      if (!directory.length) {
         listEl.innerHTML = `<li class="pl-empty-hint">No parties match this search/filter.</li>`;
         return;
       }
-      filtered.forEach((p) => {
+      directory.forEach((p) => {
         const li = document.createElement('li');
-        li.className = 'party-item' + (!p.ledger ? ' unregistered' : '') + (selected && selected.name === p.name ? ' selected' : '');
+        li.className = 'party-item' + (!p.ledgerId ? ' unregistered' : '') + (selected && selected.partyName === p.partyName ? ' selected' : '');
         const icon = p.type === 'Both' ? 'fa-arrows-rotate' : p.type === 'Supplier' ? 'fa-truck-ramp-box' : 'fa-hand-holding-dollar';
         const tagClass = p.type === 'Both' ? 'both' : p.type.toLowerCase();
         li.innerHTML = `
           <i class="fa-solid ${icon}"></i>
-          <span class="p-name">${p.name}${p.ledger && p.ledger.short ? ` [${p.ledger.short}]` : ''}</span>
+          <span class="p-name">${p.displayName}</span>
           <span class="p-tag ${tagClass}">${p.type}</span>
-          ${!p.ledger ? '<span class="p-badge-unreg">(unregistered)</span>' : ''}
+          ${!p.ledgerId ? '<span class="p-badge-unreg">(unregistered)</span>' : ''}
         `;
         li.addEventListener('click', () => selectParty(p));
-        li.addEventListener('dblclick', () => { selectParty(p); openStatement(); });
+        li.addEventListener('dblclick', () => { selectParty(p).then(openStatement); });
         listEl.appendChild(li);
       });
     }
 
-    function selectParty(p) {
+    async function selectParty(p) {
       selected = p;
+      selectedRows = [];
       renderList();
       document.getElementById('plHeaderTitle').textContent =
-        `${p.name}${p.ledger && p.ledger.short ? ' / ' + p.ledger.short : ''}  (${p.type} Ledger Selected)`;
-      document.getElementById('btnEditLedger').style.display = p.ledger ? 'inline-flex' : 'none';
-      document.getElementById('btnDeleteLedger').style.display = p.ledger ? 'inline-flex' : 'none';
+        `${p.partyName}${p.shortName ? ' / ' + p.shortName : ''}  (${p.type} Ledger Selected)`;
+      document.getElementById('btnEditLedger').style.display = p.ledgerId ? 'inline-flex' : 'none';
+      document.getElementById('btnDeleteLedger').style.display = p.ledgerId ? 'inline-flex' : 'none';
       document.getElementById('btnOpenStatement').style.display = 'inline-flex';
       document.getElementById('plEmptyHint').style.display = 'none';
-
-      const rows = TXNS[p.name] || [];
-      const inCount = rows.filter((r) => r.movement === 'IN').reduce((s, r) => s + r.serials.length, 0);
-      const outCount = rows.filter((r) => r.movement === 'OUT').reduce((s, r) => s + r.serials.length, 0);
       document.getElementById('plSummaryGrid').style.display = 'grid';
-      document.getElementById('plSumIn').textContent = inCount;
-      document.getElementById('plSumOut').textContent = outCount;
-      document.getElementById('plSumBal').textContent = inCount - outCount;
+      document.getElementById('plSumIn').textContent = '…';
+      document.getElementById('plSumOut').textContent = '…';
+      document.getElementById('plSumBal').textContent = '…';
+
+      try {
+        selectedRows = await fetchStatementRows(p.partyName, p.type);
+        const inCount = selectedRows.filter((r) => r.movement === 'IN').length;
+        const outCount = selectedRows.filter((r) => r.movement === 'OUT').length;
+        document.getElementById('plSumIn').textContent = inCount;
+        document.getElementById('plSumOut').textContent = outCount;
+        document.getElementById('plSumBal').textContent = inCount - outCount;
+      } catch (err) {
+        document.getElementById('plSumIn').textContent = '0';
+        document.getElementById('plSumOut').textContent = '0';
+        document.getElementById('plSumBal').textContent = '0';
+      }
+      return p;
     }
 
-    searchEl.addEventListener('input', renderList);
-    typeEl.addEventListener('change', renderList);
-    document.getElementById('btnRefreshParties').addEventListener('click', () => {
-      renderList();
-      window.showToast('Party list refreshed (UI preview)');
+    async function fetchStatementRows(partyName, type) {
+      const params = new URLSearchParams({ name: partyName, type });
+      const res = await fetch(`${API_BASE}/ledgers/statement?${params.toString()}`);
+      if (!res.ok) throw new Error('Could not load transactions for this party.');
+      const data = await res.json();
+      return data.rows || [];
+    }
+
+    let searchDebounce = null;
+    searchEl.addEventListener('input', () => {
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(loadDirectory, 250);
     });
-    document.getElementById('btnImportLedgers').addEventListener('click', () => window.showToast('Import from Excel — UI preview only'));
-    document.getElementById('btnDownloadTemplate').addEventListener('click', () => window.showToast('Template download — UI preview only'));
+    typeEl.addEventListener('change', loadDirectory);
+    document.getElementById('btnRefreshParties').addEventListener('click', () => {
+      loadDirectory();
+      if (window.showToast) window.showToast('Party list refreshed.');
+    });
     document.getElementById('btnOpenStatement').addEventListener('click', openStatement);
 
-    renderList();
+    // Import / Template — SuperAdmin only, same as the desktop app's
+    // btn_import_ledgers / btn_download_template.
+    const importInput = document.getElementById('plImportFile');
+    document.getElementById('btnImportLedgers').addEventListener('click', () => {
+      if (!isAdmin) { window.openModal('Access Denied', '<p>Only SuperAdmin can import ledgers.</p>'); return; }
+      importInput.click();
+    });
+    importInput.addEventListener('change', handleImportFile);
+    document.getElementById('btnDownloadTemplate').addEventListener('click', downloadTemplate);
+
+    loadDirectory();
 
     // ---------------- Create / Edit Ledger modal ----------------
     const lfOverlay = document.getElementById('ledgerFormOverlay');
     const lfMode = document.getElementById('lfMode');
-    const lfShortLabel = document.getElementById('lfShortLabel');
+    const lfShortInput = document.getElementById('lfShort');
     const lfGstinField = document.getElementById('lfGstinField');
+    const lfGstinInput = document.getElementById('lfGstin');
+    let editingLedgerId = null;
 
     function updateLedgerFormMode() {
       const isCustomer = lfMode.value === 'Customer';
-      lfShortLabel.textContent = isCustomer ? 'Short Name / Order No.' : 'Short Name / Alias';
+      lfShortInput.placeholder = isCustomer ? 'Enter order no. / short alias' : 'Enter supplier short name';
       lfGstinField.style.display = isCustomer ? 'none' : 'flex';
+      if (isCustomer) lfGstinInput.value = '';
     }
     lfMode.addEventListener('change', updateLedgerFormMode);
 
-    // Locks/unlocks background page scroll while a fullscreen modal is open,
-    // so scrolling inside the modal never affects the page/list behind it.
+    // Locks/unlocks background page scroll while a fullscreen modal is open.
     function lockPageScroll() { document.body.classList.add('no-scroll'); }
     function unlockPageScroll() { document.body.classList.remove('no-scroll'); }
 
@@ -315,18 +298,20 @@ window.PAGES.partyledger = {
     }
 
     function openLedgerForm(editing) {
-      document.getElementById('lfName').value = editing ? editing.name : '';
-      document.getElementById('lfShort').value = editing && editing.short ? editing.short : '';
+      editingLedgerId = editing ? editing.ledgerId : null;
+      document.getElementById('lfName').value = editing ? editing.partyName : '';
+      document.getElementById('lfShort').value = editing ? (editing.shortName || '') : '';
       document.getElementById('lfMobile').value = editing && editing.mobile !== '-' ? editing.mobile || '' : '';
       document.getElementById('lfAddress').value = editing && editing.address !== '-' ? editing.address || '' : '';
-      document.getElementById('lfGstin').value = editing && editing.gstin !== '-' ? editing.gstin || '' : '';
-      lfMode.value = editing ? editing.type : 'Customer';
+      lfGstinInput.value = editing && editing.gstin !== '-' ? editing.gstin || '' : '';
+      lfMode.value = editing && ['Customer', 'Supplier'].includes(editing.type) ? editing.type : 'Customer';
       updateLedgerFormMode();
       document.getElementById('ledgerFormTitle').innerHTML =
         `<i class="fa-solid fa-address-book"></i>&nbsp; ${editing ? 'Edit Ledger' : 'Create New Ledger'}`;
       lfOverlay.classList.add('show');
       lockPageScroll();
       attachLedgerFormEscape();
+      document.getElementById('lfName').focus();
     }
     function closeLedgerForm() {
       lfOverlay.classList.remove('show');
@@ -334,19 +319,192 @@ window.PAGES.partyledger = {
       detachLedgerFormEscape();
     }
 
-    document.getElementById('btnCreateLedger').addEventListener('click', () => openLedgerForm(null));
-    document.getElementById('btnEditLedger').addEventListener('click', () => { if (selected && selected.ledger) openLedgerForm(selected.ledger); });
+    document.getElementById('btnCreateLedger').addEventListener('click', () => {
+      if (!isAdmin) { window.openModal('Access Denied', '<p>Only SuperAdmin can create ledgers.</p>'); return; }
+      openLedgerForm(null);
+    });
+    document.getElementById('btnEditLedger').addEventListener('click', () => {
+      if (!isAdmin) { window.openModal('Access Denied', '<p>Only SuperAdmin can edit ledgers.</p>'); return; }
+      if (selected && selected.ledgerId) openLedgerForm(selected);
+    });
     document.getElementById('lfCancel').addEventListener('click', closeLedgerForm);
     document.getElementById('closeLedgerForm').addEventListener('click', closeLedgerForm);
     lfOverlay.addEventListener('click', closeLedgerForm);
-    document.getElementById('lfSave').addEventListener('click', () => {
-      closeLedgerForm();
-      window.showToast('UI Preview — ledger not actually saved');
+
+    document.getElementById('lfSave').addEventListener('click', async () => {
+      const name = document.getElementById('lfName').value.trim();
+      if (!name) { window.openModal('Missing Info', '<p>Ledger Name is required.</p>'); return; }
+      const payload = {
+        name,
+        short: lfShortInput.value.trim(),
+        type: lfMode.value,
+        mobile: document.getElementById('lfMobile').value.trim(),
+        address: document.getElementById('lfAddress').value.trim(),
+        gstin: lfMode.value === 'Customer' ? '' : lfGstinInput.value.trim(),
+      };
+      const url = editingLedgerId ? `${API_BASE}/ledgers/${editingLedgerId}` : `${API_BASE}/ledgers`;
+      const method = editingLedgerId ? 'PUT' : 'POST';
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not save this ledger.');
+        closeLedgerForm();
+        if (window.showToast) window.showToast(editingLedgerId ? 'Ledger updated successfully!' : 'Ledger created successfully!');
+        await loadDirectory();
+      } catch (err) {
+        window.openModal('Could Not Save', `<p style="color:var(--red);">${err.message}</p>`);
+      }
     });
-    document.getElementById('btnDeleteLedger').addEventListener('click', () => {
-      if (!selected) return;
-      window.showToast(`UI Preview — "${selected.name}" not actually deleted`);
+
+    document.getElementById('btnDeleteLedger').addEventListener('click', async () => {
+      if (!isAdmin) { window.openModal('Access Denied', '<p>Only SuperAdmin can delete ledgers.</p>'); return; }
+      if (!selected || !selected.ledgerId) return;
+      if (!window.confirm(`Delete the Ledger '${selected.partyName}'?`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/ledgers/${selected.ledgerId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not delete this ledger.');
+        if (window.showToast) window.showToast('Ledger removed from master list.');
+        selected = null;
+        selectedRows = [];
+        document.getElementById('plHeaderTitle').textContent = 'Select a Party from the list to view details';
+        document.getElementById('btnEditLedger').style.display = 'none';
+        document.getElementById('btnDeleteLedger').style.display = 'none';
+        document.getElementById('btnOpenStatement').style.display = 'none';
+        document.getElementById('plSummaryGrid').style.display = 'none';
+        document.getElementById('plEmptyHint').style.display = 'block';
+        await loadDirectory();
+      } catch (err) {
+        window.openModal('Error', `<p style="color:var(--red);">${err.message}</p>`);
+      }
     });
+
+    // ---------------- Import / Export (CSV, same data desktop app's Excel does) ----------------
+    function downloadCsv(filename, rows) {
+      const csv = rows.map((r) => r.map((v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadTemplate() {
+      if (!isAdmin) { window.openModal('Access Denied', '<p>Only SuperAdmin can download the import template.</p>'); return; }
+      const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      downloadCsv(`Party_Ledger_Template_${stamp}.csv`, [
+        ['ledger_type', 'ledger_name', 'short_name', 'mobile', 'address', 'gstin'],
+        ['Customer', 'Customer / Project Name', 'Order No / Alias', '', '', ''],
+        ['Supplier', 'Supplier Name', 'Supplier Short Name', '', '', 'Supplier GSTIN'],
+      ]);
+      if (window.showToast) window.showToast('Template downloaded successfully.');
+    }
+
+    function parseCsv(text) {
+      const lines = text.split(/\r?\n/).filter((l) => l.trim().length);
+      if (!lines.length) return [];
+      const splitLine = (line) => {
+        const out = []; let cur = ''; let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const c = line[i];
+          if (inQuotes) {
+            if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+            else if (c === '"') { inQuotes = false; }
+            else cur += c;
+          } else if (c === '"') { inQuotes = true; }
+          else if (c === ',') { out.push(cur); cur = ''; }
+          else cur += c;
+        }
+        out.push(cur);
+        return out;
+      };
+      const header = splitLine(lines[0]).map((h) => h.trim().toLowerCase().replace(/\s+/g, '_'));
+      return lines.slice(1).map((line) => {
+        const cells = splitLine(line);
+        const row = {};
+        header.forEach((h, i) => { row[h] = (cells[i] || '').trim(); });
+        return row;
+      });
+    }
+
+    async function handleImportFile(e) {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      if (!isAdmin) { window.openModal('Access Denied', '<p>Only SuperAdmin can import ledgers.</p>'); return; }
+      if (!/\.csv$/i.test(file.name)) {
+        window.openModal('Unsupported File', '<p>Please select a CSV file exported from Excel (Save As -> CSV) for import.</p>');
+        return;
+      }
+      const text = await file.text();
+      const rows = parseCsv(text);
+      if (!rows.length) { window.openModal('No Data', '<p>Selected file has no rows to import.</p>'); return; }
+
+      const valueFrom = (row, keys, def = '') => {
+        for (const k of keys) { if (row[k] !== undefined && row[k] !== '') return row[k]; }
+        return def;
+      };
+
+      // Fetch the full current directory (unfiltered) to dedupe against, same
+      // as the desktop app checking self.db.get_all_ledgers() before import.
+      const existingRes = await fetch(`${API_BASE}/ledgers/directory?search=&type=All Parties`);
+      const existing = existingRes.ok ? await existingRes.json() : [];
+      const existingKeys = new Set(existing.filter((p) => p.ledgerId).map((p) => `${p.partyName.trim().toLowerCase()}|${(p.shortName || '').trim().toLowerCase()}`));
+
+      const incoming = [];
+      const duplicates = [];
+      rows.forEach((row) => {
+        const name = valueFrom(row, ['ledger_name', 'name', 'party_name', 'customer_name', 'supplier_name']);
+        if (!name) return;
+        const short = valueFrom(row, ['short_name', 'short', 'alias', 'order_no', 'order_number']);
+        const key = `${name.trim().toLowerCase()}|${short.trim().toLowerCase()}`;
+        if (existingKeys.has(key)) { duplicates.push(short ? `${name} (${short})` : name); return; }
+        let type = valueFrom(row, ['ledger_type', 'type'], 'Both');
+        type = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
+        if (!['Both', 'Customer', 'Supplier'].includes(type)) type = 'Both';
+        incoming.push({
+          name, short, type,
+          mobile: valueFrom(row, ['mobile', 'mobile_no', 'phone']),
+          address: valueFrom(row, ['address', 'city']),
+          gstin: valueFrom(row, ['gstin', 'gst', 'gst_no']),
+        });
+        existingKeys.add(key);
+      });
+
+      if (duplicates.length) {
+        const proceed = window.confirm(`${duplicates.length} ledger(s) already exist and will be skipped. Import only new ledgers?`);
+        if (!proceed) return;
+      }
+      if (!incoming.length) { window.openModal('Nothing to Import', '<p>All ledgers already exist.</p>'); return; }
+
+      let created = 0;
+      const failed = [];
+      for (const ledger of incoming) {
+        try {
+          const res = await fetch(`${API_BASE}/ledgers`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(ledger),
+          });
+          const data = await res.json();
+          if (res.ok) created++;
+          else failed.push(`${ledger.name}: ${data.error || 'failed'}`);
+        } catch (err) {
+          failed.push(`${ledger.name}: ${err.message}`);
+        }
+      }
+      await loadDirectory();
+      if (window.showToast) window.showToast(`${created} new ledger(s) imported successfully.`);
+      if (failed.length) window.openModal('Some Rows Failed', `<p>${failed.join('<br>')}</p>`);
+    }
 
     // ---------------- Statement modal (drill-down) ----------------
     const stOverlay = document.getElementById('statementOverlay');
@@ -354,14 +512,18 @@ window.PAGES.partyledger = {
     let stmtCurrentRow = 0;
     let stmtKeyHandler = null;
 
-    function openStatement() {
+    async function openStatement() {
       if (!selected) return;
       stMonth = null; stDate = null; stRef = null;
       document.getElementById('stmtTitle').innerHTML =
-        `<i class="fa-solid fa-file-invoice-dollar"></i> ${selected.name} &nbsp;|&nbsp; ${selected.type} Account Statement`;
+        `<i class="fa-solid fa-file-invoice-dollar"></i> ${selected.partyName} &nbsp;|&nbsp; ${selected.type} Account Statement`;
       renderProfile();
+      // Rows were already fetched by selectParty(); if not (e.g. dblclick
+      // race), fetch them now before rendering the drill-down.
+      if (!selectedRows.length) {
+        try { selectedRows = await fetchStatementRows(selected.partyName, selected.type); } catch (e) { selectedRows = []; }
+      }
       renderSummary();
-      document.getElementById('btnEditTransaction').style.display = 'none';
       renderLevel();
       stOverlay.classList.add('show');
       lockPageScroll();
@@ -374,58 +536,58 @@ window.PAGES.partyledger = {
     }
     document.getElementById('closeStatement').addEventListener('click', closeStatement);
     stOverlay.addEventListener('click', closeStatement);
-    document.getElementById('btnExportStatement').addEventListener('click', () => window.showToast('Export Statement — UI preview only'));
+    document.getElementById('btnExportStatement').addEventListener('click', () => {
+      if (!selected || !selectedRows.length) { window.openModal('No Data', '<p>No records found to export.</p>'); return; }
+      const header = ['Movement', 'Date', 'Serial No', 'Item', 'Category', 'Ref/Invoice No', 'Warehouse', 'Status'];
+      const lines = selectedRows.map((r) => [r.movement, r.date, r.serial_no, r.item_name, r.category, refDisplay(r), r.warehouse, r.status]);
+      const safeName = selected.partyName.replace(/[^a-z0-9]/gi, '_');
+      const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      downloadCsv(`Ledger_${selected.type}_${safeName}_${stamp}.csv`, [header, ...lines]);
+      if (window.showToast) window.showToast('Ledger statement exported successfully!');
+    });
     document.getElementById('stmtBack').addEventListener('click', goBackLevel);
 
     function renderProfile() {
       const box = document.getElementById('stmtProfile');
-      if (selected.ledger) {
-        const l = selected.ledger;
+      if (selected.ledgerId) {
         box.innerHTML = `
           <div class="stmt-profile">
-            <div class="pf-item"><span class="pf-label">Ledger Name</span><span class="pf-val accent">${l.name}</span></div>
-            <div class="pf-item"><span class="pf-label">Short / Alias</span><span class="pf-val">${l.short || '-'}</span></div>
+            <div class="pf-item"><span class="pf-label">Ledger Name</span><span class="pf-val accent">${selected.partyName}</span></div>
+            <div class="pf-item"><span class="pf-label">Short / Alias</span><span class="pf-val">${selected.shortName || '-'}</span></div>
             <div class="pf-item"><span class="pf-label">Ledger Group</span><span class="pf-val">${selected.type}</span></div>
-            <div class="pf-item"><span class="pf-label">Mobile No</span><span class="pf-val">${l.mobile || '-'}</span></div>
-            <div class="pf-item"><span class="pf-label">Address / City</span><span class="pf-val">${l.address || '-'}</span></div>
-            <div class="pf-item"><span class="pf-label">GSTIN</span><span class="pf-val">${l.gstin || '-'}</span></div>
+            <div class="pf-item"><span class="pf-label">Mobile No</span><span class="pf-val">${selected.mobile || '-'}</span></div>
+            <div class="pf-item"><span class="pf-label">Address / City</span><span class="pf-val">${selected.address || '-'}</span></div>
+            <div class="pf-item"><span class="pf-label">GSTIN</span><span class="pf-val">${selected.gstin || '-'}</span></div>
           </div>`;
       } else {
         box.innerHTML = `<div class="stmt-unreg"><i class="fa-solid fa-triangle-exclamation"></i>&nbsp; Unregistered Party (Data sourced from legacy transactions only.)</div>`;
       }
     }
 
-    function getRows() { return TXNS[selected.name] || []; }
-    function flatRows() {
-      const out = [];
-      getRows().forEach((g) => g.serials.forEach((s) => out.push({ ...g, ...s })));
-      return out;
-    }
-
     function renderSummary() {
-      const flat = flatRows();
-      const inC = flat.filter((r) => r.movement === 'IN').length;
-      const outC = flat.filter((r) => r.movement === 'OUT').length;
+      const inC = selectedRows.filter((r) => r.movement === 'IN').length;
+      const outC = selectedRows.filter((r) => r.movement === 'OUT').length;
       document.getElementById('stmtIn').textContent = inC;
       document.getElementById('stmtOut').textContent = outC;
       document.getElementById('stmtBal').textContent = inC - outC;
     }
 
     function parseDate(d) {
-      const [dd, mm, yyyy] = d.split('-').map(Number);
+      const [dd, mm, yyyy] = String(d || '').split('-').map(Number);
+      if (!dd || !mm || !yyyy) return null;
       return new Date(yyyy, mm - 1, dd);
     }
-    function monthKey(d) { const dt = parseDate(d); return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`; }
+    function monthKey(d) { const dt = parseDate(d); return dt ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}` : '-'; }
     function monthLabel(key) {
       const [y, m] = key.split('-').map(Number);
       return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     }
-    function refDisplay(g) {
-      if (g.movement === 'IN') return g.ref;
+    function refDisplay(row) {
+      if (row.movement === 'IN') return row.purchase_invoice ? String(row.purchase_invoice) : '-';
       const parts = [];
-      if (g.ref) parts.push(`Chalan: ${g.ref}`);
-      if (g.extra && g.extra.invoice) parts.push(`Invoice: ${g.extra.invoice}`);
-      if (g.extra && g.extra.order) parts.push(`Order: ${g.extra.order}`);
+      if (row.chalan_no && String(row.chalan_no) !== '-' && String(row.chalan_no) !== '') parts.push(`Chalan: ${row.chalan_no}`);
+      if (row.sales_invoice && String(row.sales_invoice) !== '-' && String(row.sales_invoice) !== '') parts.push(`Invoice: ${row.sales_invoice}`);
+      if (row.order_no && String(row.order_no) !== '-' && String(row.order_no) !== '') parts.push(`Order: ${row.order_no}`);
       return parts.join('  |  ') || '-';
     }
 
@@ -451,8 +613,6 @@ window.PAGES.partyledger = {
       else if (stRef === null) renderRefs(tbody);
       else renderSerials(tbody);
       updateBreadcrumb();
-      // Land on the first row by default, like the desktop app does, so
-      // arrow keys + Enter can drill down without first clicking a row.
       stmtCurrentRow = 0;
       highlightStatementRow(0);
     }
@@ -474,13 +634,13 @@ window.PAGES.partyledger = {
           if (rows.length) { stmtCurrentRow = Math.max(stmtCurrentRow - 1, 0); highlightStatementRow(stmtCurrentRow); }
         } else if (e.key === 'Enter') {
           e.preventDefault();
-          if (rows[stmtCurrentRow]) rows[stmtCurrentRow].click(); // no-op on leaf (serial) rows, same as desktop app
+          if (rows[stmtCurrentRow]) rows[stmtCurrentRow].click();
         } else if (e.key === 'Backspace') {
           e.preventDefault();
           goBackLevel();
         } else if (e.key === 'Escape') {
           e.preventDefault();
-          if (stMonth === null) closeStatement(); // already at top level -> Esc exits, matches desktop app
+          if (stMonth === null) closeStatement();
           else goBackLevel();
         }
       };
@@ -493,8 +653,9 @@ window.PAGES.partyledger = {
     function renderMonths(tbody) {
       setHead(['Month', 'Total Transactions', 'Inward (Purchase)', 'Outward (Sale)']);
       const months = {};
-      flatRows().forEach((r) => {
+      selectedRows.forEach((r) => {
         const key = monthKey(r.date);
+        if (key === '-') return;
         months[key] = months[key] || { in: 0, out: 0 };
         months[key][r.movement === 'IN' ? 'in' : 'out']++;
       });
@@ -515,7 +676,7 @@ window.PAGES.partyledger = {
 
     function renderDates(tbody) {
       setHead(['Date', 'Total Transactions', 'Inward (Purchase)', 'Outward (Sale)']);
-      const flat = flatRows().filter((r) => monthKey(r.date) === stMonth);
+      const flat = selectedRows.filter((r) => monthKey(r.date) === stMonth);
       const dates = {};
       flat.forEach((r) => {
         dates[r.date] = dates[r.date] || { in: 0, out: 0, dt: parseDate(r.date) };
@@ -536,40 +697,47 @@ window.PAGES.partyledger = {
 
     function renderRefs(tbody) {
       setHead(['Voucher / Challan / Invoice No', 'Movement', 'Serial Count', 'Category', 'Warehouse']);
-      getRows().filter((g) => g.date === stDate).forEach((g) => {
+      const groups = {};
+      const order = [];
+      selectedRows.filter((r) => r.date === stDate).forEach((r) => {
+        const key = `${r.movement}|${r.ref_key}`;
+        if (!groups[key]) { groups[key] = { movement: r.movement, ref: r.ref_key, rows: [], cats: new Set(), whs: new Set(), first: r }; order.push(key); }
+        groups[key].rows.push(r);
+        groups[key].cats.add(r.category || '-');
+        groups[key].whs.add(r.warehouse || '-');
+      });
+      order.forEach((key) => {
+        const g = groups[key];
+        const catText = g.cats.size === 1 ? [...g.cats][0] : 'Multiple';
+        const whText = g.whs.size === 1 ? [...g.whs][0] : 'Multiple';
         const tr = document.createElement('tr');
         tr.className = 'stmt-table-row';
-        tr.innerHTML = `<td data-label="Ref">🧾 ${refDisplay(g)}</td>
+        tr.innerHTML = `<td data-label="Ref">🧾 ${refDisplay(g.first)}</td>
           <td data-label="Movement" style="text-align:center; font-weight:700; color:${g.movement === 'IN' ? '#2ECC71' : 'var(--red)'};">${g.movement === 'IN' ? 'INWARD' : 'OUTWARD'}</td>
-          <td data-label="Count" style="text-align:center;">${g.serials.length}</td>
-          <td data-label="Category" style="text-align:center;">${g.category}</td>
-          <td data-label="Warehouse" style="text-align:center;">${g.warehouse}</td>`;
-        tr.addEventListener('click', () => { stRef = { movement: g.movement, key: g.ref, group: g }; renderLevel(); });
+          <td data-label="Count" style="text-align:center;">${g.rows.length}</td>
+          <td data-label="Category" style="text-align:center;">${catText}</td>
+          <td data-label="Warehouse" style="text-align:center;">${whText}</td>`;
+        tr.addEventListener('click', () => { stRef = { movement: g.movement, key: g.ref }; renderLevel(); });
         tbody.appendChild(tr);
       });
     }
 
     function renderSerials(tbody) {
       setHead(['Date', 'Movement', 'Serial No', 'Item Specs', 'Category', 'Ref/Invoice No', 'Warehouse', 'Status', 'Proof']);
-      const g = stRef.group;
+      const matched = selectedRows.filter((r) => r.date === stDate && r.movement === stRef.movement && r.ref_key === stRef.key);
       const statusColor = { Available: '#2ECC71', Sold: 'var(--red)', Damaged: 'var(--orange)' };
-      g.serials.forEach((s, idx) => {
+      matched.forEach((r, idx) => {
         const tr = document.createElement('tr');
         tr.className = 'stmt-table-row leaf';
-        tr.innerHTML = `<td data-label="Date">${g.date}</td>
-          <td data-label="Movement" style="font-weight:700; color:${g.movement === 'IN' ? '#2ECC71' : 'var(--red)'};">${g.movement === 'IN' ? 'INWARD' : 'OUTWARD'}</td>
-          <td data-label="Serial">${s.sn}</td>
-          <td data-label="Item">${s.item}</td>
-          <td data-label="Category" style="text-align:center;">${g.category}</td>
-          <td data-label="Ref" style="text-align:center;">${refDisplay(g)}</td>
-          <td data-label="Warehouse" style="text-align:center;">${g.warehouse}</td>
-          <td data-label="Status" style="text-align:center; color:${statusColor[s.status] || 'var(--txt)'};">${s.status}</td>
-          <td data-label="Proof" style="text-align:center;"><button class="btn btn-ghost" style="padding:4px 10px; font-size:11px;" disabled>-</button></td>`;
-        // 🚀 FIX: leaf (serial) rows previously had NO click handler at all,
-        // so only the row auto-highlighted by renderLevel()/keyboard-nav
-        // (always row 0) ever showed as selected — clicking any other row
-        // visually did nothing. Leaf rows don't drill further, but a click
-        // should still move the selection highlight to that row.
+        tr.innerHTML = `<td data-label="Date">${r.date}</td>
+          <td data-label="Movement" style="font-weight:700; color:${r.movement === 'IN' ? '#2ECC71' : 'var(--red)'};">${r.movement === 'IN' ? 'INWARD' : 'OUTWARD'}</td>
+          <td data-label="Serial">${r.serial_no}</td>
+          <td data-label="Item">${r.item_name || '-'}</td>
+          <td data-label="Category" style="text-align:center;">${r.category || '-'}</td>
+          <td data-label="Ref" style="text-align:center;">${refDisplay(r)}</td>
+          <td data-label="Warehouse" style="text-align:center;">${r.warehouse || '-'}</td>
+          <td data-label="Status" style="text-align:center; color:${statusColor[r.status] || 'var(--txt)'};">${r.status}</td>
+          <td data-label="Proof" style="text-align:center;"><button class="btn btn-ghost" style="padding:4px 10px; font-size:11px;" disabled>${r.proof && r.proof !== '-' ? 'Open' : '-'}</button></td>`;
         tr.addEventListener('click', () => {
           stmtCurrentRow = idx;
           highlightStatementRow(idx);
