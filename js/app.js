@@ -265,6 +265,47 @@ window.attachColumnFilters = function (table) {
   function stopHeartbeat() {
     if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
   }
+
+  // ---------- Auto-logout after 20 minutes of inactivity ----------
+  // The heartbeat above pings every 20s purely to say "this tab is still
+  // open" — it fires on a timer regardless of whether the person is
+  // actually doing anything, so it alone can't detect someone who stepped
+  // away and left the tab open. This is a separate, activity-based timer:
+  // any mouse move/click, key press, scroll, or touch resets a 20-minute
+  // countdown. If NOTHING resets it for the full 20 minutes, the person is
+  // logged out automatically — same as clicking Logout — so their session
+  // frees up (and, combined with the single-session rule, lets them log
+  // back in from elsewhere without being stuck on an abandoned session).
+  const IDLE_LIMIT_MS = 20 * 60 * 1000; // 20 minutes
+  let idleTimer = null;
+  let lastActivityResetAt = 0;
+  function resetIdleTimer() {
+    if (!window.currentUsername) return; // no one signed in — nothing to time out
+    const now = Date.now();
+    if (now - lastActivityResetAt < 3000) return; // throttle: mousemove/scroll fire dozens of times/sec
+    lastActivityResetAt = now;
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(handleIdleLogout, IDLE_LIMIT_MS);
+  }
+  function stopIdleTimer() {
+    clearTimeout(idleTimer);
+    idleTimer = null;
+  }
+  async function handleIdleLogout() {
+    if (!window.currentUsername) return;
+    await notifyServerLogout();
+    clearSession();
+    window.currentUsername = null;
+    showLoginOverlay();
+    const errorBox = document.getElementById('loginError');
+    if (errorBox) {
+      errorBox.textContent = 'You were logged out automatically after 20 minutes of inactivity.';
+      errorBox.classList.add('show');
+    }
+  }
+  ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach((evt) => {
+    window.addEventListener(evt, resetIdleTimer, { passive: true, capture: true });
+  });
   // Best-effort: tell the server this user just went offline the moment the
   // tab/browser closes, instead of waiting up to ~40s for the heartbeat to
   // go stale and self-heal. sendBeacon fires even during page unload, when
@@ -281,6 +322,7 @@ window.attachColumnFilters = function (table) {
   function notifyServerLogout() {
     const uname = window.currentUsername;
     stopHeartbeat();
+    stopIdleTimer();
     if (!uname) return Promise.resolve();
     return fetch('/api/auth/logout', {
       method: 'POST',
@@ -383,6 +425,7 @@ window.attachColumnFilters = function (table) {
         updateProfileDisplay(data.username, data.role);
         showApp();
         startHeartbeat();
+        resetIdleTimer();
       } catch (e) {
         errorBox.textContent = 'Could not reach the server. Please try again.';
         errorBox.classList.add('show');
@@ -583,6 +626,7 @@ window.attachColumnFilters = function (table) {
     updateProfileDisplay(restoredSession.username, restoredSession.role);
     showApp();
     startHeartbeat();
+    resetIdleTimer();
   } else {
     showLoginOverlay();
   }
