@@ -33,15 +33,27 @@
     let url = '';
     try { url = typeof input === 'string' ? input : (input && input.url) || ''; } catch (e) { /* ignore */ }
     const isApiCall = url.indexOf('/api/') !== -1;
-    const hadToken = !!(isApiCall && window.currentAuthToken);
+    // Capture the token AT CALL TIME (not at response time). A request fired
+    // with an old token can still be in flight after the person has since
+    // logged out, or completed a brand-new login (new token). Its 401,
+    // when it finally arrives, belongs to that dead request — not to
+    // whatever the person is doing right now.
+    const tokenUsedForThisCall = window.currentAuthToken;
+    const hadToken = !!(isApiCall && tokenUsedForThisCall);
     if (hadToken) {
       init = init ? Object.assign({}, init) : {};
       const headers = new Headers(init.headers || (typeof input !== 'string' && input && input.headers) || {});
-      if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${window.currentAuthToken}`);
+      if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${tokenUsedForThisCall}`);
       init.headers = headers;
     }
     return originalFetch(input, init).then((res) => {
-      if (hadToken && res.status === 401 && url.indexOf('/api/auth/') === -1) {
+      // Only raise a real "your session died" event if the token that just
+      // failed is STILL the active one. If it isn't (person logged out, or
+      // is mid-way through / has already finished a fresh login with a new
+      // token), this 401 is stale noise from the old session and must be
+      // ignored — this is what used to yank someone off the OTP screen or
+      // bounce a fresh login back to the credentials step.
+      if (hadToken && res.status === 401 && url.indexOf('/api/auth/') === -1 && window.currentAuthToken === tokenUsedForThisCall) {
         window.dispatchEvent(new CustomEvent('egs:session-expired'));
       }
       return res;
@@ -387,6 +399,17 @@ window.attachColumnFilters = function (table) {
     if (shellEl) shellEl.style.display = 'none';
   }
 
+  // Set to true the moment someone starts a BRAND NEW login attempt (right
+  // after their password is verified and the OTP screen opens) and cleared
+  // again once that attempt finishes or is abandoned. While this is true,
+  // window.currentAuthToken still holds the OLD (possibly dead) session's
+  // token — any late-arriving 401 from THAT old session's leftover
+  // background requests (dashboard polling, heartbeat) must NOT be allowed
+  // to yank the person back to the credentials step while they're actively
+  // typing/verifying their OTP for the new login. This is what used to
+  // cause the OTP screen to flash open and immediately snap shut.
+  window.freshLoginInProgress = false;
+
   // Fired by the global fetch wrapper (top of this file) whenever an API
   // call comes back 401 — token missing/expired, or (for anyone who was
   // already signed in before this update shipped) an old session that was
@@ -394,6 +417,7 @@ window.attachColumnFilters = function (table) {
   // the same: drop the stale session and send them back to a normal login
   // instead of leaving the app stuck making failed requests.
   window.addEventListener('egs:session-expired', () => {
+    if (window.freshLoginInProgress) return; // don't disturb an in-progress fresh login/OTP screen
     stopHeartbeat();
     stopIdleTimer();
     clearSession();
@@ -607,6 +631,7 @@ window.attachColumnFilters = function (table) {
     });
 
     function showCredsStep() {
+      window.freshLoginInProgress = false;
       hideAllSteps();
       stepCreds.style.display = '';
       otpInput.value = '';
@@ -615,6 +640,7 @@ window.attachColumnFilters = function (table) {
     }
 
     function showOtpStep(maskedEmail) {
+      window.freshLoginInProgress = true;
       stepCreds.style.display = 'none';
       stepOtp.style.display = '';
       otpHint.textContent = maskedEmail
@@ -675,6 +701,7 @@ window.attachColumnFilters = function (table) {
     // Finish signing in after the OTP is verified — same completion steps
     // the old single-step login used to run right after the password check.
     function finishLogin(data) {
+      window.freshLoginInProgress = false;
       try {
         if (rememberChk.checked) {
           localStorage.setItem('egs_remember', '1');
@@ -1246,11 +1273,33 @@ window.attachColumnFilters = function (table) {
   buildLoginOverlay();
   const restoredSession = loadSession();
   if (restoredSession) {
+    // IMPORTANT: don't trust a saved token blindly. If the server has
+    // restarted/redeployed since this token was issued (e.g. JWT_SECRET
+    // rotated because it isn't set as a persistent Render env var), the
+    // token is already dead — showing the app immediately and only THEN
+    // discovering that on the first background API call is exactly what
+    // caused the "logs in and is instantly told session has expired" and
+    // "OTP screen flashes and closes" symptoms. So verify it first with a
+    // lightweight authenticated call, and only show the app once that
+    // actually succeeds.
     window.currentAuthToken = restoredSession.token;
-    updateProfileDisplay(restoredSession.username, restoredSession.role);
-    showApp();
-    startHeartbeat();
-    resetIdleTimer();
+    fetch('/api/auth/heartbeat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: restoredSession.username }),
+    }).then((res) => {
+      if (res.status === 401) throw new Error('stale token');
+      updateProfileDisplay(restoredSession.username, restoredSession.role);
+      showApp();
+      startHeartbeat();
+      resetIdleTimer();
+    }).catch(() => {
+      // Token is dead — clear it quietly and show a normal, fresh login
+      // screen (no scary "session expired" message; this saved session was
+      // never actually killed mid-use, it was just stale from before).
+      clearSession();
+      showLoginOverlay();
+    });
   } else {
     showLoginOverlay();
   }
