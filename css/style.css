@@ -561,6 +561,25 @@ body.no-scroll{overflow:hidden; height:100%;}
 .stmt-nav .breadcrumb{color:var(--purple); font-size:13px; font-weight:700;}
 .stmt-nav .hint{color:var(--txt-muted); font-size:11px; font-style:italic; margin-left:auto;}
 
+/* ---------- Voucher Attachments panel (Party Ledger drill-down) ---------- */
+.stmt-attachments{background:var(--panel-alt); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:12px;}
+.stmt-attachments-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;}
+.stmt-attachments-head > span{color:var(--txt-label); font-size:12.5px; font-weight:700;}
+.stmt-attachments-head > span i{color:var(--purple); margin-right:4px;}
+.stmt-attach-add{cursor:pointer; display:inline-flex; align-items:center; gap:6px;}
+.stmt-attachments-list{display:flex; flex-wrap:wrap; gap:8px;}
+.stmt-attach-empty{color:var(--txt-muted); font-size:12px; font-style:italic;}
+.stmt-attach-chip{
+  display:flex; align-items:center; gap:8px; background:var(--input-bg); border:1px solid var(--border-light);
+  border-radius:20px; padding:6px 6px 6px 12px; font-size:12px; max-width:280px;
+}
+.stmt-attach-chip i.fa-file-pdf{color:var(--red);}
+.stmt-attach-chip i.fa-file-image{color:var(--blue);}
+.stmt-attach-chip .name{color:var(--txt); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:150px;}
+.stmt-attach-chip .size{color:var(--txt-muted); font-size:10.5px; white-space:nowrap;}
+.stmt-attach-chip button{padding:4px 7px; font-size:11px; border-radius:50%;}
+.stmt-attach-chip .attach-remove:hover{color:var(--red);}
+
 .stmt-table-row{cursor:pointer;}
 .stmt-table-row:hover{background:#1c2733;}
 .stmt-table-row.leaf{cursor:default;}

@@ -143,6 +143,21 @@ window.PAGES.partyledger = {
             <div class="hint" id="stmtHint">Click a row to open ▸</div>
           </div>
 
+          <!-- Voucher Attachments — one shared panel per voucher (Ref/Invoice
+               No), instead of repeating the same "Open" button on every
+               serial-number row below. Only shown once a specific voucher is
+               drilled into (see updateAttachmentsPanel()). -->
+          <div class="stmt-attachments" id="stmtAttachments" style="display:none;">
+            <div class="stmt-attachments-head">
+              <span><i class="fa-solid fa-paperclip"></i> Attachments for this voucher</span>
+              <label class="btn btn-ghost stmt-attach-add" id="stmtAttachAddBtn" style="padding:4px 10px; font-size:11px;">
+                <i class="fa-solid fa-plus"></i> Add
+                <input type="file" id="stmtAttachAddInput" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt">
+              </label>
+            </div>
+            <div class="stmt-attachments-list" id="stmtAttachmentsList"></div>
+          </div>
+
           <div class="table-wrap">
             <table id="stmtTable">
               <thead id="stmtThead"></thead>
@@ -630,9 +645,100 @@ window.PAGES.partyledger = {
       else if (stRef === null) renderRefs(tbody);
       else renderSerials(tbody);
       updateBreadcrumb();
+      updateAttachmentsPanel();
       stmtCurrentRow = 0;
       highlightStatementRow(0);
     }
+
+    // ---------------- Voucher Attachments panel ----------------
+    // One shared set of real, openable files per voucher (Ref/Invoice No),
+    // fetched from the new /api/attachments endpoints — only visible once
+    // drilled down to a specific voucher's serial-number list, since that's
+    // the level every one of those rows shares the exact same proof at.
+    const attachPanel = document.getElementById('stmtAttachments');
+    const attachList = document.getElementById('stmtAttachmentsList');
+    const attachAddInput = document.getElementById('stmtAttachAddInput');
+    let attachRefType = null, attachRefNo = null;
+
+    function fmtFileSize(bytes) {
+      if (!bytes) return '';
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    async function updateAttachmentsPanel() {
+      if (stRef === null) {
+        attachPanel.style.display = 'none';
+        attachRefType = null; attachRefNo = null;
+        return;
+      }
+      attachRefType = stRef.movement === 'IN' ? 'purchase' : 'sales';
+      attachRefNo = stRef.key;
+      attachPanel.style.display = '';
+      attachList.innerHTML = `<div class="stmt-attach-empty">Loading attachments...</div>`;
+      await refreshAttachmentsList();
+    }
+
+    async function refreshAttachmentsList() {
+      if (!attachRefType || !attachRefNo || attachRefNo === '-') {
+        attachList.innerHTML = `<div class="stmt-attach-empty">No proof was attached for this voucher.</div>`;
+        return;
+      }
+      let files = [];
+      try {
+        const data = await window.Api.get(`/attachments?refType=${encodeURIComponent(attachRefType)}&refNo=${encodeURIComponent(attachRefNo)}`);
+        files = data.files || [];
+      } catch (e) {
+        attachList.innerHTML = `<div class="stmt-attach-empty">Could not load attachments.</div>`;
+        return;
+      }
+      if (!files.length) {
+        attachList.innerHTML = `<div class="stmt-attach-empty">No proof was attached for this voucher.</div>`;
+        return;
+      }
+      attachList.innerHTML = files.map((f) => `
+        <div class="stmt-attach-chip" data-id="${f.id}">
+          <i class="fa-solid ${/pdf/i.test(f.mimeType) ? 'fa-file-pdf' : /image/i.test(f.mimeType) ? 'fa-file-image' : 'fa-file'}"></i>
+          <span class="name" title="${String(f.fileName).replace(/"/g, '&quot;')}">${f.fileName}</span>
+          <span class="size">${fmtFileSize(f.fileSize)}</span>
+          <button type="button" class="btn btn-ghost attach-open" data-id="${f.id}" title="Open"><i class="fa-solid fa-up-right-from-square"></i></button>
+          <button type="button" class="btn btn-ghost attach-remove" data-id="${f.id}" title="Remove"><i class="fa-solid fa-trash"></i></button>
+        </div>`).join('');
+    }
+
+    attachList.addEventListener('click', async (e) => {
+      const openBtn = e.target.closest('.attach-open');
+      if (openBtn) {
+        window.open(`${API_BASE}/attachments/${openBtn.dataset.id}/file`, '_blank');
+        return;
+      }
+      const removeBtn = e.target.closest('.attach-remove');
+      if (removeBtn) {
+        const ok = await window.confirmDanger('Remove Attachment', 'Remove this proof file from the voucher? This cannot be undone.');
+        if (!ok) return;
+        try {
+          await window.Api.delete(`/attachments/${removeBtn.dataset.id}`);
+          await refreshAttachmentsList();
+          if (window.showToast) window.showToast('Attachment removed.');
+        } catch (err) {
+          window.openModal('Error', `<p>${err.message || 'Could not remove this attachment.'}</p>`);
+        }
+      }
+    });
+
+    attachAddInput.addEventListener('change', async () => {
+      const files = attachAddInput.files;
+      if (!files || !files.length || !attachRefType || !attachRefNo || attachRefNo === '-') { attachAddInput.value = ''; return; }
+      const result = await window.uploadAttachments(attachRefType, attachRefNo, files);
+      attachAddInput.value = '';
+      if (!result.ok) {
+        window.openModal('Upload Failed', `<p>${result.error || 'Could not upload the file(s).'}</p>`);
+        return;
+      }
+      await refreshAttachmentsList();
+      if (window.showToast) window.showToast('Attachment(s) uploaded.');
+    });
 
     function highlightStatementRow(idx) {
       const rows = document.querySelectorAll('#stmtTbody tr.stmt-table-row');
@@ -740,7 +846,7 @@ window.PAGES.partyledger = {
     }
 
     function renderSerials(tbody) {
-      setHead(['Date', 'Movement', 'Serial No', 'Item Specs', 'Category', 'Ref/Invoice No', 'Warehouse', 'Status', 'Proof']);
+      setHead(['Date', 'Movement', 'Serial No', 'Item Specs', 'Category', 'Ref/Invoice No', 'Warehouse', 'Status']);
       const matched = selectedRows.filter((r) => r.date === stDate && r.movement === stRef.movement && r.ref_key === stRef.key);
       const statusColor = { Available: '#2ECC71', Sold: 'var(--red)', Damaged: 'var(--orange)' };
       matched.forEach((r, idx) => {
@@ -753,8 +859,7 @@ window.PAGES.partyledger = {
           <td data-label="Category" style="text-align:center;">${r.category || '-'}</td>
           <td data-label="Ref" style="text-align:center;">${refDisplay(r)}</td>
           <td data-label="Warehouse" style="text-align:center;">${r.warehouse || '-'}</td>
-          <td data-label="Status" style="text-align:center; color:${statusColor[r.status] || 'var(--txt)'};">${r.status}</td>
-          <td data-label="Proof" style="text-align:center;"><button class="btn btn-ghost" style="padding:4px 10px; font-size:11px;" disabled>${r.proof && r.proof !== '-' ? 'Open' : '-'}</button></td>`;
+          <td data-label="Status" style="text-align:center; color:${statusColor[r.status] || 'var(--txt)'};">${r.status}</td>`;
         tr.addEventListener('click', () => {
           stmtCurrentRow = idx;
           highlightStatementRow(idx);

@@ -13,7 +13,7 @@ const nodemailer = require('nodemailer');
 
 const app = express();
 app.use(cors()); 
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
 
 // ---------------------------------------------------------------------------
 // EMAIL OTP — sending login OTPs.
@@ -337,6 +337,107 @@ async function getOrCreateItem(conn, category, brand, watt, solarType) {
     console.warn('[Auth/OTP schema] Could not ensure email column / otp_codes table:', e.message);
   }
 })();
+
+// ---------------------------------------------------------------------------
+// ATTACHMENTS — real, openable proof files (Purchase invoice photos, Sale
+// challans, Stock Assign proofs, etc). Previously the app only ever saved a
+// filename *label* (e.g. "invoice.pdf" or "3 files") into
+// stock_ledger.purchase_attachment / sales_attachment / assign_attachment —
+// the actual file the person picked was never sent to the server, so the
+// Ledger's "Open" button had nothing to open. This table stores the real
+// file bytes (base64, since this server has no persistent disk to write to
+// on every host) keyed by (ref_type, ref_no) so ALL serials that belong to
+// the same voucher/invoice share the same set of attachments instead of
+// each row needing (or repeating) its own copy.
+//   ref_type: 'purchase' | 'sales' | 'assign'
+//   ref_no:   the voucher key — purchase_invoice / chalan_no-or-order_no /
+//             assign_reference, matching PartyLedger's ref_key grouping.
+// ---------------------------------------------------------------------------
+(async function ensureAttachmentsSchema() {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS attachments (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      ref_type VARCHAR(20) NOT NULL,
+      ref_no VARCHAR(150) NOT NULL,
+      file_name VARCHAR(255) NOT NULL,
+      mime_type VARCHAR(100) NOT NULL DEFAULT 'application/octet-stream',
+      file_size INT NOT NULL DEFAULT 0,
+      file_data LONGTEXT NOT NULL,
+      uploaded_by VARCHAR(100) NULL,
+      uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_attachments_ref (ref_type, ref_no)
+    )`);
+  } catch (e) {
+    console.warn('[Attachments schema] Could not ensure attachments table:', e.message);
+  }
+})();
+
+// POST /api/attachments — body: { refType, refNo, uploadedBy, files: [{ name, mimeType, size, data }] }
+// `data` is base64 WITHOUT the "data:...;base64," prefix (frontend strips
+// it before sending). Multiple files in one call is the normal case, since
+// a single invoice/challan can have several proof photos.
+app.post('/api/attachments', route(async (req, res) => {
+  const refType = String(req.body.refType || '').trim();
+  const refNo = String(req.body.refNo || '').trim();
+  const files = Array.isArray(req.body.files) ? req.body.files : [];
+  if (!refType || !refNo) return res.status(400).json({ error: 'refType and refNo are required.' });
+  if (!files.length) return res.status(400).json({ error: 'No files provided.' });
+
+  const uploadedBy = req.body.uploadedBy ? String(req.body.uploadedBy).trim() : null;
+  const inserted = [];
+  for (const f of files) {
+    if (!f || !f.name || !f.data) continue;
+    const [result] = await pool.query(
+      `INSERT INTO attachments (ref_type, ref_no, file_name, mime_type, file_size, file_data, uploaded_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [refType, refNo, String(f.name).slice(0, 255), f.mimeType || 'application/octet-stream', Number(f.size) || 0, f.data, uploadedBy]
+    );
+    inserted.push({ id: result.insertId, fileName: f.name, mimeType: f.mimeType || 'application/octet-stream', fileSize: Number(f.size) || 0 });
+  }
+  if (!inserted.length) return res.status(400).json({ error: 'No valid files provided.' });
+  res.json({ success: true, files: inserted });
+}));
+
+// GET /api/attachments?refType=&refNo= — metadata only (no file_data), so
+// the Ledger's voucher-level Attachments panel loads instantly even if a
+// file is several MB.
+app.get('/api/attachments', route(async (req, res) => {
+  const refType = String(req.query.refType || '').trim();
+  const refNo = String(req.query.refNo || '').trim();
+  if (!refType || !refNo) return res.status(400).json({ error: 'refType and refNo are required.' });
+  const [rows] = await pool.query(
+    `SELECT id, file_name, mime_type, file_size, uploaded_by, uploaded_at
+     FROM attachments WHERE ref_type=? AND ref_no=? ORDER BY uploaded_at ASC, id ASC`,
+    [refType, refNo]
+  );
+  res.json({ files: rows.map((r) => ({
+    id: r.id, fileName: r.file_name, mimeType: r.mime_type, fileSize: r.file_size,
+    uploadedBy: r.uploaded_by, uploadedAt: r.uploaded_at,
+  })) });
+}));
+
+// GET /api/attachments/:id/file — streams the actual bytes so the browser
+// can open/preview it (images and PDFs render inline; everything else the
+// browser will offer to download), instead of just showing a filename.
+app.get('/api/attachments/:id/file', route(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Invalid attachment id.' });
+  const [[row]] = await pool.query(`SELECT file_name, mime_type, file_data FROM attachments WHERE id=?`, [id]);
+  if (!row) return res.status(404).json({ error: 'Attachment not found.' });
+  const buffer = Buffer.from(row.file_data, 'base64');
+  res.setHeader('Content-Type', row.mime_type || 'application/octet-stream');
+  res.setHeader('Content-Disposition', `inline; filename="${String(row.file_name).replace(/"/g, '')}"`);
+  res.send(buffer);
+}));
+
+// DELETE /api/attachments/:id — lets a mistaken/duplicate proof be removed.
+app.delete('/api/attachments/:id', route(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Invalid attachment id.' });
+  const [result] = await pool.query(`DELETE FROM attachments WHERE id=?`, [id]);
+  if (result.affectedRows === 0) return res.status(404).json({ error: 'Attachment not found.' });
+  res.json({ success: true });
+}));
 
 
 function route(handler) {

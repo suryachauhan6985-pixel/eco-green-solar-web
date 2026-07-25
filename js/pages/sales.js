@@ -590,7 +590,14 @@ window.PAGES.sales = {
           lines: saleLines.map((l) => ({ cat: l.cat, brand: l.brand, watt: l.watt, type: l.type, serials: l.serials })),
         });
         if (window.showToast) window.showToast('Sales Dispatch Executed successfully!');
-        window.openModal('Success', `<p>Project dispatch saved with ${result.lineCount} product line(s) and ${result.serialCount} serial(s).</p>`);
+        // Uploaded against chalanNo — Party Ledger groups OUT vouchers by
+        // chalan_no first (falling back to order_no only if no chalan), so
+        // this is the key that will actually be looked up later.
+        const uploadResult = await window.uploadAttachments('sales', chalanNo, saleProof.files);
+        const uploadWarning = !uploadResult.ok
+          ? `<p style="color:var(--red); margin-top:8px;">Note: the dispatch was saved, but the proof file(s) could not be uploaded (${uploadResult.error}). You can re-attach them from Sale Register &gt; Edit.</p>`
+          : '';
+        window.openModal('Success', `<p>Project dispatch saved with ${result.lineCount} product line(s) and ${result.serialCount} serial(s).</p>${uploadWarning}`);
         clearSalesForm();
       } catch (err) {
         window.openModal('Execution Error', `<p style="color:var(--red); white-space:pre-line;">${err.message}</p>`);
@@ -790,8 +797,12 @@ window.PAGES.sales = {
           });
           loadedOrderNo = result.orderNo;
           loadedOriginalSerials = allSerials;
+          const uploadResult = await window.uploadAttachments('sales', newChalan, saleEditProof.files);
           if (window.showToast) window.showToast('Sales Modifications Saved.');
-          window.openModal('Saved', `<p>Sales order <strong>${loadedOrderNo}</strong> updated successfully.</p>`);
+          const uploadWarning = !uploadResult.ok
+            ? `<p style="color:var(--red); margin-top:8px;">Note: the order was updated, but the new proof file(s) could not be uploaded (${uploadResult.error}). Please try attaching them again.</p>`
+            : '';
+          window.openModal('Saved', `<p>Sales order <strong>${loadedOrderNo}</strong> updated successfully.</p>${uploadWarning}`);
         } catch (err) {
           window.openModal('Error', `<p style="white-space:pre-line;">${err.message || 'Failed to modify tracking register'}</p>`);
         } finally {
