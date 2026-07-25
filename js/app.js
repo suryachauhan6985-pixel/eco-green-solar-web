@@ -1273,33 +1273,19 @@ window.attachColumnFilters = function (table) {
   buildLoginOverlay();
   const restoredSession = loadSession();
   if (restoredSession) {
-    // IMPORTANT: don't trust a saved token blindly. If the server has
-    // restarted/redeployed since this token was issued (e.g. JWT_SECRET
-    // rotated because it isn't set as a persistent Render env var), the
-    // token is already dead — showing the app immediately and only THEN
-    // discovering that on the first background API call is exactly what
-    // caused the "logs in and is instantly told session has expired" and
-    // "OTP screen flashes and closes" symptoms. So verify it first with a
-    // lightweight authenticated call, and only show the app once that
-    // actually succeeds.
+    // Show the app immediately — no network round-trip here, so a valid
+    // saved session never flashes the login form before the dashboard
+    // appears. If this token actually IS dead (server restarted since it
+    // was issued), the dashboard's own background API calls will get a
+    // real 401 within a moment, and the fetch wrapper + session-expired
+    // handler above (see top of file) will cleanly drop back to login —
+    // this is the correct, honest way to discover an expired session,
+    // instead of blocking every single reload on an extra round-trip.
     window.currentAuthToken = restoredSession.token;
-    fetch('/api/auth/heartbeat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: restoredSession.username }),
-    }).then((res) => {
-      if (res.status === 401) throw new Error('stale token');
-      updateProfileDisplay(restoredSession.username, restoredSession.role);
-      showApp();
-      startHeartbeat();
-      resetIdleTimer();
-    }).catch(() => {
-      // Token is dead — clear it quietly and show a normal, fresh login
-      // screen (no scary "session expired" message; this saved session was
-      // never actually killed mid-use, it was just stale from before).
-      clearSession();
-      showLoginOverlay();
-    });
+    updateProfileDisplay(restoredSession.username, restoredSession.role);
+    showApp();
+    startHeartbeat();
+    resetIdleTimer();
   } else {
     showLoginOverlay();
   }
