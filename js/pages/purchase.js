@@ -63,7 +63,6 @@ window.PAGES.purchase = {
                 <input type="file" id="purProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt">
                 <button class="btn btn-ghost" type="button" id="purBtnAttach"><i class="fa-solid fa-paperclip"></i> Add Attachment</button>
                 <button class="btn btn-ghost" type="button" id="purBtnClearProof"><i class="fa-solid fa-xmark"></i> Clear All</button>
-                <button class="btn btn-ghost" type="button" id="purBtnViewProof" title="View selected proof file(s)"><i class="fa-solid fa-eye"></i></button>
                 <span class="proof-name" id="purProofName">No proof selected</span>
               </div>
             </div>
@@ -119,7 +118,6 @@ window.PAGES.purchase = {
                 <input type="file" id="purEditProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt">
                 <button class="btn btn-ghost" type="button" id="purBtnEditAttach"><i class="fa-solid fa-paperclip"></i> Add Attachment</button>
                 <button class="btn btn-ghost" type="button" id="purBtnKeepProof"><i class="fa-solid fa-rotate-left"></i> Keep Existing</button>
-                <button class="btn btn-ghost" type="button" id="purBtnViewEditProof" title="View proof file(s)"><i class="fa-solid fa-eye"></i></button>
                 <span class="proof-name" id="purEditProofName">No proof selected</span>
               </div>
             </div>
@@ -240,7 +238,14 @@ window.PAGES.purchase = {
     // replacing it — click it once, pick a file, click it again, pick
     // another, and both stay attached (as chips, each removable with its
     // own x). Only "Clear All" / "Keep Existing" wipe the whole list.
-    function wireProofButtons(fileInputId, attachBtnId, clearBtnId, viewBtnId, labelId, state) {
+    // "Add Attachment" always ADDS to the existing selection instead of
+    // replacing it — click it once, pick a file, click it again, pick
+    // another, and both stay attached (as clickable chips). Click a chip's
+    // name to open that exact file in a new tab (cursor:pointer signals
+    // this — no separate "eye" view button needed any more); click its
+    // small x to remove just that one file. "Clear All" / "Keep Existing"
+    // wipe the whole list.
+    function wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state) {
       const fileInput = $(fileInputId);
       const labelEl = $(labelId);
 
@@ -250,7 +255,7 @@ window.PAGES.purchase = {
           return;
         }
         labelEl.innerHTML = state.files.map((f, i) => `
-          <span class="proof-chip">${String(f.name).replace(/</g, '&lt;')}<button type="button" class="proof-chip-remove" data-idx="${i}" title="Remove this file">&times;</button></span>
+          <span class="proof-chip" data-idx="${i}" title="Click to open ${String(f.name).replace(/"/g, '&quot;')}">${String(f.name).replace(/</g, '&lt;')}<button type="button" class="proof-chip-remove" data-idx="${i}" title="Remove this file">&times;</button></span>
         `).join('');
       }
       state.renderFileList = renderFileList;
@@ -266,10 +271,17 @@ window.PAGES.purchase = {
         renderFileList();
       });
       labelEl.addEventListener('click', (e) => {
-        const btn = e.target.closest('.proof-chip-remove');
-        if (!btn) return;
-        state.files.splice(parseInt(btn.dataset.idx, 10), 1);
-        renderFileList();
+        const removeBtn = e.target.closest('.proof-chip-remove');
+        if (removeBtn) {
+          state.files.splice(parseInt(removeBtn.dataset.idx, 10), 1);
+          renderFileList();
+          return;
+        }
+        const chip = e.target.closest('.proof-chip');
+        if (chip) {
+          const f = state.files[parseInt(chip.dataset.idx, 10)];
+          if (f) window.open(URL.createObjectURL(f), '_blank');
+        }
       });
       if (clearBtnId) {
         $(clearBtnId).addEventListener('click', () => {
@@ -278,13 +290,6 @@ window.PAGES.purchase = {
           renderFileList();
         });
       }
-      $(viewBtnId).addEventListener('click', () => {
-        if (!state.files.length) {
-          window.openModal('Proof Missing', '<p>No proof file selected to preview.</p>');
-          return;
-        }
-        state.files.forEach((f) => window.open(URL.createObjectURL(f), '_blank'));
-      });
     }
 
     // ---------------- Category -> Brand -> Wattage cascading dropdowns,
@@ -501,7 +506,7 @@ window.PAGES.purchase = {
     const purLineList = $('purLineList');
     renderLineList(purLineList, purLines, 'No product lines added yet — fill the fields above and click "Add Product Line".');
     wireLineSelection(purLineList);
-    wireProofButtons('purProofFile', 'purBtnAttach', 'purBtnClearProof', 'purBtnViewProof', 'purProofName', purProof);
+    wireProofButtons('purProofFile', 'purBtnAttach', 'purBtnClearProof', 'purProofName', purProof);
 
     $('purBtnAddLine').addEventListener('click', () => {
       const cat = $('purCat').value, brand = $('purBrand').value, watt = $('purWatt').value.trim();
@@ -634,7 +639,7 @@ window.PAGES.purchase = {
 
     if (isAdmin) {
       wireLineSelection(purEditLineList);
-      wireProofButtons('purEditProofFile', 'purBtnEditAttach', null, 'purBtnViewEditProof', 'purEditProofName', purEditProof);
+      wireProofButtons('purEditProofFile', 'purBtnEditAttach', null, 'purEditProofName', purEditProof);
 
       // ---------------- Edit panel: Category -> Brand/Type -> Wattage,
       // fetched live from the database exactly like the New Purchase Entry

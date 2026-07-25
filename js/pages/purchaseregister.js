@@ -34,7 +34,7 @@ window.PAGES.purchaseregister = {
         <th data-col="Brand">Brand <button class="th-filter-btn" data-col="Brand" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Qty">Qty <button class="th-filter-btn" data-col="Qty" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Warehouse">Warehouse <button class="th-filter-btn" data-col="Warehouse" type="button"><i class="fa-solid fa-filter"></i></button></th>
-        <th data-col="Edited?"Edited? <button class="th-filter-btn" data-col="Edited?" type="button"><i class="fa-solid fa-filter"></i></button></th>
+        <th data-col="Edited?">Edited? <button class="th-filter-btn" data-col="Edited?" type="button"><i class="fa-solid fa-filter"></i></button></th>
       </tr></thead>
       <tbody id="pregBody"></tbody>
     </table></div>
