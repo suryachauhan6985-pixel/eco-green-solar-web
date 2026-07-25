@@ -317,10 +317,14 @@ window.attachColumnFilters = function (table) {
     if (pwdInput) pwdInput.value = '';
     const errorBox = document.getElementById('loginError');
     if (errorBox) errorBox.classList.remove('show');
+    // Always land back on the Sign In step, whichever step was last open
+    // (e.g. someone closed mid-registration and reopens the app later).
+    ['loginStepOtp', 'loginStepRegister', 'loginStepRegisterOtp', 'loginStepForgot', 'loginStepReset'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
     const stepCreds = document.getElementById('loginStepCreds');
-    const stepOtp = document.getElementById('loginStepOtp');
     if (stepCreds) stepCreds.style.display = '';
-    if (stepOtp) stepOtp.style.display = 'none';
     loginOverlay.style.display = 'flex';
     if (shellEl) shellEl.style.display = 'none';
   }
@@ -347,6 +351,10 @@ window.attachColumnFilters = function (table) {
           <label class="login-remember"><input type="checkbox" id="loginRemember"> Remember Me on this Computer</label>
           <div class="login-error" id="loginError">Please enter both username/email and password.</div>
           <button type="button" class="login-btn" id="loginSubmit">Sign In</button>
+          <div class="login-links">
+            <a href="#" id="loginGoForgot">Forgot Password?</a>
+            <a href="#" id="loginGoRegister">Create Account</a>
+          </div>
         </div>
 
         <div id="loginStepOtp" style="display:none;">
@@ -362,6 +370,87 @@ window.attachColumnFilters = function (table) {
           <div style="display:flex; justify-content:space-between; margin-top:10px;">
             <button type="button" class="btn btn-ghost" id="loginOtpBack" style="padding:6px 10px; font-size:12px;">&larr; Back</button>
             <button type="button" class="btn btn-ghost" id="loginOtpResend" style="padding:6px 10px; font-size:12px;">Resend OTP</button>
+          </div>
+        </div>
+
+        <div id="loginStepRegister" style="display:none;">
+          <div class="login-field">
+            <label>Choose a Username</label>
+            <input type="text" id="regUsername" placeholder="Username" autocomplete="username">
+          </div>
+          <div class="login-field">
+            <label>Email</label>
+            <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email">
+          </div>
+          <div class="login-field">
+            <label>Password</label>
+            <div class="login-pwd-wrap">
+              <input type="password" id="regPassword" placeholder="At least 6 characters" autocomplete="new-password">
+              <button type="button" class="login-toggle-pwd" id="regTogglePwd"><i class="fa-solid fa-eye"></i></button>
+            </div>
+          </div>
+          <div class="login-field">
+            <label>Confirm Password</label>
+            <input type="password" id="regConfirmPassword" placeholder="Re-enter password" autocomplete="new-password">
+          </div>
+          <div class="login-error" id="regError"></div>
+          <button type="button" class="login-btn" id="regSubmit">Create Account</button>
+          <div class="login-links">
+            <a href="#" id="regGoLogin">&larr; Back to Sign In</a>
+          </div>
+        </div>
+
+        <div id="loginStepRegisterOtp" style="display:none;">
+          <div style="color:var(--txt-muted); font-size:13px; margin-bottom:12px;" id="regOtpHint">
+            Enter the 6-digit OTP sent to your email to activate your account.
+          </div>
+          <div class="login-field">
+            <label>OTP</label>
+            <input type="text" id="regOtpInput" placeholder="6-digit OTP" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+          </div>
+          <div class="login-error" id="regOtpError"></div>
+          <button type="button" class="login-btn" id="regOtpSubmit">Verify &amp; Continue</button>
+          <div style="display:flex; justify-content:space-between; margin-top:10px;">
+            <button type="button" class="btn btn-ghost" id="regOtpBack" style="padding:6px 10px; font-size:12px;">&larr; Back</button>
+            <button type="button" class="btn btn-ghost" id="regOtpResend" style="padding:6px 10px; font-size:12px;">Resend OTP</button>
+          </div>
+        </div>
+
+        <div id="loginStepForgot" style="display:none;">
+          <div style="color:var(--txt-muted); font-size:13px; margin-bottom:12px;">
+            Enter your username or email — we'll send a 6-digit OTP to reset your password.
+          </div>
+          <div class="login-field">
+            <label>Username or Email</label>
+            <input type="text" id="forgotIdentifier" placeholder="Username or Email" autocomplete="username">
+          </div>
+          <div class="login-error" id="forgotError"></div>
+          <button type="button" class="login-btn" id="forgotSubmit">Send OTP</button>
+          <div class="login-links">
+            <a href="#" id="forgotGoLogin">&larr; Back to Sign In</a>
+          </div>
+        </div>
+
+        <div id="loginStepReset" style="display:none;">
+          <div style="color:var(--txt-muted); font-size:13px; margin-bottom:12px;" id="resetHint">
+            Enter the OTP sent to your email, and choose a new password.
+          </div>
+          <div class="login-field">
+            <label>OTP</label>
+            <input type="text" id="resetOtpInput" placeholder="6-digit OTP" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+          </div>
+          <div class="login-field">
+            <label>New Password</label>
+            <div class="login-pwd-wrap">
+              <input type="password" id="resetNewPassword" placeholder="At least 6 characters" autocomplete="new-password">
+              <button type="button" class="login-toggle-pwd" id="resetTogglePwd"><i class="fa-solid fa-eye"></i></button>
+            </div>
+          </div>
+          <div class="login-error" id="resetError"></div>
+          <button type="button" class="login-btn" id="resetSubmit">Reset Password &amp; Sign In</button>
+          <div style="display:flex; justify-content:space-between; margin-top:10px;">
+            <button type="button" class="btn btn-ghost" id="resetBack" style="padding:6px 10px; font-size:12px;">&larr; Back</button>
+            <button type="button" class="btn btn-ghost" id="resetResend" style="padding:6px 10px; font-size:12px;">Resend OTP</button>
           </div>
         </div>
       </div>`;
@@ -383,9 +472,51 @@ window.attachColumnFilters = function (table) {
     const otpBackBtn = loginOverlay.querySelector('#loginOtpBack');
     const otpResendBtn = loginOverlay.querySelector('#loginOtpResend');
 
+    const loginGoForgot = loginOverlay.querySelector('#loginGoForgot');
+    const loginGoRegister = loginOverlay.querySelector('#loginGoRegister');
+
+    // ---------- Register ----------
+    const stepRegister = loginOverlay.querySelector('#loginStepRegister');
+    const regUsername = loginOverlay.querySelector('#regUsername');
+    const regEmail = loginOverlay.querySelector('#regEmail');
+    const regPassword = loginOverlay.querySelector('#regPassword');
+    const regConfirmPassword = loginOverlay.querySelector('#regConfirmPassword');
+    const regToggleBtn = loginOverlay.querySelector('#regTogglePwd');
+    const regError = loginOverlay.querySelector('#regError');
+    const regSubmitBtn = loginOverlay.querySelector('#regSubmit');
+    const regGoLogin = loginOverlay.querySelector('#regGoLogin');
+
+    const stepRegisterOtp = loginOverlay.querySelector('#loginStepRegisterOtp');
+    const regOtpHint = loginOverlay.querySelector('#regOtpHint');
+    const regOtpInput = loginOverlay.querySelector('#regOtpInput');
+    const regOtpError = loginOverlay.querySelector('#regOtpError');
+    const regOtpSubmitBtn = loginOverlay.querySelector('#regOtpSubmit');
+    const regOtpBackBtn = loginOverlay.querySelector('#regOtpBack');
+    const regOtpResendBtn = loginOverlay.querySelector('#regOtpResend');
+
+    // ---------- Forgot Password ----------
+    const stepForgot = loginOverlay.querySelector('#loginStepForgot');
+    const forgotIdentifier = loginOverlay.querySelector('#forgotIdentifier');
+    const forgotError = loginOverlay.querySelector('#forgotError');
+    const forgotSubmitBtn = loginOverlay.querySelector('#forgotSubmit');
+    const forgotGoLogin = loginOverlay.querySelector('#forgotGoLogin');
+
+    const stepReset = loginOverlay.querySelector('#loginStepReset');
+    const resetHint = loginOverlay.querySelector('#resetHint');
+    const resetOtpInput = loginOverlay.querySelector('#resetOtpInput');
+    const resetNewPassword = loginOverlay.querySelector('#resetNewPassword');
+    const resetToggleBtn = loginOverlay.querySelector('#resetTogglePwd');
+    const resetError = loginOverlay.querySelector('#resetError');
+    const resetSubmitBtn = loginOverlay.querySelector('#resetSubmit');
+    const resetBackBtn = loginOverlay.querySelector('#resetBack');
+    const resetResendBtn = loginOverlay.querySelector('#resetResend');
+
     // Carries the verified username across from step 1 to step 2 (server
     // already confirmed the password by the time we get here).
     let pendingUsername = null;
+    // Same idea, but for the Registration and Forgot-Password OTP steps.
+    let pendingRegUsername = null;
+    let pendingResetUsername = null;
 
     // Prefill remembered username only (never the password), mirrors the
     // desktop app's "Remember Me" for convenience — the password still has
@@ -405,7 +536,7 @@ window.attachColumnFilters = function (table) {
     });
 
     function showCredsStep() {
-      stepOtp.style.display = 'none';
+      hideAllSteps();
       stepCreds.style.display = '';
       otpInput.value = '';
       otpError.classList.remove('show');
@@ -421,6 +552,53 @@ window.attachColumnFilters = function (table) {
       otpError.classList.remove('show');
       otpInput.value = '';
       otpInput.focus();
+    }
+
+    // ---------- Step switching: Register / Forgot Password / Reset ----------
+    // All five screens (creds, login-OTP, register, register-OTP, forgot,
+    // reset) live in the same card and only one is ever visible at a time.
+    function hideAllSteps() {
+      [stepCreds, stepOtp, stepRegister, stepRegisterOtp, stepForgot, stepReset].forEach((el) => {
+        if (el) el.style.display = 'none';
+      });
+    }
+
+    function showRegisterStep() {
+      hideAllSteps();
+      stepRegister.style.display = '';
+      regError.classList.remove('show');
+      regUsername.focus();
+    }
+
+    function showRegisterOtpStep(maskedEmail) {
+      hideAllSteps();
+      stepRegisterOtp.style.display = '';
+      regOtpHint.textContent = maskedEmail
+        ? `Enter the 6-digit OTP sent to ${maskedEmail} to activate your account.`
+        : 'Enter the 6-digit OTP sent to your email to activate your account.';
+      regOtpError.classList.remove('show');
+      regOtpInput.value = '';
+      regOtpInput.focus();
+    }
+
+    function showForgotStep() {
+      hideAllSteps();
+      stepForgot.style.display = '';
+      forgotError.classList.remove('show');
+      forgotIdentifier.value = userInput.value.trim();
+      forgotIdentifier.focus();
+    }
+
+    function showResetStep(maskedEmail) {
+      hideAllSteps();
+      stepReset.style.display = '';
+      resetHint.textContent = maskedEmail
+        ? `Enter the OTP sent to ${maskedEmail}, and choose a new password.`
+        : 'Enter the OTP sent to your email, and choose a new password.';
+      resetError.classList.remove('show');
+      resetOtpInput.value = '';
+      resetNewPassword.value = '';
+      resetOtpInput.focus();
     }
 
     // Finish signing in after the OTP is verified — same completion steps
@@ -461,6 +639,15 @@ window.attachColumnFilters = function (table) {
         });
         const data = await res.json();
         if (!res.ok || !data.success) {
+          if (data.unverified && data.username) {
+            // Account exists but registration was never completed — send a
+            // fresh OTP straight away and drop them into that same step
+            // instead of making them hunt for "Create Account" again.
+            pendingRegUsername = data.username;
+            showRegisterOtpStep(null);
+            attemptResendRegisterOtp();
+            return;
+          }
           errorBox.textContent = data.error || 'Incorrect Username/Email or Password.';
           errorBox.classList.add('show');
           return;
@@ -539,6 +726,225 @@ window.attachColumnFilters = function (table) {
       }
     }
 
+    // ---------- Register ----------
+    async function attemptRegister() {
+      const uname = regUsername.value.trim();
+      const email = regEmail.value.trim();
+      const pwd = regPassword.value;
+      const confirmPwd = regConfirmPassword.value;
+      if (!uname || !email || !pwd || !confirmPwd) {
+        regError.textContent = 'Please fill in all fields.';
+        regError.classList.add('show');
+        return;
+      }
+      if (pwd !== confirmPwd) {
+        regError.textContent = 'Passwords do not match.';
+        regError.classList.add('show');
+        return;
+      }
+      if (pwd.length < 6) {
+        regError.textContent = 'Password must be at least 6 characters.';
+        regError.classList.add('show');
+        return;
+      }
+      regError.classList.remove('show');
+      regSubmitBtn.disabled = true;
+      regSubmitBtn.textContent = 'Creating Account...';
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: uname, email, password: pwd }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          regError.textContent = data.error || 'Could not create account.';
+          regError.classList.add('show');
+          return;
+        }
+        pendingRegUsername = data.username;
+        showRegisterOtpStep(data.maskedEmail);
+      } catch (e) {
+        regError.textContent = 'Could not reach the server. Please try again.';
+        regError.classList.add('show');
+      } finally {
+        regSubmitBtn.disabled = false;
+        regSubmitBtn.textContent = 'Create Account';
+      }
+    }
+
+    async function attemptVerifyRegisterOtp() {
+      const otp = regOtpInput.value.trim();
+      if (!pendingRegUsername) { showRegisterStep(); return; }
+      if (!otp) {
+        regOtpError.textContent = 'Please enter the OTP.';
+        regOtpError.classList.add('show');
+        return;
+      }
+      regOtpError.classList.remove('show');
+      regOtpSubmitBtn.disabled = true;
+      regOtpSubmitBtn.textContent = 'Verifying...';
+      try {
+        const res = await fetch('/api/auth/verify-register-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: pendingRegUsername, otp }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          regOtpError.textContent = data.error || 'Incorrect OTP.';
+          regOtpError.classList.add('show');
+          return;
+        }
+        // Account is verified and the server already granted a session —
+        // sign straight in, same as the login OTP step does.
+        finishLogin(data);
+      } catch (e) {
+        regOtpError.textContent = 'Could not reach the server. Please try again.';
+        regOtpError.classList.add('show');
+      } finally {
+        regOtpSubmitBtn.disabled = false;
+        regOtpSubmitBtn.textContent = 'Verify & Continue';
+      }
+    }
+
+    async function attemptResendRegisterOtp() {
+      if (!pendingRegUsername) return;
+      regOtpResendBtn.disabled = true;
+      const originalLabel = regOtpResendBtn.textContent;
+      regOtpResendBtn.textContent = 'Sending...';
+      try {
+        const res = await fetch('/api/auth/resend-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: pendingRegUsername }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          regOtpError.textContent = data.error || 'Could not resend OTP.';
+          regOtpError.classList.add('show');
+          return;
+        }
+        regOtpHint.textContent = `A new OTP was sent to ${data.maskedEmail}.`;
+        regOtpError.classList.remove('show');
+      } catch (e) {
+        regOtpError.textContent = 'Could not reach the server. Please try again.';
+        regOtpError.classList.add('show');
+      } finally {
+        regOtpResendBtn.disabled = false;
+        regOtpResendBtn.textContent = originalLabel;
+      }
+    }
+
+    // ---------- Forgot Password ----------
+    async function attemptForgotPassword() {
+      const identifier = forgotIdentifier.value.trim();
+      if (!identifier) {
+        forgotError.textContent = 'Please enter your username or email.';
+        forgotError.classList.add('show');
+        return;
+      }
+      forgotError.classList.remove('show');
+      forgotSubmitBtn.disabled = true;
+      forgotSubmitBtn.textContent = 'Sending...';
+      try {
+        const res = await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: identifier }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          forgotError.textContent = data.error || 'Could not send OTP.';
+          forgotError.classList.add('show');
+          return;
+        }
+        pendingResetUsername = data.username;
+        showResetStep(data.maskedEmail);
+      } catch (e) {
+        forgotError.textContent = 'Could not reach the server. Please try again.';
+        forgotError.classList.add('show');
+      } finally {
+        forgotSubmitBtn.disabled = false;
+        forgotSubmitBtn.textContent = 'Send OTP';
+      }
+    }
+
+    async function attemptResendForgotOtp() {
+      if (!pendingResetUsername) return;
+      resetResendBtn.disabled = true;
+      const originalLabel = resetResendBtn.textContent;
+      resetResendBtn.textContent = 'Sending...';
+      try {
+        const res = await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: pendingResetUsername }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          resetError.textContent = data.error || 'Could not resend OTP.';
+          resetError.classList.add('show');
+          return;
+        }
+        resetHint.textContent = `A new OTP was sent to ${data.maskedEmail}.`;
+        resetError.classList.remove('show');
+      } catch (e) {
+        resetError.textContent = 'Could not reach the server. Please try again.';
+        resetError.classList.add('show');
+      } finally {
+        resetResendBtn.disabled = false;
+        resetResendBtn.textContent = originalLabel;
+      }
+    }
+
+    async function attemptResetPassword() {
+      const otp = resetOtpInput.value.trim();
+      const newPassword = resetNewPassword.value;
+      if (!pendingResetUsername) { showForgotStep(); return; }
+      if (!otp || !newPassword) {
+        resetError.textContent = 'Please enter the OTP and a new password.';
+        resetError.classList.add('show');
+        return;
+      }
+      if (newPassword.length < 6) {
+        resetError.textContent = 'Password must be at least 6 characters.';
+        resetError.classList.add('show');
+        return;
+      }
+      resetError.classList.remove('show');
+      resetSubmitBtn.disabled = true;
+      resetSubmitBtn.textContent = 'Resetting...';
+      try {
+        const res = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: pendingResetUsername, otp, newPassword }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          resetError.textContent = data.error || 'Could not reset password.';
+          resetError.classList.add('show');
+          return;
+        }
+        // Password is reset — send them back to Sign In with the username
+        // prefilled so they just have to type the new password once.
+        showCredsStep();
+        userInput.value = pendingResetUsername;
+        pwdInput.value = '';
+        errorBox.textContent = 'Password reset. Please sign in with your new password.';
+        errorBox.classList.add('show');
+        pwdInput.focus();
+        pendingResetUsername = null;
+      } catch (e) {
+        resetError.textContent = 'Could not reach the server. Please try again.';
+        resetError.classList.add('show');
+      } finally {
+        resetSubmitBtn.disabled = false;
+        resetSubmitBtn.textContent = 'Reset Password & Sign In';
+      }
+    }
+
     submitBtn.addEventListener('click', attemptLogin);
     pwdInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptLogin(); });
     userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') pwdInput.focus(); });
@@ -547,6 +953,43 @@ window.attachColumnFilters = function (table) {
     otpInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptVerifyOtp(); });
     otpBackBtn.addEventListener('click', showCredsStep);
     otpResendBtn.addEventListener('click', attemptResendOtp);
+
+    // Navigation between the creds screen and Register / Forgot Password.
+    loginGoRegister.addEventListener('click', (e) => { e.preventDefault(); showRegisterStep(); });
+    loginGoForgot.addEventListener('click', (e) => { e.preventDefault(); showForgotStep(); });
+    regGoLogin.addEventListener('click', (e) => { e.preventDefault(); showCredsStep(); });
+    forgotGoLogin.addEventListener('click', (e) => { e.preventDefault(); showCredsStep(); });
+
+    // Register
+    regToggleBtn.addEventListener('click', () => {
+      const showing = regPassword.type === 'text';
+      regPassword.type = showing ? 'password' : 'text';
+      regConfirmPassword.type = regPassword.type;
+      regToggleBtn.classList.toggle('active', !showing);
+      regToggleBtn.innerHTML = showing ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
+    });
+    regSubmitBtn.addEventListener('click', attemptRegister);
+    regConfirmPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptRegister(); });
+
+    regOtpSubmitBtn.addEventListener('click', attemptVerifyRegisterOtp);
+    regOtpInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptVerifyRegisterOtp(); });
+    regOtpBackBtn.addEventListener('click', showRegisterStep);
+    regOtpResendBtn.addEventListener('click', attemptResendRegisterOtp);
+
+    // Forgot Password
+    forgotSubmitBtn.addEventListener('click', attemptForgotPassword);
+    forgotIdentifier.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptForgotPassword(); });
+
+    resetToggleBtn.addEventListener('click', () => {
+      const showing = resetNewPassword.type === 'text';
+      resetNewPassword.type = showing ? 'password' : 'text';
+      resetToggleBtn.classList.toggle('active', !showing);
+      resetToggleBtn.innerHTML = showing ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
+    });
+    resetSubmitBtn.addEventListener('click', attemptResetPassword);
+    resetNewPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptResetPassword(); });
+    resetBackBtn.addEventListener('click', showForgotStep);
+    resetResendBtn.addEventListener('click', attemptResendForgotOtp);
   }
 
   // =================== PROFILE MENU (sidebar avatar) ===================

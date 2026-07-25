@@ -623,6 +623,10 @@ body.no-scroll{overflow:hidden; height:100%;}
 }
 .login-error.show{display:block;}
 
+.login-links{display:flex; align-items:center; justify-content:space-between; margin-top:4px;}
+.login-links a{color:var(--blue); font-size:12.5px; text-decoration:none; font-weight:600;}
+.login-links a:hover{text-decoration:underline;}
+
 .brand-logo{height:32px; width:auto; object-fit:contain;}
 .login-logo .brand-logo{height:100px;}
 
