@@ -195,6 +195,7 @@ window.attachColumnFilters = function (table) {
     const userEl = document.querySelector('.profile-box .user');
     const avatarEl = document.querySelector('.profile-box .avatar');
     const roleEl = document.querySelector('.profile-box .role');
+    window.currentUsername = username;
     if (userEl) userEl.textContent = '@' + username;
     if (avatarEl) avatarEl.textContent = username.charAt(0).toUpperCase();
     if (role) {
@@ -239,6 +240,53 @@ window.attachColumnFilters = function (table) {
   function clearSession() {
     try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
     try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+  }
+
+  // ---------- Live session heartbeat ----------
+  // Keeps this user marked ONLINE in `user_sessions` (real DB table, same
+  // one the desktop app's "Live Network Users" tracker reads) for as long
+  // as this tab stays open. Every user's Dashboard (see js/pages/dashboard.js)
+  // polls GET /api/sessions/live and shows this in real time — not just
+  // SuperAdmin any more.
+  const HEARTBEAT_MS = 20000;
+  let heartbeatTimer = null;
+  function startHeartbeat() {
+    if (heartbeatTimer || !window.currentUsername) return;
+    const ping = () => {
+      fetch('/api/auth/heartbeat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: window.currentUsername }),
+      }).catch(() => { /* offline momentarily — next tick retries */ });
+    };
+    ping(); // mark online immediately, don't wait for the first interval tick
+    heartbeatTimer = setInterval(ping, HEARTBEAT_MS);
+  }
+  function stopHeartbeat() {
+    if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+  }
+  // Best-effort: tell the server this user just went offline the moment the
+  // tab/browser closes, instead of waiting up to ~40s for the heartbeat to
+  // go stale and self-heal. sendBeacon fires even during page unload, when
+  // a normal fetch() would get cancelled.
+  window.addEventListener('pagehide', () => {
+    if (!window.currentUsername) return;
+    try {
+      const blob = new Blob([JSON.stringify({ username: window.currentUsername })], { type: 'application/json' });
+      navigator.sendBeacon('/api/auth/logout', blob);
+    } catch (e) { /* sendBeacon unavailable — the ~40s stale-session cleanup still catches it */ }
+  });
+  // Explicit logout / switch-user notifies the server right away so the
+  // user disappears from everyone else's Live Users list instantly.
+  function notifyServerLogout() {
+    const uname = window.currentUsername;
+    stopHeartbeat();
+    if (!uname) return Promise.resolve();
+    return fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: uname }),
+    }).catch(() => { /* best-effort — stale-session cleanup is the fallback */ });
   }
 
   function showLoginOverlay() {
@@ -334,6 +382,7 @@ window.attachColumnFilters = function (table) {
         saveSession(data.username, data.role, rememberChk.checked);
         updateProfileDisplay(data.username, data.role);
         showApp();
+        startHeartbeat();
       } catch (e) {
         errorBox.textContent = 'Could not reach the server. Please try again.';
         errorBox.classList.add('show');
@@ -361,6 +410,7 @@ window.attachColumnFilters = function (table) {
 
   function endSessionAndShowLogin() {
     closeProfileMenu();
+    notifyServerLogout();
     clearSession();
     showLoginOverlay();
   }
@@ -532,6 +582,7 @@ window.attachColumnFilters = function (table) {
   if (restoredSession) {
     updateProfileDisplay(restoredSession.username, restoredSession.role);
     showApp();
+    startHeartbeat();
   } else {
     showLoginOverlay();
   }

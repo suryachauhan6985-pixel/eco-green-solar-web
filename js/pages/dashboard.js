@@ -30,7 +30,7 @@ window.PAGES.dashboard = {
         <button class="live-btn" id="btnLiveUsers">
           <span class="dot"></span>
           <span>
-            <strong>2 users currently online</strong>
+            <strong>Loading…</strong>
             <small>Click to view live session status of all users</small>
           </span>
           <i class="fa-solid fa-chevron-right chevron"></i>
@@ -125,26 +125,97 @@ window.PAGES.dashboard = {
       }
     })();
 
-    function openLiveUsersModal() {
-      const rows = [
-        { user: 'sumit', role: 'SuperAdmin', online: true },
-        { user: 'priya', role: 'User', online: true },
-        { user: 'vishal', role: 'User', online: false },
-      ];
-      const body = `
+    // ---------- Live Network Users — real, database-backed, auto-refreshing ----------
+    // Reads GET /api/sessions/live (every row in `users`, joined with its
+    // current `user_sessions` status) — same real-time signal the desktop
+    // app's session tracker bar uses, and visible to EVERY role now (not
+    // SuperAdmin-only). Polls every 5s while Dashboard is open, and also
+    // live-updates the modal's contents if it's open when a refresh lands,
+    // so someone logging out elsewhere disappears from this list within a
+    // few seconds without anyone needing to reopen anything.
+    let liveSessions = [];
+    let liveUsersTimer = null;
+
+    function timeAgo(iso) {
+      if (!iso) return 'never';
+      const then = new Date(String(iso).replace(' ', 'T')).getTime();
+      if (Number.isNaN(then)) return 'just now';
+      const secs = Math.max(0, Math.round((Date.now() - then) / 1000));
+      if (secs < 10) return 'just now';
+      if (secs < 60) return `${secs}s ago`;
+      const mins = Math.round(secs / 60);
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.round(mins / 60);
+      if (hrs < 24) return `${hrs}h ago`;
+      return `${Math.round(hrs / 24)}d ago`;
+    }
+
+    function liveUsersTableHtml() {
+      if (!liveSessions.length) {
+        return `<p style="color:var(--txt-muted); text-align:center; padding:12px 0;">Could not load live session data.</p>`;
+      }
+      return `
         <div class="table-wrap"><table>
-          <thead><tr><th>User</th><th>Role</th><th>Status</th></tr></thead>
+          <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Last Active</th></tr></thead>
           <tbody>
-            ${rows.map(r => `
+            ${liveSessions.map(r => `
               <tr>
-                <td data-label="User">${r.user}</td>
-                <td data-label="Role">${r.role}</td>
+                <td data-label="User">${r.username}${r.username === window.currentUsername ? ' <span class="gold-txt">(you)</span>' : ''}</td>
+                <td data-label="Role">${r.role === 'SuperAdmin' ? 'Super Admin' : r.role}</td>
                 <td data-label="Status"><span class="pill ${r.online ? 'available' : 'sold'}">${r.online ? 'ONLINE' : 'OFFLINE'}</span></td>
+                <td data-label="Last Active">${r.online ? 'now' : timeAgo(r.lastSeen || r.lastLoginTime)}</td>
               </tr>`).join('')}
           </tbody>
         </table></div>`;
-      window.openModal('Live User Sessions', body);
     }
+
+    function updateSummaryLabels() {
+      const onlineCount = liveSessions.filter((r) => r.online).length;
+      const mobileStrong = document.querySelector('#btnLiveUsers strong');
+      if (mobileStrong) {
+        mobileStrong.textContent = onlineCount
+          ? `${onlineCount} user${onlineCount === 1 ? '' : 's'} currently online`
+          : 'No users currently online';
+      }
+      const topbarStrong = document.querySelector('#topbarBtnLiveUsers strong');
+      if (topbarStrong) {
+        topbarStrong.textContent = onlineCount ? `${onlineCount} user${onlineCount === 1 ? '' : 's'} online` : 'No users online';
+      }
+    }
+
+    async function refreshLiveSessions() {
+      try {
+        liveSessions = await window.Api.get('/sessions/live');
+      } catch (e) {
+        liveSessions = [];
+      }
+      updateSummaryLabels();
+      // If the Live User Sessions modal happens to be open right now, refresh
+      // its table in place too — this is what makes a logout show up for
+      // everyone else within a few seconds, without them reopening anything.
+      const modalOverlay = document.getElementById('modalOverlay');
+      const modalTitle = document.getElementById('modalTitle');
+      if (modalOverlay && modalOverlay.classList.contains('show') && modalTitle && modalTitle.textContent === 'Live User Sessions') {
+        document.getElementById('modalBody').innerHTML = liveUsersTableHtml();
+      }
+    }
+
+    function openLiveUsersModal() {
+      window.openModal('Live User Sessions', liveUsersTableHtml());
+      refreshLiveSessions(); // pull the freshest data the moment it's opened
+    }
+
+    // Poll every 5s while this page is on screen; self-clears the moment the
+    // Dashboard's own table leaves the DOM (same pattern js/pages/lowstock.js
+    // uses), so navigating away doesn't leave a stray timer running.
+    refreshLiveSessions();
+    liveUsersTimer = setInterval(() => {
+      if (!document.body.contains(document.getElementById('dashSnapshotBody'))) {
+        clearInterval(liveUsersTimer);
+        return;
+      }
+      refreshLiveSessions();
+    }, 5000);
 
     // Mobile panel button (unchanged from before)
     const btn = document.getElementById('btnLiveUsers');
@@ -158,13 +229,14 @@ window.PAGES.dashboard = {
         <button class="topbar-live-btn" id="topbarBtnLiveUsers" type="button">
           <span class="dot"></span>
           <span>
-            <strong>2 users online</strong>
+            <strong>Loading…</strong>
             <small>Live session status</small>
           </span>
           <i class="fa-solid fa-chevron-right chevron"></i>
         </button>`;
       const topbarBtn = document.getElementById('topbarBtnLiveUsers');
       if (topbarBtn) topbarBtn.addEventListener('click', openLiveUsersModal);
+      updateSummaryLabels();
     }
 
     // ---------- Category-wise Snapshot: Excel-style header filters ----------

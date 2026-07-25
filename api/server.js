@@ -131,7 +131,25 @@ async function getOrCreateItem(conn, category, brand, watt, solarType) {
   }
 }
 
-// Helper for error handling
+// ---------------------------------------------------------------------------
+// LIVE SESSION TRACKING — schema safety net. `user_sessions` (username PK,
+// is_logged_in, last_login_time) already exists (same table the desktop .py
+// app's create_tables() makes). We only need one extra column, `last_seen`,
+// so the web app can tell a clean logout apart from someone who just closed
+// the browser tab (heartbeat keeps last_seen fresh while the tab is open;
+// if it goes stale, GET /api/sessions/live self-heals that row back to
+// offline). MariaDB supports "ADD COLUMN IF NOT EXISTS", so this is safe to
+// run on every boot.
+// ---------------------------------------------------------------------------
+(async function ensureSessionSchema() {
+  try {
+    await pool.query(`ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS last_seen DATETIME NULL`);
+  } catch (e) {
+    console.warn('[Session schema] Could not ensure last_seen column (will retry lazily on first use):', e.message);
+  }
+})();
+
+
 function route(handler) {
   return async (req, res) => {
     try {
@@ -246,7 +264,74 @@ app.post('/api/auth/login', route(async (req, res) => {
   if (!rows.length) {
     return res.status(401).json({ error: 'Incorrect Username or Password.' });
   }
+  // Mark this user ONLINE right away — same row the desktop app's
+  // "Live Network Users" tracker reads, so a login from either app shows
+  // up for everyone immediately.
+  await pool.query(
+    `INSERT INTO user_sessions (username, is_logged_in, last_login_time, last_seen)
+     VALUES (?, 1, NOW(), NOW())
+     ON DUPLICATE KEY UPDATE is_logged_in=1, last_login_time=NOW(), last_seen=NOW()`,
+    [uname]
+  );
   res.json({ success: true, username: uname, role: rows[0].role });
+}));
+
+// POST /api/auth/logout — flips is_logged_in back to 0 the moment someone
+// clicks Logout / Switch User, so they disappear from the live list
+// instantly instead of waiting for the heartbeat to go stale.
+app.post('/api/auth/logout', route(async (req, res) => {
+  const uname = String(req.body.username || '').trim().toLowerCase();
+  if (!uname) return res.status(400).json({ error: 'Username is required.' });
+  await pool.query(`UPDATE user_sessions SET is_logged_in=0 WHERE username=?`, [uname]);
+  res.json({ success: true });
+}));
+
+// POST /api/auth/heartbeat — the frontend pings this every ~20s while the
+// app is open in a tab, just to refresh last_seen. This is what lets
+// GET /api/sessions/live tell "cleanly logged out" apart from "closed the
+// tab / lost network without logging out" — a session whose last_seen goes
+// stale gets auto-marked offline for everyone, even without a clean logout.
+app.post('/api/auth/heartbeat', route(async (req, res) => {
+  const uname = String(req.body.username || '').trim().toLowerCase();
+  if (!uname) return res.status(400).json({ error: 'Username is required.' });
+  await pool.query(
+    `INSERT INTO user_sessions (username, is_logged_in, last_login_time, last_seen)
+     VALUES (?, 1, NOW(), NOW())
+     ON DUPLICATE KEY UPDATE is_logged_in=1, last_seen=NOW()`,
+    [uname]
+  );
+  res.json({ success: true });
+}));
+
+// GET /api/sessions/live — real, database-backed "Live Network Users" list
+// (every row in `users`, left-joined with its current `user_sessions` row),
+// available to EVERY logged-in role, not just SuperAdmin. Any session whose
+// last_seen is older than STALE_SECONDS gets self-healed back to offline
+// first, so a crashed tab / lost wifi doesn't leave someone stuck "online"
+// forever.
+const SESSION_STALE_SECONDS = 40;
+app.get('/api/sessions/live', route(async (req, res) => {
+  await pool.query(
+    `UPDATE user_sessions
+     SET is_logged_in=0
+     WHERE is_logged_in=1 AND (last_seen IS NULL OR last_seen < (NOW() - INTERVAL ? SECOND))`,
+    [SESSION_STALE_SECONDS]
+  );
+  const [rows] = await pool.query(`
+    SELECT u.username, u.role,
+           COALESCE(s.is_logged_in,0) AS is_logged_in,
+           s.last_login_time, s.last_seen
+    FROM users u
+    LEFT JOIN user_sessions s ON s.username = u.username
+    ORDER BY COALESCE(s.is_logged_in,0) DESC, u.username ASC
+  `);
+  res.json(rows.map((r) => ({
+    username: r.username,
+    role: r.role,
+    online: !!r.is_logged_in,
+    lastLoginTime: r.last_login_time && r.last_login_time !== '-' ? r.last_login_time : null,
+    lastSeen: r.last_seen || null,
+  })));
 }));
 
 // ---------------------------------------------------------------------------
