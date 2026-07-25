@@ -253,35 +253,48 @@ const forgotPasswordLimiter = rateLimit({
 // email API instead (no SMTP port involved, so it works fine on Render's
 // free tier).
 //
-// --- Option A (in use / recommended — no domain required): Brevo --------
-//   Brevo lets you verify a single sender email address (a 6-digit code is
-//   emailed to it) WITHOUT owning/verifying a domain, and that sender can
-//   then email ANY recipient — perfect for a small team without a website
-//   domain.
-//   1. Sign up free at https://app.brevo.com/ (no credit card needed)
-//   2. Go to Senders, Domains & Dedicated IPs -> Senders -> Add a sender.
+// --- Option A (in use / recommended — no domain required): Mailjet ------
+//   Mailjet lets you verify a single sender email address (you just click a
+//   confirmation LINK emailed to it — instant, no manual account-review
+//   wait) WITHOUT owning/verifying a domain, and that sender can then email
+//   ANY recipient — perfect for a small team without a website domain.
+//   1. Sign up free at https://www.mailjet.com/ (no credit card needed)
+//   2. Go to Account Settings -> Senders & Domains -> Add a sender address.
 //      Enter the mailbox you already use (e.g. greenenergy123@gmail.com),
-//      then check that inbox for a 6-digit code and enter it to verify.
-//   3. Get an API key: Settings (top right) -> SMTP & API -> API Keys ->
-//      Generate a new API key.
+//      then open that inbox and click the confirmation link — verified
+//      immediately, no waiting on approval.
+//   3. Get API keys: Account Settings -> API Key Management (shows both
+//      your API Key and Secret Key).
 //   4. Set these environment variables in Render:
-//        BREVO_API_KEY     the key from step 3
-//        BREVO_FROM_EMAIL  the sender you verified in step 2
-//                          (e.g. greenenergy123@gmail.com)
-//        BREVO_FROM_NAME   optional, defaults to "Eco Green Solar ERP"
-//   Free tier: 300 emails/day, forever — plenty for login OTPs.
+//        MAILJET_API_KEY     the API Key from step 3
+//        MAILJET_API_SECRET  the Secret Key from step 3
+//        MAILJET_FROM_EMAIL  the sender you verified in step 2
+//        MAILJET_FROM_NAME   optional, defaults to "Eco Green Solar ERP"
+//   Free tier: 6,000 emails/month (200/day), forever — plenty for login OTPs.
 //
-// --- Option B: Resend — needs your own domain verified to email anyone ---
+// --- Option B: Brevo — needs the account itself approved by Brevo --------
+//   BREVO_API_KEY, BREVO_FROM_EMAIL, BREVO_FROM_NAME — same idea as Mailjet
+//   (single sender, no domain needed), but Brevo can additionally hold the
+//   whole ACCOUNT for manual review ("SMTP account is not yet activated")
+//   before ANY sending works, regardless of sender verification — kept here
+//   as a fallback in case that approval comes through later.
+//
+// --- Option C: Resend — needs your own domain verified to email anyone ---
 //   RESEND_API_KEY, RESEND_FROM  (see resend.com/domains to verify a domain;
 //   without a verified domain, Resend can only email the account owner.)
 //
-// --- Option C: SMTP (Gmail, etc.) — only works on hosts that allow it ----
+// --- Option D: SMTP (Gmail, etc.) — only works on hosts that allow it ----
 //   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS (Gmail App Password)
 //
 // If nothing is configured, the server does NOT crash — it just logs the
 // OTP to the server console instead of emailing it, so login still works
 // while you're setting email up.
 // ---------------------------------------------------------------------------
+const MAILJET_API_KEY = process.env.MAILJET_API_KEY || '';
+const MAILJET_API_SECRET = process.env.MAILJET_API_SECRET || '';
+const MAILJET_FROM_EMAIL = process.env.MAILJET_FROM_EMAIL || '';
+const MAILJET_FROM_NAME = process.env.MAILJET_FROM_NAME || 'Eco Green Solar ERP';
+
 const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
 const BREVO_FROM_EMAIL = process.env.BREVO_FROM_EMAIL || '';
 const BREVO_FROM_NAME = process.env.BREVO_FROM_NAME || 'Eco Green Solar ERP';
@@ -306,7 +319,7 @@ if (SMTP_USER && SMTP_PASS) {
   });
 }
 
-if (!BREVO_API_KEY && !RESEND_API_KEY && !mailer) {
+if (!MAILJET_API_KEY && !BREVO_API_KEY && !RESEND_API_KEY && !mailer) {
   console.warn('[Email OTP] No email service configured (BREVO_API_KEY / RESEND_API_KEY / SMTP_USER+SMTP_PASS) — OTPs will be printed to this console instead of emailed. See comment above for setup.');
 }
 
@@ -321,7 +334,44 @@ async function sendOtpEmail(toEmail, otp) {
 
   const errors = [];
 
-  // Try Brevo first — no SMTP port involved (works on Render's free tier),
+  // Try Mailjet first — no SMTP port involved (works on Render's free
+  // tier), sender verification is instant (click a link), and free-tier
+  // sending isn't restricted to the account owner like Resend's sandbox.
+  if (MAILJET_API_KEY && MAILJET_API_SECRET) {
+    if (!MAILJET_FROM_EMAIL) {
+      errors.push('Mailjet: MAILJET_FROM_EMAIL is not set.');
+    } else {
+      try {
+        const basicAuth = Buffer.from(`${MAILJET_API_KEY}:${MAILJET_API_SECRET}`).toString('base64');
+        const resp = await fetch('https://api.mailjet.com/v3.1/send', {
+          method: 'POST',
+          headers: {
+            Authorization: `Basic ${basicAuth}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            Messages: [{
+              From: { Email: MAILJET_FROM_EMAIL, Name: MAILJET_FROM_NAME },
+              To: [{ Email: toEmail }],
+              Subject: subject,
+              TextPart: text,
+              HTMLPart: html,
+            }],
+          }),
+        });
+        if (!resp.ok) {
+          const detail = await resp.text().catch(() => '');
+          throw new Error(`Mailjet API error (${resp.status}): ${detail || resp.statusText}`);
+        }
+        return; // sent successfully — stop here
+      } catch (e) {
+        console.warn('[Email OTP] Mailjet failed, trying next configured service:', e.message);
+        errors.push(`Mailjet: ${e.message}`);
+      }
+    }
+  }
+
+  // Try Brevo next — no SMTP port involved (works on Render's free tier),
   // and a verified single sender can email anyone without needing a domain.
   if (BREVO_API_KEY) {
     if (!BREVO_FROM_EMAIL) {
