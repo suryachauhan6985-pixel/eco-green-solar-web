@@ -61,8 +61,8 @@ window.PAGES.purchase = {
             <div class="field span-full"><label>Proof Attachment (Invoice PDF/Image)</label>
               <div class="proof-row">
                 <input type="file" id="purProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt">
-                <button class="btn btn-ghost" type="button" id="purBtnAttach"><i class="fa-solid fa-paperclip"></i> Attach Proof</button>
-                <button class="btn btn-ghost" type="button" id="purBtnClearProof"><i class="fa-solid fa-xmark"></i> Clear</button>
+                <button class="btn btn-ghost" type="button" id="purBtnAttach"><i class="fa-solid fa-paperclip"></i> Add Attachment</button>
+                <button class="btn btn-ghost" type="button" id="purBtnClearProof"><i class="fa-solid fa-xmark"></i> Clear All</button>
                 <button class="btn btn-ghost" type="button" id="purBtnViewProof" title="View selected proof file(s)"><i class="fa-solid fa-eye"></i></button>
                 <span class="proof-name" id="purProofName">No proof selected</span>
               </div>
@@ -117,7 +117,7 @@ window.PAGES.purchase = {
             <div class="field span-full"><label>Proof File</label>
               <div class="proof-row">
                 <input type="file" id="purEditProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt">
-                <button class="btn btn-ghost" type="button" id="purBtnEditAttach"><i class="fa-solid fa-paperclip"></i> Replace Proof</button>
+                <button class="btn btn-ghost" type="button" id="purBtnEditAttach"><i class="fa-solid fa-paperclip"></i> Add Attachment</button>
                 <button class="btn btn-ghost" type="button" id="purBtnKeepProof"><i class="fa-solid fa-rotate-left"></i> Keep Existing</button>
                 <button class="btn btn-ghost" type="button" id="purBtnViewEditProof" title="View proof file(s)"><i class="fa-solid fa-eye"></i></button>
                 <span class="proof-name" id="purEditProofName">No proof selected</span>
@@ -236,20 +236,46 @@ window.PAGES.purchase = {
       return sel ? parseInt(sel.dataset.idx, 10) : -1;
     }
 
+    // "Add Attachment" always ADDS to the existing selection instead of
+    // replacing it — click it once, pick a file, click it again, pick
+    // another, and both stay attached (as chips, each removable with its
+    // own x). Only "Clear All" / "Keep Existing" wipe the whole list.
     function wireProofButtons(fileInputId, attachBtnId, clearBtnId, viewBtnId, labelId, state) {
       const fileInput = $(fileInputId);
+      const labelEl = $(labelId);
+
+      function renderFileList() {
+        if (!state.files.length) {
+          labelEl.textContent = 'No proof selected';
+          return;
+        }
+        labelEl.innerHTML = state.files.map((f, i) => `
+          <span class="proof-chip">${String(f.name).replace(/</g, '&lt;')}<button type="button" class="proof-chip-remove" data-idx="${i}" title="Remove this file">&times;</button></span>
+        `).join('');
+      }
+      state.renderFileList = renderFileList;
+
       $(attachBtnId).addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', () => {
-        state.files = Array.from(fileInput.files || []);
-        $(labelId).textContent = state.files.length
-          ? (state.files.length === 1 ? state.files[0].name : `${state.files.length} proof files selected`)
-          : 'No proof selected';
+        const picked = Array.from(fileInput.files || []);
+        picked.forEach((f) => {
+          const isDup = state.files.some((ex) => ex.name === f.name && ex.size === f.size && ex.lastModified === f.lastModified);
+          if (!isDup) state.files.push(f);
+        });
+        fileInput.value = ''; // reset so picking the same file again still fires 'change'
+        renderFileList();
+      });
+      labelEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('.proof-chip-remove');
+        if (!btn) return;
+        state.files.splice(parseInt(btn.dataset.idx, 10), 1);
+        renderFileList();
       });
       if (clearBtnId) {
         $(clearBtnId).addEventListener('click', () => {
           state.files = [];
           fileInput.value = '';
-          $(labelId).textContent = 'No proof selected';
+          renderFileList();
         });
       }
       $(viewBtnId).addEventListener('click', () => {

@@ -34,8 +34,7 @@ window.PAGES.purchaseregister = {
         <th data-col="Brand">Brand <button class="th-filter-btn" data-col="Brand" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Qty">Qty <button class="th-filter-btn" data-col="Qty" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Warehouse">Warehouse <button class="th-filter-btn" data-col="Warehouse" type="button"><i class="fa-solid fa-filter"></i></button></th>
-        <th data-col="First Serial">First Serial <button class="th-filter-btn" data-col="First Serial" type="button"><i class="fa-solid fa-filter"></i></button></th>
-        <th data-col="Edited?">Edited? <button class="th-filter-btn" data-col="Edited?" type="button"><i class="fa-solid fa-filter"></i></button></th>
+        <th data-col="Edited?"Edited? <button class="th-filter-btn" data-col="Edited?" type="button"><i class="fa-solid fa-filter"></i></button></th>
       </tr></thead>
       <tbody id="pregBody"></tbody>
     </table></div>
@@ -81,10 +80,10 @@ window.PAGES.purchaseregister = {
     let allRows = []; // date/category/search-filtered rows, before column (Excel-style) filters
     const activeFilters = {}; // { colLabel: Set of allowed values }
     let openMenuEl = null;
-    const columns = ['Invoice No', 'Date', 'Supplier', 'Category', 'Brand', 'Qty', 'Warehouse', 'First Serial', 'Edited?'];
+    const columns = ['Invoice No', 'Date', 'Supplier', 'Category', 'Brand', 'Qty', 'Warehouse', 'Edited?'];
 
     function rowToValues(r) {
-      return [r.invoiceNo, r.date, r.supplier, r.category, r.brand, String(r.qty), r.warehouse, r.firstSerial, r.edited ? 'Yes' : 'No'];
+      return [r.invoiceNo, r.date, r.supplier, r.category, r.brand, String(r.qty), r.warehouse, r.edited ? 'Yes' : 'No'];
     }
 
     function inDateRange(dmy) {
@@ -110,7 +109,7 @@ window.PAGES.purchaseregister = {
           : '/purchase/register';
         rows = await window.Api.get(path);
       } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load purchase records from the database.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load purchase records from the database.</td></tr>`;
         allRows = [];
         return;
       }
@@ -125,7 +124,7 @@ window.PAGES.purchaseregister = {
     function renderTable() {
       const visible = allRows.filter((r) => isRowVisible(rowToValues(r)));
       if (!visible.length) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--txt-muted); font-style:italic;">No purchase records found for the selected filters.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--txt-muted); font-style:italic;">No purchase records found for the selected filters.</td></tr>`;
         return;
       }
       tbody.innerHTML = visible.map((r) => `
@@ -137,7 +136,6 @@ window.PAGES.purchaseregister = {
           <td data-label="Brand">${r.brand}</td>
           <td data-label="Qty">${r.qty}</td>
           <td data-label="Warehouse">${r.warehouse}</td>
-          <td data-label="First Serial">${r.firstSerial}</td>
           <td data-label="Edited?" ${r.edited ? 'class="gold-txt"' : ''}>${r.edited ? 'Yes' : 'No'}</td>
         </tr>`).join('');
     }

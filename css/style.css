@@ -265,8 +265,11 @@ tbody tr:hover{background:#1c1c1c;}
 .field input[readonly]{color:var(--txt-muted); cursor:not-allowed;}
 
 .proof-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
-.proof-row .proof-name{color:var(--txt-muted); font-size:12px; flex:1; min-width:140px;}
+.proof-row .proof-name{color:var(--txt-muted); font-size:12px; flex:1; min-width:140px; display:inline-flex; flex-wrap:wrap; gap:6px;}
 .proof-row .btn{padding:8px 12px; font-size:12px;}
+.proof-chip{display:inline-flex; align-items:center; gap:6px; background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.35); color:var(--txt); border-radius:999px; padding:3px 6px 3px 10px; font-size:12px; max-width:220px;}
+.proof-chip-remove{background:none; border:none; color:var(--txt-muted); cursor:pointer; font-size:14px; line-height:1; padding:0 2px;}
+.proof-chip-remove:hover{color:var(--red);}
 
 .line-list{
   background:var(--table-bg); border:1px solid var(--border); border-radius:7px;
