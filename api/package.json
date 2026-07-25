@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Backend API connecting the Eco Green Solar web app to the shared MariaDB database",
   "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node server.js"
   },

@@ -16,9 +16,29 @@ app.use(cors());
 app.use(express.json());
 
 // ---------------------------------------------------------------------------
-// EMAIL OTP — SMTP transporter for sending login OTPs.
-// Configure via environment variables (recommended, keeps the password out
-// of the source code):
+// EMAIL OTP — sending login OTPs.
+//
+// IMPORTANT (Render free tier): Render blocks outbound SMTP ports (25, 465,
+// 587) on free web services, so Gmail SMTP will always time out there no
+// matter which port you use. To fix this we send OTP emails over Resend's
+// HTTPS API instead (no SMTP port involved, so it works fine on Render's
+// free tier). Plain SMTP is kept as an automatic fallback for anyone running
+// this on a host that does allow SMTP (e.g. a paid Render plan, a VPS, etc).
+//
+// --- Option A (recommended): Resend ---------------------------------------
+//   1. Sign up free at https://resend.com (no credit card needed)
+//   2. Create an API key: https://resend.com/api-keys
+//   3. Set these environment variables in Render:
+//        RESEND_API_KEY   the key from step 2 (starts with "re_")
+//        RESEND_FROM      optional, defaults to Resend's shared test sender
+//                          "onboarding@resend.dev" which needs NO domain
+//                          setup and can email any address — good enough for
+//                          OTP codes. Once you verify your own domain on
+//                          Resend you can switch this to
+//                          "Eco Green Solar ERP <otp@yourdomain.com>".
+//   Free tier: 3,000 emails/month, 100/day — plenty for login OTPs.
+//
+// --- Option B: SMTP (Gmail, etc.) — only works on hosts that allow it -----
 //   SMTP_HOST   e.g. smtp.gmail.com   (default: smtp.gmail.com)
 //   SMTP_PORT   e.g. 465             (default: 465)
 //   SMTP_USER   the sending mailbox, e.g. yourbusiness@gmail.com
@@ -26,10 +46,13 @@ app.use(express.json());
 //               generate one at https://myaccount.google.com/apppasswords,
 //               needs 2-Step Verification turned on for the Gmail account)
 //
-// If SMTP_USER / SMTP_PASS are not set, the server does NOT crash — it just
-// logs the OTP to the server console instead of emailing it, so login still
-// works while you're setting SMTP up.
+// If neither is configured, the server does NOT crash — it just logs the
+// OTP to the server console instead of emailing it, so login still works
+// while you're setting email up.
 // ---------------------------------------------------------------------------
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+const RESEND_FROM = process.env.RESEND_FROM || 'Eco Green Solar ERP <onboarding@resend.dev>';
+
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465;
 const SMTP_USER = process.env.SMTP_USER || '';
@@ -43,9 +66,12 @@ if (SMTP_USER && SMTP_PASS) {
     port: SMTP_PORT,
     secure: SMTP_PORT === 465,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
+    connectionTimeout: 10000, // fail fast instead of hanging for 60s+
   });
-} else {
-  console.warn('[Email OTP] SMTP_USER/SMTP_PASS not set — OTPs will be printed to this console instead of emailed. See comment above for setup.');
+}
+
+if (!RESEND_API_KEY && !mailer) {
+  console.warn('[Email OTP] Neither RESEND_API_KEY nor SMTP_USER/SMTP_PASS is set — OTPs will be printed to this console instead of emailed. See comment above for setup.');
 }
 
 function generateOtp() {
@@ -53,17 +79,36 @@ function generateOtp() {
 }
 
 async function sendOtpEmail(toEmail, otp) {
-  if (!mailer) {
-    console.log(`[Email OTP] (SMTP not configured) OTP for ${toEmail}: ${otp}`);
+  const subject = 'Your Eco Green Solar ERP Login OTP';
+  const text = `Your OTP is ${otp}. It is valid for ${OTP_TTL_MINUTES} minutes. Do not share this code with anyone.`;
+  const html = `<p>Your OTP is <strong style="font-size:20px;">${otp}</strong>.</p><p>It is valid for ${OTP_TTL_MINUTES} minutes. Do not share this code with anyone.</p>`;
+
+  // Preferred path: Resend's HTTPS API — works everywhere, including hosts
+  // (like Render's free tier) that block outbound SMTP ports.
+  if (RESEND_API_KEY) {
+    const resp = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ from: RESEND_FROM, to: [toEmail], subject, text, html }),
+    });
+    if (!resp.ok) {
+      const detail = await resp.text().catch(() => '');
+      throw new Error(`Resend API error (${resp.status}): ${detail || resp.statusText}`);
+    }
     return;
   }
-  await mailer.sendMail({
-    from: `"Eco Green Solar ERP" <${SMTP_USER}>`,
-    to: toEmail,
-    subject: 'Your Eco Green Solar ERP Login OTP',
-    text: `Your OTP is ${otp}. It is valid for ${OTP_TTL_MINUTES} minutes. Do not share this code with anyone.`,
-    html: `<p>Your OTP is <strong style="font-size:20px;">${otp}</strong>.</p><p>It is valid for ${OTP_TTL_MINUTES} minutes. Do not share this code with anyone.</p>`,
-  });
+
+  // Fallback path: plain SMTP (only works if the host allows outbound SMTP).
+  if (mailer) {
+    await mailer.sendMail({ from: `"Eco Green Solar ERP" <${SMTP_USER}>`, to: toEmail, subject, text, html });
+    return;
+  }
+
+  // Nothing configured — don't crash, just log it so login still works.
+  console.log(`[Email OTP] (no email service configured) OTP for ${toEmail}: ${otp}`);
 }
 
 function maskEmail(email) {
