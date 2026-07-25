@@ -590,7 +590,7 @@ body.no-scroll{overflow:hidden; height:100%;}
 }
 .login-card{
   width:100%; max-width:480px; background:var(--panel); border:1px solid #1A301E; border-radius:25px;
-  padding:15px 35px 200px; box-shadow:0 20px 60px rgba(0,0,0,.55);
+  padding:30px 35px 35px; box-shadow:0 20px 60px rgba(0,0,0,.55);
   display:flex; flex-direction:column; gap:25px;
 }
 .login-logo{display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:6px;}
@@ -613,8 +613,8 @@ body.no-scroll{overflow:hidden; height:100%;}
 .login-remember{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--txt-label); cursor:pointer; user-select:none;}
 .login-remember input{cursor:pointer;}
 .login-btn{
-  background:#077e11; color:#fff; border:none; padding:12px; font-weight:700; font-size:14px;
-  border-radius:20px; cursor:pointer; margin-top:4px;
+  width:100%; box-sizing:border-box; background:#077e11; color:#fff; border:none; padding:14px;
+  font-weight:700; font-size:15px; border-radius:20px; cursor:pointer; margin-top:4px;
 }
 .login-btn:hover{filter:brightness(1.08);}
 .login-error{
