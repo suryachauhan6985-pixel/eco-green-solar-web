@@ -457,6 +457,18 @@ window.PAGES.masters = {
     $("mastersCategoryBody").addEventListener("change", async (e) => {
       const chk = e.target.closest(".m-cat-watt-toggle");
       if (!chk) return;
+      const newState = chk.checked;
+      const action = newState ? "mandatory" : "not mandatory";
+      const confirmed = await window.confirmDialog(
+        "Change Wattage Rule",
+        `Set Wattage / Capacity as ${action} for category '${chk.dataset.cat}'?`,
+        { kind: "warning", okLabel: "Yes, Change" },
+      );
+      if (!confirmed) {
+        // Undo the click — checkbox already flipped before "change" fired.
+        chk.checked = !newState;
+        return;
+      }
       try {
         await fetch(
           `${API_BASE}/masters/categories/${encodeURIComponent(chk.dataset.cat)}/watt-rule`,
@@ -469,6 +481,7 @@ window.PAGES.masters = {
         window.showToast(`Wattage rule updated for '${chk.dataset.cat}'.`);
         loadMastersSystemEngine();
       } catch (e2) {
+        chk.checked = !newState;
         window.openModal(
           "Database Error",
           '<p style="color:var(--red);">Could not update wattage rule.</p>',
