@@ -153,17 +153,20 @@ window.PAGES.masters = {
           <div class="form-grid">
             <div class="field"><label>Username *</label><input id="mUserNameInput" placeholder="e.g. amit"></div>
             <div class="field"><label>Password / PIN *</label><input type="password" id="mUserPassInput" placeholder="••••••••"></div>
+            <div class="field"><label>Email (for OTP Login) *</label><input type="email" id="mUserEmailInput" placeholder="e.g. amit@example.com"></div>
             <div class="field"><label>System Privilege</label>
               <select id="mUserRoleDropdown"><option value="User">User</option><option value="SuperAdmin">SuperAdmin</option></select></div>
           </div>
+          <div style="color:var(--txt-muted); font-size:12px; margin-top:6px;">Every user needs an email on file — login now sends a One-Time Password (OTP) to it as a second step after the password.</div>
           <div class="actions-row" style="margin-top:10px;">
             <button class="btn btn-blue" id="mBtnAddUser"><i class="fa-solid fa-user-plus"></i> Add New User</button>
             <button class="btn btn-gold" id="mBtnUpdatePass"><i class="fa-solid fa-key"></i> Update Existing Password</button>
+            <button class="btn btn-ghost" id="mBtnUpdateEmail"><i class="fa-solid fa-envelope"></i> Update Email</button>
           </div>
         </div>
         <div class="panel">
           <h3><i class="fa-solid fa-users"></i> Access Control Ledger</h3>
-          <div class="table-wrap"><table><thead><tr><th>User Profile</th><th>Role Authorization</th></tr></thead><tbody id="mastersUsersBody"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>User Profile</th><th>Email</th><th>Role Authorization</th></tr></thead><tbody id="mastersUsersBody"></tbody></table></div>
         </div>
       </div>
     </div>
@@ -248,7 +251,7 @@ window.PAGES.masters = {
       </tr>
     `).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--txt-muted);">No warehouses yet.</td></tr>`;
 
-        $('mastersUsersBody').innerHTML = users.map(u => `<tr><td>${u.username}</td><td>${u.role}</td></tr>`).join('') || `<tr><td colspan="2" style="text-align:center;color:var(--txt-muted);">No users yet.</td></tr>`;
+        $('mastersUsersBody').innerHTML = users.map(u => `<tr><td>${u.username}</td><td>${u.email || '<span style="color:var(--txt-muted); font-style:italic;">Not set</span>'}</td><td>${u.role}</td></tr>`).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--txt-muted);">No users yet.</td></tr>`;
 
         $('mastersBrandBody').innerHTML = brands.map(b => `<tr><td class="gold-txt">${b.brand_name}</td><td>${b.item_count}</td></tr>`).join('') || `<tr><td colspan="2" style="text-align:center;color:var(--txt-muted);">No brands registered yet.</td></tr>`;
 
@@ -743,22 +746,24 @@ window.PAGES.masters = {
     $("mBtnAddUser").addEventListener("click", async () => {
       const username = $("mUserNameInput").value.trim();
       const password = $("mUserPassInput").value.trim();
+      const email = $("mUserEmailInput").value.trim();
       const role = $("mUserRoleDropdown").value;
-      if (!username || !password) {
-        window.openModal("Validation Error", "<p>Username and Password are mandatory.</p>");
+      if (!username || !password || !email) {
+        window.openModal("Validation Error", "<p>Username, Password and Email are mandatory.</p>");
         return;
       }
       try {
         const res = await fetch(`${API_BASE}/masters/users`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password, role }),
+          body: JSON.stringify({ username, password, role, email }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Username already taken.");
         window.showToast(`User '${username.toUpperCase()}' registered successfully!`);
         $("mUserNameInput").value = "";
         $("mUserPassInput").value = "";
+        $("mUserEmailInput").value = "";
         loadMastersSystemEngine();
       } catch (err) {
         window.openModal("Failed", `<p style="color:var(--red);">${err.message}</p>`);
@@ -783,6 +788,29 @@ window.PAGES.masters = {
         window.showToast("Password updated successfully!");
         $("mUserNameInput").value = "";
         $("mUserPassInput").value = "";
+      } catch (err) {
+        window.openModal("Failed", `<p style="color:var(--red);">${err.message}</p>`);
+      }
+    });
+
+    $("mBtnUpdateEmail").addEventListener("click", async () => {
+      const username = $("mUserNameInput").value.trim();
+      const email = $("mUserEmailInput").value.trim();
+      if (!username || !email) {
+        window.openModal("Validation Error", "<p>Provide username and the new email.</p>");
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/masters/users/email`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, email }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "User configuration profile not found.");
+        window.showToast("Email updated successfully!");
+        $("mUserEmailInput").value = "";
+        loadMastersSystemEngine();
       } catch (err) {
         window.openModal("Failed", `<p style="color:var(--red);">${err.message}</p>`);
       }

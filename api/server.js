@@ -9,10 +9,69 @@ const path = require('path');
 const fs = require('fs');
 const mysql = require('mysql2/promise');
 const ExcelJS = require('exceljs');
+const nodemailer = require('nodemailer');
 
 const app = express();
 app.use(cors()); 
 app.use(express.json());
+
+// ---------------------------------------------------------------------------
+// EMAIL OTP — SMTP transporter for sending login OTPs.
+// Configure via environment variables (recommended, keeps the password out
+// of the source code):
+//   SMTP_HOST   e.g. smtp.gmail.com   (default: smtp.gmail.com)
+//   SMTP_PORT   e.g. 465             (default: 465)
+//   SMTP_USER   the sending mailbox, e.g. yourbusiness@gmail.com
+//   SMTP_PASS   a Gmail "App Password" (NOT your normal Gmail password —
+//               generate one at https://myaccount.google.com/apppasswords,
+//               needs 2-Step Verification turned on for the Gmail account)
+//
+// If SMTP_USER / SMTP_PASS are not set, the server does NOT crash — it just
+// logs the OTP to the server console instead of emailing it, so login still
+// works while you're setting SMTP up.
+// ---------------------------------------------------------------------------
+const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
+const SMTP_PORT = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465;
+const SMTP_USER = process.env.SMTP_USER || '';
+const SMTP_PASS = process.env.SMTP_PASS || '';
+const OTP_TTL_MINUTES = 5;
+
+let mailer = null;
+if (SMTP_USER && SMTP_PASS) {
+  mailer = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+  });
+} else {
+  console.warn('[Email OTP] SMTP_USER/SMTP_PASS not set — OTPs will be printed to this console instead of emailed. See comment above for setup.');
+}
+
+function generateOtp() {
+  return String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
+}
+
+async function sendOtpEmail(toEmail, otp) {
+  if (!mailer) {
+    console.log(`[Email OTP] (SMTP not configured) OTP for ${toEmail}: ${otp}`);
+    return;
+  }
+  await mailer.sendMail({
+    from: `"Eco Green Solar ERP" <${SMTP_USER}>`,
+    to: toEmail,
+    subject: 'Your Eco Green Solar ERP Login OTP',
+    text: `Your OTP is ${otp}. It is valid for ${OTP_TTL_MINUTES} minutes. Do not share this code with anyone.`,
+    html: `<p>Your OTP is <strong style="font-size:20px;">${otp}</strong>.</p><p>It is valid for ${OTP_TTL_MINUTES} minutes. Do not share this code with anyone.</p>`,
+  });
+}
+
+function maskEmail(email) {
+  const [name, domain] = String(email).split('@');
+  if (!domain) return email;
+  const visible = name.slice(0, 2);
+  return `${visible}${'*'.repeat(Math.max(name.length - 2, 1))}@${domain}`;
+}
 
 // Frontend static files bhi isi Express server se serve karo (index.html,
 // css/, js/, assets/) — ab Live Server ki zarurat nahi, ek hi process/port
@@ -149,6 +208,27 @@ async function getOrCreateItem(conn, category, brand, watt, solarType) {
   }
 })();
 
+// ---------------------------------------------------------------------------
+// EMAIL OTP schema — adds `email` to `users` (nullable, so existing accounts
+// keep working; each user's email just needs to be set once in Masters >
+// Users before that account can complete the OTP step) and a small
+// `otp_codes` table that holds exactly one active OTP per username at a
+// time (overwritten on every new login attempt / resend).
+// ---------------------------------------------------------------------------
+(async function ensureAuthOtpSchema() {
+  try {
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(150) NULL`);
+    await pool.query(`CREATE TABLE IF NOT EXISTS otp_codes (
+      username VARCHAR(100) PRIMARY KEY,
+      otp VARCHAR(10) NOT NULL,
+      expires_at DATETIME NOT NULL,
+      attempts INT NOT NULL DEFAULT 0
+    )`);
+  } catch (e) {
+    console.warn('[Auth/OTP schema] Could not ensure email column / otp_codes table:', e.message);
+  }
+})();
+
 
 function route(handler) {
   return async (req, res) => {
@@ -258,20 +338,20 @@ app.get('/api/lowstock', route(async (req, res) => {
 // username AND password match a row. The role returned comes from the DB,
 // not from anything the client sends.
 // ---------------------------------------------------------------------------
-app.post('/api/auth/login', route(async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Please enter both username and password.' });
-  }
-  const uname = username.trim().toLowerCase();
-  const [rows] = await pool.query(
-    `SELECT role FROM users WHERE username = ? AND password = ?`,
-    [uname, password]
-  );
-  if (!rows.length) {
-    return res.status(401).json({ error: 'Incorrect Username or Password.' });
-  }
-
+// ---------------------------------------------------------------------------
+// AUTH — 2-step login:
+//   Step 1: POST /api/auth/login          (username-or-email + password)
+//           -> verifies credentials, then emails a 6-digit OTP and returns
+//              { success: true, otpRequired: true, username, maskedEmail }
+//              WITHOUT creating a session yet.
+//   Step 2: POST /api/auth/verify-otp     (username + otp)
+//           -> checks the OTP, and only then runs the same single-session
+//              + "mark online" logic the old one-step login used to run
+//              directly. This is the point identity is actually granted.
+// The `username` field on the login form now accepts EITHER the account's
+// username OR its registered email — same input box, no separate field.
+// ---------------------------------------------------------------------------
+async function completeLoginSession(uname, role, res) {
   // ---------- One session at a time per user ----------
   // First self-heal: if this username's last session went stale (crashed
   // tab, lost network, power cut — same STALE_SECONDS window
@@ -300,7 +380,105 @@ app.post('/api/auth/login', route(async (req, res) => {
      ON DUPLICATE KEY UPDATE is_logged_in=1, last_login_time=NOW(), last_seen=NOW()`,
     [uname]
   );
-  res.json({ success: true, username: uname, role: rows[0].role });
+  res.json({ success: true, username: uname, role });
+}
+
+app.post('/api/auth/login', route(async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Please enter both username/email and password.' });
+  }
+  // Accept either the username or the registered email in the same field.
+  const identifier = username.trim().toLowerCase();
+  const [rows] = await pool.query(
+    `SELECT username, role, email FROM users WHERE (username = ? OR LOWER(email) = ?) AND password = ?`,
+    [identifier, identifier, password]
+  );
+  if (!rows.length) {
+    return res.status(401).json({ error: 'Incorrect Username/Email or Password.' });
+  }
+  const user = rows[0];
+  if (!user.email) {
+    return res.status(400).json({
+      error: `No email is registered for '${user.username}'. Ask a SuperAdmin to add one in Masters > Users before OTP login will work.`,
+    });
+  }
+
+  const otp = generateOtp();
+  const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
+  await pool.query(
+    `INSERT INTO otp_codes (username, otp, expires_at, attempts) VALUES (?, ?, ?, 0)
+     ON DUPLICATE KEY UPDATE otp=VALUES(otp), expires_at=VALUES(expires_at), attempts=0`,
+    [user.username, otp, expiresAt]
+  );
+
+  try {
+    await sendOtpEmail(user.email, otp);
+  } catch (e) {
+    console.error('[Email OTP] Failed to send:', e.message);
+    return res.status(500).json({ error: 'Could not send OTP email. Please check SMTP setup / try again.' });
+  }
+
+  res.json({
+    success: true,
+    otpRequired: true,
+    username: user.username,
+    maskedEmail: maskEmail(user.email),
+  });
+}));
+
+// Step 2 — verify the OTP and only now actually grant the session.
+app.post('/api/auth/verify-otp', route(async (req, res) => {
+  const uname = String(req.body.username || '').trim().toLowerCase();
+  const otp = String(req.body.otp || '').trim();
+  if (!uname || !otp) return res.status(400).json({ error: 'OTP is required.' });
+
+  const [rows] = await pool.query(`SELECT otp, expires_at, attempts FROM otp_codes WHERE username=?`, [uname]);
+  if (!rows.length) {
+    return res.status(400).json({ error: 'OTP expired or not requested. Please login again.' });
+  }
+  const row = rows[0];
+  if (new Date(row.expires_at) < new Date()) {
+    await pool.query(`DELETE FROM otp_codes WHERE username=?`, [uname]);
+    return res.status(400).json({ error: 'OTP expired. Please login again to get a new one.' });
+  }
+  if (row.attempts >= 5) {
+    await pool.query(`DELETE FROM otp_codes WHERE username=?`, [uname]);
+    return res.status(400).json({ error: 'Too many incorrect attempts. Please login again to get a new OTP.' });
+  }
+  if (row.otp !== otp) {
+    await pool.query(`UPDATE otp_codes SET attempts = attempts + 1 WHERE username=?`, [uname]);
+    return res.status(401).json({ error: `Incorrect OTP. ${4 - row.attempts} attempt(s) left.` });
+  }
+
+  await pool.query(`DELETE FROM otp_codes WHERE username=?`, [uname]);
+  const [[user]] = await pool.query(`SELECT role FROM users WHERE username=?`, [uname]);
+  if (!user) return res.status(404).json({ error: 'User not found.' });
+  await completeLoginSession(uname, user.role, res);
+}));
+
+// Resend — reuses step 1's already-verified identity (the OTP row only
+// exists if the password step already passed), so this doesn't ask for the
+// password again.
+app.post('/api/auth/resend-otp', route(async (req, res) => {
+  const uname = String(req.body.username || '').trim().toLowerCase();
+  if (!uname) return res.status(400).json({ error: 'Username is required.' });
+  const [[user]] = await pool.query(`SELECT email FROM users WHERE username=?`, [uname]);
+  if (!user || !user.email) return res.status(400).json({ error: 'No email registered for this account.' });
+
+  const otp = generateOtp();
+  const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
+  await pool.query(
+    `INSERT INTO otp_codes (username, otp, expires_at, attempts) VALUES (?, ?, ?, 0)
+     ON DUPLICATE KEY UPDATE otp=VALUES(otp), expires_at=VALUES(expires_at), attempts=0`,
+    [uname, otp, expiresAt]
+  );
+  try {
+    await sendOtpEmail(user.email, otp);
+  } catch (e) {
+    return res.status(500).json({ error: 'Could not resend OTP email.' });
+  }
+  res.json({ success: true, maskedEmail: maskEmail(user.email) });
 }));
 
 // POST /api/auth/logout — flips is_logged_in back to 0 the moment someone
@@ -1893,16 +2071,17 @@ app.get('/api/masters/brands', route(async (req, res) => {
 // Management: Create User + Update Password. No delete/edit — desktop app
 // doesn't have that either, so web mirrors it exactly.
 app.get('/api/masters/users', route(async (req, res) => {
-  const [rows] = await pool.query(`SELECT username, role FROM users ORDER BY username ASC`);
+  const [rows] = await pool.query(`SELECT username, role, email FROM users ORDER BY username ASC`);
   res.json(rows);
 }));
 
 app.post('/api/masters/users', route(async (req, res) => {
-  const { username, password, role } = req.body;
+  const { username, password, role, email } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and Password are mandatory.' });
   const uname = username.trim().toLowerCase();
+  const mail = email ? email.trim().toLowerCase() : null;
   try {
-    await pool.query(`INSERT INTO users (username, password, role) VALUES (?, ?, ?)`, [uname, password, role || 'User']);
+    await pool.query(`INSERT INTO users (username, password, role, email) VALUES (?, ?, ?, ?)`, [uname, password, role || 'User', mail]);
     await pool.query(`INSERT IGNORE INTO user_sessions (username, is_logged_in, last_login_time) VALUES (?, 0, '-')`, [uname]);
     res.json({ success: true });
   } catch (err) {
@@ -1914,6 +2093,20 @@ app.put('/api/masters/users/password', route(async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and new Password are mandatory.' });
   const [result] = await pool.query(`UPDATE users SET password = ? WHERE username = ?`, [password, username.trim().toLowerCase()]);
+  if (result.affectedRows === 0) return res.status(400).json({ error: 'User configuration profile not found.' });
+  res.json({ success: true });
+}));
+
+// Sets/updates the email OTP login relies on for a given user — separate
+// from the password update so an admin can fix/add just the email without
+// touching the password.
+app.put('/api/masters/users/email', route(async (req, res) => {
+  const { username, email } = req.body;
+  if (!username || !email) return res.status(400).json({ error: 'Username and Email are mandatory.' });
+  const [result] = await pool.query(
+    `UPDATE users SET email = ? WHERE username = ?`,
+    [email.trim().toLowerCase(), username.trim().toLowerCase()]
+  );
   if (result.affectedRows === 0) return res.status(400).json({ error: 'User configuration profile not found.' });
   res.json({ success: true });
 }));

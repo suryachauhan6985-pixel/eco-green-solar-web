@@ -350,6 +350,10 @@ window.attachColumnFilters = function (table) {
     if (pwdInput) pwdInput.value = '';
     const errorBox = document.getElementById('loginError');
     if (errorBox) errorBox.classList.remove('show');
+    const stepCreds = document.getElementById('loginStepCreds');
+    const stepOtp = document.getElementById('loginStepOtp');
+    if (stepCreds) stepCreds.style.display = '';
+    if (stepOtp) stepOtp.style.display = 'none';
     loginOverlay.style.display = 'flex';
     if (shellEl) shellEl.style.display = 'none';
   }
@@ -360,29 +364,61 @@ window.attachColumnFilters = function (table) {
     loginOverlay.innerHTML = `
       <div class="login-card">
         <div class="login-logo"><img src="assets/logo.png" alt="Eco Green Solar" class="brand-logo"></div>
-        <div class="login-field">
-          <label>Username</label>
-          <input type="text" id="loginUsername" placeholder="Username" autocomplete="username">
+
+        <div id="loginStepCreds">
+          <div class="login-field">
+            <label>Username or Email</label>
+            <input type="text" id="loginUsername" placeholder="Username or Email" autocomplete="username">
+          </div>
+          <div class="login-field">
+            <label>Password</label>
+            <div class="login-pwd-wrap">
+              <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+              <button type="button" class="login-toggle-pwd" id="loginTogglePwd"><i class="fa-solid fa-eye"></i></button>
+            </div>
+          </div>
+          <label class="login-remember"><input type="checkbox" id="loginRemember"> Remember Me on this Computer</label>
+          <div class="login-error" id="loginError">Please enter both username/email and password.</div>
+          <button type="button" class="login-btn" id="loginSubmit">Sign In</button>
         </div>
-        <div class="login-field">
-          <label>Password</label>
-          <div class="login-pwd-wrap">
-            <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
-            <button type="button" class="login-toggle-pwd" id="loginTogglePwd"><i class="fa-solid fa-eye"></i></button>
+
+        <div id="loginStepOtp" style="display:none;">
+          <div style="color:var(--txt-muted); font-size:13px; margin-bottom:12px;" id="loginOtpHint">
+            Enter the 6-digit OTP sent to your email.
+          </div>
+          <div class="login-field">
+            <label>OTP</label>
+            <input type="text" id="loginOtpInput" placeholder="6-digit OTP" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+          </div>
+          <div class="login-error" id="loginOtpError"></div>
+          <button type="button" class="login-btn" id="loginOtpSubmit">Verify &amp; Sign In</button>
+          <div style="display:flex; justify-content:space-between; margin-top:10px;">
+            <button type="button" class="btn btn-ghost" id="loginOtpBack" style="padding:6px 10px; font-size:12px;">&larr; Back</button>
+            <button type="button" class="btn btn-ghost" id="loginOtpResend" style="padding:6px 10px; font-size:12px;">Resend OTP</button>
           </div>
         </div>
-        <label class="login-remember"><input type="checkbox" id="loginRemember"> Remember Me on this Computer</label>
-        <div class="login-error" id="loginError">Please enter both username and password.</div>
-        <button type="button" class="login-btn" id="loginSubmit">Sign In</button>
       </div>`;
     document.body.appendChild(loginOverlay);
 
+    const stepCreds = loginOverlay.querySelector('#loginStepCreds');
+    const stepOtp = loginOverlay.querySelector('#loginStepOtp');
     const userInput = loginOverlay.querySelector('#loginUsername');
     const pwdInput = loginOverlay.querySelector('#loginPassword');
     const rememberChk = loginOverlay.querySelector('#loginRemember');
     const toggleBtn = loginOverlay.querySelector('#loginTogglePwd');
     const errorBox = loginOverlay.querySelector('#loginError');
     const submitBtn = loginOverlay.querySelector('#loginSubmit');
+
+    const otpHint = loginOverlay.querySelector('#loginOtpHint');
+    const otpInput = loginOverlay.querySelector('#loginOtpInput');
+    const otpError = loginOverlay.querySelector('#loginOtpError');
+    const otpSubmitBtn = loginOverlay.querySelector('#loginOtpSubmit');
+    const otpBackBtn = loginOverlay.querySelector('#loginOtpBack');
+    const otpResendBtn = loginOverlay.querySelector('#loginOtpResend');
+
+    // Carries the verified username across from step 1 to step 2 (server
+    // already confirmed the password by the time we get here).
+    let pendingUsername = null;
 
     // Prefill remembered username only (never the password), mirrors the
     // desktop app's "Remember Me" for convenience — the password still has
@@ -401,11 +437,49 @@ window.attachColumnFilters = function (table) {
       toggleBtn.innerHTML = showing ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
     });
 
+    function showCredsStep() {
+      stepOtp.style.display = 'none';
+      stepCreds.style.display = '';
+      otpInput.value = '';
+      otpError.classList.remove('show');
+      pendingUsername = null;
+    }
+
+    function showOtpStep(maskedEmail) {
+      stepCreds.style.display = 'none';
+      stepOtp.style.display = '';
+      otpHint.textContent = maskedEmail
+        ? `Enter the 6-digit OTP sent to ${maskedEmail}.`
+        : 'Enter the 6-digit OTP sent to your email.';
+      otpError.classList.remove('show');
+      otpInput.value = '';
+      otpInput.focus();
+    }
+
+    // Finish signing in after the OTP is verified — same completion steps
+    // the old single-step login used to run right after the password check.
+    function finishLogin(data) {
+      try {
+        if (rememberChk.checked) {
+          localStorage.setItem('egs_remember', '1');
+          localStorage.setItem('egs_user', data.username);
+        } else {
+          localStorage.removeItem('egs_remember');
+          localStorage.removeItem('egs_user');
+        }
+      } catch (e) { /* localStorage unavailable — Remember Me just won't persist */ }
+      saveSession(data.username, data.role, rememberChk.checked);
+      updateProfileDisplay(data.username, data.role);
+      showApp();
+      startHeartbeat();
+      resetIdleTimer();
+    }
+
     async function attemptLogin() {
       const user = userInput.value.trim();
       const pwd = pwdInput.value.trim();
       if (!user || !pwd) {
-        errorBox.textContent = 'Please enter both username and password.';
+        errorBox.textContent = 'Please enter both username/email and password.';
         errorBox.classList.add('show');
         return;
       }
@@ -420,25 +494,14 @@ window.attachColumnFilters = function (table) {
         });
         const data = await res.json();
         if (!res.ok || !data.success) {
-          errorBox.textContent = data.error || 'Incorrect Username or Password.';
+          errorBox.textContent = data.error || 'Incorrect Username/Email or Password.';
           errorBox.classList.add('show');
           return;
         }
-        // Verified by the DB — role comes from the server, never from the UI.
-        try {
-          if (rememberChk.checked) {
-            localStorage.setItem('egs_remember', '1');
-            localStorage.setItem('egs_user', data.username);
-          } else {
-            localStorage.removeItem('egs_remember');
-            localStorage.removeItem('egs_user');
-          }
-        } catch (e) { /* localStorage unavailable — Remember Me just won't persist */ }
-        saveSession(data.username, data.role, rememberChk.checked);
-        updateProfileDisplay(data.username, data.role);
-        showApp();
-        startHeartbeat();
-        resetIdleTimer();
+        // Password verified by the DB — an OTP has been emailed. Role is
+        // only handed over after the OTP step below, never from the UI.
+        pendingUsername = data.username;
+        showOtpStep(data.maskedEmail);
       } catch (e) {
         errorBox.textContent = 'Could not reach the server. Please try again.';
         errorBox.classList.add('show');
@@ -448,9 +511,75 @@ window.attachColumnFilters = function (table) {
       }
     }
 
+    async function attemptVerifyOtp() {
+      const otp = otpInput.value.trim();
+      if (!pendingUsername) { showCredsStep(); return; }
+      if (!otp) {
+        otpError.textContent = 'Please enter the OTP.';
+        otpError.classList.add('show');
+        return;
+      }
+      otpError.classList.remove('show');
+      otpSubmitBtn.disabled = true;
+      otpSubmitBtn.textContent = 'Verifying...';
+      try {
+        const res = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: pendingUsername, otp }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          otpError.textContent = data.error || 'Incorrect OTP.';
+          otpError.classList.add('show');
+          return;
+        }
+        finishLogin(data);
+      } catch (e) {
+        otpError.textContent = 'Could not reach the server. Please try again.';
+        otpError.classList.add('show');
+      } finally {
+        otpSubmitBtn.disabled = false;
+        otpSubmitBtn.textContent = 'Verify & Sign In';
+      }
+    }
+
+    async function attemptResendOtp() {
+      if (!pendingUsername) return;
+      otpResendBtn.disabled = true;
+      const originalLabel = otpResendBtn.textContent;
+      otpResendBtn.textContent = 'Sending...';
+      try {
+        const res = await fetch('/api/auth/resend-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: pendingUsername }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          otpError.textContent = data.error || 'Could not resend OTP.';
+          otpError.classList.add('show');
+          return;
+        }
+        otpHint.textContent = `A new OTP was sent to ${data.maskedEmail}.`;
+        otpError.classList.remove('show');
+      } catch (e) {
+        otpError.textContent = 'Could not reach the server. Please try again.';
+        otpError.classList.add('show');
+      } finally {
+        otpResendBtn.disabled = false;
+        otpResendBtn.textContent = originalLabel;
+      }
+    }
+
     submitBtn.addEventListener('click', attemptLogin);
     pwdInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptLogin(); });
     userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') pwdInput.focus(); });
+
+    otpSubmitBtn.addEventListener('click', attemptVerifyOtp);
+    otpInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptVerifyOtp(); });
+    otpBackBtn.addEventListener('click', showCredsStep);
+    otpResendBtn.addEventListener('click', attemptResendOtp);
   }
 
   // =================== PROFILE MENU (sidebar avatar) ===================
