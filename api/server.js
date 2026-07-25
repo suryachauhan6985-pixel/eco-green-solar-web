@@ -13,8 +13,17 @@ const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
+
+// Render (like most hosts) puts this app behind a reverse proxy, so every
+// request technically arrives from Render's internal proxy IP unless we
+// tell Express to trust the X-Forwarded-For header it sets. Without this,
+// express-rate-limit below would see every single visitor as the same IP
+// and either rate-limit everyone together or (depending on version) refuse
+// to start — trust proxy=1 makes it read the real client IP correctly.
+app.set('trust proxy', 1);
 
 // ---------------------------------------------------------------------------
 // CORS — STEP 2 of the production-readiness fixes.
@@ -176,6 +185,64 @@ function requireRole(...roles) {
     next();
   };
 }
+
+// ---------------------------------------------------------------------------
+// RATE LIMITING — STEP 3 of the production-readiness fixes.
+//
+// Previously nothing stopped an automated script from hammering
+// /api/auth/login with thousands of password guesses per minute, or
+// spamming /api/auth/register, /api/auth/forgot-password (email bombing),
+// or brute-forcing a 6-digit OTP via /api/auth/verify-otp. These limiters
+// throttle each of those PER IP ADDRESS (via express-rate-limit + the
+// `trust proxy` setting above, so it sees the real visitor IP on Render,
+// not Render's internal proxy IP). The 429 response uses the same
+// { error: '...' } shape route() already uses everywhere else, so the
+// existing frontend error-handling (which reads data.error) shows it with
+// no frontend changes needed.
+// ---------------------------------------------------------------------------
+function rateLimitHandler(_req, res) {
+  res.status(429).json({ error: 'Too many attempts. Please wait a few minutes and try again.' });
+}
+
+// Login itself — the main brute-force target (guessing someone's password).
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,                  // 10 login attempts per IP per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+});
+
+// OTP verify/resend/reset steps — the OTP itself is only 6 digits, so this
+// (on top of the existing 5-attempts-then-expire check already in the OTP
+// code) stops it from being guessed by brute force.
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+});
+
+// Self-service registration — limits automated mass account creation /
+// email-spam abuse of the OTP-sending step.
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+});
+
+// Forgot-password — limits both guessing usernames/emails and email-bombing
+// someone's inbox with repeated OTP requests.
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+});
 
 // ---------------------------------------------------------------------------
 // EMAIL OTP — sending login OTPs.
@@ -786,7 +853,7 @@ async function completeLoginSession(uname, role, res) {
   res.json({ success: true, username: uname, role, token });
 }
 
-app.post('/api/auth/login', route(async (req, res) => {
+app.post('/api/auth/login', loginLimiter, route(async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Please enter both username/email and password.' });
@@ -848,7 +915,7 @@ app.post('/api/auth/login', route(async (req, res) => {
 }));
 
 // Step 2 — verify the OTP and only now actually grant the session.
-app.post('/api/auth/verify-otp', route(async (req, res) => {
+app.post('/api/auth/verify-otp', otpLimiter, route(async (req, res) => {
   const uname = String(req.body.username || '').trim().toLowerCase();
   const otp = String(req.body.otp || '').trim();
   if (!uname || !otp) return res.status(400).json({ error: 'OTP is required.' });
@@ -881,7 +948,7 @@ app.post('/api/auth/verify-otp', route(async (req, res) => {
 // exists if the password step already passed), so this doesn't ask for the
 // password again. Also doubles as the "resend" for a pending Registration
 // (unverified account) since it only cares that a row + email exist.
-app.post('/api/auth/resend-otp', route(async (req, res) => {
+app.post('/api/auth/resend-otp', otpLimiter, route(async (req, res) => {
   const uname = String(req.body.username || '').trim().toLowerCase();
   if (!uname) return res.status(400).json({ error: 'Username is required.' });
   const [[user]] = await pool.query(`SELECT email FROM users WHERE username=?`, [uname]);
@@ -914,7 +981,7 @@ app.post('/api/auth/resend-otp', route(async (req, res) => {
 // ---------------------------------------------------------------------------
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-app.post('/api/auth/register', route(async (req, res) => {
+app.post('/api/auth/register', registerLimiter, route(async (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
     return res.status(400).json({ error: 'Username, Email and Password are all mandatory.' });
@@ -973,7 +1040,7 @@ app.post('/api/auth/register', route(async (req, res) => {
 
 // Step 2 of Registration — verify the OTP, flip is_verified on, and sign the
 // person straight in (same session logic the login OTP step uses).
-app.post('/api/auth/verify-register-otp', route(async (req, res) => {
+app.post('/api/auth/verify-register-otp', otpLimiter, route(async (req, res) => {
   const uname = String(req.body.username || '').trim().toLowerCase();
   const otp = String(req.body.otp || '').trim();
   if (!uname || !otp) return res.status(400).json({ error: 'OTP is required.' });
@@ -1012,7 +1079,7 @@ app.post('/api/auth/verify-register-otp', route(async (req, res) => {
 //   Step 2: POST /api/auth/reset-password    (username + otp + newPassword)
 //           -> checks the OTP and, only if correct, overwrites the password.
 // ---------------------------------------------------------------------------
-app.post('/api/auth/forgot-password', route(async (req, res) => {
+app.post('/api/auth/forgot-password', forgotPasswordLimiter, route(async (req, res) => {
   const identifier = String(req.body.username || '').trim().toLowerCase();
   if (!identifier) return res.status(400).json({ error: 'Please enter your username or email.' });
 
@@ -1045,7 +1112,7 @@ app.post('/api/auth/forgot-password', route(async (req, res) => {
 // Step 2 — verify the OTP and set the new password in one call (no separate
 // reset-token step; the attempts/expiry guard on otp_codes is the same
 // protection login/register already rely on).
-app.post('/api/auth/reset-password', route(async (req, res) => {
+app.post('/api/auth/reset-password', otpLimiter, route(async (req, res) => {
   const uname = String(req.body.username || '').trim().toLowerCase();
   const otp = String(req.body.otp || '').trim();
   const newPassword = String(req.body.newPassword || '');
