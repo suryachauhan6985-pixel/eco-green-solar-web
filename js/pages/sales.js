@@ -52,7 +52,7 @@ window.PAGES.sales = {
 
             <div class="field span-full"><label>Proof Attachment (Challan/Invoice PDF/Image)</label>
               <div class="proof-row">
-                <input type="file" id="saleProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt">
+                <input type="file" id="saleProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx">
                 <button class="btn btn-ghost" type="button" id="saleBtnAttach"><i class="fa-solid fa-paperclip"></i> Add Attachment</button>
                 <button class="btn btn-ghost" type="button" id="saleBtnClearProof"><i class="fa-solid fa-xmark"></i> Clear All</button>
                 <span class="proof-name" id="saleProofName">No proof selected</span>
@@ -104,7 +104,7 @@ window.PAGES.sales = {
 
             <div class="field span-full"><label>Proof File</label>
               <div class="proof-row">
-                <input type="file" id="saleEditProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt">
+                <input type="file" id="saleEditProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx">
                 <button class="btn btn-ghost" type="button" id="saleBtnEditAttach"><i class="fa-solid fa-paperclip"></i> Add Attachment</button>
                 <button class="btn btn-ghost" type="button" id="saleBtnKeepProof"><i class="fa-solid fa-rotate-left"></i> Keep Existing</button>
                 <span class="proof-name" id="saleEditProofName">No proof selected</span>

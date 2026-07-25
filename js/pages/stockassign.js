@@ -72,7 +72,7 @@ window.PAGES.stockassign = {
 
             <div class="field span-full"><label>Proof Attachment (Optional)</label>
               <div class="proof-row">
-                <input type="file" id="assignProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt">
+                <input type="file" id="assignProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx">
                 <button class="btn btn-ghost" type="button" id="assignBtnAttach"><i class="fa-solid fa-paperclip"></i> Add Attachment</button>
                 <button class="btn btn-ghost" type="button" id="assignBtnClearProof"><i class="fa-solid fa-xmark"></i> Clear All</button>
                 <span class="proof-name" id="assignProofName">No proof selected</span>

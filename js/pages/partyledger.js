@@ -152,7 +152,7 @@ window.PAGES.partyledger = {
               <span><i class="fa-solid fa-paperclip"></i> Attachments for this voucher</span>
               <label class="btn btn-ghost stmt-attach-add" id="stmtAttachAddBtn" style="padding:4px 10px; font-size:11px;">
                 <i class="fa-solid fa-plus"></i> Add
-                <input type="file" id="stmtAttachAddInput" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt">
+                <input type="file" id="stmtAttachAddInput" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx">
               </label>
             </div>
             <div class="stmt-attachments-list" id="stmtAttachmentsList"></div>

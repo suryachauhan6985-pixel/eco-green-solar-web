@@ -649,6 +649,29 @@ const VALID_ROLES = ['User', 'Admin', 'SuperAdmin'];
   }
 })();
 
+// ATTACHMENT VALIDATION — the REAL security boundary. The frontend
+// (js/data/api.js) checks this too for fast feedback, but that can always
+// be bypassed (devtools, curl, Postman), so it means nothing on its own.
+// This is what actually stops arbitrary file types / oversized files from
+// ever reaching the database.
+const ALLOWED_ATTACHMENT_EXTENSIONS = new Set(['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'xls', 'xlsx']);
+const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB per file
+
+function getFileExtension(fileName) {
+  const name = String(fileName || '');
+  const dot = name.lastIndexOf('.');
+  return dot === -1 ? '' : name.slice(dot + 1).toLowerCase();
+}
+
+// base64 text is ~4/3 the size of the original bytes — decode the actual
+// byte size from the string length rather than trusting the client-supplied
+// `size` field, which is just a number the client claims about itself.
+function base64ByteSize(base64) {
+  const str = String(base64 || '');
+  const padding = (str.match(/=*$/) || [''])[0].length;
+  return Math.floor((str.length * 3) / 4) - padding;
+}
+
 // POST /api/attachments — body: { refType, refNo, uploadedBy, files: [{ name, mimeType, size, data }] }
 // `data` is base64 WITHOUT the "data:...;base64," prefix (frontend strips
 // it before sending). Multiple files in one call is the normal case, since
@@ -659,6 +682,24 @@ app.post('/api/attachments', route(async (req, res) => {
   const files = Array.isArray(req.body.files) ? req.body.files : [];
   if (!refType || !refNo) return res.status(400).json({ error: 'refType and refNo are required.' });
   if (!files.length) return res.status(400).json({ error: 'No files provided.' });
+
+  // Validate EVERY file before inserting ANY of them — reject the whole
+  // batch on the first problem instead of leaving a half-uploaded set.
+  for (const f of files) {
+    if (!f || !f.name || !f.data) return res.status(400).json({ error: 'Each file needs a name and data.' });
+    const ext = getFileExtension(f.name);
+    if (!ALLOWED_ATTACHMENT_EXTENSIONS.has(ext)) {
+      return res.status(400).json({
+        error: `"${f.name}" is not an allowed file type. Allowed: images (jpg/png/webp), PDF, Word (doc/docx), Excel (xls/xlsx).`,
+      });
+    }
+    const actualBytes = base64ByteSize(f.data);
+    if (actualBytes > MAX_ATTACHMENT_SIZE_BYTES) {
+      return res.status(400).json({
+        error: `"${f.name}" is too large (${(actualBytes / (1024 * 1024)).toFixed(1)} MB). Max allowed size is 5 MB.`,
+      });
+    }
+  }
 
   const uploadedBy = req.body.uploadedBy ? String(req.body.uploadedBy).trim() : null;
   const inserted = [];

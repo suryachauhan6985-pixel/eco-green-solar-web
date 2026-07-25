@@ -60,7 +60,7 @@ window.PAGES.purchase = {
 
             <div class="field span-full"><label>Proof Attachment (Invoice PDF/Image)</label>
               <div class="proof-row">
-                <input type="file" id="purProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt">
+                <input type="file" id="purProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx">
                 <button class="btn btn-ghost" type="button" id="purBtnAttach"><i class="fa-solid fa-paperclip"></i> Add Attachment</button>
                 <button class="btn btn-ghost" type="button" id="purBtnClearProof"><i class="fa-solid fa-xmark"></i> Clear All</button>
                 <span class="proof-name" id="purProofName">No proof selected</span>
@@ -115,7 +115,7 @@ window.PAGES.purchase = {
 
             <div class="field span-full"><label>Proof File</label>
               <div class="proof-row">
-                <input type="file" id="purEditProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt">
+                <input type="file" id="purEditProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx">
                 <button class="btn btn-ghost" type="button" id="purBtnEditAttach"><i class="fa-solid fa-paperclip"></i> Add Attachment</button>
                 <button class="btn btn-ghost" type="button" id="purBtnKeepProof"><i class="fa-solid fa-rotate-left"></i> Keep Existing</button>
                 <span class="proof-name" id="purEditProofName">No proof selected</span>
