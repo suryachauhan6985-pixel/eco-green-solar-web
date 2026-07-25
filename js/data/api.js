@@ -56,3 +56,47 @@ window.Api = {
     return parseApiResponse(res, path);
   },
 };
+
+// -----------------------------------------------------------------------------
+// window.uploadAttachments(refType, refNo, fileList) — used by
+// partyledger.js, sales.js and purchase.js to push proof files to
+// POST /api/attachments. The backend expects base64 (no data: prefix) in
+// body.files[].data, so this reads every File via FileReader before posting.
+// Returns { ok: true, files } on success or { ok: false, error } on failure
+// so callers can show a non-fatal warning instead of throwing.
+// -----------------------------------------------------------------------------
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result || '';
+      const base64 = String(result).split(',')[1] || '';
+      resolve(base64);
+    };
+    reader.onerror = () => reject(reader.error || new Error(`Could not read file: ${file.name}`));
+    reader.readAsDataURL(file);
+  });
+}
+
+window.uploadAttachments = async function uploadAttachments(refType, refNo, fileList) {
+  try {
+    const files = Array.from(fileList || []);
+    if (!files.length) return { ok: false, error: 'No files selected.' };
+
+    const encoded = await Promise.all(files.map(async (file) => ({
+      name: file.name,
+      mimeType: file.type || 'application/octet-stream',
+      size: file.size,
+      data: await readFileAsBase64(file),
+    })));
+
+    const data = await window.Api.post('/attachments', {
+      refType,
+      refNo,
+      files: encoded,
+    });
+    return { ok: true, files: (data && data.files) || [] };
+  } catch (err) {
+    return { ok: false, error: (err && err.message) || 'Upload failed.' };
+  }
+};
