@@ -83,24 +83,24 @@
 </div>
 
 <!-- Shared in-memory data stores (loaded first so page scripts can use them) -->
-<script src="js/data/purchase-data.js"></script>
+<script src="js/data/purchase-data.js?v=2"></script>
 <!-- NEW: talks to the backend API (server.js), which reads the same MariaDB
      database the desktop .py app uses. Must load before dashboard.js/masters.js. -->
-<script src="js/data/api.js"></script>
+<script src="js/data/api.js?v=2"></script>
 <!-- Each page's markup + data lives in its own file, like dashboard.py / masters.py in the desktop app -->
-<script src="js/pages/dashboard.js"></script>
-<script src="js/pages/masters.js"></script>
-<script src="js/pages/purchase.js"></script>
-<script src="js/pages/sales.js"></script>
-<script src="js/pages/stockassign.js"></script>
-<script src="js/pages/purchaseregister.js"></script>
-<script src="js/pages/saleregister.js"></script>
-<script src="js/pages/reports.js"></script>
-<script src="js/pages/returns.js"></script>
-<script src="js/pages/partyledger.js"></script>
-<script src="js/pages/lowstock.js"></script>
-<script src="js/pages/backup.js"></script>
+<script src="js/pages/dashboard.js?v=2"></script>
+<script src="js/pages/masters.js?v=2"></script>
+<script src="js/pages/purchase.js?v=2"></script>
+<script src="js/pages/sales.js?v=2"></script>
+<script src="js/pages/stockassign.js?v=2"></script>
+<script src="js/pages/purchaseregister.js?v=2"></script>
+<script src="js/pages/saleregister.js?v=2"></script>
+<script src="js/pages/reports.js?v=2"></script>
+<script src="js/pages/returns.js?v=2"></script>
+<script src="js/pages/partyledger.js?v=2"></script>
+<script src="js/pages/lowstock.js?v=2"></script>
+<script src="js/pages/backup.js?v=2"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
-<script src="js/app.js"></script>
+<script src="js/app.js?v=2"></script>
 </body>
 </html>

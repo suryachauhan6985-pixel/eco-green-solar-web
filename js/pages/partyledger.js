@@ -729,15 +729,28 @@ window.PAGES.partyledger = {
 
     attachAddInput.addEventListener('change', async () => {
       const files = attachAddInput.files;
-      if (!files || !files.length || !attachRefType || !attachRefNo || attachRefNo === '-') { attachAddInput.value = ''; return; }
-      const result = await window.uploadAttachments(attachRefType, attachRefNo, files);
-      attachAddInput.value = '';
-      if (!result.ok) {
-        window.openModal('Upload Failed', `<p>${result.error || 'Could not upload the file(s).'}</p>`);
+      if (!files || !files.length) { attachAddInput.value = ''; return; }
+      if (!attachRefType || !attachRefNo || attachRefNo === '-') {
+        attachAddInput.value = '';
+        window.openModal('Cannot Attach', '<p>This voucher has no Invoice/Chalan number on file, so a proof file cannot be linked to it. Add the number first (Sale/Purchase Register &gt; Edit), then try again.</p>');
         return;
       }
-      await refreshAttachmentsList();
-      if (window.showToast) window.showToast('Attachment(s) uploaded.');
+      try {
+        if (typeof window.uploadAttachments !== 'function') {
+          throw new Error('Upload helper not loaded — please hard-refresh the page (Ctrl+Shift+R) and try again.');
+        }
+        const result = await window.uploadAttachments(attachRefType, attachRefNo, files);
+        attachAddInput.value = '';
+        if (!result.ok) {
+          window.openModal('Upload Failed', `<p>${result.error || 'Could not upload the file(s).'}</p>`);
+          return;
+        }
+        await refreshAttachmentsList();
+        if (window.showToast) window.showToast('Attachment(s) uploaded.');
+      } catch (err) {
+        attachAddInput.value = '';
+        window.openModal('Upload Failed', `<p>${(err && err.message) || 'Could not upload the file(s).'}</p>`);
+      }
     });
 
     function highlightStatementRow(idx) {
