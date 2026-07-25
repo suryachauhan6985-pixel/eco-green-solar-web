@@ -12,10 +12,30 @@ window.PAGES.dashboard = {
     </div>
 
     <div class="stat-grid">
-      <div class="stat-card available"><div class="top"><span class="label">Available Stock</span><i class="fa-solid fa-boxes-stacked" style="color:#2ECC71;"></i></div><div class="value" id="dashAvailableVal">0</div></div>
-      <div class="stat-card assigned"><div class="top"><span class="label">Assigned</span><i class="fa-solid fa-hand-holding" style="color:var(--blue);"></i></div><div class="value" id="dashAssignedVal">0</div></div>
-      <div class="stat-card sold"><div class="top"><span class="label">Sold</span><i class="fa-solid fa-file-invoice-dollar" style="color:var(--red);"></i></div><div class="value" id="dashSoldVal">0</div></div>
-      <div class="stat-card damaged"><div class="top"><span class="label">Damaged</span><i class="fa-solid fa-triangle-exclamation" style="color:var(--orange);"></i></div><div class="value" id="dashDamagedVal">0</div></div>
+      <div class="stat-card available" data-snap-key="avail">
+        <div class="top"><span class="label">Available Stock</span><i class="fa-solid fa-boxes-stacked" style="color:#2ECC71;"></i></div>
+        <div class="stat-slider-viewport"><div class="stat-slider"><div class="stat-slide"><span class="stat-slide-tag">Total</span><div class="value" id="dashAvailableVal">0</div></div></div></div>
+        <div class="stat-dots"></div>
+        <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+      <div class="stat-card assigned" data-snap-key="assigned">
+        <div class="top"><span class="label">Assigned</span><i class="fa-solid fa-hand-holding" style="color:var(--blue);"></i></div>
+        <div class="stat-slider-viewport"><div class="stat-slider"><div class="stat-slide"><span class="stat-slide-tag">Total</span><div class="value" id="dashAssignedVal">0</div></div></div></div>
+        <div class="stat-dots"></div>
+        <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+      <div class="stat-card sold" data-snap-key="sold">
+        <div class="top"><span class="label">Sold</span><i class="fa-solid fa-file-invoice-dollar" style="color:var(--red);"></i></div>
+        <div class="stat-slider-viewport"><div class="stat-slider"><div class="stat-slide"><span class="stat-slide-tag">Total</span><div class="value" id="dashSoldVal">0</div></div></div></div>
+        <div class="stat-dots"></div>
+        <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+      <div class="stat-card damaged" data-snap-key="damaged">
+        <div class="top"><span class="label">Damaged</span><i class="fa-solid fa-triangle-exclamation" style="color:var(--orange);"></i></div>
+        <div class="stat-slider-viewport"><div class="stat-slider"><div class="stat-slide"><span class="stat-slide-tag">Total</span><div class="value" id="dashDamagedVal">0</div></div></div></div>
+        <div class="stat-dots"></div>
+        <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
     </div>
 
     <div class="dashboard-grid">
@@ -115,6 +135,62 @@ window.PAGES.dashboard = {
             </tr>`).join('')
             : `<tr><td colspan="5" style="text-align:center;color:var(--txt-muted);">No data available.</td></tr>`;
         }
+        // ---------- Stat card sliders: Total -> Panel -> Inverter -> ... ----------
+        // Each of the 4 big cards above (Available/Assigned/Sold/Damaged) starts
+        // on "Total" (unchanged look). If item-wise data came back, we append one
+        // more slide per category (reusing the same numbers already computed for
+        // the Category-wise Snapshot table below) and turn on the corner arrow
+        // (desktop) / swipe (mobile) so the person can flip through and see how
+        // much of that total is Panel, Inverter, etc.
+        if (Array.isArray(data.categorySnapshot) && data.categorySnapshot.length) {
+          document.querySelectorAll('.stat-card[data-snap-key]').forEach((card) => {
+            const snapKey = card.dataset.snapKey; // 'avail' | 'assigned' | 'sold' | 'damaged'
+            const slider = card.querySelector('.stat-slider');
+            const dotsWrap = card.querySelector('.stat-dots');
+            const arrowBtn = card.querySelector('.stat-nav-arrow');
+            if (!slider) return;
+
+            // Slide 0 (Total) already exists in the HTML — leave it as-is, its
+            // value is already being count-up animated above. Just append one
+            // slide per category after it.
+            data.categorySnapshot.forEach((row) => {
+              if (!row.category) return;
+              const slide = document.createElement('div');
+              slide.className = 'stat-slide';
+              slide.innerHTML = `<span class="stat-slide-tag">${row.category}</span><div class="value">${fmt(row[snapKey])}</div>`;
+              slider.appendChild(slide);
+            });
+
+            const slideEls = Array.from(slider.children);
+            if (slideEls.length <= 1) return; // nothing to flip through
+
+            card.classList.add('has-slides');
+            dotsWrap.innerHTML = slideEls.map((_, i) => `<span class="stat-dot${i === 0 ? ' active' : ''}"></span>`).join('');
+            const dotEls = Array.from(dotsWrap.children);
+
+            let index = 0;
+            function goTo(i) {
+              index = ((i % slideEls.length) + slideEls.length) % slideEls.length;
+              slider.style.transform = `translateX(-${index * 100}%)`;
+              dotEls.forEach((d, di) => d.classList.toggle('active', di === index));
+            }
+
+            // Desktop: corner arrow steps to the next item, wraps back to Total.
+            arrowBtn.addEventListener('click', () => goTo(index + 1));
+
+            // Mobile: swipe the value area left/right instead of the arrow.
+            const viewport = card.querySelector('.stat-slider-viewport');
+            let touchStartX = null;
+            viewport.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
+            viewport.addEventListener('touchend', (e) => {
+              if (touchStartX === null) return;
+              const dx = e.changedTouches[0].clientX - touchStartX;
+              if (Math.abs(dx) > 35) goTo(dx < 0 ? index + 1 : index - 1);
+              touchStartX = null;
+            }, { passive: true });
+          });
+        }
+
         console.log('[Dashboard] Loaded live data from database.');
       } catch (err) {
         console.warn('[Dashboard] Could not reach API:', err.message);

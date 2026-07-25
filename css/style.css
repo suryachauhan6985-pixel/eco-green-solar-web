@@ -103,7 +103,7 @@ button{font-family:inherit;cursor:pointer;}
 
 /* Cards / stats */
 .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px;}
-.stat-card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; display:flex; flex-direction:column; gap:6px;}
+.stat-card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; display:flex; flex-direction:column; gap:6px; position:relative; overflow:hidden;}
 .stat-card .top{display:flex; align-items:center; justify-content:space-between;}
 .stat-card .label{color:var(--txt-muted); font-size:12px; font-weight:600;}
 .stat-card .value{font-size:26px; font-weight:800;}
@@ -112,6 +112,28 @@ button{font-family:inherit;cursor:pointer;}
 .stat-card.assigned{border-left:4px solid var(--blue);}
 .stat-card.sold{border-left:4px solid var(--red);}
 .stat-card.damaged{border-left:4px solid var(--orange);}
+
+/* ---------- Stat card item slider ----------
+   Each stat card can flip between "Total" and a per-item (Panel / Inverter /
+   ...) breakdown of that same status. Desktop: a small corner arrow steps
+   to the next slide. Mobile: swipe the value area left/right instead (arrow
+   is hidden there). Extra slides + the corner arrow only appear once JS has
+   real category data (.has-slides class) — until then a card looks exactly
+   like before. */
+.stat-slider-viewport{overflow:hidden; width:100%; touch-action:pan-y;}
+.stat-slider{display:flex; transition:transform .32s cubic-bezier(.4,0,.2,1);}
+.stat-slide{min-width:100%; flex:0 0 100%; display:flex; flex-direction:column; gap:2px;}
+.stat-slide-tag{font-size:10.5px; color:var(--txt-muted); font-weight:700; text-transform:uppercase; letter-spacing:.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.stat-nav-arrow{position:absolute; right:8px; bottom:8px; width:22px; height:22px; border-radius:50%; border:1px solid var(--border-light); background:var(--panel-alt); color:var(--txt-muted); align-items:center; justify-content:center; font-size:10px; cursor:pointer; display:none; z-index:2;}
+.stat-nav-arrow:hover{background:var(--blue); color:#fff; border-color:var(--blue);}
+.stat-card.has-slides .stat-nav-arrow{display:flex;}
+.stat-dots{display:none; gap:4px; margin-top:2px;}
+.stat-card.has-slides .stat-dots{display:flex;}
+.stat-dot{width:5px; height:5px; border-radius:50%; background:var(--border-light); flex:0 0 auto;}
+.stat-dot.active{background:var(--blue);}
+@media (max-width:900px){
+  .stat-nav-arrow{display:none !important;}
+}
 
 .panel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:18px; min-width:0;}
 .panel h3{margin:0 0 14px; font-size:14px; color:var(--gold); font-weight:800; display:flex; align-items:center; gap:8px;}
