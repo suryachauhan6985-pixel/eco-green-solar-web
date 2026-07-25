@@ -15,7 +15,38 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
 const app = express();
-app.use(cors()); 
+
+// ---------------------------------------------------------------------------
+// CORS — STEP 2 of the production-readiness fixes.
+//
+// Previously `cors()` with no options meant EVERY origin was allowed — any
+// website's JavaScript could call this API straight from a visitor's
+// browser. The frontend is actually served by this very same Express app
+// (see express.static below), so it never needed cross-origin access in
+// the first place; this was only ever a hole for someone else's site.
+//
+// Now only the real frontend origin(s) below are allowed. Override/extend
+// via the CORS_ORIGIN env var (comma-separated) if a custom domain gets
+// added later — no code change needed for that.
+// ---------------------------------------------------------------------------
+const DEFAULT_ALLOWED_ORIGIN = 'https://eco-green-solar-web.onrender.com';
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || DEFAULT_ALLOWED_ORIGIN)
+  .split(',')
+  .map((s) => s.trim().replace(/\/$/, '')) // trim + drop a trailing slash, since Origin headers never carry one
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    // No Origin header at all (curl, Postman, server-to-server, same-origin
+    // requests from this app's own pages) — CORS is a browser-only concept,
+    // so there's nothing to check here; the JWT auth from Step 1 is what
+    // actually guards these calls either way.
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+}));
 app.use(express.json({ limit: '20mb' }));
 
 // ---------------------------------------------------------------------------
