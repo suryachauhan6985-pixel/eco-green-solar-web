@@ -279,46 +279,13 @@ window.attachColumnFilters = function (table) {
     if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
   }
 
-  // ---------- Auto-logout after 20 minutes of inactivity ----------
-  // The heartbeat above pings every 20s purely to say "this tab is still
-  // open" — it fires on a timer regardless of whether the person is
-  // actually doing anything, so it alone can't detect someone who stepped
-  // away and left the tab open. This is a separate, activity-based timer:
-  // any mouse move/click, key press, scroll, or touch resets a 20-minute
-  // countdown. If NOTHING resets it for the full 20 minutes, the person is
-  // logged out automatically — same as clicking Logout — so their session
-  // frees up (and, combined with the single-session rule, lets them log
-  // back in from elsewhere without being stuck on an abandoned session).
-  const IDLE_LIMIT_MS = 20 * 60 * 1000; // 20 minutes
-  let idleTimer = null;
-  let lastActivityResetAt = 0;
-  function resetIdleTimer() {
-    if (!window.currentUsername) return; // no one signed in — nothing to time out
-    const now = Date.now();
-    if (now - lastActivityResetAt < 3000) return; // throttle: mousemove/scroll fire dozens of times/sec
-    lastActivityResetAt = now;
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(handleIdleLogout, IDLE_LIMIT_MS);
-  }
-  function stopIdleTimer() {
-    clearTimeout(idleTimer);
-    idleTimer = null;
-  }
-  async function handleIdleLogout() {
-    if (!window.currentUsername) return;
-    await notifyServerLogout();
-    clearSession();
-    window.currentUsername = null;
-    showLoginOverlay();
-    const errorBox = document.getElementById('loginError');
-    if (errorBox) {
-      errorBox.textContent = 'You were logged out automatically after 20 minutes of inactivity.';
-      errorBox.classList.add('show');
-    }
-  }
-  ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach((evt) => {
-    window.addEventListener(evt, resetIdleTimer, { passive: true, capture: true });
-  });
+  // NOTE: There used to be an auto-logout-after-20-minutes-of-inactivity
+  // timer here. It has been removed on request — sessions now stay valid
+  // until the person explicitly clicks Logout (or the stale-session
+  // self-heal kicks in after a genuinely closed/crashed tab, which is a
+  // separate mechanism handled server-side and left untouched).
+  function resetIdleTimer() { /* no-op: kept as a harmless stub so existing calls elsewhere don't need to change */ }
+  function stopIdleTimer() { /* no-op: see resetIdleTimer above */ }
   // Best-effort: tell the server this user just went offline the moment the
   // tab/browser closes, instead of waiting up to ~40s for the heartbeat to
   // go stale and self-heal. sendBeacon fires even during page unload, when

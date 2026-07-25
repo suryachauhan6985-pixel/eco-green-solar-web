@@ -90,60 +90,82 @@ async function sendOtpEmail(toEmail, otp) {
   const text = `Your OTP is ${otp}. It is valid for ${OTP_TTL_MINUTES} minutes. Do not share this code with anyone.`;
   const html = `<p>Your OTP is <strong style="font-size:20px;">${otp}</strong>.</p><p>It is valid for ${OTP_TTL_MINUTES} minutes. Do not share this code with anyone.</p>`;
 
-  // Preferred path: Brevo's HTTPS API — no SMTP port involved (works on
-  // Render's free tier), and a verified single sender can email anyone
-  // without needing to own/verify a domain.
+  const errors = [];
+
+  // Try Brevo first — no SMTP port involved (works on Render's free tier),
+  // and a verified single sender can email anyone without needing a domain.
   if (BREVO_API_KEY) {
     if (!BREVO_FROM_EMAIL) {
-      throw new Error('BREVO_FROM_EMAIL is not set. Set it to the sender address you verified in Brevo.');
+      errors.push('Brevo: BREVO_FROM_EMAIL is not set.');
+    } else {
+      try {
+        const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': BREVO_API_KEY,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            sender: { name: BREVO_FROM_NAME, email: BREVO_FROM_EMAIL },
+            to: [{ email: toEmail }],
+            subject,
+            textContent: text,
+            htmlContent: html,
+          }),
+        });
+        if (!resp.ok) {
+          const detail = await resp.text().catch(() => '');
+          throw new Error(`Brevo API error (${resp.status}): ${detail || resp.statusText}`);
+        }
+        return; // sent successfully — stop here
+      } catch (e) {
+        console.warn('[Email OTP] Brevo failed, trying next configured service:', e.message);
+        errors.push(`Brevo: ${e.message}`);
+      }
     }
-    const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': BREVO_API_KEY,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        sender: { name: BREVO_FROM_NAME, email: BREVO_FROM_EMAIL },
-        to: [{ email: toEmail }],
-        subject,
-        textContent: text,
-        htmlContent: html,
-      }),
-    });
-    if (!resp.ok) {
-      const detail = await resp.text().catch(() => '');
-      throw new Error(`Brevo API error (${resp.status}): ${detail || resp.statusText}`);
-    }
-    return;
   }
 
-  // Fallback: Resend's HTTPS API (only works for the Resend account's own
-  // email unless a domain has been verified there).
+  // Next, try Resend (only reaches recipients other than the account owner
+  // once a domain is verified there — otherwise it only works for testing).
   if (RESEND_API_KEY) {
-    const resp = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ from: RESEND_FROM, to: [toEmail], subject, text, html }),
-    });
-    if (!resp.ok) {
-      const detail = await resp.text().catch(() => '');
-      throw new Error(`Resend API error (${resp.status}): ${detail || resp.statusText}`);
+    try {
+      const resp = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ from: RESEND_FROM, to: [toEmail], subject, text, html }),
+      });
+      if (!resp.ok) {
+        const detail = await resp.text().catch(() => '');
+        throw new Error(`Resend API error (${resp.status}): ${detail || resp.statusText}`);
+      }
+      return; // sent successfully — stop here
+    } catch (e) {
+      console.warn('[Email OTP] Resend failed, trying next configured service:', e.message);
+      errors.push(`Resend: ${e.message}`);
     }
-    return;
   }
 
-  // Fallback: plain SMTP (only works if the host allows outbound SMTP).
+  // Finally, fall back to plain SMTP (only works if the host allows
+  // outbound SMTP — Render's free tier does not).
   if (mailer) {
-    await mailer.sendMail({ from: `"Eco Green Solar ERP" <${SMTP_USER}>`, to: toEmail, subject, text, html });
-    return;
+    try {
+      await mailer.sendMail({ from: `"Eco Green Solar ERP" <${SMTP_USER}>`, to: toEmail, subject, text, html });
+      return; // sent successfully — stop here
+    } catch (e) {
+      errors.push(`SMTP: ${e.message}`);
+    }
   }
 
-  // Nothing configured — don't crash, just log it so login still works.
+  if (errors.length) {
+    // Every configured service failed — surface all the reasons together.
+    throw new Error(errors.join(' | '));
+  }
+
+  // Nothing configured at all — don't crash, just log it so login still works.
   console.log(`[Email OTP] (no email service configured) OTP for ${toEmail}: ${otp}`);
 }
 
