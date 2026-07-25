@@ -843,10 +843,27 @@ app.get('/api/ledgers/shortcodes', route(async (req, res) => {
 //   GET    /api/ledgers/statement   -> PartyStatementDialog.load_statement_data()
 // ---------------------------------------------------------------------------
 
+// Returns { day, month, year, hour, minute, second } for a Date, always in
+// IST (Asia/Kolkata) — regardless of what timezone the server OS/host is
+// actually set to. This fixes backup/ledger timestamps showing the wrong
+// time (e.g. server running in UTC would otherwise show a time ~5:30 hours
+// behind actual IST clock time).
+function getISTParts(d) {
+  const fmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(d).reduce((acc, p) => { acc[p.type] = p.value; return acc; }, {});
+  // Some environments render midnight as "24" instead of "00" with hour12:false
+  if (parts.hour === '24') parts.hour = '00';
+  return parts;
+}
+
 function ledgerTimestamp() {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const p = getISTParts(new Date());
+  return `${p.day}-${p.month}-${p.year} ${p.hour}:${p.minute}:${p.second}`;
 }
 
 async function ledgerExists(name, short, excludeId) {
@@ -1997,9 +2014,8 @@ async function exportAllTablesToExcel(destPath) {
 }
 
 function backupTimestampStamp() {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  const p = getISTParts(new Date());
+  return `${p.year}${p.month}${p.day}_${p.hour}${p.minute}${p.second}`;
 }
 
 async function runBackup(backupType) {
