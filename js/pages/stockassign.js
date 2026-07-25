@@ -74,9 +74,8 @@ window.PAGES.stockassign = {
             <div class="field span-full"><label>Proof Attachment (Optional)</label>
               <div class="proof-row">
                 <input type="file" id="assignProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt">
-                <button class="btn btn-ghost" type="button" id="assignBtnAttach"><i class="fa-solid fa-paperclip"></i> Attach Proof</button>
-                <button class="btn btn-ghost" type="button" id="assignBtnClearProof"><i class="fa-solid fa-xmark"></i> Clear</button>
-                <button class="btn btn-ghost" type="button" id="assignBtnViewProof" title="View selected proof file(s)"><i class="fa-solid fa-eye"></i></button>
+                <button class="btn btn-ghost" type="button" id="assignBtnAttach"><i class="fa-solid fa-paperclip"></i> Add Attachment</button>
+                <button class="btn btn-ghost" type="button" id="assignBtnClearProof"><i class="fa-solid fa-xmark"></i> Clear All</button>
                 <span class="proof-name" id="assignProofName">No proof selected</span>
               </div>
             </div>
@@ -206,29 +205,58 @@ window.PAGES.stockassign = {
       return sel ? parseInt(sel.dataset.idx, 10) : -1;
     }
 
-    function wireProofButtons(fileInputId, attachBtnId, clearBtnId, viewBtnId, labelId, state) {
+    // "Add Attachment" always ADDS to the existing selection instead of
+    // replacing it — click it once, pick a file, click it again, pick
+    // another, and both stay attached (as clickable chips). Click a chip's
+    // name to open that exact file in a new tab (no separate "eye" view
+    // button needed); click its small x to remove just that one file.
+    // "Clear All" wipes the whole list. Mirrors js/pages/purchase.js and
+    // js/pages/sales.js's wireProofButtons() exactly.
+    function wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state) {
       const fileInput = $(fileInputId);
+      const labelEl = $(labelId);
+
+      function renderFileList() {
+        if (!state.files.length) {
+          labelEl.textContent = 'No proof selected';
+          return;
+        }
+        labelEl.innerHTML = state.files.map((f, i) => `
+          <span class="proof-chip" data-idx="${i}" title="Click to open ${String(f.name).replace(/"/g, '&quot;')}">${String(f.name).replace(/</g, '&lt;')}<button type="button" class="proof-chip-remove" data-idx="${i}" title="Remove this file">&times;</button></span>
+        `).join('');
+      }
+      state.renderFileList = renderFileList;
+
       $(attachBtnId).addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', () => {
-        state.files = Array.from(fileInput.files || []);
-        $(labelId).textContent = state.files.length
-          ? (state.files.length === 1 ? state.files[0].name : `${state.files.length} proof files selected`)
-          : 'No proof selected';
+        const picked = Array.from(fileInput.files || []);
+        picked.forEach((f) => {
+          const isDup = state.files.some((ex) => ex.name === f.name && ex.size === f.size && ex.lastModified === f.lastModified);
+          if (!isDup) state.files.push(f);
+        });
+        fileInput.value = ''; // reset so picking the same file again still fires 'change'
+        renderFileList();
+      });
+      labelEl.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.proof-chip-remove');
+        if (removeBtn) {
+          state.files.splice(parseInt(removeBtn.dataset.idx, 10), 1);
+          renderFileList();
+          return;
+        }
+        const chip = e.target.closest('.proof-chip');
+        if (chip) {
+          const f = state.files[parseInt(chip.dataset.idx, 10)];
+          if (f) window.open(URL.createObjectURL(f), '_blank');
+        }
       });
       if (clearBtnId) {
         $(clearBtnId).addEventListener('click', () => {
           state.files = [];
           fileInput.value = '';
-          $(labelId).textContent = 'No proof selected';
+          renderFileList();
         });
       }
-      $(viewBtnId).addEventListener('click', () => {
-        if (!state.files.length) {
-          window.openModal('Proof Missing', '<p>No proof file selected to preview.</p>');
-          return;
-        }
-        state.files.forEach((f) => window.open(URL.createObjectURL(f), '_blank'));
-      });
     }
 
     // ---------------- Category -> Brand -> Wattage -> Type cascading
@@ -373,7 +401,7 @@ window.PAGES.stockassign = {
     const assignLineList = $('assignLineList');
     renderLineList(assignLineList, assignLines, 'No product lines added yet — fill the fields above and click "Add Product Line".');
     wireLineSelection(assignLineList);
-    wireProofButtons('assignProofFile', 'assignBtnAttach', 'assignBtnClearProof', 'assignBtnViewProof', 'assignProofName', assignProof);
+    wireProofButtons('assignProofFile', 'assignBtnAttach', 'assignBtnClearProof', 'assignProofName', assignProof);
 
     // Live "Available: N" hint — real count from the database (item's
     // Available stock minus whatever is already queued up in this form's
