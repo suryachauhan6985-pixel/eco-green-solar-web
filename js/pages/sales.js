@@ -51,6 +51,16 @@ window.PAGES.sales = {
             <div class="field"><label>Invoice Date</label><input id="saleInvDate" type="date"></div>
             <div class="field"><label>Expected Qty <span class="req">*</span></label><input id="saleQty" type="number" placeholder="0"></div>
 
+            <div class="field span-full"><label>Proof Attachment (Challan/Invoice PDF/Image)</label>
+              <div class="proof-row">
+                <input type="file" id="saleProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt">
+                <button class="btn btn-ghost" type="button" id="saleBtnAttach"><i class="fa-solid fa-paperclip"></i> Attach Proof</button>
+                <button class="btn btn-ghost" type="button" id="saleBtnClearProof"><i class="fa-solid fa-xmark"></i> Clear</button>
+                <button class="btn btn-ghost" type="button" id="saleBtnViewProof" title="View selected proof file(s)"><i class="fa-solid fa-eye"></i></button>
+                <span class="proof-name" id="saleProofName">No proof selected</span>
+              </div>
+            </div>
+
             <div class="field span-full"><label>Scan Serial Numbers <span class="req">*</span></label>
               <textarea id="saleSerials" placeholder="One serial per line, it auto-splits"></textarea>
             </div>
@@ -93,6 +103,16 @@ window.PAGES.sales = {
               <select id="saleEditWatt"><option value="">-- Select Brand First --</option></select></div>
             <div class="field"><label>Type <span class="req">*</span></label>
               <select id="saleEditType"><option value="">-- Select Category First --</option></select></div>
+
+            <div class="field span-full"><label>Proof File</label>
+              <div class="proof-row">
+                <input type="file" id="saleEditProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt">
+                <button class="btn btn-ghost" type="button" id="saleBtnEditAttach"><i class="fa-solid fa-paperclip"></i> Replace Proof</button>
+                <button class="btn btn-ghost" type="button" id="saleBtnKeepProof"><i class="fa-solid fa-rotate-left"></i> Keep Existing</button>
+                <button class="btn btn-ghost" type="button" id="saleBtnViewEditProof" title="View proof file(s)"><i class="fa-solid fa-eye"></i></button>
+                <span class="proof-name" id="saleEditProofName">No proof selected</span>
+              </div>
+            </div>
 
             <div class="field span-full">
               <label>Invoice Product Lines</label>
@@ -258,6 +278,38 @@ window.PAGES.sales = {
       return sel ? parseInt(sel.dataset.idx, 10) : -1;
     }
 
+    // ---------------- Proof attachment (Challan/Invoice PDF or image) —
+    // mirrors ui/sales.py's select_sales_proof_file() / clear_sales_proof_file()
+    // / select_edit_sales_proof_file() / keep_existing_edit_sales_proof(),
+    // wired identically to purchase.js's wireProofButtons(). Like Purchase,
+    // only the file NAME is sent to the backend (stored in the
+    // `sales_attachment` column on every serial row of the dispatch) — the
+    // actual file stays local to the browser for this session's preview.
+    function wireProofButtons(fileInputId, attachBtnId, clearBtnId, viewBtnId, labelId, state) {
+      const fileInput = $(fileInputId);
+      $(attachBtnId).addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', () => {
+        state.files = Array.from(fileInput.files || []);
+        $(labelId).textContent = state.files.length
+          ? (state.files.length === 1 ? state.files[0].name : `${state.files.length} proof files selected`)
+          : 'No proof selected';
+      });
+      if (clearBtnId) {
+        $(clearBtnId).addEventListener('click', () => {
+          state.files = [];
+          fileInput.value = '';
+          $(labelId).textContent = 'No proof selected';
+        });
+      }
+      $(viewBtnId).addEventListener('click', () => {
+        if (!state.files.length) {
+          window.openModal('Proof Missing', '<p>No proof file selected to preview.</p>');
+          return;
+        }
+        state.files.forEach((f) => window.open(URL.createObjectURL(f), '_blank'));
+      });
+    }
+
     // ---------------- Category -> Brand -> Wattage -> Type cascading
     // dropdowns, fetched live from the database (same source the desktop
     // app's get_categories() / get_brands_for_category() /
@@ -392,6 +444,9 @@ window.PAGES.sales = {
     renderLineList(saleLineList, saleLines, 'No product lines added yet — fill the fields above and click "Add Product Line".');
     wireLineSelection(saleLineList);
 
+    const saleProof = { files: [] };
+    wireProofButtons('saleProofFile', 'saleBtnAttach', 'saleBtnClearProof', 'saleBtnViewProof', 'saleProofName', saleProof);
+
     $('saleBtnAddLine').addEventListener('click', async () => {
       const cat = saleCatEl.value, brand = saleBrandEl.value, wattVal = saleWattEl.value.trim();
       const type = saleTypeEl.value, qtyStr = $('saleQty').value.trim();
@@ -462,6 +517,9 @@ window.PAGES.sales = {
       $('saleSerials').value = '';
       saleLines.length = 0;
       renderLineList(saleLineList, saleLines, 'No product lines added yet — fill the fields above and click "Add Product Line".');
+      saleProof.files = [];
+      $('saleProofFile').value = '';
+      $('saleProofName').textContent = 'No proof selected';
     }
     $('saleBtnClearForm').addEventListener('click', clearSalesForm);
 
@@ -498,6 +556,7 @@ window.PAGES.sales = {
       try {
         const result = await window.Api.post('/sales/dispatch', {
           customer, orderNo, chalanNo, chalanDate, invoiceNo, invoiceDate,
+          proofName: saleProof.files.length ? (saleProof.files.length === 1 ? saleProof.files[0].name : `${saleProof.files.length} files`) : '-',
           lines: saleLines.map((l) => ({ cat: l.cat, brand: l.brand, watt: l.watt, type: l.type, serials: l.serials })),
         });
         if (window.showToast) window.showToast('Sales Dispatch Executed successfully!');
@@ -517,8 +576,16 @@ window.PAGES.sales = {
     let loadedOrderNo = null;
     let loadedOriginalSerials = [];
 
+    const saleEditProof = { files: [] };
+
     if (isAdmin) {
       wireLineSelection(saleEditLineList);
+      wireProofButtons('saleEditProofFile', 'saleBtnEditAttach', null, 'saleBtnViewEditProof', 'saleEditProofName', saleEditProof);
+      $('saleBtnKeepProof').addEventListener('click', () => {
+        saleEditProof.files = [];
+        $('saleEditProofFile').value = '';
+        $('saleEditProofName').textContent = 'Keeping existing proof file';
+      });
 
       async function refreshSaleEditBrandsAndWatt(injectBrand, injectWatt) {
         const cat = saleEditCatEl.value;
@@ -584,6 +651,9 @@ window.PAGES.sales = {
         renderLineList(saleEditLineList, saleEditLines, 'Find an order above to load its lines.');
         loadedOrderNo = null;
         loadedOriginalSerials = [];
+        saleEditProof.files = [];
+        $('saleEditProofFile').value = '';
+        $('saleEditProofName').textContent = 'No proof selected';
       }
       $('saleBtnClearEdit').addEventListener('click', clearEditPanel);
 
@@ -627,6 +697,8 @@ window.PAGES.sales = {
         $('saleEditChalanDate').value = PD.isoFromDMY(order.chalanDate);
         $('saleEditInvNo').value = order.invoiceNo || '';
         $('saleEditInvDate').value = PD.isoFromDMY(order.invoiceDate);
+        $('saleEditProofName').textContent = order.proofName && order.proofName !== '-' ? order.proofName : 'No proof selected';
+        saleEditProof.files = [];
 
         saleEditLines.length = 0;
         (order.lines || []).forEach((ln) => saleEditLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, serials: ln.serials }));
@@ -677,6 +749,12 @@ window.PAGES.sales = {
             chalanDate: PD.dmyFromISO($('saleEditChalanDate').value) || $('saleEditChalanDate').value,
             invoiceNo: $('saleEditInvNo').value.trim(),
             invoiceDate: PD.dmyFromISO($('saleEditInvDate').value) || $('saleEditInvDate').value,
+            // Only send a new proof name if a replacement file was actually
+            // attached this time — null tells the backend to keep whatever
+            // attachment the order already had (mirrors "Keep Existing").
+            proofName: saleEditProof.files.length
+              ? (saleEditProof.files.length === 1 ? saleEditProof.files[0].name : `${saleEditProof.files.length} files`)
+              : null,
             lines,
             originalSerials: loadedOriginalSerials,
           });

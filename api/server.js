@@ -966,6 +966,7 @@ app.post('/api/sales/dispatch', route(async (req, res) => {
   const chalanDate = String(req.body.chalanDate || '').trim();
   const invoiceNo = String(req.body.invoiceNo || '').trim();
   const invoiceDate = invoiceNo ? String(req.body.invoiceDate || '').trim() : '-';
+  const proofName = req.body.proofName ? String(req.body.proofName).trim() : '-';
   const lines = Array.isArray(req.body.lines) ? req.body.lines : [];
 
   if (!customer || !orderNo || !chalanNo) {
@@ -1019,9 +1020,9 @@ app.post('/api/sales/dispatch', route(async (req, res) => {
 
     for (const sn of allSerials) {
       await conn.query(
-        `UPDATE stock_ledger SET status='Sold', customer_name=?, order_no=?, sales_invoice=?, invoice_date=?, sales_date=?, chalan_no=?, chalan_date=?
+        `UPDATE stock_ledger SET status='Sold', customer_name=?, order_no=?, sales_invoice=?, invoice_date=?, sales_date=?, chalan_no=?, chalan_date=?, sales_attachment=?
          WHERE serial_no=?`,
-        [customer, orderNo, invoiceNo || '-', invoiceDate, chalanDate, chalanNo, chalanDate, sn]
+        [customer, orderNo, invoiceNo || '-', invoiceDate, chalanDate, chalanNo, chalanDate, proofName, sn]
       );
     }
 
@@ -1101,7 +1102,8 @@ app.post('/api/returns', route(async (req, res) => {
                  order_no='-',
                  sales_invoice='-',
                  invoice_date='-',
-                 sales_date='-'
+                 sales_date='-',
+                 sales_attachment='-'
            WHERE serial_no=?`, [sn]
         );
       } else {
@@ -1418,7 +1420,7 @@ app.get('/api/sales/find/:term', route(async (req, res) => {
   const resolvedName = shortMatch.length ? shortMatch[0].ledger_name : null;
 
   let sql = `SELECT customer_name, order_no, chalan_no, chalan_date, sales_invoice, invoice_date, category,
-                    brand_name, watt, solar_type, serial_no
+                    brand_name, watt, solar_type, serial_no, sales_attachment
              FROM stock_ledger
              WHERE (order_no=? OR chalan_no=? OR customer_name LIKE ?) AND status='Sold'`;
   const params = [term, term, `%${term}%`];
@@ -1452,6 +1454,7 @@ app.get('/api/sales/find/:term', route(async (req, res) => {
     chalanDate: head.chalan_date,
     invoiceNo: head.sales_invoice && head.sales_invoice !== '-' ? head.sales_invoice : '',
     invoiceDate: head.invoice_date && head.invoice_date !== '-' ? head.invoice_date : '',
+    proofName: head.sales_attachment,
     allSerials: records.map((r) => r.serial_no),
     lines: Array.from(grouped.values()).map((l) => ({ ...l, qty: l.serials.length })),
   });
@@ -1468,6 +1471,7 @@ app.put('/api/sales/modify/:orderNo', route(async (req, res) => {
   const newChalanDate = String(req.body.chalanDate || '').trim();
   const newInv = String(req.body.invoiceNo || '').trim();
   const newInvDate = newInv ? String(req.body.invoiceDate || '').trim() : '-';
+  const proofName = req.body.proofName ? String(req.body.proofName).trim() : null;
   const lines = Array.isArray(req.body.lines) ? req.body.lines : [];
   const originalSerials = Array.isArray(req.body.originalSerials) ? req.body.originalSerials : [];
 
@@ -1520,6 +1524,16 @@ app.put('/api/sales/modify/:orderNo', route(async (req, res) => {
       return res.status(400).json({ error: 'DISPATCH BLOCKED:\n' + validationErrors.join('\n') });
     }
 
+    // Keep-Existing support for the Proof File, same pattern as
+    // /api/purchase/:invoiceNo — a null proofName means the user didn't
+    // attach a replacement, so re-use whatever this order already had.
+    const [metaRows] = await conn.query(
+      `SELECT sales_attachment FROM stock_ledger WHERE order_no=? LIMIT 1`,
+      [loadedOrderNo]
+    );
+    const existingAttachment = metaRows.length ? metaRows[0].sales_attachment : '-';
+    const finalProof = proofName || existingAttachment || '-';
+
     for (const line of lines) {
       const itemId = await getItemId(conn, line.cat, line.brand, line.watt, line.type);
       const itemName = itemNameSlug(line.brand, line.watt, line.type);
@@ -1527,9 +1541,9 @@ app.put('/api/sales/modify/:orderNo', route(async (req, res) => {
         await conn.query(
           `UPDATE stock_ledger SET
              status='Sold', item_id=?, item_name=?, category=?, brand_name=?, watt=?, solar_type=?,
-             customer_name=?, order_no=?, sales_invoice=?, invoice_date=?, sales_date=?, chalan_no=?, chalan_date=?, edited_flag=1
+             customer_name=?, order_no=?, sales_invoice=?, invoice_date=?, sales_date=?, chalan_no=?, chalan_date=?, sales_attachment=?, edited_flag=1
            WHERE serial_no=?`,
-          [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type, newCust, loadedOrderNo, newInv || '-', newInvDate, newChalanDate, newChalan, newChalanDate, sn]
+          [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type, newCust, loadedOrderNo, newInv || '-', newInvDate, newChalanDate, newChalan, newChalanDate, finalProof, sn]
         );
       }
     }
@@ -1540,7 +1554,7 @@ app.put('/api/sales/modify/:orderNo', route(async (req, res) => {
     const removed = originalSerials.filter((sn) => !allNewSerials.includes(sn));
     if (removed.length) {
       await conn.query(
-        `UPDATE stock_ledger SET status='Available', customer_name='-', order_no='-', sales_invoice='-', invoice_date='-', sales_date='-', chalan_no='-', chalan_date='-', edited_flag=1
+        `UPDATE stock_ledger SET status='Available', customer_name='-', order_no='-', sales_invoice='-', invoice_date='-', sales_date='-', chalan_no='-', chalan_date='-', sales_attachment='-', edited_flag=1
          WHERE serial_no IN (?)`,
         [removed]
       );
@@ -1566,7 +1580,7 @@ app.delete('/api/sales/delete/:orderNo', route(async (req, res) => {
     return res.status(404).json({ error: 'No active sold records found for this order/challan.' });
   }
   await pool.query(
-    `UPDATE stock_ledger SET status='Available', customer_name='-', order_no='-', sales_invoice='-', invoice_date='-', sales_date='-', chalan_no='-', chalan_date='-', edited_flag=1
+    `UPDATE stock_ledger SET status='Available', customer_name='-', order_no='-', sales_invoice='-', invoice_date='-', sales_date='-', chalan_no='-', chalan_date='-', sales_attachment='-', edited_flag=1
      WHERE order_no=? AND status='Sold'`,
     [orderNo]
   );

@@ -1,4 +1,23 @@
 // js/pages/backup.js
+// Mirrors ui/backup.py's BackupPage exactly, wired to the real backend
+// (/api/backup/*, see server.js) instead of a static 2-row preview table:
+//   - Status card: Last Backup (type + file name + timestamp), automatic
+//     daily backup hint, and the resolved backup folder (NAS if reachable,
+//     else a local folder on the server — same fallback the desktop app
+//     does).
+//   - "Backup Now (Force)" — same as the desktop app's manual_force_backup():
+//     always creates an extra backup immediately.
+//   - "Download Latest Backup" — a browser can't open an arbitrary NAS/
+//     network folder the way the desktop app's "Open Backup Folder" does,
+//     so this is the practical web equivalent: downloads the most recent
+//     successful backup file straight from the server.
+//   - Recent Backups table: Type / File Name / Taken On / Status / Details,
+//     same columns as the desktop app, plus a Download button per
+//     successful row (the desktop app doesn't need this since it already
+//     has the folder open on the same PC).
+//   - The server itself runs the automatic once-a-day backup check on a
+//     timer (server.js), so it happens even if nobody has this page open —
+//     this page just displays that status and lets you force an extra one.
 window.PAGES = window.PAGES || {};
 
 window.PAGES.backup = {
@@ -6,21 +25,112 @@ window.PAGES.backup = {
   icon: 'fa-cloud-arrow-down',
   sub: 'Database backup and restore points',
   html: `
-    <div class="page-head"><i class="fa-solid fa-cloud-arrow-down" style="color:var(--blue);"></i><h2>Backup &amp; Restore</h2></div>
-    <div class="grid-2">
-      <div class="panel">
-        <h3><i class="fa-solid fa-download"></i> Create Backup</h3>
-        <p style="color:var(--txt-muted); font-size:12.5px;">Poore database ka snapshot NAS storage par le lo, kabhi bhi restore kiya ja sakta hai.</p>
-        <button class="btn btn-blue"><i class="fa-solid fa-database"></i> Backup Now</button>
-      </div>
-      <div class="panel">
-        <h3><i class="fa-solid fa-clock-rotate-left"></i> Restore Points</h3>
-        <div class="table-wrap"><table><thead><tr><th>Date</th><th>Size</th><th></th></tr></thead>
-          <tbody>
-            <tr><td data-label="Date">04-07-2026 11:20 PM</td><td data-label="Size">84 MB</td><td data-label=""><button class="btn btn-ghost" style="padding:5px 12px;">Restore</button></td></tr>
-            <tr><td data-label="Date">03-07-2026 11:20 PM</td><td data-label="Size">83 MB</td><td data-label=""><button class="btn btn-ghost" style="padding:5px 12px;">Restore</button></td></tr>
-          </tbody></table></div>
-      </div>
+    <div class="page-head">
+      <i class="fa-solid fa-cloud-arrow-down" style="color:var(--blue);"></i><h2>Backup &amp; Restore</h2>
+      <button class="btn btn-ghost" type="button" id="bkBtnDownloadLatest"><i class="fa-solid fa-folder-open"></i> Download Latest Backup</button>
+      <button class="btn btn-green" type="button" id="bkBtnForce"><i class="fa-solid fa-bolt"></i> Backup Now (Force)</button>
     </div>
-  `
+
+    <div class="panel" id="bkStatusCard">
+      <div id="bkLastBackup" style="color:var(--txt); font-size:14px; font-weight:700;">Last Backup: Checking...</div>
+      <div style="color:var(--txt-muted); font-size:12px; margin-top:4px;">Automatic daily backup: active (checked every few minutes on the server, runs once per day).</div>
+      <div id="bkLocation" style="color:var(--txt-muted); font-size:12px; margin-top:4px;"></div>
+    </div>
+
+    <div class="hint" style="margin:8px 0 14px;">
+      Automatic backup roz apne aap ek baar hota hai (server chalu rehte hi background me check hota rehta hai).
+      "Backup Now" dabane se turant, time se pehle bhi ek extra backup ban jata hai — iske baad bhi daily automatic
+      routine apne aap normal chalti rehti hai.
+    </div>
+
+    <div class="table-wrap"><table>
+      <thead><tr><th>Type</th><th>File Name</th><th>Taken On</th><th>Status</th><th>Details</th><th></th></tr></thead>
+      <tbody id="bkBody"><tr><td colspan="6" style="text-align:center; color:var(--txt-muted); font-style:italic;">Loading...</td></tr></tbody>
+    </table></div>
+  `,
+
+  init() {
+    const $ = (id) => document.getElementById(id);
+    const btnForce = $('bkBtnForce');
+    const btnDownloadLatest = $('bkBtnDownloadLatest');
+    const lastBackupEl = $('bkLastBackup');
+    const locationEl = $('bkLocation');
+    const tbody = $('bkBody');
+
+    let latestSuccessFile = null;
+
+    function downloadBackup(fileName) {
+      const a = document.createElement('a');
+      a.href = `${window.API_BASE}/backup/download/${encodeURIComponent(fileName)}`;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    async function refreshStatus() {
+      let data;
+      try {
+        data = await window.Api.get('/backup/status');
+      } catch (e) {
+        lastBackupEl.textContent = 'Last Backup: Could not load backup status.';
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load backup history.</td></tr>`;
+        return;
+      }
+
+      locationEl.textContent = `Backup Folder: ${data.backupDir}  (${data.onNas ? 'NAS - safe' : 'Local server folder only - NAS not reachable right now'})`;
+
+      if (data.lastBackup) {
+        lastBackupEl.textContent = `Last Backup: ${data.lastBackup.taken_on}  (${data.lastBackup.backup_type})  -  ${data.lastBackup.file_name}`;
+        latestSuccessFile = data.lastBackup.file_name;
+      } else {
+        lastBackupEl.textContent = 'Last Backup: Not done yet';
+        latestSuccessFile = null;
+      }
+
+      const rows = data.recent || [];
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--txt-muted); font-style:italic;">No backups recorded yet.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rows.map((r) => `
+        <tr>
+          <td data-label="Type">${r.backup_type}</td>
+          <td data-label="File Name">${r.file_name}</td>
+          <td data-label="Taken On">${r.taken_on}</td>
+          <td data-label="Status" style="color:${r.status === 'Success' ? '#2ECC71' : 'var(--red)'}; font-weight:700;">${r.status}</td>
+          <td data-label="Details" style="max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${(r.details || '-').replace(/"/g, '&quot;')}">${r.details || '-'}</td>
+          <td data-label="">${r.status === 'Success' ? `<button class="btn btn-ghost bk-download-row" style="padding:5px 12px;" data-file="${r.file_name}">Download</button>` : ''}</td>
+        </tr>`).join('');
+
+      tbody.querySelectorAll('.bk-download-row').forEach((btn) => {
+        btn.addEventListener('click', () => downloadBackup(btn.dataset.file));
+      });
+    }
+
+    btnDownloadLatest.addEventListener('click', () => {
+      if (!latestSuccessFile) { window.openModal('No Backup Yet', '<p>No successful backup has been taken yet.</p>'); return; }
+      downloadBackup(latestSuccessFile);
+    });
+
+    btnForce.addEventListener('click', async () => {
+      btnForce.disabled = true;
+      const originalLabel = btnForce.innerHTML;
+      btnForce.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Backing up...';
+      try {
+        const result = await window.Api.post('/backup/run');
+        const note = result.onNas ? '' : '<br><br>⚠️ NAS abhi reachable nahi tha, isliye ye backup local server folder mein save hua hai.';
+        window.openModal('Backup Complete', `<p>Data safely backed up as Excel file:<br><strong>${result.fileName}</strong>${note}</p>`);
+        if (window.showToast) window.showToast('Backup created successfully.');
+      } catch (err) {
+        window.openModal('Backup Failed', `<p style="color:var(--red);">Backup nahi ban paya:<br>${err.message}</p>`);
+      } finally {
+        btnForce.disabled = false;
+        btnForce.innerHTML = originalLabel;
+        refreshStatus();
+      }
+    });
+
+    refreshStatus();
+  },
 };
