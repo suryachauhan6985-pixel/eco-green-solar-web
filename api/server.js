@@ -11,6 +11,8 @@ const mysql = require('mysql2/promise');
 const ExcelJS = require('exceljs');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const app = express();
 app.use(cors()); 
@@ -51,6 +53,98 @@ async function verifyPassword(plain, stored) {
   return { valid, needsRehash: valid };
 }
 
+// ---------------------------------------------------------------------------
+// JWT AUTH — STEP 1 of the production-readiness fixes.
+//
+// Previously there was NO session/token at all: the frontend just
+// remembered {username, role} in the browser after login, and the backend
+// never checked anything on subsequent API calls. That meant every route
+// below (/api/masters/users, /api/purchase, /api/sales, /api/ledgers,
+// /api/attachments, etc.) was wide open to anyone hitting the API directly
+// (Postman/curl) with no login at all, and the "role" was whatever the
+// client happened to send — never actually verified server-side.
+//
+// Now: completeLoginSession() (only reached after the OTP step actually
+// succeeds) issues a signed JWT containing {username, role}. The frontend
+// sends it back as "Authorization: Bearer <token>" on every API call, and
+// authenticateToken() below verifies it before any route handler runs.
+// requireRole(...) additionally locks specific routes to specific roles
+// (e.g. SuperAdmin-only user management), mirroring the role checks the
+// frontend already does for its own UI (see partyledger.js/purchase.js/
+// sales.js "isAdmin" checks) — those were only ever a UI-level hint before;
+// this is what actually enforces them.
+//
+// JWT_SECRET: set this in Render's Environment tab so tokens survive a
+// redeploy (this app auto-deploys from GitHub on every push, which restarts
+// the process). If it's not set, we generate a random secret at boot rather
+// than falling back to any hardcoded value — the server still starts and
+// logins still work, it just means every existing session gets invalidated
+// on the next restart/deploy until JWT_SECRET is configured.
+// ---------------------------------------------------------------------------
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString('hex');
+if (!process.env.JWT_SECRET) {
+  console.warn(
+    '[Auth] JWT_SECRET is not set — using a random secret generated for this process only. ' +
+    'Every logged-in session will be invalidated the next time this server restarts/redeploys. ' +
+    'Set JWT_SECRET in Render > Environment (any long random string) to fix this.'
+  );
+}
+const JWT_EXPIRES_IN = '7d';
+
+function issueToken(username, role) {
+  return jwt.sign({ username, role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+}
+
+// Routes that must stay reachable WITHOUT a token: the login/registration
+// steps themselves (there's no token yet to send), the health check (hit by
+// uptime monitors, not a logged-in browser), and logout (the tab-close
+// beacon that calls it can't attach custom headers — worst case of leaving
+// it open is someone's own live-status row getting flipped to offline,
+// which is not sensitive).
+const PUBLIC_API_PATHS = new Set([
+  '/api/health',
+  '/api/auth/login',
+  '/api/auth/verify-otp',
+  '/api/auth/resend-otp',
+  '/api/auth/register',
+  '/api/auth/verify-register-otp',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/auth/logout',
+]);
+
+// Verifies the Bearer token on every other /api/* request and attaches the
+// verified { username, role } as req.user — route handlers below trust
+// req.user, never anything the client claims about its own identity/role.
+function authenticateToken(req, res, next) {
+  if (!req.path.startsWith('/api/')) return next(); // static frontend files
+  if (PUBLIC_API_PATHS.has(req.path)) return next();
+
+  const header = req.headers['authorization'] || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : null;
+  if (!token) {
+    return res.status(401).json({ error: 'Please log in to continue.' });
+  }
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = { username: payload.username, role: payload.role };
+    next();
+  } catch (e) {
+    return res.status(401).json({ error: 'Your session has expired. Please log in again.' });
+  }
+}
+app.use(authenticateToken);
+
+// Role gate for routes only certain roles may call (e.g. SuperAdmin-only
+// user management). Use as extra middleware: app.post(path, requireRole('SuperAdmin'), route(...)).
+function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'You do not have permission to perform this action.' });
+    }
+    next();
+  };
+}
 
 // ---------------------------------------------------------------------------
 // EMAIL OTP — sending login OTPs.
@@ -654,7 +748,11 @@ async function completeLoginSession(uname, role, res) {
      ON DUPLICATE KEY UPDATE is_logged_in=1, last_login_time=NOW(), last_seen=NOW()`,
     [uname]
   );
-  res.json({ success: true, username: uname, role });
+  // This is the only place a token is ever handed out — only after the OTP
+  // step has actually succeeded. The frontend stores it and sends it back
+  // as "Authorization: Bearer <token>" on every subsequent API call.
+  const token = issueToken(uname, role);
+  res.json({ success: true, username: uname, role, token });
 }
 
 app.post('/api/auth/login', route(async (req, res) => {
@@ -968,8 +1066,9 @@ app.post('/api/auth/logout', route(async (req, res) => {
 // tab / lost network without logging out" — a session whose last_seen goes
 // stale gets auto-marked offline for everyone, even without a clean logout.
 app.post('/api/auth/heartbeat', route(async (req, res) => {
-  const uname = String(req.body.username || '').trim().toLowerCase();
-  if (!uname) return res.status(400).json({ error: 'Username is required.' });
+  // req.user comes from the verified JWT (see authenticateToken above), not
+  // from the request body — a logged-in user can only heartbeat as themself.
+  const uname = req.user.username;
   await pool.query(
     `INSERT INTO user_sessions (username, is_logged_in, last_login_time, last_seen)
      VALUES (?, 1, NOW(), NOW())
@@ -1254,7 +1353,7 @@ app.get('/api/purchase/find', route(async (req, res) => {
 // brand-new serial added during the edit, and DELETE any serial that was
 // removed. Blocked if a new serial already exists elsewhere, or if any
 // original serial has already been sold.
-app.put('/api/purchase/:invoiceNo', route(async (req, res) => {
+app.put('/api/purchase/:invoiceNo', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
   const originalInvoiceNo = req.params.invoiceNo;
   const newSupp = String(req.body.supplier || '').trim();
   const newInv = String(req.body.invoiceNo || '').trim();
@@ -1355,7 +1454,7 @@ app.put('/api/purchase/:invoiceNo', route(async (req, res) => {
 // DELETE /api/purchase/:invoiceNo — mirrors delete_purchase_invoice():
 // permanently removes every stock_ledger row for this invoice, but blocked
 // entirely if any of its serials have already been sold.
-app.delete('/api/purchase/:invoiceNo', route(async (req, res) => {
+app.delete('/api/purchase/:invoiceNo', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
   const { invoiceNo } = req.params;
   const [rows] = await pool.query(`SELECT serial_no, status FROM stock_ledger WHERE purchase_invoice=?`, [invoiceNo]);
   if (!rows.length) {
@@ -1591,7 +1690,7 @@ app.get('/api/ledgers/directory', route(async (req, res) => {
   res.json(filtered);
 }));
 
-app.post('/api/ledgers', route(async (req, res) => {
+app.post('/api/ledgers', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
   const name = String(req.body.name || '').trim();
   const short = String(req.body.short || '').trim();
   const type = req.body.type || 'Both';
@@ -1609,7 +1708,7 @@ app.post('/api/ledgers', route(async (req, res) => {
   res.json({ success: true });
 }));
 
-app.put('/api/ledgers/:id', route(async (req, res) => {
+app.put('/api/ledgers/:id', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
   const { id } = req.params;
   const name = String(req.body.name || '').trim();
   const short = String(req.body.short || '').trim();
@@ -1629,7 +1728,7 @@ app.put('/api/ledgers/:id', route(async (req, res) => {
   res.json({ success: true });
 }));
 
-app.delete('/api/ledgers/:id', route(async (req, res) => {
+app.delete('/api/ledgers/:id', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
   const { id } = req.params;
   const [result] = await pool.query(`DELETE FROM ledgers WHERE id=?`, [id]);
   if (result.affectedRows === 0) return res.status(400).json({ error: 'Ledger not found.' });
@@ -2241,7 +2340,7 @@ app.get('/api/sales/find/:term', route(async (req, res) => {
 // UPDATEs every serial that stays on the order (re-validating any BRAND NEW
 // serial added during the edit), reverts any REMOVED serial back to
 // Available, and flags every touched row edited_flag=1.
-app.put('/api/sales/modify/:orderNo', route(async (req, res) => {
+app.put('/api/sales/modify/:orderNo', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
   const loadedOrderNo = req.params.orderNo;
   const newCust = String(req.body.customer || '').trim();
   const newChalan = String(req.body.chalanNo || '').trim();
@@ -2350,7 +2449,7 @@ app.put('/api/sales/modify/:orderNo', route(async (req, res) => {
 // DELETE /api/sales/delete/:orderNo — mirrors delete_sales_transaction():
 // permanently reverts every Sold serial on this order back to Available
 // stock (undoes the dispatch; does not delete the underlying purchase row).
-app.delete('/api/sales/delete/:orderNo', route(async (req, res) => {
+app.delete('/api/sales/delete/:orderNo', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
   const { orderNo } = req.params;
   const [rows] = await pool.query(`SELECT serial_no FROM stock_ledger WHERE order_no=? AND status='Sold'`, [orderNo]);
   if (!rows.length) {
@@ -2546,7 +2645,7 @@ app.get('/api/masters/users', route(async (req, res) => {
   res.json(rows);
 }));
 
-app.post('/api/masters/users', route(async (req, res) => {
+app.post('/api/masters/users', requireRole('SuperAdmin'), route(async (req, res) => {
   const { username, password, role, email } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and Password are mandatory.' });
   const uname = username.trim().toLowerCase();
@@ -2578,7 +2677,7 @@ app.post('/api/masters/users', route(async (req, res) => {
   }
 }));
 
-app.put('/api/masters/users/password', route(async (req, res) => {
+app.put('/api/masters/users/password', requireRole('SuperAdmin'), route(async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and new Password are mandatory.' });
   const hashed = await hashPassword(password);
@@ -2590,7 +2689,7 @@ app.put('/api/masters/users/password', route(async (req, res) => {
 // Sets/updates the email OTP login relies on for a given user — separate
 // from the password update so an admin can fix/add just the email without
 // touching the password.
-app.put('/api/masters/users/email', route(async (req, res) => {
+app.put('/api/masters/users/email', requireRole('SuperAdmin'), route(async (req, res) => {
   const { username, email } = req.body;
   if (!username || !email) return res.status(400).json({ error: 'Username and Email are mandatory.' });
   const [result] = await pool.query(

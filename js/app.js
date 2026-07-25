@@ -4,6 +4,42 @@
 // Each page module (js/pages/*.js) registers itself into window.PAGES before
 // this file runs, e.g. window.PAGES.dashboard = { name, icon, sub, html, init }
 
+// ---------------------------------------------------------------------------
+// AUTH TOKEN — global fetch wrapper.
+// The backend now requires "Authorization: Bearer <token>" on every
+// protected /api/... call (see api/server.js authenticateToken). Rather
+// than editing every fetch()/window.Api call across js/data/api.js and
+// every js/pages/*.js file individually, this patches window.fetch ONCE,
+// here — any request to this app's own /api/... endpoints automatically
+// gets the header attached (when we have a token); every other request
+// (other origins, static assets) passes through untouched.
+// window.currentAuthToken is set on login and restored on page refresh
+// below. If a call comes back 401 (missing/expired token — including old
+// sessions saved before this change, which won't have a token at all), we
+// broadcast 'egs:session-expired' so the app can drop back to the login
+// screen instead of leaving the person stuck looking at failed requests.
+// ---------------------------------------------------------------------------
+(function () {
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = function (input, init) {
+    let url = '';
+    try { url = typeof input === 'string' ? input : (input && input.url) || ''; } catch (e) { /* ignore */ }
+    const isApiCall = url.indexOf('/api/') !== -1;
+    if (isApiCall && window.currentAuthToken) {
+      init = init ? Object.assign({}, init) : {};
+      const headers = new Headers(init.headers || (typeof input !== 'string' && input && input.headers) || {});
+      if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${window.currentAuthToken}`);
+      init.headers = headers;
+    }
+    return originalFetch(input, init).then((res) => {
+      if (isApiCall && res.status === 401 && url.indexOf('/api/auth/') === -1) {
+        window.dispatchEvent(new CustomEvent('egs:session-expired'));
+      }
+      return res;
+    });
+  };
+})();
+
 (function () {
   const NAV_ORDER = [
     'dashboard', 'masters', 'purchase', 'sales', 'stockassign',
@@ -233,8 +269,9 @@ window.attachColumnFilters = function (table) {
   //     also survives closing and reopening the browser entirely.
   // No password is ever stored, only the already-verified username + role.
   const SESSION_KEY = 'egs_session';
-  function saveSession(username, role, persist) {
-    const payload = JSON.stringify({ username, role });
+  function saveSession(username, role, persist, token) {
+    const payload = JSON.stringify({ username, role, token });
+    window.currentAuthToken = token || null;
     try { sessionStorage.setItem(SESSION_KEY, payload); } catch (e) { /* storage unavailable */ }
     try {
       if (persist) localStorage.setItem(SESSION_KEY, payload);
@@ -246,11 +283,16 @@ window.attachColumnFilters = function (table) {
       const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
       if (!raw) return null;
       const data = JSON.parse(raw);
-      if (data && data.username && data.role) return data;
+      // Older sessions saved before token-based auth won't have a `token`
+      // field — treat those as already signed out, since the API will
+      // reject every call without one anyway. This sends the person back
+      // to a normal login instead of a confusing wall of failed requests.
+      if (data && data.username && data.role && data.token) return data;
     } catch (e) { /* corrupt/unavailable storage — just fall through to login */ }
     return null;
   }
   function clearSession() {
+    window.currentAuthToken = null;
     try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
     try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
   }
@@ -311,12 +353,19 @@ window.attachColumnFilters = function (table) {
     }).catch(() => { /* best-effort — stale-session cleanup is the fallback */ });
   }
 
-  function showLoginOverlay() {
+  function showLoginOverlay(message) {
     if (!loginOverlay) buildLoginOverlay();
     const pwdInput = document.getElementById('loginPassword');
     if (pwdInput) pwdInput.value = '';
     const errorBox = document.getElementById('loginError');
-    if (errorBox) errorBox.classList.remove('show');
+    if (errorBox) {
+      if (message) {
+        errorBox.textContent = message;
+        errorBox.classList.add('show');
+      } else {
+        errorBox.classList.remove('show');
+      }
+    }
     // Always land back on the Sign In step, whichever step was last open
     // (e.g. someone closed mid-registration and reopens the app later).
     ['loginStepOtp', 'loginStepRegister', 'loginStepRegisterOtp', 'loginStepForgot', 'loginStepReset'].forEach((id) => {
@@ -328,6 +377,19 @@ window.attachColumnFilters = function (table) {
     loginOverlay.style.display = 'flex';
     if (shellEl) shellEl.style.display = 'none';
   }
+
+  // Fired by the global fetch wrapper (top of this file) whenever an API
+  // call comes back 401 — token missing/expired, or (for anyone who was
+  // already signed in before this update shipped) an old session that was
+  // saved before tokens existed at all. Either way, the clean recovery is
+  // the same: drop the stale session and send them back to a normal login
+  // instead of leaving the app stuck making failed requests.
+  window.addEventListener('egs:session-expired', () => {
+    stopHeartbeat();
+    stopIdleTimer();
+    clearSession();
+    showLoginOverlay('Your session has expired. Please sign in again.');
+  });
 
   function buildLoginOverlay() {
     loginOverlay = document.createElement('div');
@@ -613,7 +675,7 @@ window.attachColumnFilters = function (table) {
           localStorage.removeItem('egs_user');
         }
       } catch (e) { /* localStorage unavailable — Remember Me just won't persist */ }
-      saveSession(data.username, data.role, rememberChk.checked);
+      saveSession(data.username, data.role, rememberChk.checked, data.token);
       updateProfileDisplay(data.username, data.role);
       showApp();
       startHeartbeat();
@@ -1175,6 +1237,7 @@ window.attachColumnFilters = function (table) {
   buildLoginOverlay();
   const restoredSession = loadSession();
   if (restoredSession) {
+    window.currentAuthToken = restoredSession.token;
     updateProfileDisplay(restoredSession.username, restoredSession.role);
     showApp();
     startHeartbeat();
