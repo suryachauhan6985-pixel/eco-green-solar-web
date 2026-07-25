@@ -57,48 +57,46 @@ window.Api = {
   },
 };
 
-// ---------------------------------------------------------------------------
-// Attachments (real proof files) — shared by Purchase / Sales / Stock Assign
-// (upload) and Party Ledger (view). Files are sent to POST /api/attachments
-// as base64 inside normal JSON (see server.js) since the API has no
-// persistent disk to write to on every host — this keeps the real file
-// bytes safely in the same MariaDB database everything else already lives
-// in, keyed by (refType, refNo) so every serial number under one
-// voucher/invoice shares the same attachment set instead of duplicating it.
-// ---------------------------------------------------------------------------
-
-// Converts File objects (from an <input type="file" multiple>) into the
-// { name, mimeType, size, data } shape POST /api/attachments expects.
-// `data` is base64 WITHOUT the "data:...;base64," prefix FileReader adds.
-window.readFilesAsBase64 = function readFilesAsBase64(files) {
-  const list = Array.from(files || []);
-  return Promise.all(list.map((file) => new Promise((resolve, reject) => {
+// -----------------------------------------------------------------------------
+// window.uploadAttachments(refType, refNo, fileList) — used by
+// partyledger.js, sales.js and purchase.js to push proof files to
+// POST /api/attachments. The backend expects base64 (no data: prefix) in
+// body.files[].data, so this reads every File via FileReader before posting.
+// Returns { ok: true, files } on success or { ok: false, error } on failure
+// so callers can show a non-fatal warning instead of throwing.
+// -----------------------------------------------------------------------------
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      const result = String(reader.result || '');
-      const data = result.includes(',') ? result.slice(result.indexOf(',') + 1) : result;
-      resolve({ name: file.name, mimeType: file.type || 'application/octet-stream', size: file.size, data });
+      const result = reader.result || '';
+      const base64 = String(result).split(',')[1] || '';
+      resolve(base64);
     };
     reader.onerror = () => reject(reader.error || new Error(`Could not read file: ${file.name}`));
     reader.readAsDataURL(file);
-  })));
-};
+  });
+}
 
-// Best-effort upload: called right after a voucher (Purchase invoice / Sale
-// order / Stock Assign) is saved and its ref no. (invoice/order/reference)
-// is known. Never throws — a failed proof upload should never make the
-// caller think the whole save failed, since the voucher itself is already
-// safely saved by this point; callers can inspect the resolved
-// { ok, error } to optionally warn the person.
-window.uploadAttachments = async function uploadAttachments(refType, refNo, files) {
-  if (!files || !files.length) return { ok: true, skipped: true };
+window.uploadAttachments = async function uploadAttachments(refType, refNo, fileList) {
   try {
-    const encoded = await window.readFilesAsBase64(files);
-    await window.Api.post('/attachments', {
-      refType, refNo, uploadedBy: window.currentUsername || null, files: encoded,
+    const files = Array.from(fileList || []);
+    if (!files.length) return { ok: false, error: 'No files selected.' };
+
+    const encoded = await Promise.all(files.map(async (file) => ({
+      name: file.name,
+      mimeType: file.type || 'application/octet-stream',
+      size: file.size,
+      data: await readFileAsBase64(file),
+    })));
+
+    const data = await window.Api.post('/attachments', {
+      refType,
+      refNo,
+      files: encoded,
     });
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e.message || 'Could not upload the attached proof file(s).' };
+    return { ok: true, files: (data && data.files) || [] };
+  } catch (err) {
+    return { ok: false, error: (err && err.message) || 'Upload failed.' };
   }
 };
