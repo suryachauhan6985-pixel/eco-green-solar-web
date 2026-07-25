@@ -14,10 +14,18 @@
 // gets the header attached (when we have a token); every other request
 // (other origins, static assets) passes through untouched.
 // window.currentAuthToken is set on login and restored on page refresh
-// below. If a call comes back 401 (missing/expired token — including old
-// sessions saved before this change, which won't have a token at all), we
-// broadcast 'egs:session-expired' so the app can drop back to the login
-// screen instead of leaving the person stuck looking at failed requests.
+// below. If a call that ACTUALLY CARRIED a token comes back 401 (expired/
+// invalid token), we broadcast 'egs:session-expired' so the app can drop
+// back to the login screen instead of leaving the person stuck looking at
+// failed requests.
+//   IMPORTANT: the Dashboard page loads (and polls) in the background even
+//   while the login overlay is showing on top of it — e.g. mid-way through
+//   entering an OTP, before any token exists yet. Those background calls
+//   are EXPECTED to 401 (there's no session yet) and must NOT be treated as
+//   an expiry, or they'd yank the person off the OTP screen while typing.
+//   That's why this only fires for requests that actually had a token
+//   attached (hadToken below) — a 401 with no token just means "not logged
+//   in yet", which is normal and not an error to react to.
 // ---------------------------------------------------------------------------
 (function () {
   const originalFetch = window.fetch.bind(window);
@@ -25,14 +33,15 @@
     let url = '';
     try { url = typeof input === 'string' ? input : (input && input.url) || ''; } catch (e) { /* ignore */ }
     const isApiCall = url.indexOf('/api/') !== -1;
-    if (isApiCall && window.currentAuthToken) {
+    const hadToken = !!(isApiCall && window.currentAuthToken);
+    if (hadToken) {
       init = init ? Object.assign({}, init) : {};
       const headers = new Headers(init.headers || (typeof input !== 'string' && input && input.headers) || {});
       if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${window.currentAuthToken}`);
       init.headers = headers;
     }
     return originalFetch(input, init).then((res) => {
-      if (isApiCall && res.status === 401 && url.indexOf('/api/auth/') === -1) {
+      if (hadToken && res.status === 401 && url.indexOf('/api/auth/') === -1) {
         window.dispatchEvent(new CustomEvent('egs:session-expired'));
       }
       return res;
