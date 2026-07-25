@@ -161,6 +161,13 @@ function route(handler) {
   };
 }
 
+// A session whose last_seen is older than this is treated as dead (crashed
+// tab / lost network / power cut) even if it was never cleanly logged out.
+// Used both by GET /api/sessions/live (self-heals the Live Users list) and
+// by POST /api/auth/login below (so a genuinely-dead old session doesn't
+// permanently lock a user out of signing back in).
+const SESSION_STALE_SECONDS = 40;
+
 // Health check
 app.get('/api/health', route(async (req, res) => {
   await pool.query('SELECT 1');
@@ -264,6 +271,26 @@ app.post('/api/auth/login', route(async (req, res) => {
   if (!rows.length) {
     return res.status(401).json({ error: 'Incorrect Username or Password.' });
   }
+
+  // ---------- One session at a time per user ----------
+  // First self-heal: if this username's last session went stale (crashed
+  // tab, lost network, power cut — same STALE_SECONDS window
+  // /api/sessions/live uses) it doesn't count as "still logged in" any
+  // more, so it won't block a fresh login.
+  await pool.query(
+    `UPDATE user_sessions
+     SET is_logged_in=0
+     WHERE username=? AND is_logged_in=1 AND (last_seen IS NULL OR last_seen < (NOW() - INTERVAL ? SECOND))`,
+    [uname, SESSION_STALE_SECONDS]
+  );
+  const [[existing]] = await pool.query(
+    `SELECT is_logged_in FROM user_sessions WHERE username=?`,
+    [uname]
+  );
+  if (existing && existing.is_logged_in) {
+    return res.status(409).json({ error: 'This user is already logged in on another device/browser. Please logout there first.' });
+  }
+
   // Mark this user ONLINE right away — same row the desktop app's
   // "Live Network Users" tracker reads, so a login from either app shows
   // up for everyone immediately.
@@ -309,7 +336,6 @@ app.post('/api/auth/heartbeat', route(async (req, res) => {
 // last_seen is older than STALE_SECONDS gets self-healed back to offline
 // first, so a crashed tab / lost wifi doesn't leave someone stuck "online"
 // forever.
-const SESSION_STALE_SECONDS = 40;
 app.get('/api/sessions/live', route(async (req, res) => {
   await pool.query(
     `UPDATE user_sessions
