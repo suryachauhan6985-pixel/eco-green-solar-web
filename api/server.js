@@ -20,36 +20,43 @@ app.use(express.json());
 //
 // IMPORTANT (Render free tier): Render blocks outbound SMTP ports (25, 465,
 // 587) on free web services, so Gmail SMTP will always time out there no
-// matter which port you use. To fix this we send OTP emails over Resend's
-// HTTPS API instead (no SMTP port involved, so it works fine on Render's
-// free tier). Plain SMTP is kept as an automatic fallback for anyone running
-// this on a host that does allow SMTP (e.g. a paid Render plan, a VPS, etc).
+// matter which port you use. To fix this we send OTP emails over an HTTPS
+// email API instead (no SMTP port involved, so it works fine on Render's
+// free tier).
 //
-// --- Option A (recommended): Resend ---------------------------------------
-//   1. Sign up free at https://resend.com (no credit card needed)
-//   2. Create an API key: https://resend.com/api-keys
-//   3. Set these environment variables in Render:
-//        RESEND_API_KEY   the key from step 2 (starts with "re_")
-//        RESEND_FROM      optional, defaults to Resend's shared test sender
-//                          "onboarding@resend.dev" which needs NO domain
-//                          setup and can email any address — good enough for
-//                          OTP codes. Once you verify your own domain on
-//                          Resend you can switch this to
-//                          "Eco Green Solar ERP <otp@yourdomain.com>".
-//   Free tier: 3,000 emails/month, 100/day — plenty for login OTPs.
+// --- Option A (in use / recommended — no domain required): Brevo --------
+//   Brevo lets you verify a single sender email address (a 6-digit code is
+//   emailed to it) WITHOUT owning/verifying a domain, and that sender can
+//   then email ANY recipient — perfect for a small team without a website
+//   domain.
+//   1. Sign up free at https://app.brevo.com/ (no credit card needed)
+//   2. Go to Senders, Domains & Dedicated IPs -> Senders -> Add a sender.
+//      Enter the mailbox you already use (e.g. greenenergy123@gmail.com),
+//      then check that inbox for a 6-digit code and enter it to verify.
+//   3. Get an API key: Settings (top right) -> SMTP & API -> API Keys ->
+//      Generate a new API key.
+//   4. Set these environment variables in Render:
+//        BREVO_API_KEY     the key from step 3
+//        BREVO_FROM_EMAIL  the sender you verified in step 2
+//                          (e.g. greenenergy123@gmail.com)
+//        BREVO_FROM_NAME   optional, defaults to "Eco Green Solar ERP"
+//   Free tier: 300 emails/day, forever — plenty for login OTPs.
 //
-// --- Option B: SMTP (Gmail, etc.) — only works on hosts that allow it -----
-//   SMTP_HOST   e.g. smtp.gmail.com   (default: smtp.gmail.com)
-//   SMTP_PORT   e.g. 465             (default: 465)
-//   SMTP_USER   the sending mailbox, e.g. yourbusiness@gmail.com
-//   SMTP_PASS   a Gmail "App Password" (NOT your normal Gmail password —
-//               generate one at https://myaccount.google.com/apppasswords,
-//               needs 2-Step Verification turned on for the Gmail account)
+// --- Option B: Resend — needs your own domain verified to email anyone ---
+//   RESEND_API_KEY, RESEND_FROM  (see resend.com/domains to verify a domain;
+//   without a verified domain, Resend can only email the account owner.)
 //
-// If neither is configured, the server does NOT crash — it just logs the
+// --- Option C: SMTP (Gmail, etc.) — only works on hosts that allow it ----
+//   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS (Gmail App Password)
+//
+// If nothing is configured, the server does NOT crash — it just logs the
 // OTP to the server console instead of emailing it, so login still works
 // while you're setting email up.
 // ---------------------------------------------------------------------------
+const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
+const BREVO_FROM_EMAIL = process.env.BREVO_FROM_EMAIL || '';
+const BREVO_FROM_NAME = process.env.BREVO_FROM_NAME || 'Eco Green Solar ERP';
+
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const RESEND_FROM = process.env.RESEND_FROM || 'Eco Green Solar ERP <onboarding@resend.dev>';
 
@@ -70,8 +77,8 @@ if (SMTP_USER && SMTP_PASS) {
   });
 }
 
-if (!RESEND_API_KEY && !mailer) {
-  console.warn('[Email OTP] Neither RESEND_API_KEY nor SMTP_USER/SMTP_PASS is set — OTPs will be printed to this console instead of emailed. See comment above for setup.');
+if (!BREVO_API_KEY && !RESEND_API_KEY && !mailer) {
+  console.warn('[Email OTP] No email service configured (BREVO_API_KEY / RESEND_API_KEY / SMTP_USER+SMTP_PASS) — OTPs will be printed to this console instead of emailed. See comment above for setup.');
 }
 
 function generateOtp() {
@@ -83,8 +90,37 @@ async function sendOtpEmail(toEmail, otp) {
   const text = `Your OTP is ${otp}. It is valid for ${OTP_TTL_MINUTES} minutes. Do not share this code with anyone.`;
   const html = `<p>Your OTP is <strong style="font-size:20px;">${otp}</strong>.</p><p>It is valid for ${OTP_TTL_MINUTES} minutes. Do not share this code with anyone.</p>`;
 
-  // Preferred path: Resend's HTTPS API — works everywhere, including hosts
-  // (like Render's free tier) that block outbound SMTP ports.
+  // Preferred path: Brevo's HTTPS API — no SMTP port involved (works on
+  // Render's free tier), and a verified single sender can email anyone
+  // without needing to own/verify a domain.
+  if (BREVO_API_KEY) {
+    if (!BREVO_FROM_EMAIL) {
+      throw new Error('BREVO_FROM_EMAIL is not set. Set it to the sender address you verified in Brevo.');
+    }
+    const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': BREVO_API_KEY,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: BREVO_FROM_NAME, email: BREVO_FROM_EMAIL },
+        to: [{ email: toEmail }],
+        subject,
+        textContent: text,
+        htmlContent: html,
+      }),
+    });
+    if (!resp.ok) {
+      const detail = await resp.text().catch(() => '');
+      throw new Error(`Brevo API error (${resp.status}): ${detail || resp.statusText}`);
+    }
+    return;
+  }
+
+  // Fallback: Resend's HTTPS API (only works for the Resend account's own
+  // email unless a domain has been verified there).
   if (RESEND_API_KEY) {
     const resp = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -101,7 +137,7 @@ async function sendOtpEmail(toEmail, otp) {
     return;
   }
 
-  // Fallback path: plain SMTP (only works if the host allows outbound SMTP).
+  // Fallback: plain SMTP (only works if the host allows outbound SMTP).
   if (mailer) {
     await mailer.sendMail({ from: `"Eco Green Solar ERP" <${SMTP_USER}>`, to: toEmail, subject, text, html });
     return;
