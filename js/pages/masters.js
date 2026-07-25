@@ -155,7 +155,7 @@ window.PAGES.masters = {
             <div class="field"><label>Password / PIN *</label><input type="password" id="mUserPassInput" placeholder="••••••••"></div>
             <div class="field"><label>Email (for OTP Login) *</label><input type="email" id="mUserEmailInput" placeholder="e.g. amit@example.com"></div>
             <div class="field"><label>System Privilege</label>
-              <select id="mUserRoleDropdown"><option value="User">User</option><option value="SuperAdmin">SuperAdmin</option></select></div>
+              <select id="mUserRoleDropdown"><option value="User">User</option><option value="Admin">Admin</option><option value="SuperAdmin">SuperAdmin</option></select></div>
           </div>
           <div style="color:var(--txt-muted); font-size:12px; margin-top:6px;">Every user needs an email on file — login now sends a One-Time Password (OTP) to it as a second step after the password.</div>
           <div class="actions-row" style="margin-top:10px;">

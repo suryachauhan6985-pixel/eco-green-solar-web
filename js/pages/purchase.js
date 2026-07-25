@@ -161,7 +161,7 @@ window.PAGES.purchase = {
     // enforce_role_restrictions(role): edit_scroll only visible for
     // SuperAdmin, everyone else sees a locked placeholder instead.
     const currentRole = window.currentUserRole || 'SuperAdmin';
-    const isAdmin = currentRole === 'SuperAdmin';
+    const isAdmin = currentRole === 'SuperAdmin' || currentRole === 'Admin';
 
     // ---------------- Date fields: click anywhere to open the native
     // calendar (not just the small icon), and block manual keyboard/paste

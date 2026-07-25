@@ -172,7 +172,7 @@ window.PAGES.partyledger = {
   init() {
     const API_BASE = window.API_BASE || 'http://192.168.0.123:5000/api';
     const currentRole = window.currentUserRole || 'SuperAdmin';
-    const isAdmin = currentRole === 'SuperAdmin';
+    const isAdmin = currentRole === 'SuperAdmin' || currentRole === 'Admin';
 
     let directory = [];   // [{ displayName, partyName, shortName, type, ledgerId, mobile, address, gstin }]
     let selected = null;  // one entry from `directory`

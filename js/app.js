@@ -213,7 +213,7 @@ window.attachColumnFilters = function (table) {
     if (avatarEl) avatarEl.textContent = username.charAt(0).toUpperCase();
     if (role) {
       window.currentUserRole = role;
-      if (roleEl) roleEl.textContent = role === 'SuperAdmin' ? 'Super Admin' : 'User';
+      if (roleEl) roleEl.textContent = role === 'SuperAdmin' ? 'Super Admin' : (role === 'Admin' ? 'Admin' : 'User');
     }
   }
 

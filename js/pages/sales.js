@@ -137,7 +137,7 @@ window.PAGES.sales = {
   init() {
     const $ = (id) => document.getElementById(id);
     const currentRole = window.currentUserRole || 'User';
-    const isAdmin = currentRole === 'SuperAdmin';
+    const isAdmin = currentRole === 'SuperAdmin' || currentRole === 'Admin';
 
     const saleSplit = $('saleSplit');
     const saleToggleLabel = $('saleToggleEditLabel');

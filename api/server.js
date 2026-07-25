@@ -339,6 +339,33 @@ async function getOrCreateItem(conn, category, brand, watt, solarType) {
 })();
 
 // ---------------------------------------------------------------------------
+// EMAIL-PER-ROLE UNIQUENESS — same Gmail/email can be reused across
+// different roles (e.g. one person has both a 'User' account and an
+// 'Admin' account on the same email), but the same email can never be used
+// twice for the SAME role. Enforced with a real composite unique index (not
+// just an app-level check) so it holds no matter which endpoint creates the
+// row — self-service /api/auth/register OR SuperAdmin's Masters > Users.
+// Wrapped in try/catch: if pre-existing data already has duplicates, adding
+// the index fails loudly in the console instead of crashing the server —
+// clean that data up once, then restart, and the index will take.
+// ---------------------------------------------------------------------------
+(async function ensureEmailRoleUniqueSchema() {
+  try {
+    const [rows] = await pool.query(`
+      SELECT COUNT(*) AS cnt FROM information_schema.statistics
+      WHERE table_schema = DATABASE() AND table_name = 'users' AND index_name = 'uniq_email_role'
+    `);
+    if (!rows[0].cnt) {
+      await pool.query(`ALTER TABLE users ADD UNIQUE INDEX uniq_email_role (email, role)`);
+    }
+  } catch (e) {
+    console.warn('[Email/Role uniqueness] Could not add uniq_email_role index (likely duplicate email+role rows already exist — clean those up, then restart):', e.message);
+  }
+})();
+
+const VALID_ROLES = ['User', 'Admin', 'SuperAdmin'];
+
+// ---------------------------------------------------------------------------
 // ATTACHMENTS — real, openable proof files (Purchase invoice photos, Sale
 // challans, Stock Assign proofs, etc). Previously the app only ever saved a
 // filename *label* (e.g. "invoice.pdf" or "3 files") into
@@ -730,13 +757,24 @@ app.post('/api/auth/register', route(async (req, res) => {
 
   const [[usernameTaken]] = await pool.query(`SELECT username FROM users WHERE username = ?`, [uname]);
   if (usernameTaken) return res.status(400).json({ error: 'That username is already taken.' });
-  const [[emailTaken]] = await pool.query(`SELECT username FROM users WHERE LOWER(email) = ?`, [mail]);
-  if (emailTaken) return res.status(400).json({ error: 'An account with that email already exists.' });
+  // Self-registration always creates role 'User' (see note above), so the
+  // duplicate check only needs to look at existing 'User' accounts — the
+  // same email is still free to register a separate Admin/SuperAdmin
+  // account (created via Masters > Users), per uniq_email_role.
+  const [[emailTaken]] = await pool.query(`SELECT username FROM users WHERE LOWER(email) = ? AND role = 'User'`, [mail]);
+  if (emailTaken) return res.status(400).json({ error: 'A User account with that email already exists.' });
 
-  await pool.query(
-    `INSERT INTO users (username, password, role, email, is_verified) VALUES (?, ?, 'User', ?, 0)`,
-    [uname, password, mail]
-  );
+  try {
+    await pool.query(
+      `INSERT INTO users (username, password, role, email, is_verified) VALUES (?, ?, 'User', ?, 0)`,
+      [uname, password, mail]
+    );
+  } catch (e) {
+    if (e && e.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ error: 'A User account with that email already exists.' });
+    }
+    throw e;
+  }
   await pool.query(`INSERT IGNORE INTO user_sessions (username, is_logged_in, last_login_time) VALUES (?, 0, '-')`, [uname]);
 
   const otp = generateOtp();
@@ -2464,11 +2502,28 @@ app.post('/api/masters/users', route(async (req, res) => {
   if (!username || !password) return res.status(400).json({ error: 'Username and Password are mandatory.' });
   const uname = username.trim().toLowerCase();
   const mail = email ? email.trim().toLowerCase() : null;
+  const finalRole = role || 'User';
+  if (!VALID_ROLES.includes(finalRole)) {
+    return res.status(400).json({ error: `Role must be one of: ${VALID_ROLES.join(', ')}.` });
+  }
+  // Same email can be reused across different roles, but never twice for
+  // the same role — mirrors the rule enforced on self-registration.
+  if (mail) {
+    const [[emailRoleTaken]] = await pool.query(`SELECT username FROM users WHERE LOWER(email) = ? AND role = ?`, [mail, finalRole]);
+    if (emailRoleTaken) return res.status(400).json({ error: `A ${finalRole} account with that email already exists.` });
+  }
   try {
-    await pool.query(`INSERT INTO users (username, password, role, email) VALUES (?, ?, ?, ?)`, [uname, password, role || 'User', mail]);
+    await pool.query(`INSERT INTO users (username, password, role, email) VALUES (?, ?, ?, ?)`, [uname, password, finalRole, mail]);
     await pool.query(`INSERT IGNORE INTO user_sessions (username, is_logged_in, last_login_time) VALUES (?, 0, '-')`, [uname]);
     res.json({ success: true });
   } catch (err) {
+    if (err && err.code === 'ER_DUP_ENTRY') {
+      const msg = String(err.sqlMessage || err.message || '');
+      if (msg.includes('uniq_email_role')) {
+        return res.status(400).json({ error: `A ${finalRole} account with that email already exists.` });
+      }
+      return res.status(400).json({ error: 'Username already taken.' });
+    }
     res.status(400).json({ error: 'Username already taken.' });
   }
 }));
