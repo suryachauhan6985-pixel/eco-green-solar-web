@@ -10,10 +10,47 @@ const fs = require('fs');
 const mysql = require('mysql2/promise');
 const ExcelJS = require('exceljs');
 const nodemailer = require('nodemailer');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 app.use(cors()); 
 app.use(express.json({ limit: '20mb' }));
+
+// ---------------------------------------------------------------------------
+// PASSWORD HASHING — accounts used to store passwords in plain text
+// (`users.password` compared directly in SQL). All NEW/updated passwords are
+// now hashed with bcrypt before being saved. Existing accounts created
+// before this change still have a plaintext value in that column — rather
+// than force-resetting everyone, verifyPassword() below transparently
+// accepts a correct plaintext match too, and the caller re-hashes + saves
+// it right away so every account migrates to a hash the next time its
+// owner successfully logs in, with zero downtime and no forced reset.
+// ---------------------------------------------------------------------------
+const BCRYPT_ROUNDS = 10;
+
+async function hashPassword(plain) {
+  return bcrypt.hash(String(plain), BCRYPT_ROUNDS);
+}
+
+// A bcrypt hash always looks like $2a$.. / $2b$.. / $2y$.. — anything else
+// stored in the column is a legacy plaintext password.
+function looksLikeBcryptHash(stored) {
+  return typeof stored === 'string' && /^\$2[aby]\$\d{2}\$/.test(stored);
+}
+
+// Returns { valid, needsRehash }. needsRehash is true when the match was
+// against a legacy plaintext value, so the caller can upgrade it to a hash.
+async function verifyPassword(plain, stored) {
+  if (!stored) return { valid: false, needsRehash: false };
+  if (looksLikeBcryptHash(stored)) {
+    const valid = await bcrypt.compare(String(plain), stored);
+    return { valid, needsRehash: false };
+  }
+  // Legacy plaintext account.
+  const valid = String(plain) === String(stored);
+  return { valid, needsRehash: valid };
+}
+
 
 // ---------------------------------------------------------------------------
 // EMAIL OTP — sending login OTPs.
@@ -628,13 +665,23 @@ app.post('/api/auth/login', route(async (req, res) => {
   // Accept either the username or the registered email in the same field.
   const identifier = username.trim().toLowerCase();
   const [rows] = await pool.query(
-    `SELECT username, role, email, is_verified FROM users WHERE (username = ? OR LOWER(email) = ?) AND password = ?`,
-    [identifier, identifier, password]
+    `SELECT username, role, email, is_verified, password FROM users WHERE (username = ? OR LOWER(email) = ?)`,
+    [identifier, identifier]
   );
   if (!rows.length) {
     return res.status(401).json({ error: 'Incorrect Username/Email or Password.' });
   }
   const user = rows[0];
+  const { valid, needsRehash } = await verifyPassword(password, user.password);
+  if (!valid) {
+    return res.status(401).json({ error: 'Incorrect Username/Email or Password.' });
+  }
+  if (needsRehash) {
+    // Legacy plaintext account that just proved it owns the password —
+    // upgrade it to a bcrypt hash right now, transparently.
+    const upgraded = await hashPassword(password);
+    await pool.query(`UPDATE users SET password = ? WHERE username = ?`, [upgraded, user.username]);
+  }
   if (!user.is_verified) {
     return res.status(403).json({
       error: 'Please verify your email first. Use "Resend OTP" on the registration screen, or contact a SuperAdmin.',
@@ -765,9 +812,10 @@ app.post('/api/auth/register', route(async (req, res) => {
   if (emailTaken) return res.status(400).json({ error: 'A User account with that email already exists.' });
 
   try {
+    const hashed = await hashPassword(password);
     await pool.query(
       `INSERT INTO users (username, password, role, email, is_verified) VALUES (?, ?, 'User', ?, 0)`,
-      [uname, password, mail]
+      [uname, hashed, mail]
     );
   } catch (e) {
     if (e && e.code === 'ER_DUP_ENTRY') {
@@ -898,7 +946,8 @@ app.post('/api/auth/reset-password', route(async (req, res) => {
   }
 
   await pool.query(`DELETE FROM otp_codes WHERE username=?`, [uname]);
-  const [result] = await pool.query(`UPDATE users SET password = ? WHERE username = ?`, [newPassword, uname]);
+  const hashedNew = await hashPassword(newPassword);
+  const [result] = await pool.query(`UPDATE users SET password = ? WHERE username = ?`, [hashedNew, uname]);
   if (result.affectedRows === 0) return res.status(404).json({ error: 'User not found.' });
   res.json({ success: true });
 }));
@@ -2513,7 +2562,8 @@ app.post('/api/masters/users', route(async (req, res) => {
     if (emailRoleTaken) return res.status(400).json({ error: `A ${finalRole} account with that email already exists.` });
   }
   try {
-    await pool.query(`INSERT INTO users (username, password, role, email) VALUES (?, ?, ?, ?)`, [uname, password, finalRole, mail]);
+    const hashed = await hashPassword(password);
+    await pool.query(`INSERT INTO users (username, password, role, email) VALUES (?, ?, ?, ?)`, [uname, hashed, finalRole, mail]);
     await pool.query(`INSERT IGNORE INTO user_sessions (username, is_logged_in, last_login_time) VALUES (?, 0, '-')`, [uname]);
     res.json({ success: true });
   } catch (err) {
@@ -2531,7 +2581,8 @@ app.post('/api/masters/users', route(async (req, res) => {
 app.put('/api/masters/users/password', route(async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and new Password are mandatory.' });
-  const [result] = await pool.query(`UPDATE users SET password = ? WHERE username = ?`, [password, username.trim().toLowerCase()]);
+  const hashed = await hashPassword(password);
+  const [result] = await pool.query(`UPDATE users SET password = ? WHERE username = ?`, [hashed, username.trim().toLowerCase()]);
   if (result.affectedRows === 0) return res.status(400).json({ error: 'User configuration profile not found.' });
   res.json({ success: true });
 }));
