@@ -15,7 +15,9 @@ window.PAGES.purchaseregister = {
   icon: 'fa-receipt',
   sub: 'All purchase invoices, filterable',
   html: `
-    <div class="page-head"><i class="fa-solid fa-receipt" style="color:var(--green);"></i><h2>Purchase Register</h2></div>
+    <div class="page-head"><i class="fa-solid fa-receipt" style="color:var(--green);"></i><h2>Purchase Register</h2>
+      <button type="button" class="info-btn" data-info="Double-click any record to open it in Purchase Inward's edit panel, pre-filled. You can also filter any column using the filter icon in its header."><i class="fa-solid fa-circle-info"></i></button>
+    </div>
     <div class="toolbar">
       <div><label>From</label> <input type="date" id="pregFrom"></div>
       <div><label>To</label> <input type="date" id="pregTo"></div>
@@ -38,7 +40,6 @@ window.PAGES.purchaseregister = {
       </tr></thead>
       <tbody id="pregBody"></tbody>
     </table></div>
-    <div class="hint" style="margin-top:8px;">Double-click any record to open it in Purchase Inward's edit panel, autofilled. Column header par filter icon se bhi filter kar sakte hain.</div>
   `,
 
   init() {

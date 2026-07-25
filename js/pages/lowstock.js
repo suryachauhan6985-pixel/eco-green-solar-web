@@ -24,7 +24,7 @@ window.PAGES.lowstock = {
   sub: 'Items at or below minimum stock',
   html: `
     <div class="page-head"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red);"></i><h2>Low Stock Alert</h2>
-      <div class="hint">Yahan woh sabhi items dikhte hain jinka current stock minimum level se kam ya barabar ho gaya hai.</div>
+      <button type="button" class="info-btn" data-info="Lists every item whose current stock has dropped to or below its configured minimum level."><i class="fa-solid fa-circle-info"></i></button>
     </div>
     <div class="toolbar">
       <div class="grow"><input id="lsSearch" placeholder="Search category, brand, type..." style="width:100%;"></div>

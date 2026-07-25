@@ -26,7 +26,7 @@ window.PAGES.purchase = {
       <button class="btn btn-gold btn-toggle-edit" type="button" id="purBtnToggleEdit">
         <i class="fa-solid fa-pen-to-square"></i> <span id="purToggleEditLabel">Edit / Modify Invoice</span>
       </button>
-      <div class="hint">Execute Stock Inward saves directly to the database; Find / Apply Modifications / Delete work on live records.</div>
+      <button type="button" class="info-btn" data-info="Execute Stock Inward saves directly to the database. Find, Apply Modifications, and Delete all operate on live records."><i class="fa-solid fa-circle-info"></i></button>
     </div>
 
     <div class="split-two edit-closed" id="purSplit">

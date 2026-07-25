@@ -55,6 +55,19 @@
     }, ms);
   };
 
+  // ---------- Info buttons (project-wide) ----------
+  // Any element with class="info-btn" and a data-info="..." attribute shows
+  // its explanation as a toast on click, instead of the page permanently
+  // displaying a paragraph of instructional text. One delegated listener
+  // covers every info button on every page, including ones added later.
+  document.addEventListener('click', (e) => {
+    const infoBtn = e.target.closest('.info-btn');
+    if (!infoBtn) return;
+    e.stopPropagation();
+    const msg = infoBtn.dataset.info;
+    if (msg && window.showToast) window.showToast(msg, 5000);
+  });
+
   // ---------- Global "Quick Search" (topbar) ----------
   // Dono search boxes (PC .search-mini + mobile .search-mini.mobile-search)
   // isi ek function se judte hain. Jo bhi page currently active hai, uske

@@ -18,7 +18,9 @@ window.PAGES.saleregister = {
   icon: 'fa-file-invoice',
   sub: 'All sales challans, filterable',
   html: `
-    <div class="page-head"><i class="fa-solid fa-file-invoice" style="color:var(--orange);"></i><h2>Sale Register</h2></div>
+    <div class="page-head"><i class="fa-solid fa-file-invoice" style="color:var(--orange);"></i><h2>Sale Register</h2>
+      <button type="button" class="info-btn" data-info="Double-click any record to open it directly in the Project Sales modification panel. You can also filter any column using the filter icon in its header."><i class="fa-solid fa-circle-info"></i></button>
+    </div>
     <div class="toolbar">
       <div><label>From</label> <input type="date" id="sregFrom"></div>
       <div><label>To</label> <input type="date" id="sregTo"></div>
@@ -42,7 +44,6 @@ window.PAGES.saleregister = {
       </tr></thead>
       <tbody id="sregBody"></tbody>
     </table></div>
-    <div class="hint" style="margin-top:8px;">Double-click any record to open it directly in Project Sales modification panel. Column header par filter icon se bhi filter kar sakte hain.</div>
   `,
 
   init() {

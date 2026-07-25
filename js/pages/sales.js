@@ -21,7 +21,6 @@ window.PAGES.sales = {
       <button class="btn btn-gold btn-toggle-edit" type="button" id="saleBtnToggleEdit">
         <i class="fa-solid fa-pen-to-square"></i> <span id="saleToggleEditLabel">Edit / Modify Order</span>
       </button>
-      <div class="hint">Connected to Live Production Database via Node API.</div>
     </div>
 
     <div class="split-two edit-closed" id="saleSplit">

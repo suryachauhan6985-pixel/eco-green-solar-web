@@ -27,6 +27,7 @@ window.PAGES.backup = {
   html: `
     <div class="page-head">
       <i class="fa-solid fa-cloud-arrow-down" style="color:var(--blue);"></i><h2>Backup &amp; Restore</h2>
+      <button type="button" class="info-btn" data-info="An automatic backup runs once per day in the background while the server is running. Backup Now creates an extra backup immediately, without affecting the daily automatic routine."><i class="fa-solid fa-circle-info"></i></button>
       <button class="btn btn-ghost" type="button" id="bkBtnDownloadLatest"><i class="fa-solid fa-folder-open"></i> Download Latest Backup</button>
       <button class="btn btn-green" type="button" id="bkBtnForce"><i class="fa-solid fa-bolt"></i> Backup Now (Force)</button>
     </div>
@@ -35,12 +36,6 @@ window.PAGES.backup = {
       <div id="bkLastBackup" style="color:var(--txt); font-size:14px; font-weight:700;">Last Backup: Checking...</div>
       <div style="color:var(--txt-muted); font-size:12px; margin-top:4px;">Automatic daily backup: active (checked every few minutes on the server, runs once per day).</div>
       <div id="bkLocation" style="color:var(--txt-muted); font-size:12px; margin-top:4px;"></div>
-    </div>
-
-    <div class="hint" style="margin:8px 0 14px;">
-      Automatic backup roz apne aap ek baar hota hai (server chalu rehte hi background me check hota rehta hai).
-      "Backup Now" dabane se turant, time se pehle bhi ek extra backup ban jata hai — iske baad bhi daily automatic
-      routine apne aap normal chalti rehti hai.
     </div>
 
     <div class="table-wrap"><table>

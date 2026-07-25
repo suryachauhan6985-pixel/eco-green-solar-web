@@ -15,7 +15,9 @@ window.PAGES.reports = {
   icon: 'fa-clipboard-list',
   sub: 'Full serial-wise inventory report',
   html: `
-    <div class="page-head"><i class="fa-solid fa-clipboard-list" style="color:var(--blue);"></i><h2>Master Reports</h2></div>
+    <div class="page-head"><i class="fa-solid fa-clipboard-list" style="color:var(--blue);"></i><h2>Master Reports</h2>
+      <button type="button" class="info-btn" data-info="Use the filter icon in any column header to apply an Excel-style filter to that column."><i class="fa-solid fa-circle-info"></i></button>
+    </div>
     <div class="toolbar">
       <div class="grow"><input id="repSearch" placeholder="Search Serial No..." style="width:100%;"></div>
       <div><label>Category</label> <select id="repCategory"><option>All Categories</option></select></div>
@@ -46,7 +48,6 @@ window.PAGES.reports = {
       </tr></thead>
       <tbody id="repBody"><tr><td colspan="18" style="text-align:center;color:var(--txt-muted);">Loading live data…</td></tr></tbody>
     </table></div>
-    <div class="hint" style="margin-top:8px;">Column header par filter icon se har column ko Excel jaisa filter kar sakte hain.</div>
   `,
 
   init() {

@@ -21,14 +21,15 @@ window.PAGES.masters = {
       <div class="grid-2">
 
           <div class="panel">
-            <h3 id="mItemFormHeading"><i class="fa-solid fa-square-plus"></i> Item Profiler & Registration</h3>
-            
+            <h3 id="mItemFormHeading"><i class="fa-solid fa-square-plus"></i> Item Profiler & Registration
+              <button type="button" class="info-btn" data-info="Subtype (DCR, Non-DCR, On-Grid, Off-Grid, Hybrid) is no longer set here. It is now selected per purchase invoice line in Purchase Inward, which automatically creates the matching item variant."><i class="fa-solid fa-circle-info"></i></button>
+            </h3>
+
             <div style="background: rgba(212,175,55,0.08); padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid rgba(212,175,55,0.2);">
   <strong style="color:var(--gold); font-size:12px; display:block; margin-bottom:6px;"><i class="fa-solid fa-sliders"></i> Wattage Rule (set from Category Master)</strong>
   <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
     <input type="checkbox" id="cfgWattMandatory" disabled> <span>Wattage / Capacity is mandatory for selected category</span>
   </label>
-  <p class="hint" style="margin-top:6px; margin-bottom:0;">💡 Subtype (DCR / Non-DCR / On-Grid / Off-Grid / Hybrid) is no longer set here — it's decided per purchase invoice line in Purchase Inward, which auto-creates the item variant.</p>
 </div>
 
             <div class="form-grid cols-1">
@@ -51,8 +52,9 @@ window.PAGES.masters = {
           </div>
 
           <div class="panel">
-            <h3><i class="fa-solid fa-table-list"></i> Registered Inventory Items Sourced</h3>
-            <p class="hint" style="margin-bottom:8px; color:var(--gold);">💡 Double-click any row item to edit its dynamic properties inside the layout form.</p>
+            <h3><i class="fa-solid fa-table-list"></i> Registered Inventory Items Sourced
+              <button type="button" class="info-btn" data-info="Double-click any row to edit its properties in the form on the left."><i class="fa-solid fa-circle-info"></i></button>
+            </h3>
             <div class="table-wrap"><table>
               <thead><tr><th>Category</th><th>Brand</th><th>Wattage</th><th>Subtype</th><th>Alert Stock</th><th>UOM</th></tr></thead>
               <tbody id="mastersItemBody"></tbody>
@@ -84,7 +86,6 @@ window.PAGES.masters = {
 
   <div class="panel" style="margin-top:20px;">
     <h3><i class="fa-solid fa-tags"></i> Subtype / Type Management (per Category)</h3>
-    <p class="hint" style="margin-bottom:8px;">Manage DCR / Non-DCR / On-Grid / Off-Grid / Hybrid etc. subtypes for a category.</p>
     <div class="form-grid cols-2">
       <div class="field"><label>Target Category *</label><select id="mSubTargetCat"></select></div>
       <div class="field"><label>Subtype / Type Name *</label><input id="mInputSubName" placeholder="e.g. DCR, Hybrid, Mono PERC"></div>
@@ -99,8 +100,9 @@ window.PAGES.masters = {
 
      <div class="subtab-panel" data-panel="brand">
       <div class="panel">
-        <h3><i class="fa-solid fa-list"></i> Registered Brands</h3>
-        <p class="hint" style="margin-bottom:8px;">💡 Desktop app ki tarah brands alag se banaye nahi jaate — jo bhi Brand Name aap <b>Item Registration Panel</b> mein type karke item save karte ho, wahi yahan auto-list ho jata hai (live database se).</p>
+        <h3><i class="fa-solid fa-list"></i> Registered Brands
+          <button type="button" class="info-btn" data-info="Brands are not created separately here. Any Brand Name entered while saving an item in the Item Registration Panel is listed automatically, sourced live from the database."><i class="fa-solid fa-circle-info"></i></button>
+        </h3>
         <div class="table-wrap"><table><thead><tr><th>Brand Identifier</th><th>Items Registered</th></tr></thead><tbody id="mastersBrandBody"></tbody></table></div>
       </div>
     </div>
@@ -145,7 +147,9 @@ window.PAGES.masters = {
      <div class="subtab-panel" data-panel="users">
       <div class="grid-2">
          <div class="panel">
-          <h3><i class="fa-solid fa-user-lock"></i> Create / Update Authorization Account</h3>
+          <h3><i class="fa-solid fa-user-lock"></i> Create / Update Authorization Account
+            <button type="button" class="info-btn" data-info="To change a password: enter the existing username with the new password, then click Update Password. The Role dropdown is only used when creating a new user."><i class="fa-solid fa-circle-info"></i></button>
+          </h3>
           <div class="form-grid">
             <div class="field"><label>Username *</label><input id="mUserNameInput" placeholder="e.g. amit"></div>
             <div class="field"><label>Password / PIN *</label><input type="password" id="mUserPassInput" placeholder="••••••••"></div>
@@ -153,10 +157,9 @@ window.PAGES.masters = {
               <select id="mUserRoleDropdown"><option value="User">User</option><option value="SuperAdmin">SuperAdmin</option></select></div>
           </div>
           <div class="actions-row" style="margin-top:10px;">
-            <button class="btn btn-blue" id="mBtnAddUser"><i class="fa-solid fa-user-plus"></i> Add User</button>
-            <button class="btn btn-gold" id="mBtnUpdatePass"><i class="fa-solid fa-key"></i> Update Password</button>
+            <button class="btn btn-blue" id="mBtnAddUser"><i class="fa-solid fa-user-plus"></i> Add New User</button>
+            <button class="btn btn-gold" id="mBtnUpdatePass"><i class="fa-solid fa-key"></i> Update Existing Password</button>
           </div>
-          <p class="hint" style="margin-top:8px;">💡 Password badalne ke liye: existing Username + new Password bharo aur "Update Password" dabao. Role dropdown sirf naya user banate waqt use hota hai.</p>
         </div>
         <div class="panel">
           <h3><i class="fa-solid fa-users"></i> Access Control Ledger</h3>

@@ -35,7 +35,6 @@ window.PAGES.stockassign = {
       <button class="btn btn-gold btn-toggle-edit" type="button" id="assignBtnToggleEdit">
         <i class="fa-solid fa-warehouse"></i> <span id="assignToggleEditLabel">View Assigned Register</span>
       </button>
-      <div class="hint">Connected to Live Production Database via Node API.</div>
     </div>
 
     <div class="split-two edit-closed" id="assignSplit">
@@ -98,6 +97,7 @@ window.PAGES.stockassign = {
         <!-- ================= ASSIGNED REGISTER & RELEASE ================= -->
         <div class="panel edit-panel" id="assignRegPanel" style="border-top-color:var(--purple);">
           <h3 style="color:var(--purple);"><i class="fa-solid fa-warehouse"></i> Assigned Stock Register &amp; Release
+            <button type="button" class="info-btn" data-info="Click a row to load that assignment for release."><i class="fa-solid fa-circle-info"></i></button>
             <button class="btn btn-ghost" type="button" id="assignBtnRefreshReg" style="margin-left:auto; padding:6px 12px; font-size:11.5px;"><i class="fa-solid fa-sync"></i> Refresh</button>
           </h3>
 
@@ -111,7 +111,6 @@ window.PAGES.stockassign = {
               <tbody id="assignRegBody"></tbody>
             </table>
           </div>
-          <div class="hint" style="width:auto; margin:8px 0 0;">Click a row to load that assignment for release.</div>
 
           <div class="form-grid cols-2" style="margin-top:14px;">
             <div class="field span-full"><label>Loaded Reference</label><input id="assignRelRef" value="-" readonly></div>
