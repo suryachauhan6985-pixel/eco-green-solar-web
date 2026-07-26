@@ -164,6 +164,40 @@ function bomSlugify(label) {
   return slug || 'kit';
 }
 
+// Renumbers every item's Sr No. sequentially (1, 2, 3...) across ALL
+// sections in order, exactly like the original Excel sheet's continuous
+// numbering. Called after any insert/remove of an item or section so the
+// numbering never has to be fixed by hand.
+function bomRenumberAll(sections) {
+  let n = 1;
+  sections.forEach((sec) => {
+    sec.items.forEach((it) => {
+      it.sr = n;
+      n += 1;
+    });
+  });
+}
+
+// Deep-clones the standard built-in kit's section/item structure (names +
+// section titles only) with Model/Quantity/Remarks blanked out — this is
+// what the "New Kit" builder pre-fills with the moment it's opened, so a
+// new kit starts in the exact same shape as every existing kit and the
+// person only has to fill in values and add/remove items where the new
+// kit's BOM actually differs.
+function bomDefaultSectionsTemplate() {
+  const ref = Object.values(BOM_KITS)[0];
+  const cloned = ref
+    ? JSON.parse(JSON.stringify(ref.sections))
+    : [{ title: 'Items', items: [{ sr: 1, name: '', model: '', qty: '', remarks: '' }] }];
+  cloned.forEach((sec) => sec.items.forEach((it) => {
+    it.model = '';
+    it.qty = '';
+    it.remarks = '';
+  }));
+  bomRenumberAll(cloned);
+  return cloned;
+}
+
 // ---------- shared escaping helpers ----------
 const bomEsc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const bomEscAttr = (s) => bomEsc(s).replace(/"/g, '&quot;');
@@ -212,18 +246,38 @@ function bomBuildItemOptionsHtml(selectedName) {
 // from the kit defaults — but every cell here is a real <input>/<select>,
 // so the user can change any of them (item, model, quantity, remarks)
 // without having to retype the rest. Edits write straight back into
-// `currentKitState`, which is what actually gets printed.
+// `currentKitState`, which is what actually gets printed. Every section
+// also gets its own Add-Item / Remove-Section controls, and every item row
+// gets an "insert a new item right below this one" + "remove this item"
+// pair, so a new item can be dropped in at any position within any
+// section (e.g. right after the 5th item in "Solar Structure") — not just
+// appended at the very end.
 function bomRenderScreenItemsHtml(state) {
   if (!state) return '<div class="empty">Select a BOM Kit above to load its item list.</div>';
   const rows = state.map((sec, si) => {
-    const catRow = `<tr class="bom-screen-cat"><td colspan="5">${bomEsc(sec.title)}</td></tr>`;
+    const catRow = `
+      <tr class="bom-screen-cat">
+        <td colspan="5">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+            <input type="text" class="bom-field-input bom-section-title-input" data-sec="${si}" data-field="sectitle" value="${bomEscAttr(sec.title)}" style="max-width:280px;">
+            <span style="white-space:nowrap;">
+              <button type="button" class="btn btn-ghost bom-mini-btn" data-sec-add-item="${si}" title="Add item to this section"><i class="fa-solid fa-plus"></i> Add Item</button>
+              <button type="button" class="btn btn-red bom-mini-btn" data-sec-remove="${si}" title="Remove this section"><i class="fa-solid fa-trash"></i></button>
+            </span>
+          </div>
+        </td>
+      </tr>`;
     const itemRows = sec.items.map((it, ii) => `
       <tr>
         <td><input type="text" class="bom-field-input bom-field-sr" data-sec="${si}" data-idx="${ii}" data-field="sr" value="${bomEscAttr(it.sr)}"></td>
         <td><select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(it.name)}</select></td>
         <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="model" value="${bomEscAttr(it.model)}"></td>
         <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="qty" value="${bomEscAttr(it.qty)}"></td>
-        <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="remarks" value="${bomEscAttr(it.remarks)}"></td>
+        <td style="white-space:nowrap;">
+          <input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="remarks" value="${bomEscAttr(it.remarks)}" style="width:calc(100% - 60px); display:inline-block;">
+          <button type="button" class="btn btn-ghost bom-mini-btn" data-insert-after-sec="${si}" data-insert-after-idx="${ii}" title="Insert item below"><i class="fa-solid fa-plus"></i></button>
+          <button type="button" class="btn btn-red bom-mini-btn" data-remove-sec="${si}" data-remove-idx="${ii}" title="Remove item"><i class="fa-solid fa-xmark"></i></button>
+        </td>
       </tr>`).join('');
     return catRow + itemRows;
   }).join('');
@@ -234,6 +288,9 @@ function bomRenderScreenItemsHtml(state) {
         <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th><th>Remarks</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
+    </div>
+    <div style="margin-top:10px;">
+      <button type="button" class="btn btn-ghost" id="bomBtnAddSectionLive"><i class="fa-solid fa-layer-group"></i> Add Section</button>
     </div>
   `;
 }
@@ -347,14 +404,12 @@ window.PAGES.bom = {
         <div class="field"><label>Kit Name <span class="req">*</span></label><input id="bomNewKitLabel" placeholder="e.g. 5 kW — Commercial 550 Wp"></div>
         <div class="field"><label>Capacity (kW)</label><input id="bomNewKitKw" placeholder="e.g. 5"></div>
       </div>
-      <div class="table-wrap">
-        <table class="bom-items-form-table">
-          <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th><th>Remarks</th><th></th></tr></thead>
-          <tbody id="bomNewKitRows"></tbody>
-        </table>
-      </div>
+      <p class="note" style="margin:6px 0 14px;">
+        <i class="fa-solid fa-circle-info"></i> Starts pre-filled with the standard section/item format below — Model, Quantity &amp; Remarks are left blank for you to fill in. Add or remove sections/items freely, and item names can be renamed too.
+      </p>
+      <div id="bomNewKitSections"></div>
       <div class="actions-row" style="margin-top:10px;">
-        <button class="btn btn-ghost" type="button" id="bomBtnAddKitRow"><i class="fa-solid fa-plus"></i> Add Item Row</button>
+        <button class="btn btn-ghost" type="button" id="bomBtnAddKitSection"><i class="fa-solid fa-layer-group"></i> Add Section</button>
         <button class="btn btn-blue" type="button" id="bomBtnSaveKitTemplate"><i class="fa-solid fa-floppy-disk"></i> Save Kit Template</button>
         <button class="btn btn-ghost" type="button" id="bomBtnCancelKitBuilder">Cancel</button>
       </div>
@@ -475,49 +530,119 @@ window.PAGES.bom = {
     const kitBuilderPanel = $('bomKitBuilderPanel');
     const btnNewKit = $('bomBtnNewKit');
     const btnCancelKitBuilder = $('bomBtnCancelKitBuilder');
-    const btnAddKitRow = $('bomBtnAddKitRow');
+    const btnAddKitSection = $('bomBtnAddKitSection');
     const btnSaveKitTemplate = $('bomBtnSaveKitTemplate');
-    const newKitRowsBody = $('bomNewKitRows');
+    const kitBuilderSectionsEl = $('bomNewKitSections');
     const newKitLabelInput = $('bomNewKitLabel');
     const newKitKwInput = $('bomNewKitKw');
-    let newKitRowSeq = 0;
 
-    function addNewKitRow(prefill) {
-      const p = prefill || {};
-      newKitRowSeq += 1;
-      const tr = document.createElement('tr');
-      tr.dataset.rowId = String(newKitRowSeq);
-      tr.innerHTML = `
-        <td><input type="text" class="bom-field-input" data-nk-field="sr" value="${bomEscAttr(p.sr != null ? p.sr : newKitRowSeq)}"></td>
-        <td><input type="text" class="bom-field-input" data-nk-field="name" placeholder="Item name" value="${bomEscAttr(p.name || '')}"></td>
-        <td><input type="text" class="bom-field-input" data-nk-field="model" placeholder="Model" value="${bomEscAttr(p.model || '')}"></td>
-        <td><input type="text" class="bom-field-input" data-nk-field="qty" placeholder="Quantity" value="${bomEscAttr(p.qty || '')}"></td>
-        <td><input type="text" class="bom-field-input" data-nk-field="remarks" placeholder="Remarks" value="${bomEscAttr(p.remarks || '')}"></td>
-        <td><button type="button" class="btn btn-red" data-nk-remove style="padding:6px 10px;"><i class="fa-solid fa-xmark"></i></button></td>
-      `;
-      newKitRowsBody.appendChild(tr);
+    // Live, mutable working copy of the kit being built — same
+    // {title, items:[{sr,name,model,qty,remarks}]} shape as any real kit's
+    // `sections`, so it saves straight into the same catalogue format.
+    let newKitSections = [];
+
+    function renderKitBuilderSections() {
+      bomRenumberAll(newKitSections);
+      kitBuilderSectionsEl.innerHTML = newKitSections.map((sec, si) => `
+        <div class="panel" style="margin-bottom:14px; background:rgba(255,255,255,0.02);">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
+            <input type="text" class="bom-field-input" data-bsec="${si}" data-bfield="sectitle" value="${bomEscAttr(sec.title)}" style="max-width:280px; font-weight:700;">
+            <button type="button" class="btn btn-red bom-mini-btn" data-bsec-remove="${si}" ${newKitSections.length <= 1 ? 'disabled' : ''}><i class="fa-solid fa-trash"></i> Remove Section</button>
+          </div>
+          <div class="table-wrap">
+            <table class="bom-items-form-table">
+              <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th><th>Remarks</th><th></th></tr></thead>
+              <tbody>
+                ${sec.items.map((it, ii) => `
+                  <tr>
+                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="sr" value="${bomEscAttr(it.sr)}"></td>
+                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="name" placeholder="Item name" value="${bomEscAttr(it.name)}"></td>
+                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="model" placeholder="Model" value="${bomEscAttr(it.model)}"></td>
+                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="qty" placeholder="Quantity" value="${bomEscAttr(it.qty)}"></td>
+                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="remarks" placeholder="Remarks" value="${bomEscAttr(it.remarks)}"></td>
+                    <td style="white-space:nowrap;">
+                      <button type="button" class="btn btn-ghost bom-mini-btn" data-binsert-sec="${si}" data-binsert-idx="${ii}" title="Insert item below"><i class="fa-solid fa-plus"></i></button>
+                      <button type="button" class="btn btn-red bom-mini-btn" data-bremove-sec="${si}" data-bremove-idx="${ii}" title="Remove item"><i class="fa-solid fa-xmark"></i></button>
+                    </td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+          <button type="button" class="btn btn-ghost bom-mini-btn" data-bsec-add-item="${si}" style="margin-top:8px;"><i class="fa-solid fa-plus"></i> Add Item to this Section</button>
+        </div>
+      `).join('');
     }
 
-    if (newKitRowsBody) {
-      newKitRowsBody.addEventListener('click', (e) => {
-        const removeBtn = e.target.closest('[data-nk-remove]');
-        if (!removeBtn) return;
-        // Always keep at least one row so the builder is never left empty.
-        if (newKitRowsBody.children.length > 1) removeBtn.closest('tr').remove();
+    // Field edits (section title, sr, name, model, qty, remarks) write
+    // straight back into newKitSections — same delegated-listener pattern
+    // used for the live Kit Items preview above.
+    if (kitBuilderSectionsEl) {
+      kitBuilderSectionsEl.addEventListener('input', handleBuilderFieldEdit);
+      kitBuilderSectionsEl.addEventListener('change', handleBuilderFieldEdit);
+    }
+    function handleBuilderFieldEdit(e) {
+      const el = e.target.closest('[data-bfield]');
+      if (!el) return;
+      const si = Number(el.dataset.bsec);
+      const field = el.dataset.bfield;
+      if (!newKitSections[si]) return;
+      if (field === 'sectitle') {
+        newKitSections[si].title = el.value;
+        return;
+      }
+      const ii = Number(el.dataset.bidx);
+      if (!newKitSections[si].items[ii]) return;
+      newKitSections[si].items[ii][field] = el.value;
+    }
+
+    // Structural changes (insert/remove item, add/remove section) — every
+    // one re-renders and renumbers Sr No. across the whole builder.
+    if (kitBuilderSectionsEl) {
+      kitBuilderSectionsEl.addEventListener('click', (e) => {
+        const insertBtn = e.target.closest('[data-binsert-sec]');
+        const removeItemBtn = e.target.closest('[data-bremove-sec]');
+        const addItemBtn = e.target.closest('[data-bsec-add-item]');
+        const removeSectionBtn = e.target.closest('[data-bsec-remove]');
+        const blankItem = () => ({ sr: '', name: '', model: '', qty: '', remarks: '' });
+
+        if (insertBtn) {
+          const si = Number(insertBtn.dataset.binsertSec);
+          const idx = Number(insertBtn.dataset.binsertIdx);
+          newKitSections[si].items.splice(idx + 1, 0, blankItem());
+        } else if (removeItemBtn) {
+          const si = Number(removeItemBtn.dataset.bremoveSec);
+          const idx = Number(removeItemBtn.dataset.bremoveIdx);
+          newKitSections[si].items.splice(idx, 1);
+        } else if (addItemBtn) {
+          const si = Number(addItemBtn.dataset.bsecAddItem);
+          newKitSections[si].items.push(blankItem());
+        } else if (removeSectionBtn) {
+          if (newKitSections.length <= 1) return; // button is disabled at 1 section anyway
+          const si = Number(removeSectionBtn.dataset.bsecRemove);
+          newKitSections.splice(si, 1);
+        } else {
+          return;
+        }
+        renderKitBuilderSections();
       });
     }
 
-    function resetKitBuilder() {
-      newKitRowsBody.innerHTML = '';
-      newKitRowSeq = 0;
-      newKitLabelInput.value = '';
-      newKitKwInput.value = '';
-      addNewKitRow();
+    if (btnAddKitSection) {
+      btnAddKitSection.addEventListener('click', () => {
+        newKitSections.push({ title: 'New Section', items: [{ sr: '', name: '', model: '', qty: '', remarks: '' }] });
+        renderKitBuilderSections();
+      });
     }
 
     if (btnNewKit) {
       btnNewKit.addEventListener('click', () => {
-        resetKitBuilder();
+        // Pre-fill with the standard section/item format (names only,
+        // Model/Quantity/Remarks blank) — the person only needs to fill in
+        // values and add/remove items/sections where this kit differs.
+        newKitSections = bomDefaultSectionsTemplate();
+        newKitLabelInput.value = '';
+        newKitKwInput.value = '';
+        renderKitBuilderSections();
         kitBuilderPanel.style.display = '';
         kitBuilderPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
         newKitLabelInput.focus();
@@ -528,9 +653,6 @@ window.PAGES.bom = {
         kitBuilderPanel.style.display = 'none';
       });
     }
-    if (btnAddKitRow) {
-      btnAddKitRow.addEventListener('click', () => addNewKitRow());
-    }
 
     if (btnSaveKitTemplate) {
       btnSaveKitTemplate.addEventListener('click', () => {
@@ -539,17 +661,27 @@ window.PAGES.bom = {
           window.openModal('Validation Error', '<p>Kit Name is required.</p>');
           return;
         }
-        const rows = Array.from(newKitRowsBody.querySelectorAll('tr')).map((tr) => ({
-          sr: tr.querySelector('[data-nk-field="sr"]').value.trim(),
-          name: tr.querySelector('[data-nk-field="name"]').value.trim(),
-          model: tr.querySelector('[data-nk-field="model"]').value.trim(),
-          qty: tr.querySelector('[data-nk-field="qty"]').value.trim(),
-          remarks: tr.querySelector('[data-nk-field="remarks"]').value.trim(),
-        })).filter((it) => it.name);
-        if (!rows.length) {
+        // Drop any item left with a blank name, and any section left with
+        // no named items — everything else (Model/Qty/Remarks) can stay blank.
+        const sectionsToSave = newKitSections
+          .map((sec) => ({
+            title: (sec.title || '').trim() || 'Items',
+            items: sec.items
+              .map((it) => ({
+                sr: it.sr,
+                name: (it.name || '').trim(),
+                model: (it.model || '').trim(),
+                qty: (it.qty || '').trim(),
+                remarks: (it.remarks || '').trim(),
+              }))
+              .filter((it) => it.name),
+          }))
+          .filter((sec) => sec.items.length);
+        if (!sectionsToSave.length) {
           window.openModal('Validation Error', '<p>Add at least one item with a name before saving the template.</p>');
           return;
         }
+        bomRenumberAll(sectionsToSave);
 
         const custom = bomLoadCustomKits();
         // Unique key: slugified name, de-duplicated if that slug is already taken.
@@ -562,7 +694,7 @@ window.PAGES.bom = {
         custom[key] = {
           label,
           kw: newKitKwInput.value.trim(),
-          sections: [{ title: 'Items', items: rows }],
+          sections: sectionsToSave,
         };
         bomSaveCustomKits(custom);
 
@@ -574,22 +706,74 @@ window.PAGES.bom = {
     }
 
     // Delegated listener: every field (item dropdown, model/qty/remarks
-    // inputs, sr) carries data-sec/data-idx/data-field, so one listener on
-    // the container catches edits to all rows across kit re-renders and
-    // writes them straight into currentKitState — nothing needs to be
-    // retyped for the parts that stay the same.
+    // inputs, sr, section title) carries data-sec(+data-idx)/data-field, so
+    // one listener on the container catches edits to all rows across kit
+    // re-renders and writes them straight into currentKitState — nothing
+    // needs to be retyped for the parts that stay the same.
     itemsPreview.addEventListener('input', handleItemFieldEdit);
     itemsPreview.addEventListener('change', handleItemFieldEdit);
     function handleItemFieldEdit(e) {
       const el = e.target.closest('[data-field]');
       if (!el) return;
       const si = Number(el.dataset.sec);
-      const ii = Number(el.dataset.idx);
       const field = el.dataset.field;
-      if (!currentKitState || !currentKitState[si] || !currentKitState[si].items[ii]) return;
+      if (!currentKitState || !currentKitState[si]) return;
+      if (field === 'sectitle') {
+        currentKitState[si].title = el.value;
+        setVerified(false);
+        return;
+      }
+      const ii = Number(el.dataset.idx);
+      if (!currentKitState[si].items[ii]) return;
       currentKitState[si].items[ii][field] = el.value;
       setVerified(false); // any edit after verifying means it needs re-verifying
     }
+
+    function rerenderItemsPreview() {
+      itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState);
+      setVerified(false);
+    }
+
+    // Delegated click listener: lets a new item be inserted at ANY position
+    // within any section (not just appended at the end) — e.g. right after
+    // the 5th item in "Solar Structure" — plus removing an item, adding a
+    // whole new section, or removing one. Every structural change
+    // renumbers Sr No. across the whole kit so it always stays 1,2,3...
+    itemsPreview.addEventListener('click', (e) => {
+      if (!currentKitState) return;
+      const insertBtn = e.target.closest('[data-insert-after-sec]');
+      const removeItemBtn = e.target.closest('[data-remove-sec]');
+      const addItemBtn = e.target.closest('[data-sec-add-item]');
+      const removeSectionBtn = e.target.closest('[data-sec-remove]');
+      const addSectionBtn = e.target.closest('#bomBtnAddSectionLive');
+      const blankItem = () => ({ sr: '', name: '', model: '', qty: '', remarks: '' });
+
+      if (insertBtn) {
+        const si = Number(insertBtn.dataset.insertAfterSec);
+        const idx = Number(insertBtn.dataset.insertAfterIdx);
+        currentKitState[si].items.splice(idx + 1, 0, blankItem());
+      } else if (removeItemBtn) {
+        const si = Number(removeItemBtn.dataset.removeSec);
+        const idx = Number(removeItemBtn.dataset.removeIdx);
+        currentKitState[si].items.splice(idx, 1);
+      } else if (addItemBtn) {
+        const si = Number(addItemBtn.dataset.secAddItem);
+        currentKitState[si].items.push(blankItem());
+      } else if (removeSectionBtn) {
+        if (currentKitState.length <= 1) {
+          window.openModal('Cannot Remove', '<p>A kit needs at least one section.</p>');
+          return;
+        }
+        const si = Number(removeSectionBtn.dataset.secRemove);
+        currentKitState.splice(si, 1);
+      } else if (addSectionBtn) {
+        currentKitState.push({ title: 'New Section', items: [blankItem()] });
+      } else {
+        return;
+      }
+      bomRenumberAll(currentKitState);
+      rerenderItemsPreview();
+    });
 
     function getHeaderValues() {
       return {

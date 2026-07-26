@@ -203,6 +203,7 @@ button{font-family:inherit;cursor:pointer;}
 .btn-blue{background:var(--blue);}
 .btn-green{background:var(--green);}
 .btn:disabled, .btn[disabled]{opacity:0.4; cursor:not-allowed; filter:grayscale(60%); pointer-events:none;}
+.bom-mini-btn{padding:5px 9px; font-size:11px; gap:4px;}
 .btn-red{background:var(--red);}
 .btn-gold{background:var(--gold); color:#1a1a1a;}
 .btn-ghost{background:var(--input-bg); color:var(--txt); border:1px solid var(--border-light);}
