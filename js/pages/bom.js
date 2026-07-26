@@ -452,19 +452,26 @@ window.PAGES.bom = {
       if (!sheet) return;
       sheet.style.zoom = '';
       sheet.style.transform = '';
-      sheet.style.width = '100%';
+      // NOTE: no more `sheet.style.width = '100%'` here — .bom-sheet now
+      // has a fixed 850px width in style.css (the real Excel sheet's own
+      // size), so it always measures/scales from that same fixed size on
+      // every print, and margin:0 auto (also in style.css) centers it
+      // horizontally once it's scaled down — same as Excel's "Center on
+      // page: Horizontally" setting.
       const A4_HEIGHT_MM = 297;
-      const MARGIN_MM = 10; // must match @page margin in style.css
+      // Must match the @page top+bottom margin in style.css (19.05mm =
+      // 0.75in each, same as the workbook's real Page Setup margins).
+      const MARGIN_MM = 19.05;
       const PX_PER_MM = 96 / 25.4;
-      // SAFETY_MARGIN: the previous version scaled to *exactly* fill the
-      // usable page height, which left zero headroom — on a real printer
-      // (different default paper size picked by the OS print dialog, a
-      // substitute font if Calibri isn't installed, sub-pixel rounding
-      // once `zoom` is applied, etc.) the sheet could still end up a
-      // few px taller than the page and spill onto a 2nd page, exactly
-      // as reported. Scaling to 96% of the usable height on purpose
-      // leaves enough slack that those real-world variations can no
-      // longer push it over, while still looking effectively full-page.
+      // SAFETY_MARGIN: scaling to *exactly* fill the usable page height
+      // leaves zero headroom — on a real printer (different default
+      // paper size picked by the OS print dialog, a substitute font if
+      // Calibri isn't installed, sub-pixel rounding once `zoom` is
+      // applied, etc.) the sheet could still end up a few px taller than
+      // the page and spill onto a 2nd page. Scaling to 96% of the usable
+      // height on purpose leaves enough slack that those real-world
+      // variations can no longer push it over, while still landing very
+      // close to the workbook's own ~77% print scale.
       const SAFETY_MARGIN = 0.96;
       const usablePx = (A4_HEIGHT_MM - MARGIN_MM * 2) * PX_PER_MM * SAFETY_MARGIN;
       const naturalPx = sheet.scrollHeight;
@@ -474,8 +481,13 @@ window.PAGES.bom = {
         if (supportsZoom) {
           sheet.style.zoom = scale;
         } else {
+          // transform:scale() doesn't reflow, so it needs an explicit
+          // width bump to keep the *visual* result the same size — but
+          // unlike the old 100%-width sheet, .bom-sheet's width is now a
+          // fixed 850px, so scale it in px, not in a %, and centering
+          // still comes from margin:0 auto in style.css.
           sheet.style.transform = `scale(${scale})`;
-          sheet.style.width = `${100 / scale}%`;
+          sheet.style.width = '850px';
         }
       }
     }
