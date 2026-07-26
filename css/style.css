@@ -768,6 +768,24 @@ body.no-scroll{overflow:hidden; height:100%;}
 .bom-screen-cat td{
   background:var(--table-header); color:var(--gold); font-weight:800; text-align:center;
 }
+/* Section-title field inside that divider row: still a real <input> (so the
+   name stays editable) but restyled to look like the highlighted, bold,
+   centered section heading it always was — the generic .bom-field-input
+   rule (light box, left-aligned, normal weight, fixed max-width) had made
+   it look like an ordinary side-aligned form field instead. It only takes
+   on the "editable input" look on hover/focus. */
+.bom-screen-cat .bom-section-title-input{
+  flex:1; min-width:0; max-width:none;
+  background:transparent; border:1px solid transparent;
+  color:var(--gold); font-weight:800; font-size:13px; text-align:center;
+  text-transform:none; padding:6px 8px; border-radius:5px;
+}
+.bom-screen-cat .bom-section-title-input:hover{
+  border-color:var(--border-light);
+}
+.bom-screen-cat .bom-section-title-input:focus{
+  background:var(--input-bg); color:var(--txt); border-color:var(--blue); font-weight:700;
+}
 
 /* ON-SCREEN "Kit Items" fields: real inputs/select, auto-filled from the
    chosen kit but fully editable — user changes only the cell(s) they need

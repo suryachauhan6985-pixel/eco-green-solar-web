@@ -259,7 +259,7 @@ function bomRenderScreenItemsHtml(state) {
       <tr class="bom-screen-cat">
         <td colspan="5">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-            <input type="text" class="bom-field-input bom-section-title-input" data-sec="${si}" data-field="sectitle" value="${bomEscAttr(sec.title)}" style="max-width:280px;">
+            <input type="text" class="bom-field-input bom-section-title-input" data-sec="${si}" data-field="sectitle" value="${bomEscAttr(sec.title)}">
             <span style="white-space:nowrap;">
               <button type="button" class="btn btn-ghost bom-mini-btn" data-sec-add-item="${si}" title="Add item to this section"><i class="fa-solid fa-plus"></i> Add Item</button>
               <button type="button" class="btn btn-red bom-mini-btn" data-sec-remove="${si}" title="Remove this section"><i class="fa-solid fa-trash"></i></button>
@@ -415,7 +415,7 @@ window.PAGES.bom = {
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="bomKitItemsPanel">
       <h3><i class="fa-solid fa-list"></i> Kit Items <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(auto-filled from selected kit)</span></h3>
       <div id="bomItemsPreview">${bomRenderScreenItemsHtml(null)}</div>
     </div>
@@ -438,6 +438,7 @@ window.PAGES.bom = {
     const $ = (id) => document.getElementById(id);
     const kitSelect = $('bomKitSelect');
     const itemsPreview = $('bomItemsPreview');
+    const kitItemsPanel = $('bomKitItemsPanel');
     const btnPrint = $('bomBtnPrint');
     const printRoot = $('bomPrintRoot');
 
@@ -644,6 +645,12 @@ window.PAGES.bom = {
         newKitKwInput.value = '';
         renderKitBuilderSections();
         kitBuilderPanel.style.display = '';
+        // The "Kit Items" panel below always mirrors the currently-selected
+        // kit (e.g. the default 3.3 kW list) — while building a brand new
+        // kit that old list has nothing to do with what's being created, so
+        // hide it for the duration of the builder to avoid the confusing
+        // "two item lists on screen at once" look. Restored on Cancel/Save.
+        if (kitItemsPanel) kitItemsPanel.style.display = 'none';
         kitBuilderPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
         newKitLabelInput.focus();
       });
@@ -651,6 +658,7 @@ window.PAGES.bom = {
     if (btnCancelKitBuilder) {
       btnCancelKitBuilder.addEventListener('click', () => {
         kitBuilderPanel.style.display = 'none';
+        if (kitItemsPanel) kitItemsPanel.style.display = '';
       });
     }
 
@@ -699,6 +707,7 @@ window.PAGES.bom = {
         bomSaveCustomKits(custom);
 
         kitBuilderPanel.style.display = 'none';
+        if (kitItemsPanel) kitItemsPanel.style.display = '';
         populateKitDropdown(key); // auto-select the newly saved kit
         refreshItemsPreview();
         if (window.showToast) window.showToast('Kit template saved — it now auto-fills from the dropdown.');
