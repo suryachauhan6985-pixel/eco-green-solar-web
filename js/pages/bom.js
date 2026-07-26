@@ -432,33 +432,50 @@ window.PAGES.bom = {
     }
 
     // Mirrors Excel's "Fit to 1 page" print option: measure the sheet's
-    // real height, and if it's taller than one A4 page (10mm margins, same
-    // as the @page rule in style.css), shrink it so it always prints on
-    // exactly one page. Uses CSS `zoom` (reflows the layout, so borders and
-    // print pagination stay correct) instead of `transform: scale()`, which
-    // does NOT reflow and was causing the border/column misalignment and
-    // overlapping text seen when comparing against the Excel printout.
-    // Falls back to the old transform trick only on browsers without zoom.
+    // real height and shrink it (via CSS `zoom`, which reflows the layout
+    // so borders/columns stay correctly aligned — unlike `transform:
+    // scale()`, which does NOT reflow and caused the border/column
+    // misalignment seen earlier) so it always prints on exactly one page.
     //
-    // IMPORTANT: this must run from the 'beforeprint' event, not right
-    // before window.print(). #bomPrintRoot is display:none on screen (only
-    // @media print makes it display:block), so measuring scrollHeight
-    // before the browser switches to print media always read 0 — the scale
-    // was silently never applied, which is why it kept printing on 2 pages
-    // no matter what the content was. 'beforeprint' fires after print media
-    // styles are already active, so the measurement is accurate.
-    function fitSheetToOnePage() {
+    // WHY THE OLD VERSION STILL PRINTED 2 PAGES:
+    // 1) It measured with `sheet.scrollHeight` right after setting
+    //    `sheet.style.zoom`. In Chromium, scrollHeight/offsetHeight do NOT
+    //    reflect a zoom that's just been applied — they keep reporting
+    //    (roughly) the un-zoomed size — so the "how tall is it right now"
+    //    check was reading the wrong number every time, no matter what
+    //    zoom was set. getBoundingClientRect().height is the one DOM API
+    //    that DOES report the true, on-screen (zoomed) size, so that's
+    //    what this version measures with instead.
+    // 2) It only ever ran from the 'beforeprint' event. That event's
+    //    timing relative to when the browser actually lays out the print
+    //    preview is not something we can rely on — on the reporter's
+    //    machine it evidently didn't take effect before the page was
+    //    paginated, so the sheet fell back to the CSS's static baseline
+    //    zoom alone... which (see next point) was too big by itself.
+    // 3) The CSS baseline `zoom:0.75` on `.bom-sheet` was assumed (per its
+    //    old comment) to *by itself* guarantee one page. It doesn't —
+    //    measured directly, this exact 53-item/66-row kit still overflows
+    //    onto a 2nd page at zoom 0.75. There is no safe one-size-fits-all
+    //    static zoom: it depends on the item count, which changes per kit.
+    //
+    // FIX: there's no static zoom in CSS anymore (see style.css). Instead,
+    // this always measures the sheet's actual current natural height and
+    // computes the exact zoom needed — every time Print is clicked, not
+    // only reactively from 'beforeprint'. Because #bomPrintRoot is
+    // display:none outside of @media print, measuring it requires
+    // temporarily forcing it visible (off-screen, via the .bom-measuring
+    // class in style.css) — this works regardless of whether print media
+    // is active, so it no longer depends on 'beforeprint' firing at all.
+    function computeAndApplyFitZoom() {
       const sheet = $('bomSheet');
-      if (!sheet) return;
-      // BASELINE_ZOOM must match the static `zoom` on .bom-sheet in
-      // style.css. That CSS value is what actually guarantees this BOM
-      // prints on one page even if this script never runs — this
-      // function's job is only to shrink FURTHER than the baseline for a
-      // future kit with more rows than the current one, never to be the
-      // only thing enforcing one page.
-      const BASELINE_ZOOM = 0.75;
+      if (!sheet || !printRoot) return;
       sheet.style.transform = '';
-      sheet.style.zoom = BASELINE_ZOOM;
+      sheet.style.width = '';
+      sheet.style.zoom = 1; // measure the sheet's true, un-scaled height first
+      printRoot.classList.add('bom-measuring');
+      const naturalHeightPx = sheet.getBoundingClientRect().height;
+      printRoot.classList.remove('bom-measuring');
+
       const A4_HEIGHT_MM = 297;
       // Must match the @page top+bottom margin in style.css (19.05mm =
       // 0.75in each, same as the workbook's real Page Setup margins).
@@ -474,30 +491,30 @@ window.PAGES.bom = {
       // variations can no longer push it over.
       const SAFETY_MARGIN = 0.96;
       const usablePx = (A4_HEIGHT_MM - MARGIN_MM * 2) * PX_PER_MM * SAFETY_MARGIN;
-      // scrollHeight is read AFTER zoom is already set to BASELINE_ZOOM
-      // above, so this is the sheet's real on-page height at that zoom —
-      // not its unzoomed natural height.
-      const zoomedPx = sheet.scrollHeight;
-      if (zoomedPx > usablePx) {
-        const extraScale = usablePx / zoomedPx;
-        const supportsZoom = window.CSS && CSS.supports && CSS.supports('zoom', '1');
-        if (supportsZoom) {
-          sheet.style.zoom = BASELINE_ZOOM * extraScale;
-        } else {
-          sheet.style.zoom = '';
-          sheet.style.transform = `scale(${BASELINE_ZOOM * extraScale})`;
-          sheet.style.width = '850px';
-        }
+
+      if (!naturalHeightPx) return; // nothing rendered yet — nothing to scale
+      // Never scale UP past 1 — a short BOM (few items) should print at its
+      // natural 11pt size, matching Excel, not be stretched to fill the page.
+      const scale = Math.min(1, usablePx / naturalHeightPx);
+      const supportsZoom = window.CSS && CSS.supports && CSS.supports('zoom', '1');
+      if (supportsZoom) {
+        sheet.style.zoom = scale;
+      } else {
+        sheet.style.zoom = '';
+        sheet.style.transform = `scale(${scale})`;
+        sheet.style.width = '850px';
       }
     }
 
-    // De-dupe the 'beforeprint' listener across repeated init() calls
-    // (e.g. navigating away from and back to the BOM page in the SPA).
+    // Kept as a defensive backup in case anything (e.g. Ctrl+P on a stale
+    // sheet) triggers printing without going through the Print button
+    // below — harmless to re-run since it's idempotent (re-measuring after
+    // it has already run just recomputes the same scale).
     if (window.__bomBeforePrintHandler) {
       window.removeEventListener('beforeprint', window.__bomBeforePrintHandler);
     }
-    window.__bomBeforePrintHandler = fitSheetToOnePage;
-    window.addEventListener('beforeprint', fitSheetToOnePage);
+    window.__bomBeforePrintHandler = computeAndApplyFitZoom;
+    window.addEventListener('beforeprint', computeAndApplyFitZoom);
 
     if (btnPrint) {
       btnPrint.addEventListener('click', () => {
@@ -507,6 +524,10 @@ window.PAGES.bom = {
         }
         const kw = BOM_KITS[kitSelect.value].kw;
         printRoot.innerHTML = bomRenderPrintSheetHtml({ kw, sections: currentKitState }, getHeaderValues());
+        // Measure and apply the fit-to-one-page zoom BEFORE window.print()
+        // is called — this is the actual fix (see the long comment above):
+        // don't wait for 'beforeprint', do it right here, synchronously.
+        computeAndApplyFitZoom();
         window.print();
       });
     }
