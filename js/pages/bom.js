@@ -466,43 +466,76 @@ window.PAGES.bom = {
     // temporarily forcing it visible (off-screen, via the .bom-measuring
     // class in style.css) — this works regardless of whether print media
     // is active, so it no longer depends on 'beforeprint' firing at all.
+    //
+    // WIDTH: a plain uniform `zoom` shrinks width and height by the SAME
+    // factor. That's exactly what left big blank strips down both sides
+    // once the sheet had to shrink a lot to fit its height on one page —
+    // the sheet got shorter (good) but also proportionally narrower than
+    // the page (not wanted). Row height in this table depends only on
+    // font-size/line-height/padding (fixed values) — NOT on the table's
+    // width, since every cell is white-space:nowrap so nothing re-wraps
+    // when columns get wider. That means the sheet's *width* can be set
+    // independently of the vertical fit-to-page calculation: this widens
+    // the sheet's un-zoomed base width just enough that, after the SAME
+    // zoom shrink is applied for the height, the final on-page width
+    // comes out to exactly the printable page width — no leftover math
+    // needed elsewhere, and it's still one single `zoom` factor (so
+    // pagination — which depends on `zoom` reflowing layout — stays
+    // exactly as reliable as the height-only version above).
     function computeAndApplyFitZoom() {
       const sheet = $('bomSheet');
       if (!sheet || !printRoot) return;
       sheet.style.transform = '';
-      sheet.style.width = '';
+      sheet.style.width = '850px'; // arbitrary baseline just to measure natural height
       sheet.style.zoom = 1; // measure the sheet's true, un-scaled height first
       printRoot.classList.add('bom-measuring');
       const naturalHeightPx = sheet.getBoundingClientRect().height;
       printRoot.classList.remove('bom-measuring');
-
-      const A4_HEIGHT_MM = 297;
-      // Must match the @page top+bottom margin in style.css (19.05mm =
-      // 0.75in each, same as the workbook's real Page Setup margins).
-      const MARGIN_MM = 19.05;
-      const PX_PER_MM = 96 / 25.4;
-      // SAFETY_MARGIN: scaling to *exactly* fill the usable page height
-      // leaves zero headroom — on a real printer (different default
-      // paper size picked by the OS print dialog, a substitute font if
-      // Calibri isn't installed, sub-pixel rounding once `zoom` is
-      // applied, etc.) the sheet could still end up a few px taller than
-      // the page and spill onto a 2nd page. Scaling to 96% of the usable
-      // height on purpose leaves enough slack that those real-world
-      // variations can no longer push it over.
-      const SAFETY_MARGIN = 0.96;
-      const usablePx = (A4_HEIGHT_MM - MARGIN_MM * 2) * PX_PER_MM * SAFETY_MARGIN;
-
       if (!naturalHeightPx) return; // nothing rendered yet — nothing to scale
-      // Never scale UP past 1 — a short BOM (few items) should print at its
-      // natural 11pt size, matching Excel, not be stretched to fill the page.
-      const scale = Math.min(1, usablePx / naturalHeightPx);
+
+      const PX_PER_MM = 96 / 25.4;
+      // Must match the @page rule in style.css: size:A4 portrait;
+      // margin:19.05mm 6.35mm (top/bottom 0.75in, left/right 0.25in —
+      // the workbook's real Page Setup margins).
+      const A4_HEIGHT_MM = 297;
+      const MARGIN_TB_MM = 19.05;
+      const A4_WIDTH_MM = 210;
+      const MARGIN_LR_MM = 6.35;
+
+      // SAFETY_MARGIN_H: scaling to *exactly* fill the usable page height
+      // leaves zero headroom — on a real printer (different default paper
+      // size, a substitute font if Calibri isn't installed, sub-pixel
+      // rounding once `zoom` is applied, etc.) the sheet could still end
+      // up a few px taller than the page and spill onto a 2nd page.
+      // Scaling to 96% of the usable height leaves enough slack that
+      // those real-world variations can no longer push it over.
+      const SAFETY_MARGIN_H = 0.96;
+      const usableHeightPx = (A4_HEIGHT_MM - MARGIN_TB_MM * 2) * PX_PER_MM * SAFETY_MARGIN_H;
+      // Never scale UP past 1 — a short BOM (few items) should print at
+      // its natural 11pt size, matching Excel, not be stretched taller.
+      const vScale = Math.min(1, usableHeightPx / naturalHeightPx);
+
+      // SAFETY_MARGIN_W: a small 1% margin so sub-pixel rounding never
+      // pushes the sheet a hair past the printable width.
+      const SAFETY_MARGIN_W = 0.99;
+      const usableWidthPx = (A4_WIDTH_MM - MARGIN_LR_MM * 2) * PX_PER_MM * SAFETY_MARGIN_W;
+      // Base width chosen so that AFTER the zoom below shrinks it by
+      // vScale, the sheet's final on-page width lands exactly at
+      // usableWidthPx — i.e. fills the page edge-to-edge instead of
+      // leaving blank strips down both sides.
+      const baseWidthPx = usableWidthPx / vScale;
+
       const supportsZoom = window.CSS && CSS.supports && CSS.supports('zoom', '1');
       if (supportsZoom) {
-        sheet.style.zoom = scale;
+        sheet.style.width = baseWidthPx + 'px';
+        sheet.style.zoom = vScale;
       } else {
+        // Fallback for browsers without CSS `zoom`: transform doesn't
+        // reflow, so set the final on-page size directly instead of a
+        // base-width-then-shrink two-step.
         sheet.style.zoom = '';
-        sheet.style.transform = `scale(${scale})`;
         sheet.style.width = '850px';
+        sheet.style.transform = `scale(${usableWidthPx / 850}, ${vScale})`;
       }
     }
 
