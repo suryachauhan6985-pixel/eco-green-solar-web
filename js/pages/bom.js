@@ -216,6 +216,14 @@ function bomRenderPrintSheetHtml(kit, header) {
   return `
     <div class="bom-sheet" id="bomSheet">
       <table class="bom-table">
+        <colgroup>
+          <col class="bom-col-sr">
+          <col class="bom-col-name">
+          <col class="bom-col-model">
+          <col class="bom-col-qty">
+          <col class="bom-col-checked">
+          <col class="bom-col-remarks">
+        </colgroup>
         <tr>
           <td colspan="4" class="bom-info-cell"><b>Customer Name:</b> ${esc(h.customerName)}</td>
           <td colspan="2" class="bom-info-cell"><b>Order No -</b> ${esc(h.orderNo)}</td>

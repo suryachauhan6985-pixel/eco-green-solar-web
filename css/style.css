@@ -759,15 +759,36 @@ body.no-scroll{overflow:hidden; height:100%;}
     background:#ffffff; color:#000;
     white-space:nowrap; overflow:hidden;
   }
-  /* Column widths copied 1:1 (as %) from the source Excel column widths
-     (A=9.71, B=34.71, C=18.86, D=16.71, E=12.71, F=28.71 chars) — not
-     guessed, so the printed proportions match the workbook exactly. */
-  .bom-table .bom-c-sr{width:8.00%; text-align:center;}
-  .bom-table .bom-c-name{width:28.59%; text-align:left;}
-  .bom-table .bom-c-model{width:15.53%; text-align:center;}
-  .bom-table .bom-c-qty{width:13.76%; text-align:center;}
-  .bom-table .bom-c-checked{width:10.47%; text-align:center;}
-  .bom-table .bom-c-remarks{width:23.65%; text-align:center;}
+  /* Column widths: Sr No. and Checked were originally sized to match the
+     Excel workbook's stored column widths 1:1, but those two columns only
+     ever hold a 1-2 digit number / an empty checkbox — they don't need
+     anywhere near that much room, and giving them that room is exactly
+     what was squeezing Item Name and cutting names off. Freed width from
+     both (8.00-5.00=3.00 from Sr No., 10.47-6.00=4.47 from Checked, total
+     7.47) is handed entirely to Item Name (28.59+7.47=36.06); every other
+     column is untouched. Still adds up to 100%. */
+  /* Column widths live on the <colgroup>'s <col> elements (see
+     bomRenderPrintSheetHtml in bom.js) — NOT here on th/td — because
+     table-layout:fixed only honors width declared on the table's first
+     row OR on <col> elements; our first row is the colspan'd Customer
+     Name/Order No info row, so widths set here on th/td were being
+     silently ignored (every column rendered at an equal ~1/6 width).
+     <col> width is unaffected by row order and always wins. Sr No. and
+     Checked only ever hold a 1-2 digit number / an empty checkbox, so
+     they're kept small (5% / 6%) and that space goes to Item Name
+     (37.06%) instead, which is what needed it. */
+  .bom-col-sr{width:5.00%;}
+  .bom-col-name{width:37.06%;}
+  .bom-col-model{width:15.53%;}
+  .bom-col-qty{width:13.76%;}
+  .bom-col-checked{width:6.00%;}
+  .bom-col-remarks{width:22.65%;}
+  .bom-table .bom-c-sr{text-align:center;}
+  .bom-table .bom-c-name{text-align:left;}
+  .bom-table .bom-c-model{text-align:center;}
+  .bom-table .bom-c-qty{text-align:center;}
+  .bom-table .bom-c-checked{text-align:center;}
+  .bom-table .bom-c-remarks{text-align:center;}
   .bom-info-cell{border:1px solid #000; font-size:9px; color:#000; background:#ffffff; padding:1px 4px; line-height:1.15;}
   .bom-spacer{border:1px solid #000; height:3px; padding:0; background:#ffffff;}
   .bom-kw-cell{
