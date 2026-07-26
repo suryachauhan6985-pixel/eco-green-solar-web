@@ -120,6 +120,50 @@ const BOM_KITS = {
   },
 };
 
+// ---------- Custom Kit / Template storage (localStorage) ----------
+// Lets someone build their own BOM Kit right from this screen (a name +
+// its item list) and save it as a reusable template. Next time they pick
+// that same name from the "BOM Kit" dropdown, every item/model/qty/
+// remarks row below auto-fills exactly as saved — same behaviour as the
+// built-in kits above. Stored per-browser in localStorage since this app
+// has no backend BOM-kit table yet (see the STAGE 1 note at the top of
+// this file); keys are always prefixed "custom_" so they can never
+// collide with a built-in kW key like "3.3".
+const BOM_CUSTOM_KITS_KEY = 'egs_bom_custom_kits';
+
+function bomLoadCustomKits() {
+  try {
+    const raw = localStorage.getItem(BOM_CUSTOM_KITS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function bomSaveCustomKits(obj) {
+  try {
+    localStorage.setItem(BOM_CUSTOM_KITS_KEY, JSON.stringify(obj));
+  } catch (e) {
+    // storage unavailable/full — saving silently no-ops rather than crashing the page
+  }
+}
+
+// Combined catalogue used everywhere a kit needs to be looked up: built-in
+// BOM_KITS plus whatever templates the person has saved.
+function bomGetAllKits() {
+  return { ...BOM_KITS, ...bomLoadCustomKits() };
+}
+
+function bomIsCustomKitKey(key) {
+  return typeof key === 'string' && key.indexOf('custom_') === 0;
+}
+
+function bomSlugify(label) {
+  const slug = String(label).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return slug || 'kit';
+}
+
 // ---------- shared escaping helpers ----------
 const bomEsc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const bomEscAttr = (s) => bomEsc(s).replace(/"/g, '&quot;');
@@ -268,9 +312,13 @@ window.PAGES.bom = {
       <h3><i class="fa-solid fa-box-open"></i> New BOM Entry</h3>
       <div class="form-grid cols-2">
         <div class="field"><label>BOM Kit <span class="req">*</span></label>
-          <select id="bomKitSelect">
-            <option value="">-- Select Kit --</option>
-          </select>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <select id="bomKitSelect" style="flex:1;">
+              <option value="">-- Select Kit --</option>
+            </select>
+            <button type="button" class="btn btn-ghost" id="bomBtnNewKit" style="padding:9px 12px; white-space:nowrap;" title="Create a new BOM Kit / Template"><i class="fa-solid fa-plus"></i> New Kit</button>
+            <button type="button" class="btn btn-red" id="bomBtnDeleteKit" style="display:none; padding:9px 12px;" title="Delete this saved template"><i class="fa-solid fa-trash"></i></button>
+          </div>
         </div>
         <div class="field"><label>Order No</label><input id="bomOrderNo" placeholder="Order no."></div>
 
@@ -291,6 +339,25 @@ window.PAGES.bom = {
       <p class="note" id="bomVerifyStatus" style="margin-top:8px;">
         <i class="fa-solid fa-circle-info"></i> Not verified yet — click <b>Verify BOM</b> once every item/quantity above is final. "Create Dispatch" stays locked until then.
       </p>
+    </div>
+
+    <div class="panel" id="bomKitBuilderPanel" style="display:none;">
+      <h3><i class="fa-solid fa-layer-group"></i> Create / Save New BOM Kit &amp; Template</h3>
+      <div class="form-grid cols-2">
+        <div class="field"><label>Kit Name <span class="req">*</span></label><input id="bomNewKitLabel" placeholder="e.g. 5 kW — Commercial 550 Wp"></div>
+        <div class="field"><label>Capacity (kW)</label><input id="bomNewKitKw" placeholder="e.g. 5"></div>
+      </div>
+      <div class="table-wrap">
+        <table class="bom-items-form-table">
+          <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th><th>Remarks</th><th></th></tr></thead>
+          <tbody id="bomNewKitRows"></tbody>
+        </table>
+      </div>
+      <div class="actions-row" style="margin-top:10px;">
+        <button class="btn btn-ghost" type="button" id="bomBtnAddKitRow"><i class="fa-solid fa-plus"></i> Add Item Row</button>
+        <button class="btn btn-blue" type="button" id="bomBtnSaveKitTemplate"><i class="fa-solid fa-floppy-disk"></i> Save Kit Template</button>
+        <button class="btn btn-ghost" type="button" id="bomBtnCancelKitBuilder">Cancel</button>
+      </div>
     </div>
 
     <div class="panel">
@@ -348,26 +415,163 @@ window.PAGES.bom = {
     // otherwise (see bomLoadItemMasterNames). Load once, up front.
     await bomLoadItemMasterNames();
 
-    // Populate the single kW dropdown from BOM_KITS.
-    Object.keys(BOM_KITS).forEach((key) => {
-      const opt = document.createElement('option');
-      opt.value = key;
-      opt.textContent = BOM_KITS[key].label;
-      kitSelect.appendChild(opt);
-    });
-    // Only one kit exists right now — auto-select it so the preview isn't empty.
-    const kitKeys = Object.keys(BOM_KITS);
-    if (kitKeys.length === 1) kitSelect.value = kitKeys[0];
+    const btnDeleteKit = $('bomBtnDeleteKit');
+
+    // Populate the kW dropdown from BOM_KITS + any saved custom templates.
+    // Pulled into its own function since saving/deleting a template needs
+    // to rebuild this list without a full page reload.
+    function populateKitDropdown(selectKey) {
+      const previousValue = selectKey !== undefined ? selectKey : kitSelect.value;
+      kitSelect.innerHTML = '<option value="">-- Select Kit --</option>';
+      const allKits = bomGetAllKits();
+      Object.keys(allKits).forEach((key) => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = allKits[key].label;
+        kitSelect.appendChild(opt);
+      });
+      const keys = Object.keys(allKits);
+      if (previousValue && allKits[previousValue]) {
+        kitSelect.value = previousValue;
+      } else if (keys.length === 1) {
+        // Only one kit exists right now — auto-select it so the preview isn't empty.
+        kitSelect.value = keys[0];
+      }
+      if (btnDeleteKit) btnDeleteKit.style.display = bomIsCustomKitKey(kitSelect.value) ? '' : 'none';
+    }
+    populateKitDropdown();
 
     function refreshItemsPreview() {
-      const kit = BOM_KITS[kitSelect.value];
-      // Deep clone so editing on-screen never mutates the BOM_KITS catalogue itself.
+      const kit = bomGetAllKits()[kitSelect.value];
+      // Deep clone so editing on-screen never mutates the kit catalogue itself.
       currentKitState = kit ? JSON.parse(JSON.stringify(kit.sections)) : null;
       itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState);
       setVerified(false); // changing the kit invalidates any prior verification
+      if (btnDeleteKit) btnDeleteKit.style.display = bomIsCustomKitKey(kitSelect.value) ? '' : 'none';
     }
     kitSelect.addEventListener('change', refreshItemsPreview);
     refreshItemsPreview();
+
+    if (btnDeleteKit) {
+      btnDeleteKit.addEventListener('click', async () => {
+        const key = kitSelect.value;
+        if (!bomIsCustomKitKey(key)) return;
+        const custom = bomLoadCustomKits();
+        const kitLabel = custom[key] ? custom[key].label : 'this kit';
+        const confirmed = await window.confirmDanger(
+          'Delete Kit Template',
+          `Delete the saved template "${kitLabel}"? This cannot be undone.`,
+        );
+        if (!confirmed) return;
+        delete custom[key];
+        bomSaveCustomKits(custom);
+        populateKitDropdown('');
+        refreshItemsPreview();
+        if (window.showToast) window.showToast('Kit template deleted.');
+      });
+    }
+
+    // ---------- Create / Save New Kit Template ----------
+    const kitBuilderPanel = $('bomKitBuilderPanel');
+    const btnNewKit = $('bomBtnNewKit');
+    const btnCancelKitBuilder = $('bomBtnCancelKitBuilder');
+    const btnAddKitRow = $('bomBtnAddKitRow');
+    const btnSaveKitTemplate = $('bomBtnSaveKitTemplate');
+    const newKitRowsBody = $('bomNewKitRows');
+    const newKitLabelInput = $('bomNewKitLabel');
+    const newKitKwInput = $('bomNewKitKw');
+    let newKitRowSeq = 0;
+
+    function addNewKitRow(prefill) {
+      const p = prefill || {};
+      newKitRowSeq += 1;
+      const tr = document.createElement('tr');
+      tr.dataset.rowId = String(newKitRowSeq);
+      tr.innerHTML = `
+        <td><input type="text" class="bom-field-input" data-nk-field="sr" value="${bomEscAttr(p.sr != null ? p.sr : newKitRowSeq)}"></td>
+        <td><input type="text" class="bom-field-input" data-nk-field="name" placeholder="Item name" value="${bomEscAttr(p.name || '')}"></td>
+        <td><input type="text" class="bom-field-input" data-nk-field="model" placeholder="Model" value="${bomEscAttr(p.model || '')}"></td>
+        <td><input type="text" class="bom-field-input" data-nk-field="qty" placeholder="Quantity" value="${bomEscAttr(p.qty || '')}"></td>
+        <td><input type="text" class="bom-field-input" data-nk-field="remarks" placeholder="Remarks" value="${bomEscAttr(p.remarks || '')}"></td>
+        <td><button type="button" class="btn btn-red" data-nk-remove style="padding:6px 10px;"><i class="fa-solid fa-xmark"></i></button></td>
+      `;
+      newKitRowsBody.appendChild(tr);
+    }
+
+    if (newKitRowsBody) {
+      newKitRowsBody.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('[data-nk-remove]');
+        if (!removeBtn) return;
+        // Always keep at least one row so the builder is never left empty.
+        if (newKitRowsBody.children.length > 1) removeBtn.closest('tr').remove();
+      });
+    }
+
+    function resetKitBuilder() {
+      newKitRowsBody.innerHTML = '';
+      newKitRowSeq = 0;
+      newKitLabelInput.value = '';
+      newKitKwInput.value = '';
+      addNewKitRow();
+    }
+
+    if (btnNewKit) {
+      btnNewKit.addEventListener('click', () => {
+        resetKitBuilder();
+        kitBuilderPanel.style.display = '';
+        kitBuilderPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        newKitLabelInput.focus();
+      });
+    }
+    if (btnCancelKitBuilder) {
+      btnCancelKitBuilder.addEventListener('click', () => {
+        kitBuilderPanel.style.display = 'none';
+      });
+    }
+    if (btnAddKitRow) {
+      btnAddKitRow.addEventListener('click', () => addNewKitRow());
+    }
+
+    if (btnSaveKitTemplate) {
+      btnSaveKitTemplate.addEventListener('click', () => {
+        const label = newKitLabelInput.value.trim();
+        if (!label) {
+          window.openModal('Validation Error', '<p>Kit Name is required.</p>');
+          return;
+        }
+        const rows = Array.from(newKitRowsBody.querySelectorAll('tr')).map((tr) => ({
+          sr: tr.querySelector('[data-nk-field="sr"]').value.trim(),
+          name: tr.querySelector('[data-nk-field="name"]').value.trim(),
+          model: tr.querySelector('[data-nk-field="model"]').value.trim(),
+          qty: tr.querySelector('[data-nk-field="qty"]').value.trim(),
+          remarks: tr.querySelector('[data-nk-field="remarks"]').value.trim(),
+        })).filter((it) => it.name);
+        if (!rows.length) {
+          window.openModal('Validation Error', '<p>Add at least one item with a name before saving the template.</p>');
+          return;
+        }
+
+        const custom = bomLoadCustomKits();
+        // Unique key: slugified name, de-duplicated if that slug is already taken.
+        let key = 'custom_' + bomSlugify(label);
+        let n = 2;
+        while (custom[key] && custom[key].label !== label) {
+          key = 'custom_' + bomSlugify(label) + '-' + n;
+          n += 1;
+        }
+        custom[key] = {
+          label,
+          kw: newKitKwInput.value.trim(),
+          sections: [{ title: 'Items', items: rows }],
+        };
+        bomSaveCustomKits(custom);
+
+        kitBuilderPanel.style.display = 'none';
+        populateKitDropdown(key); // auto-select the newly saved kit
+        refreshItemsPreview();
+        if (window.showToast) window.showToast('Kit template saved — it now auto-fills from the dropdown.');
+      });
+    }
 
     // Delegated listener: every field (item dropdown, model/qty/remarks
     // inputs, sr) carries data-sec/data-idx/data-field, so one listener on
@@ -555,7 +759,7 @@ window.PAGES.bom = {
           window.openModal('Select a Kit', '<p>Please select a BOM Kit before printing.</p>');
           return;
         }
-        const kw = BOM_KITS[kitSelect.value].kw;
+        const kw = bomGetAllKits()[kitSelect.value].kw;
         printRoot.innerHTML = bomRenderPrintSheetHtml({ kw, sections: currentKitState }, getHeaderValues());
         // Measure and apply the fit-to-one-page zoom BEFORE window.print()
         // is called — this is the actual fix (see the long comment above):
