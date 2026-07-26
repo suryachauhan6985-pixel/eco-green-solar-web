@@ -628,6 +628,22 @@ async function getOrCreateItem(conn, category, brand, watt, solarType) {
 })();
 
 // ---------------------------------------------------------------------------
+// PARTY LEDGER TYPES schema — Party Ledger used to only ever store
+// 'Customer' / 'Supplier' / 'Both' in `ledgers.ledger_type`. Three more
+// ledger types (Dealer, Installer, Fabricator) are now selectable from the
+// Create/Edit Ledger form, so this widens the column in case it was ever
+// defined as a strict ENUM/short VARCHAR that would reject those new
+// values — harmless no-op if it's already a wide-enough VARCHAR.
+// ---------------------------------------------------------------------------
+(async function ensureLedgerTypeSchema() {
+  try {
+    await pool.query(`ALTER TABLE ledgers MODIFY COLUMN ledger_type VARCHAR(20) NOT NULL DEFAULT 'Both'`);
+  } catch (e) {
+    console.warn('[Ledger type schema] Could not widen ledger_type column (will retry lazily on first use):', e.message);
+  }
+})();
+
+// ---------------------------------------------------------------------------
 // EMAIL OTP schema — adds `email` to `users` (nullable, so existing accounts
 // keep working; each user's email just needs to be set once in Masters >
 // Users before that account can complete the OTP step) and a small
@@ -1913,6 +1929,9 @@ app.get('/api/ledgers/directory', route(async (req, res) => {
   let filtered = Array.from(partyMap.values()).filter((p) => {
     if (typeChoice === 'Suppliers Only' && !['Supplier', 'Both'].includes(p.type)) return false;
     if (typeChoice === 'Customers Only' && !['Customer', 'Both'].includes(p.type)) return false;
+    if (typeChoice === 'Dealers Only' && p.type !== 'Dealer') return false;
+    if (typeChoice === 'Installers Only' && p.type !== 'Installer') return false;
+    if (typeChoice === 'Fabricators Only' && p.type !== 'Fabricator') return false;
     return true;
   });
 

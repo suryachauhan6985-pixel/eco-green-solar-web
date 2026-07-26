@@ -501,6 +501,9 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
 .party-item .p-tag.supplier{color:#2ECC71;}
 .party-item .p-tag.customer{color:var(--blue);}
 .party-item .p-tag.both{color:var(--gold);}
+.party-item .p-tag.dealer{color:var(--orange);}
+.party-item .p-tag.installer{color:var(--purple);}
+.party-item .p-tag.fabricator{color:#16A2B8;}
 .party-item .p-badge-unreg{font-size:10px; font-style:italic; color:var(--txt-muted); white-space:nowrap;}
 
 .pl-header-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;}

@@ -44,12 +44,15 @@ window.PAGES.partyledger = {
 
         <div class="pl-toolbar">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input id="plSearch" placeholder="Search Supplier/Customer name...">
+          <input id="plSearch" placeholder="Search party name...">
           <label style="color:var(--txt-label); font-size:12px; font-weight:700; white-space:nowrap;">Type:</label>
           <select id="plTypeFilter">
             <option>All Parties</option>
             <option>Suppliers Only</option>
             <option>Customers Only</option>
+            <option>Dealers Only</option>
+            <option>Installers Only</option>
+            <option>Fabricators Only</option>
           </select>
         </div>
 
@@ -84,7 +87,7 @@ window.PAGES.partyledger = {
           <div class="form-grid" style="grid-template-columns:1fr;">
             <div class="field">
               <label>Create Ledger For</label>
-              <select id="lfMode"><option>Customer</option><option>Supplier</option></select>
+              <select id="lfMode"><option>Customer</option><option>Supplier</option><option>Dealer</option><option>Installer</option><option>Fabricator</option></select>
             </div>
             <div class="field">
               <label>Ledger Name <span class="req">*</span></label>
@@ -208,8 +211,16 @@ window.PAGES.partyledger = {
       directory.forEach((p) => {
         const li = document.createElement('li');
         li.className = 'party-item' + (!p.ledgerId ? ' unregistered' : '') + (selected && selected.partyName === p.partyName ? ' selected' : '');
-        const icon = p.type === 'Both' ? 'fa-arrows-rotate' : p.type === 'Supplier' ? 'fa-truck-ramp-box' : 'fa-hand-holding-dollar';
-        const tagClass = p.type === 'Both' ? 'both' : p.type.toLowerCase();
+        const iconMap = {
+          Both: 'fa-arrows-rotate',
+          Supplier: 'fa-truck-ramp-box',
+          Customer: 'fa-hand-holding-dollar',
+          Dealer: 'fa-handshake',
+          Installer: 'fa-screwdriver-wrench',
+          Fabricator: 'fa-industry',
+        };
+        const icon = iconMap[p.type] || 'fa-address-card';
+        const tagClass = p.type.toLowerCase();
         li.innerHTML = `
           <i class="fa-solid ${icon}"></i>
           <span class="p-name">${p.displayName}</span>
@@ -301,8 +312,16 @@ window.PAGES.partyledger = {
     let editingLedgerId = null;
 
     function updateLedgerFormMode() {
-      const isCustomer = lfMode.value === 'Customer';
-      lfShortInput.placeholder = isCustomer ? 'Enter order no. / short alias' : 'Enter supplier short name';
+      const mode = lfMode.value;
+      const isCustomer = mode === 'Customer';
+      const shortPlaceholders = {
+        Customer: 'Enter order no. / short alias',
+        Supplier: 'Enter supplier short name',
+        Dealer: 'Enter dealer short name',
+        Installer: 'Enter installer short name',
+        Fabricator: 'Enter fabricator short name',
+      };
+      lfShortInput.placeholder = shortPlaceholders[mode] || 'Enter short name';
       lfGstinField.style.display = isCustomer ? 'none' : 'flex';
       if (isCustomer) lfGstinInput.value = '';
     }
@@ -328,7 +347,7 @@ window.PAGES.partyledger = {
       document.getElementById('lfMobile').value = editing && editing.mobile !== '-' ? editing.mobile || '' : '';
       document.getElementById('lfAddress').value = editing && editing.address !== '-' ? editing.address || '' : '';
       lfGstinInput.value = editing && editing.gstin !== '-' ? editing.gstin || '' : '';
-      lfMode.value = editing && ['Customer', 'Supplier'].includes(editing.type) ? editing.type : 'Customer';
+      lfMode.value = editing && ['Customer', 'Supplier', 'Dealer', 'Installer', 'Fabricator'].includes(editing.type) ? editing.type : 'Customer';
       updateLedgerFormMode();
       // "editing" is truthy both for a real Edit (has ledgerId) and for a
       // Register (pre-filling an unregistered party's name into a fresh
