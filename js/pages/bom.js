@@ -376,17 +376,15 @@ window.PAGES.bom = {
             <button type="button" class="btn btn-red" id="bomBtnDeleteKit" style="display:none; padding:9px 12px;" title="Delete this saved template"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>
-        <div class="field"><label>Order No</label><input id="bomOrderNo" placeholder="Order no."></div>
+        <div class="field"><label>Order No</label><input id="bomOrderNo" placeholder="Order no. / Customer short code" list="bomOrderNoList" autocomplete="off"><datalist id="bomOrderNoList"></datalist></div>
 
-        <div class="field"><label>Customer Short Code</label><input id="bomCustomerShort" placeholder="Optional short code" list="bomCustShortList" autocomplete="off"><datalist id="bomCustShortList"></datalist></div>
         <div class="field"><label>Customer Name</label><input id="bomCustomerName" placeholder="Customer / Party" list="bomCustNameList" autocomplete="off"><datalist id="bomCustNameList"></datalist></div>
+        <div class="field"><label>Dealer Name</label><input id="bomDealerName" placeholder="Dealer name or short name" list="bomDealerList" autocomplete="off"><datalist id="bomDealerList"></datalist></div>
 
-        <div class="field"><label>Dealer Name</label><input id="bomDealerName" placeholder="Dealer name"></div>
-        <div class="field"><label>Installer Name</label><input id="bomInstallerName" placeholder="Installer name"></div>
+        <div class="field"><label>Installer Name</label><input id="bomInstallerName" placeholder="Installer name or short name" list="bomInstallerList" autocomplete="off"><datalist id="bomInstallerList"></datalist></div>
+        <div class="field"><label>Fabricatore Name</label><input id="bomFabricatorName" placeholder="Fabricator name or short name" list="bomFabricatorList" autocomplete="off"><datalist id="bomFabricatorList"></datalist></div>
 
-        <div class="field"><label>Fabricatore Name</label><input id="bomFabricatorName" placeholder="Fabricator name"></div>
         <div class="field"><label>Challan No.</label><input id="bomChallanNo" placeholder="Challan no."></div>
-
         <div class="field"><label>Ch. Date</label><input id="bomChallanDate" type="date"></div>
       </div>
       <div class="actions-row">
@@ -451,14 +449,14 @@ window.PAGES.bom = {
     let currentKitState = null;
 
     // ---------------- Customer ledger live autocomplete + autofill ---------
-    // Same behaviour as Sale/Purchase: typing in Customer Name or Short Code
-    // live-searches matching ledgers, and the instant the typed text exactly
-    // matches a known ledger name/short code, Customer Name auto-fills (and
-    // the resolved short code also pre-fills Order No if it's still empty —
-    // mirrors applyLedgerToCustomerFields() in sales.js). Fields stay fully
-    // editable so the person can still type over the auto-filled value.
+    // Same idea as Sale/Purchase, but without a separate Short Code field:
+    // a customer's short code IS the Order No here, so typing in Order No
+    // itself live-searches customer ledgers by short code, and the instant
+    // it exactly matches one, Customer Name auto-fills. Typing directly in
+    // Customer Name still searches/auto-fills by full name. Both fields
+    // stay fully editable so the person can type over the auto-filled value.
     const bomCustNameList = $('bomCustNameList');
-    const bomCustShortList = $('bomCustShortList');
+    const bomOrderNoList = $('bomOrderNoList');
     let bomCustSearchTimer = null;
 
     async function searchBomCustomerLedgers(q) {
@@ -475,11 +473,6 @@ window.PAGES.bom = {
         .filter((l) => String(l[key] || '').trim() !== '')
         .map((l) => `<option value="${String(l[key]).replace(/"/g, '&quot;')}">`).join('');
     }
-    function applyLedgerToBomCustomerFields(l) {
-      $('bomCustomerName').value = l.name || '';
-      if ($('bomCustomerShort')) $('bomCustomerShort').value = l.short || '';
-      if (!$('bomOrderNo').value.trim() && l.short) $('bomOrderNo').value = l.short;
-    }
     function wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn) {
       if (!inputEl || !listEl) return;
       inputEl.addEventListener('input', () => {
@@ -489,7 +482,7 @@ window.PAGES.bom = {
           const ledgers = await searchFn(text);
           fillBomCustomerDatalist(listEl, ledgers, matchKey);
           const exact = ledgers.find((l) => String(l[matchKey] || '').trim().toLowerCase() === text.trim().toLowerCase());
-          if (exact) applyLedgerToBomCustomerFields(exact);
+          if (exact) $('bomCustomerName').value = exact.name || '';
         }, 250);
       });
       inputEl.addEventListener('focus', async () => {
@@ -499,7 +492,59 @@ window.PAGES.bom = {
       });
     }
     wireBomCustomerAutocomplete($('bomCustomerName'), bomCustNameList, 'name', searchBomCustomerLedgers);
-    wireBomCustomerAutocomplete($('bomCustomerShort'), bomCustShortList, 'short', searchBomCustomerShortCodes);
+    wireBomCustomerAutocomplete($('bomOrderNo'), bomOrderNoList, 'short', searchBomCustomerShortCodes);
+
+    // ---------------- Dealer / Installer / Fabricator ledger autocomplete --
+    // These are now real Party Ledger types too. Each field here is a single
+    // Name box (no separate short-code field), so this searches by EITHER
+    // full name or short name (the plain /ledgers endpoint already matches
+    // both) and shows the matching full name in the dropdown — typing the
+    // short name and picking/matching it fills the box with the full name.
+    function wireBomPartyTypeAutocomplete(inputEl, listEl, ledgerType) {
+      if (!inputEl || !listEl) return;
+      let timer = null;
+      async function search(q) {
+        try { return await window.Api.get(`/ledgers?type=${encodeURIComponent(ledgerType)}&q=${encodeURIComponent(q)}`); }
+        catch (e) { return []; }
+      }
+      function fillList(ledgers) {
+        listEl.innerHTML = ledgers
+          .filter((l) => String(l.name || '').trim() !== '')
+          .map((l) => `<option value="${bomEscAttr(l.name)}">`).join('');
+      }
+      inputEl.addEventListener('input', () => {
+        const text = inputEl.value;
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+          const ledgers = await search(text);
+          fillList(ledgers);
+          const exact = ledgers.find((l) => {
+            const t = text.trim().toLowerCase();
+            return String(l.name || '').trim().toLowerCase() === t || String(l.short || '').trim().toLowerCase() === t;
+          });
+          if (exact) inputEl.value = exact.name || '';
+        }, 250);
+      });
+      inputEl.addEventListener('focus', async () => {
+        if (inputEl.value.trim()) return;
+        fillList(await search(''));
+      });
+    }
+    wireBomPartyTypeAutocomplete($('bomDealerName'), $('bomDealerList'), 'Dealer');
+    wireBomPartyTypeAutocomplete($('bomInstallerName'), $('bomInstallerList'), 'Installer');
+    wireBomPartyTypeAutocomplete($('bomFabricatorName'), $('bomFabricatorList'), 'Fabricator');
+
+    // ---------------- Ch. Date: calendar-picker only, no manual typing -----
+    // Mirrors sales.js/purchase.js: clicking opens the native date picker,
+    // and every keystroke except Tab is blocked, so the date can only be
+    // set by picking it from the calendar.
+    const bomChallanDateEl = $('bomChallanDate');
+    if (bomChallanDateEl) {
+      bomChallanDateEl.addEventListener('click', () => {
+        if (bomChallanDateEl.showPicker) { try { bomChallanDateEl.showPicker(); } catch (e) {} }
+      });
+      bomChallanDateEl.addEventListener('keydown', (e) => { if (e.key !== 'Tab') e.preventDefault(); });
+    }
 
     // "Verify BOM" gate: Create Dispatch stays locked until the person
     // explicitly confirms the BOM is ready. Any kit change or item edit
