@@ -701,6 +701,23 @@ body.no-scroll{overflow:hidden; height:100%;}
 .bom-items-form-table select.bom-field-input{cursor:pointer;}
 
 @media print{
+  /* The `body *{visibility:hidden}` rule below only hides body's
+     DESCENDANTS — it never touches `body` itself, so body's own dark
+     theme background-color (--bg, near-black) stayed visible and kept
+     painting behind everything. Worse, `visibility:hidden` (unlike
+     `display:none`) does NOT remove an element from layout — the whole
+     app shell (.shell: sidebar + content area, which can be quite tall
+     in this SPA) still occupied its full normal-flow height on the
+     printed page even though invisible. That invisible-but-still-tall
+     leftover space, combined with body's own dark background showing
+     through, is exactly what was spilling onto a 2nd page — blank when
+     "Background graphics" was off, solid black when it was on. Hiding
+     the shell with `display:none` (removes it from layout entirely) and
+     forcing body's background to white fixes both at once.
+  */
+  body{background:#ffffff !important;}
+  .shell{display:none !important;}
+
   body *{visibility:hidden;}
   .bom-print-only{display:block;}
   #bomPrintRoot, #bomPrintRoot *{visibility:visible;}
