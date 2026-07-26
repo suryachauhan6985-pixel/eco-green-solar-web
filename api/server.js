@@ -612,6 +612,22 @@ async function getOrCreateItem(conn, category, brand, watt, solarType) {
 })();
 
 // ---------------------------------------------------------------------------
+// SERIAL-NO RULE schema — adds `serial_mandatory` to `categories`, same
+// per-category on/off rule as `watt_mandatory` above but for whether a
+// product under that category needs Serial No. tracking (e.g. Solar Panel /
+// Inverter — yes; Nut Bolt / Cement — no). Defaults to 0 (not mandatory) so
+// every existing category keeps behaving exactly as before until someone
+// explicitly turns it on from Masters > Category Master.
+// ---------------------------------------------------------------------------
+(async function ensureSerialRuleSchema() {
+  try {
+    await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS serial_mandatory TINYINT(1) NOT NULL DEFAULT 0`);
+  } catch (e) {
+    console.warn('[Serial rule schema] Could not ensure serial_mandatory column (will retry lazily on first use):', e.message);
+  }
+})();
+
+// ---------------------------------------------------------------------------
 // EMAIL OTP schema — adds `email` to `users` (nullable, so existing accounts
 // keep working; each user's email just needs to be set once in Masters >
 // Users before that account can complete the OTP step) and a small
@@ -1324,14 +1340,14 @@ app.get('/api/sessions/live', route(async (req, res) => {
 
 // Categories
 app.get('/api/masters/categories', route(async (req, res) => {
-  const [rows] = await pool.query(`SELECT c.id, c.name, COALESCE(c.watt_mandatory,0) AS watt_mandatory, (SELECT COUNT(*) FROM items i WHERE i.category = c.name) AS item_count FROM categories c ORDER BY c.name ASC`);
+  const [rows] = await pool.query(`SELECT c.id, c.name, COALESCE(c.watt_mandatory,0) AS watt_mandatory, COALESCE(c.serial_mandatory,0) AS serial_mandatory, (SELECT COUNT(*) FROM items i WHERE i.category = c.name) AS item_count FROM categories c ORDER BY c.name ASC`);
   res.json(rows);
 }));
 
 app.post('/api/masters/categories', route(async (req, res) => {
-  const { name, watt_mandatory } = req.body;
+  const { name, watt_mandatory, serial_mandatory } = req.body;
   if (!name) return res.status(400).json({ error: 'Category name required' });
-  await pool.query(`INSERT INTO categories (name, watt_mandatory) VALUES (?, ?)`, [name, watt_mandatory ? 1 : 0]);
+  await pool.query(`INSERT INTO categories (name, watt_mandatory, serial_mandatory) VALUES (?, ?, ?)`, [name, watt_mandatory ? 1 : 0, serial_mandatory ? 1 : 0]);
   res.json({ success: true });
 }));
 
@@ -1340,6 +1356,14 @@ app.put('/api/masters/categories/:name/watt-rule', route(async (req, res) => {
   const { name } = req.params;
   const { watt_mandatory } = req.body;
   await pool.query(`UPDATE categories SET watt_mandatory = ? WHERE name = ?`, [watt_mandatory ? 1 : 0, name]);
+  res.json({ success: true });
+}));
+
+// Category: update serial-no-mandatory rule
+app.put('/api/masters/categories/:name/serial-rule', route(async (req, res) => {
+  const { name } = req.params;
+  const { serial_mandatory } = req.body;
+  await pool.query(`UPDATE categories SET serial_mandatory = ? WHERE name = ?`, [serial_mandatory ? 1 : 0, name]);
   res.json({ success: true });
 }));
 

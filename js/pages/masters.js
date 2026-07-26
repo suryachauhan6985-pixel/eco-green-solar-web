@@ -32,6 +32,13 @@ window.PAGES.masters = {
   </label>
 </div>
 
+            <div style="background: rgba(102,153,255,0.08); padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid rgba(102,153,255,0.2);">
+  <strong style="color:var(--blue); font-size:12px; display:block; margin-bottom:6px;"><i class="fa-solid fa-barcode"></i> Serial No. Rule (set from Category Master)</strong>
+  <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
+    <input type="checkbox" id="cfgSerialMandatory" disabled> <span>Serial No. is required for products in selected category</span>
+  </label>
+</div>
+
             <div class="form-grid cols-1">
               <div class="field"><label>Category <span class="req">*</span></label>
                 <select id="mItemCatDropdown"></select></div>
@@ -75,12 +82,17 @@ window.PAGES.masters = {
             <input type="checkbox" id="mInputCatWattMandatory"> <span>Wattage / Capacity is mandatory for this category</span>
           </label>
         </div>
+        <div class="field span-2">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px;">
+            <input type="checkbox" id="mInputCatSerialMandatory"> <span>Serial No. is mandatory for this category</span>
+          </label>
+        </div>
       </div>
       <div class="actions-row"><button class="btn btn-blue" id="mBtnSaveCat"><i class="fa-solid fa-save"></i> Save Category</button></div>
     </div>
     <div class="panel">
       <h3><i class="fa-solid fa-list"></i> Category List</h3>
-      <div class="table-wrap"><table><thead><tr><th>Category Name</th><th>Linked Products</th><th>Watt Rule</th><th>Actions</th></tr></thead><tbody id="mastersCategoryBody"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>Category Name</th><th>Linked Products</th><th>Watt Rule</th><th>Serial Rule</th><th>Actions</th></tr></thead><tbody id="mastersCategoryBody"></tbody></table></div>
     </div>
   </div>
 
@@ -225,9 +237,14 @@ window.PAGES.masters = {
             <input type="checkbox" class="m-cat-watt-toggle" data-cat="${c.name}" ${c.watt_mandatory ? 'checked' : ''}> Mandatory
           </label>
         </td>
+        <td>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px;">
+            <input type="checkbox" class="m-cat-serial-toggle" data-cat="${c.name}" ${c.serial_mandatory ? 'checked' : ''}> Mandatory
+          </label>
+        </td>
         <td><button class="btn btn-red m-cat-delete" data-cat="${c.name}" style="padding:6px 10px; font-size:11px;"><i class="fa-solid fa-trash"></i></button></td>
       </tr>
-    `).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--txt-muted);">No categories yet.</td></tr>`;
+    `).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--txt-muted);">No categories yet.</td></tr>`;
 
         $('mItemUomDropdown').innerHTML = units.map(u => `<option>${u}</option>`).join('');
         $('mastersUomBody').innerHTML = units.map(u => `
@@ -288,9 +305,12 @@ window.PAGES.masters = {
 
     function syncWattMandatoryUI() {
       const cat = cachedCategories.find(c => c.name === $('mItemCatDropdown').value);
-      const mandatory = !!(cat && cat.watt_mandatory);
-      $('cfgWattMandatory').checked = mandatory;
+      const wattMandatory = !!(cat && cat.watt_mandatory);
+      $('cfgWattMandatory').checked = wattMandatory;
       $('cfgWattMandatory').disabled = true;
+      const serialMandatory = !!(cat && cat.serial_mandatory);
+      $('cfgSerialMandatory').checked = serialMandatory;
+      $('cfgSerialMandatory').disabled = true;
     }
     $('mItemCatDropdown').addEventListener('change', syncWattMandatoryUI);
 
@@ -389,13 +409,14 @@ window.PAGES.masters = {
         const res = await fetch(`${API_BASE}/masters/categories`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, watt_mandatory: $('mInputCatWattMandatory').checked })
+          body: JSON.stringify({ name, watt_mandatory: $('mInputCatWattMandatory').checked, serial_mandatory: $('mInputCatSerialMandatory').checked })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Could not save this category.");
         window.showToast(`Category '${name}' added.`);
         $("mInputCatName").value = "";
         $('mInputCatWattMandatory').checked = false;
+        $('mInputCatSerialMandatory').checked = false;
         loadMastersSystemEngine();
       } catch (err) {
         window.openModal("Database Error", `<p style="color:var(--red);">${err.message}</p>`);
@@ -488,6 +509,41 @@ window.PAGES.masters = {
         window.openModal(
           "Database Error",
           '<p style="color:var(--red);">Could not update wattage rule.</p>',
+        );
+      }
+    });
+
+    // --- Category: serial-no-mandatory inline toggle ---
+    $("mastersCategoryBody").addEventListener("change", async (e) => {
+      const chk = e.target.closest(".m-cat-serial-toggle");
+      if (!chk) return;
+      const newState = chk.checked;
+      const action = newState ? "mandatory" : "not mandatory";
+      const confirmed = await window.confirmDialog(
+        "Change Serial No. Rule",
+        `Set Serial No. as ${action} for category '${chk.dataset.cat}'?`,
+        { kind: "warning", okLabel: "Yes, Change" },
+      );
+      if (!confirmed) {
+        chk.checked = !newState;
+        return;
+      }
+      try {
+        await fetch(
+          `${API_BASE}/masters/categories/${encodeURIComponent(chk.dataset.cat)}/serial-rule`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ serial_mandatory: chk.checked }),
+          },
+        );
+        window.showToast(`Serial No. rule updated for '${chk.dataset.cat}'.`);
+        loadMastersSystemEngine();
+      } catch (e2) {
+        chk.checked = !newState;
+        window.openModal(
+          "Database Error",
+          '<p style="color:var(--red);">Could not update serial no. rule.</p>',
         );
       }
     });
