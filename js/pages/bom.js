@@ -120,25 +120,73 @@ const BOM_KITS = {
   },
 };
 
-// ---------- On-screen items preview (normal dark-theme table, NOT the Excel look) ----------
-function bomRenderScreenItemsHtml(kit) {
-  if (!kit) return '<div class="empty">Select a BOM Kit above to load its item list.</div>';
-  const rows = kit.sections.map((sec) => {
-    const catRow = `<tr class="bom-screen-cat"><td colspan="5">${sec.title}</td></tr>`;
-    const itemRows = sec.items.map((it) => `
+// ---------- shared escaping helpers ----------
+const bomEsc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const bomEscAttr = (s) => bomEsc(s).replace(/"/g, '&quot;');
+
+// ---------- Item Name dropdown source ----------
+// Real item master (Masters > Item Registration) is the source of truth once
+// the API/DB is reachable. Until then (or for any kit item not yet registered
+// as a master item), we fall back to every unique item name already used
+// across BOM_KITS, so the field is always a real dropdown — never a plain
+// static label — regardless of backend availability.
+let bomItemMasterNames = [];
+
+function bomCollectKitItemNames() {
+  const set = new Set();
+  Object.values(BOM_KITS).forEach((kit) => {
+    kit.sections.forEach((sec) => sec.items.forEach((it) => set.add(it.name)));
+  });
+  return Array.from(set);
+}
+
+async function bomLoadItemMasterNames() {
+  try {
+    const rows = await window.Api.get('/masters/items');
+    if (Array.isArray(rows) && rows.length) {
+      bomItemMasterNames = rows.map((r) => r.name).filter(Boolean);
+      return;
+    }
+  } catch (e) {
+    // API/DB not reachable in this preview — fall back to kit-derived names below.
+  }
+  bomItemMasterNames = bomCollectKitItemNames();
+}
+
+function bomBuildItemOptionsHtml(selectedName) {
+  const names = new Set(bomItemMasterNames);
+  if (selectedName) names.add(selectedName);
+  const optionsHtml = Array.from(names).map((n) => `
+    <option value="${bomEscAttr(n)}" ${n === selectedName ? 'selected' : ''}>${bomEsc(n)}</option>
+  `).join('');
+  return `<option value="">-- Select Item --</option>${optionsHtml}`;
+}
+
+// ---------- On-screen items preview: REAL editable fields (dark-theme table) ----------
+// `state` is a live, mutable clone of the selected kit's `sections` (see
+// currentKitState in init()). Selecting a kit auto-fills every field below
+// from the kit defaults — but every cell here is a real <input>/<select>,
+// so the user can change any of them (item, model, quantity, remarks)
+// without having to retype the rest. Edits write straight back into
+// `currentKitState`, which is what actually gets printed.
+function bomRenderScreenItemsHtml(state) {
+  if (!state) return '<div class="empty">Select a BOM Kit above to load its item list.</div>';
+  const rows = state.map((sec, si) => {
+    const catRow = `<tr class="bom-screen-cat"><td colspan="5">${bomEsc(sec.title)}</td></tr>`;
+    const itemRows = sec.items.map((it, ii) => `
       <tr>
-        <td>${it.sr}</td>
-        <td>${it.name}</td>
-        <td>${it.model || '—'}</td>
-        <td>${it.qty}</td>
-        <td>${it.remarks || '—'}</td>
+        <td><input type="text" class="bom-field-input bom-field-sr" data-sec="${si}" data-idx="${ii}" data-field="sr" value="${bomEscAttr(it.sr)}"></td>
+        <td><select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(it.name)}</select></td>
+        <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="model" value="${bomEscAttr(it.model)}"></td>
+        <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="qty" value="${bomEscAttr(it.qty)}"></td>
+        <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="remarks" value="${bomEscAttr(it.remarks)}"></td>
       </tr>`).join('');
     return catRow + itemRows;
   }).join('');
 
   return `
     <div class="table-wrap">
-      <table>
+      <table class="bom-items-form-table">
         <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th><th>Remarks</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -163,7 +211,7 @@ function bomRenderPrintSheetHtml(kit, header) {
     return catRow + itemRows;
   }).join('');
 
-  const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const esc = bomEsc;
 
   return `
     <div class="bom-sheet" id="bomSheet">
@@ -251,12 +299,23 @@ window.PAGES.bom = {
     <div class="bom-print-only" id="bomPrintRoot"></div>
   `,
 
-  init() {
+  async init() {
     const $ = (id) => document.getElementById(id);
     const kitSelect = $('bomKitSelect');
     const itemsPreview = $('bomItemsPreview');
     const btnPrint = $('bomBtnPrint');
     const printRoot = $('bomPrintRoot');
+
+    // Live, mutable clone of the selected kit's `sections`. Selecting a kit
+    // auto-fills this from BOM_KITS; every field rendered from it is a real
+    // input/select, so edits below write straight back into this object —
+    // this is what actually gets printed (not the static BOM_KITS data).
+    let currentKitState = null;
+
+    // Real item master (Masters > Item Registration) drives the Item Name
+    // dropdown once the API/DB is reachable; falls back to kit-derived names
+    // otherwise (see bomLoadItemMasterNames). Load once, up front.
+    await bomLoadItemMasterNames();
 
     // Populate the single kW dropdown from BOM_KITS.
     Object.keys(BOM_KITS).forEach((key) => {
@@ -271,10 +330,29 @@ window.PAGES.bom = {
 
     function refreshItemsPreview() {
       const kit = BOM_KITS[kitSelect.value];
-      itemsPreview.innerHTML = bomRenderScreenItemsHtml(kit);
+      // Deep clone so editing on-screen never mutates the BOM_KITS catalogue itself.
+      currentKitState = kit ? JSON.parse(JSON.stringify(kit.sections)) : null;
+      itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState);
     }
     kitSelect.addEventListener('change', refreshItemsPreview);
     refreshItemsPreview();
+
+    // Delegated listener: every field (item dropdown, model/qty/remarks
+    // inputs, sr) carries data-sec/data-idx/data-field, so one listener on
+    // the container catches edits to all rows across kit re-renders and
+    // writes them straight into currentKitState — nothing needs to be
+    // retyped for the parts that stay the same.
+    itemsPreview.addEventListener('input', handleItemFieldEdit);
+    itemsPreview.addEventListener('change', handleItemFieldEdit);
+    function handleItemFieldEdit(e) {
+      const el = e.target.closest('[data-field]');
+      if (!el) return;
+      const si = Number(el.dataset.sec);
+      const ii = Number(el.dataset.idx);
+      const field = el.dataset.field;
+      if (!currentKitState || !currentKitState[si] || !currentKitState[si].items[ii]) return;
+      currentKitState[si].items[ii][field] = el.value;
+    }
 
     function getHeaderValues() {
       return {
@@ -297,6 +375,7 @@ window.PAGES.bom = {
     function fitSheetToOnePage() {
       const sheet = $('bomSheet');
       if (!sheet) return;
+      sheet.style.zoom = '';
       sheet.style.transform = '';
       sheet.style.width = '100%';
       const A4_HEIGHT_MM = 297;
@@ -306,19 +385,28 @@ window.PAGES.bom = {
       const naturalPx = sheet.scrollHeight;
       if (naturalPx > usablePx) {
         const scale = usablePx / naturalPx;
-        sheet.style.transform = `scale(${scale})`;
-        sheet.style.width = `${100 / scale}%`;
+        // `zoom` reflows the layout (unlike transform:scale, which just
+        // repaints the same box) so borders/columns stay lined up and text
+        // no longer overlaps the next cell — this was the root cause of
+        // the browser-vs-Excel print mismatch.
+        const supportsZoom = window.CSS && CSS.supports && CSS.supports('zoom', '1');
+        if (supportsZoom) {
+          sheet.style.zoom = scale;
+        } else {
+          sheet.style.transform = `scale(${scale})`;
+          sheet.style.width = `${100 / scale}%`;
+        }
       }
     }
 
     if (btnPrint) {
       btnPrint.addEventListener('click', () => {
-        const kit = BOM_KITS[kitSelect.value];
-        if (!kit) {
+        if (!currentKitState) {
           window.openModal('Select a Kit', '<p>Please select a BOM Kit before printing.</p>');
           return;
         }
-        printRoot.innerHTML = bomRenderPrintSheetHtml(kit, getHeaderValues());
+        const kw = BOM_KITS[kitSelect.value].kw;
+        printRoot.innerHTML = bomRenderPrintSheetHtml({ kw, sections: currentKitState }, getHeaderValues());
         fitSheetToOnePage();
         window.print();
       });
