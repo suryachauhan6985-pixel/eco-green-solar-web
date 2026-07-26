@@ -448,7 +448,17 @@ window.PAGES.bom = {
       const A4_HEIGHT_MM = 297;
       const MARGIN_MM = 10; // must match @page margin in style.css
       const PX_PER_MM = 96 / 25.4;
-      const usablePx = (A4_HEIGHT_MM - MARGIN_MM * 2) * PX_PER_MM;
+      // SAFETY_MARGIN: the previous version scaled to *exactly* fill the
+      // usable page height, which left zero headroom — on a real printer
+      // (different default paper size picked by the OS print dialog, a
+      // substitute font if Calibri isn't installed, sub-pixel rounding
+      // once `zoom` is applied, etc.) the sheet could still end up a
+      // few px taller than the page and spill onto a 2nd page, exactly
+      // as reported. Scaling to 96% of the usable height on purpose
+      // leaves enough slack that those real-world variations can no
+      // longer push it over, while still looking effectively full-page.
+      const SAFETY_MARGIN = 0.96;
+      const usablePx = (A4_HEIGHT_MM - MARGIN_MM * 2) * PX_PER_MM * SAFETY_MARGIN;
       const naturalPx = sheet.scrollHeight;
       if (naturalPx > usablePx) {
         const scale = usablePx / naturalPx;
