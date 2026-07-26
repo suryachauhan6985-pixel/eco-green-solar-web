@@ -1296,4 +1296,57 @@ window.attachColumnFilters = function (table) {
   // Footer credit line — always show the current year, no manual updates needed.
   const footerYearEl = document.getElementById('footerYear');
   if (footerYearEl) footerYearEl.textContent = new Date().getFullYear();
+
+  // ---------- Global anti-autofill guard (everywhere EXCEPT the login screen) ----------
+  // Chrome/Edge keep trying to pour a saved credential (e.g. "superadmin")
+  // into whichever plain text input happens to be first/empty on the page —
+  // first the quick-search box, then, once that was blocked, the first
+  // empty text field on the currently open page (e.g. BOM's "Challan No.").
+  // Fix: every real input on every app page starts as readonly, so the
+  // browser has nothing it's allowed to write into. The moment a person
+  // actually clicks/taps/tabs into a field, readonly is removed so typing
+  // works completely normally; if they leave it empty again, it goes back
+  // to readonly so a later autofill pass still can't touch it. This never
+  // runs inside .login-overlay — Sign In / Register / Forgot Password keep
+  // normal autocomplete so saved passwords still work there as intended.
+  const AUTOFILL_GUARD_SELECTOR =
+    'input[type="text"], input[type="search"], input[type="email"], ' +
+    'input[type="tel"], input[type="number"], input[type="url"], ' +
+    'input[type="date"], input[type="datetime-local"], input[type="month"], ' +
+    'input:not([type])';
+
+  function guardField(el) {
+    if (!el || el.dataset.egsGuarded === '1') return;
+    if (el.closest('.login-overlay')) return; // login/register/OTP/reset stay untouched
+    el.dataset.egsGuarded = '1';
+    if (!el.value) el.setAttribute('readonly', 'readonly');
+    el.addEventListener('focus', () => el.removeAttribute('readonly'));
+    el.addEventListener('mousedown', () => el.removeAttribute('readonly'));
+    el.addEventListener('touchstart', () => el.removeAttribute('readonly'));
+    el.addEventListener('blur', () => {
+      if (!el.value) el.setAttribute('readonly', 'readonly');
+    });
+  }
+
+  function guardAllFields(root) {
+    if (!root || root.closest && root.closest('.login-overlay')) return;
+    if (root.matches && root.matches(AUTOFILL_GUARD_SELECTOR)) guardField(root);
+    if (root.querySelectorAll) {
+      root.querySelectorAll(AUTOFILL_GUARD_SELECTOR).forEach(guardField);
+    }
+  }
+
+  // Cover everything already on the page (dashboard, topbar, etc.)
+  guardAllFields(document.body);
+
+  // Cover every page swap (BOM, Sales, Purchase, Masters...) and modal opens,
+  // since js/pages/*.js inject their HTML via innerHTML at runtime.
+  const autofillObserver = new MutationObserver((mutations) => {
+    mutations.forEach((m) => {
+      m.addedNodes.forEach((node) => {
+        if (node.nodeType === 1) guardAllFields(node);
+      });
+    });
+  });
+  autofillObserver.observe(document.body, { childList: true, subtree: true });
 })();
