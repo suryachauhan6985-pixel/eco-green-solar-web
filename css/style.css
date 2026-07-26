@@ -672,3 +672,52 @@ body.no-scroll{overflow:hidden; height:100%;}
 .profile-menu-item i{width:14px; text-align:center; color:#fff;}
 .profile-menu-item:hover{background:var(--input-bg);}
 .profile-menu-item.danger i, .profile-menu-item.danger{color:var(--red);}
+/* ---------- BOM page (js/pages/bom.js) ----------
+   Replicates the exact look of the uploaded Excel BOM sheet
+   (Sample_File_for_Residential_550_Wp.xlsx, sheet "3.3 kW"):
+   white sheet, black text, purple-grey section/header bars (#666699,
+   the fill colour actually used in that workbook), same 6 columns in
+   the same proportional widths as the Excel column widths
+   (A 9.7 / B 34.7 / C 18.9 / D 16.7 / E 12.7 / F 28.7 -> ~%). This block
+   only ADDS new rules; nothing above is touched. */
+.bom-panel{background:#ffffff; padding:18px; overflow-x:auto;}
+.bom-sheet{width:100%; min-width:760px;}
+.bom-table{
+  width:100%; border-collapse:collapse; table-layout:fixed;
+  font-family:'Segoe UI', Calibri, Arial, sans-serif; color:#000;
+}
+.bom-table col{}
+.bom-table th, .bom-table td{
+  border:1px solid #000; padding:4px 6px; font-size:12.5px; vertical-align:middle;
+}
+.bom-table .bom-c-sr{width:8%; text-align:center;}
+.bom-table .bom-c-name{width:29%; text-align:left;}
+.bom-table .bom-c-model{width:15%; text-align:center;}
+.bom-table .bom-c-qty{width:14%; text-align:center;}
+.bom-table .bom-c-checked{width:10%; text-align:center;}
+.bom-table .bom-c-remarks{width:24%; text-align:center;}
+.bom-info-cell{border:none; font-size:12.5px; color:#000; padding:3px 4px;}
+.bom-fill{display:inline-block; min-width:60px; border-bottom:1px solid #000; padding:0 2px;}
+.bom-spacer{border:none; height:6px; padding:0;}
+.bom-kw-cell{
+  border:none; text-align:right; font-weight:800; font-size:16px; color:#000;
+  font-family:'Arial Rounded MT Bold','Segoe UI',Arial,sans-serif;
+}
+.bom-kw-unit{border:none; text-align:left; font-weight:800; font-size:16px; color:#000;}
+.bom-head-row th{
+  background:#666699; color:#fff; font-weight:800; text-align:center;
+  font-family:'Arial Rounded MT Bold','Segoe UI',Arial,sans-serif; font-size:12.5px;
+}
+.bom-cat-row td{
+  background:#666699; color:#fff; font-weight:800; text-align:center;
+  font-family:'Arial Rounded MT Bold','Segoe UI',Arial,sans-serif; font-size:12.5px;
+}
+
+/* ---------- Print: only the BOM sheet, in the same format ---------- */
+@media print{
+  body *{visibility:hidden;}
+  #bomSheet, #bomSheet *{visibility:visible;}
+  #bomSheet{position:absolute; left:0; top:0; width:100%;}
+  .bom-fill{border-bottom:none;}
+  @page{size:portrait; margin:10mm;}
+}
