@@ -222,11 +222,11 @@ function bomRenderPrintSheetHtml(kit, header) {
         </tr>
         <tr>
           <td colspan="3" class="bom-info-cell"><b>Installer Name :</b> ${esc(h.installerName)}</td>
-          <td class="bom-info-cell"><b>Challan No. :</b> ${esc(h.challanNo)}</td>
+          <td colspan="2" class="bom-info-cell"><b>Challan No. :</b> ${esc(h.challanNo)}</td>
           <td class="bom-info-cell"><b>Ch. Date :</b> ${esc(h.challanDate)}</td>
         </tr>
         <tr>
-          <td colspan="3" class="bom-info-cell"><b>Fabricatore Name :</b> ${esc(h.fabricatorName)}</td>
+          <td colspan="4" class="bom-info-cell"><b>Fabricatore Name :</b> ${esc(h.fabricatorName)}</td>
           <td colspan="2" class="bom-info-cell"><b>Dealer Name :</b> ${esc(h.dealerName)}</td>
         </tr>
         <tr><td colspan="6" class="bom-spacer"></td></tr>
@@ -277,7 +277,12 @@ window.PAGES.bom = {
       </div>
       <div class="actions-row">
         <button class="btn btn-ghost" type="button" id="bomBtnPrint"><i class="fa-solid fa-print"></i> Print BOM (Excel format, 1 page)</button>
+        <button class="btn btn-blue" type="button" id="bomBtnVerify"><i class="fa-solid fa-check-double"></i> Verify BOM</button>
+        <button class="btn btn-green" type="button" id="bomBtnDispatch" disabled><i class="fa-solid fa-truck"></i> Create Dispatch</button>
       </div>
+      <p class="note" id="bomVerifyStatus" style="margin-top:8px;">
+        <i class="fa-solid fa-circle-info"></i> Not verified yet — click <b>Verify BOM</b> once every item/quantity above is final. "Create Dispatch" stays locked until then.
+      </p>
     </div>
 
     <div class="panel">
@@ -312,6 +317,24 @@ window.PAGES.bom = {
     // this is what actually gets printed (not the static BOM_KITS data).
     let currentKitState = null;
 
+    // "Verify BOM" gate: Create Dispatch stays locked until the person
+    // explicitly confirms the BOM is ready. Any kit change or item edit
+    // after that re-locks it, since the verified snapshot no longer matches
+    // what's on screen.
+    const btnVerify = $('bomBtnVerify');
+    const btnDispatch = $('bomBtnDispatch');
+    const verifyStatus = $('bomVerifyStatus');
+    let bomVerified = false;
+    function setVerified(isVerified) {
+      bomVerified = isVerified;
+      if (btnDispatch) btnDispatch.disabled = !isVerified;
+      if (verifyStatus) {
+        verifyStatus.innerHTML = isVerified
+          ? '<i class="fa-solid fa-circle-check" style="color:var(--green);"></i> Verified — ready for dispatch.'
+          : '<i class="fa-solid fa-circle-info"></i> Not verified yet — click <b>Verify BOM</b> once every item/quantity above is final. "Create Dispatch" stays locked until then.';
+      }
+    }
+
     // Real item master (Masters > Item Registration) drives the Item Name
     // dropdown once the API/DB is reachable; falls back to kit-derived names
     // otherwise (see bomLoadItemMasterNames). Load once, up front.
@@ -333,6 +356,7 @@ window.PAGES.bom = {
       // Deep clone so editing on-screen never mutates the BOM_KITS catalogue itself.
       currentKitState = kit ? JSON.parse(JSON.stringify(kit.sections)) : null;
       itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState);
+      setVerified(false); // changing the kit invalidates any prior verification
     }
     kitSelect.addEventListener('change', refreshItemsPreview);
     refreshItemsPreview();
@@ -352,6 +376,7 @@ window.PAGES.bom = {
       const field = el.dataset.field;
       if (!currentKitState || !currentKitState[si] || !currentKitState[si].items[ii]) return;
       currentKitState[si].items[ii][field] = el.value;
+      setVerified(false); // any edit after verifying means it needs re-verifying
     }
 
     function getHeaderValues() {
@@ -366,12 +391,54 @@ window.PAGES.bom = {
       };
     }
 
+    if (btnVerify) {
+      btnVerify.addEventListener('click', async () => {
+        if (!currentKitState) {
+          window.openModal('Select a Kit', '<p>Please select a BOM Kit before verifying.</p>');
+          return;
+        }
+        const confirmed = await window.confirmDialog(
+          'Verify BOM',
+          'Are you sure all items in this BOM are ready for dispatch?',
+          { kind: 'warning', okLabel: 'Yes, Verified' },
+        );
+        if (confirmed) {
+          setVerified(true);
+          if (window.showToast) window.showToast('BOM verified — Create Dispatch is now unlocked.');
+        }
+      });
+    }
+
+    if (btnDispatch) {
+      btnDispatch.addEventListener('click', () => {
+        if (!bomVerified) return; // belt-and-braces — button is disabled until verified anyway
+        // STAGE 1 (front-end only): the real single-dispatch workflow that
+        // deducts every kit item from stock at once still needs to be wired
+        // to the backend once that full process is described — this just
+        // confirms the verify → unlock → dispatch flow end-to-end for now.
+        window.openModal(
+          'Create Dispatch',
+          '<p>This BOM is verified and ready. The actual stock-deduction dispatch workflow will be wired up here once the process is finalized.</p>',
+        );
+      });
+    }
+
     // Mirrors Excel's "Fit to 1 page" print option: measure the sheet's
     // real height, and if it's taller than one A4 page (10mm margins, same
-    // as the @page rule in style.css), shrink it with a CSS transform so
-    // it always prints on exactly one page — the print CSS in style.css
-    // already tightens fonts/padding to get close; this is the safety net
-    // that guarantees it regardless of how many items a kit ends up with.
+    // as the @page rule in style.css), shrink it so it always prints on
+    // exactly one page. Uses CSS `zoom` (reflows the layout, so borders and
+    // print pagination stay correct) instead of `transform: scale()`, which
+    // does NOT reflow and was causing the border/column misalignment and
+    // overlapping text seen when comparing against the Excel printout.
+    // Falls back to the old transform trick only on browsers without zoom.
+    //
+    // IMPORTANT: this must run from the 'beforeprint' event, not right
+    // before window.print(). #bomPrintRoot is display:none on screen (only
+    // @media print makes it display:block), so measuring scrollHeight
+    // before the browser switches to print media always read 0 — the scale
+    // was silently never applied, which is why it kept printing on 2 pages
+    // no matter what the content was. 'beforeprint' fires after print media
+    // styles are already active, so the measurement is accurate.
     function fitSheetToOnePage() {
       const sheet = $('bomSheet');
       if (!sheet) return;
@@ -385,10 +452,6 @@ window.PAGES.bom = {
       const naturalPx = sheet.scrollHeight;
       if (naturalPx > usablePx) {
         const scale = usablePx / naturalPx;
-        // `zoom` reflows the layout (unlike transform:scale, which just
-        // repaints the same box) so borders/columns stay lined up and text
-        // no longer overlaps the next cell — this was the root cause of
-        // the browser-vs-Excel print mismatch.
         const supportsZoom = window.CSS && CSS.supports && CSS.supports('zoom', '1');
         if (supportsZoom) {
           sheet.style.zoom = scale;
@@ -399,6 +462,14 @@ window.PAGES.bom = {
       }
     }
 
+    // De-dupe the 'beforeprint' listener across repeated init() calls
+    // (e.g. navigating away from and back to the BOM page in the SPA).
+    if (window.__bomBeforePrintHandler) {
+      window.removeEventListener('beforeprint', window.__bomBeforePrintHandler);
+    }
+    window.__bomBeforePrintHandler = fitSheetToOnePage;
+    window.addEventListener('beforeprint', fitSheetToOnePage);
+
     if (btnPrint) {
       btnPrint.addEventListener('click', () => {
         if (!currentKitState) {
@@ -407,7 +478,6 @@ window.PAGES.bom = {
         }
         const kw = BOM_KITS[kitSelect.value].kw;
         printRoot.innerHTML = bomRenderPrintSheetHtml({ kw, sections: currentKitState }, getHeaderValues());
-        fitSheetToOnePage();
         window.print();
       });
     }

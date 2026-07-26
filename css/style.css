@@ -730,12 +730,12 @@ body.no-scroll{overflow:hidden; height:100%;}
     background:#ffffff; color:#000;
     word-wrap:break-word; overflow-wrap:break-word; white-space:normal; overflow:hidden;
   }
-  .bom-table .bom-c-sr{width:8%; text-align:center;}
-  .bom-table .bom-c-name{width:29%; text-align:left;}
-  .bom-table .bom-c-model{width:15%; text-align:center;}
-  .bom-table .bom-c-qty{width:14%; text-align:center;}
-  .bom-table .bom-c-checked{width:10%; text-align:center;}
-  .bom-table .bom-c-remarks{width:24%; text-align:center;}
+  .bom-table .bom-c-sr{width:5%; text-align:center;}
+  .bom-table .bom-c-name{width:33%; text-align:left;}
+  .bom-table .bom-c-model{width:14%; text-align:center;}
+  .bom-table .bom-c-qty{width:13%; text-align:center;}
+  .bom-table .bom-c-checked{width:9%; text-align:center;}
+  .bom-table .bom-c-remarks{width:26%; text-align:center;}
   .bom-info-cell{border:1px solid #000; font-size:9.5px; color:#000; background:#ffffff; padding:1px 4px;}
   .bom-spacer{border:1px solid #000; height:3px; padding:0; background:#ffffff;}
   .bom-kw-cell{
