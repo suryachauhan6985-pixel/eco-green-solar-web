@@ -680,15 +680,20 @@ body.no-scroll{overflow:hidden; height:100%;}
    the same proportional widths as the Excel column widths
    (A 9.7 / B 34.7 / C 18.9 / D 16.7 / E 12.7 / F 28.7 -> ~%). This block
    only ADDS new rules; nothing above is touched. */
-.bom-panel{background:#ffffff; padding:18px; overflow-x:auto;}
-.bom-sheet{width:100%; min-width:760px;}
+.bom-panel{background:#ffffff; padding:12px; overflow-x:auto; display:flex; justify-content:center;}
+.bom-sheet{width:100%; max-width:900px; min-width:760px; background:#ffffff;}
 .bom-table{
-  width:100%; border-collapse:collapse; table-layout:fixed;
+  width:100%; border-collapse:collapse; table-layout:fixed; background:#ffffff;
   font-family:'Segoe UI', Calibri, Arial, sans-serif; color:#000;
 }
-.bom-table col{}
+/* IMPORTANT: this project has a global `table{background:var(--table-bg)}`
+   rule for the dark-themed data tables elsewhere in the app. .bom-table
+   above overrides that back to white — every cell below also gets its
+   own explicit white background + black text so nothing can fall back
+   to the dark theme by accident (this was the "dark on dark" bug). */
 .bom-table th, .bom-table td{
   border:1px solid #000; padding:4px 6px; font-size:12.5px; vertical-align:middle;
+  background:#ffffff; color:#000;
 }
 .bom-table .bom-c-sr{width:8%; text-align:center;}
 .bom-table .bom-c-name{width:29%; text-align:left;}
@@ -696,14 +701,14 @@ body.no-scroll{overflow:hidden; height:100%;}
 .bom-table .bom-c-qty{width:14%; text-align:center;}
 .bom-table .bom-c-checked{width:10%; text-align:center;}
 .bom-table .bom-c-remarks{width:24%; text-align:center;}
-.bom-info-cell{border:none; font-size:12.5px; color:#000; padding:3px 4px;}
-.bom-fill{display:inline-block; min-width:60px; border-bottom:1px solid #000; padding:0 2px;}
-.bom-spacer{border:none; height:6px; padding:0;}
+.bom-info-cell{border:none; font-size:12.5px; color:#000; background:#ffffff; padding:3px 4px;}
+.bom-fill{display:inline-block; min-width:60px; border-bottom:1px solid #000; padding:0 2px; color:#000;}
+.bom-spacer{border:none; height:6px; padding:0; background:#ffffff;}
 .bom-kw-cell{
-  border:none; text-align:right; font-weight:800; font-size:16px; color:#000;
+  border:none; text-align:right; font-weight:800; font-size:16px; color:#000; background:#ffffff;
   font-family:'Arial Rounded MT Bold','Segoe UI',Arial,sans-serif;
 }
-.bom-kw-unit{border:none; text-align:left; font-weight:800; font-size:16px; color:#000;}
+.bom-kw-unit{border:none; text-align:left; font-weight:800; font-size:16px; color:#000; background:#ffffff;}
 .bom-head-row th{
   background:#666699; color:#fff; font-weight:800; text-align:center;
   font-family:'Arial Rounded MT Bold','Segoe UI',Arial,sans-serif; font-size:12.5px;
@@ -713,11 +718,24 @@ body.no-scroll{overflow:hidden; height:100%;}
   font-family:'Arial Rounded MT Bold','Segoe UI',Arial,sans-serif; font-size:12.5px;
 }
 
-/* ---------- Print: only the BOM sheet, in the same format ---------- */
+/* ---------- Print: only the BOM sheet, forced onto a single A4 page ----------
+   Excel does this via "Fit to 1 page" print scaling. Browsers have no
+   built-in equivalent, so:
+   1) The rules below tighten padding/font-size for print so the natural
+      content height is already close to one A4 page.
+   2) bom.js ALSO measures the sheet's real rendered height right before
+      printing and applies a CSS transform:scale() (with a matching width
+      bump so it still fills the page edge-to-edge) so it always lands on
+      exactly one page — even if more BOM items get added to a kit later. */
 @media print{
   body *{visibility:hidden;}
   #bomSheet, #bomSheet *{visibility:visible;}
-  #bomSheet{position:absolute; left:0; top:0; width:100%;}
+  #bomSheet{position:absolute; left:0; top:0; width:100%; transform-origin:top left;}
   .bom-fill{border-bottom:none;}
-  @page{size:portrait; margin:10mm;}
+  .bom-table th, .bom-table td{padding:2px 4px; font-size:9.5px;}
+  .bom-info-cell{font-size:9.5px; padding:1px 4px;}
+  .bom-kw-cell, .bom-kw-unit{font-size:13px;}
+  .bom-spacer{height:3px;}
+  .bom-table tr{page-break-inside:avoid;}
+  @page{size:A4 portrait; margin:10mm;}
 }

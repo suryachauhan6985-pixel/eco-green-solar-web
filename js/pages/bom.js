@@ -201,10 +201,44 @@ window.PAGES.bom = {
   init() {
     const $ = (id) => document.getElementById(id);
     const btnPrint = $('bomBtnPrint');
+    const sheet = $('bomSheet');
+
+    // Mirrors Excel's "Fit to 1 page" print option: measure the sheet's
+    // real height, and if it's taller than one A4 page (10mm margins, same
+    // as the @page rule in style.css), shrink it with a CSS transform so
+    // it always prints on exactly one page — the print CSS in style.css
+    // already tightens fonts/padding to get close; this is the safety net
+    // that guarantees it regardless of how many items a kit ends up with.
+    function fitSheetToOnePage() {
+      if (!sheet) return;
+      sheet.style.transform = '';
+      sheet.style.width = '100%';
+      const A4_HEIGHT_MM = 297;
+      const MARGIN_MM = 10; // must match @page margin in style.css
+      const PX_PER_MM = 96 / 25.4;
+      const usablePx = (A4_HEIGHT_MM - MARGIN_MM * 2) * PX_PER_MM;
+      const naturalPx = sheet.scrollHeight;
+      if (naturalPx > usablePx) {
+        const scale = usablePx / naturalPx;
+        sheet.style.transform = `scale(${scale})`;
+        sheet.style.width = `${100 / scale}%`;
+      }
+    }
+
+    function resetSheetScale() {
+      if (!sheet) return;
+      sheet.style.transform = '';
+      sheet.style.width = '100%';
+    }
+
     if (btnPrint) {
       btnPrint.addEventListener('click', () => {
+        fitSheetToOnePage();
         window.print();
       });
     }
+    // Undo the print-only scaling once the print dialog closes, so the
+    // on-screen view goes back to normal (not shrunk).
+    window.addEventListener('afterprint', resetSheetScale);
   },
 };
