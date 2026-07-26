@@ -450,14 +450,15 @@ window.PAGES.bom = {
     function fitSheetToOnePage() {
       const sheet = $('bomSheet');
       if (!sheet) return;
-      sheet.style.zoom = '';
+      // BASELINE_ZOOM must match the static `zoom` on .bom-sheet in
+      // style.css. That CSS value is what actually guarantees this BOM
+      // prints on one page even if this script never runs — this
+      // function's job is only to shrink FURTHER than the baseline for a
+      // future kit with more rows than the current one, never to be the
+      // only thing enforcing one page.
+      const BASELINE_ZOOM = 0.75;
       sheet.style.transform = '';
-      // NOTE: no more `sheet.style.width = '100%'` here — .bom-sheet now
-      // has a fixed 850px width in style.css (the real Excel sheet's own
-      // size), so it always measures/scales from that same fixed size on
-      // every print, and margin:0 auto (also in style.css) centers it
-      // horizontally once it's scaled down — same as Excel's "Center on
-      // page: Horizontally" setting.
+      sheet.style.zoom = BASELINE_ZOOM;
       const A4_HEIGHT_MM = 297;
       // Must match the @page top+bottom margin in style.css (19.05mm =
       // 0.75in each, same as the workbook's real Page Setup margins).
@@ -470,23 +471,21 @@ window.PAGES.bom = {
       // applied, etc.) the sheet could still end up a few px taller than
       // the page and spill onto a 2nd page. Scaling to 96% of the usable
       // height on purpose leaves enough slack that those real-world
-      // variations can no longer push it over, while still landing very
-      // close to the workbook's own ~77% print scale.
+      // variations can no longer push it over.
       const SAFETY_MARGIN = 0.96;
       const usablePx = (A4_HEIGHT_MM - MARGIN_MM * 2) * PX_PER_MM * SAFETY_MARGIN;
-      const naturalPx = sheet.scrollHeight;
-      if (naturalPx > usablePx) {
-        const scale = usablePx / naturalPx;
+      // scrollHeight is read AFTER zoom is already set to BASELINE_ZOOM
+      // above, so this is the sheet's real on-page height at that zoom —
+      // not its unzoomed natural height.
+      const zoomedPx = sheet.scrollHeight;
+      if (zoomedPx > usablePx) {
+        const extraScale = usablePx / zoomedPx;
         const supportsZoom = window.CSS && CSS.supports && CSS.supports('zoom', '1');
         if (supportsZoom) {
-          sheet.style.zoom = scale;
+          sheet.style.zoom = BASELINE_ZOOM * extraScale;
         } else {
-          // transform:scale() doesn't reflow, so it needs an explicit
-          // width bump to keep the *visual* result the same size — but
-          // unlike the old 100%-width sheet, .bom-sheet's width is now a
-          // fixed 850px, so scale it in px, not in a %, and centering
-          // still comes from margin:0 auto in style.css.
-          sheet.style.transform = `scale(${scale})`;
+          sheet.style.zoom = '';
+          sheet.style.transform = `scale(${BASELINE_ZOOM * extraScale})`;
           sheet.style.width = '850px';
         }
       }

@@ -757,7 +757,18 @@ body.no-scroll{overflow:hidden; height:100%;}
      (computed dynamically so it always lands on one page), and
      margin:auto centers the shrunk sheet horizontally — matching Excel's
      "Center on page" setting. */
-  .bom-sheet{width:850px; margin:0 auto; background:#ffffff; transform-origin:top center;}
+  /* STATIC BASELINE SCALE — not just a JS-computed one:
+     0.75 is (deliberately) very close to the workbook's own real print
+     scale (Page Setup → Scale: 77%). Putting it here, directly in CSS,
+     means this exact BOM already prints on ONE page from CSS alone —
+     with zero dependency on bom.js's fitSheetToOnePage() JS running at
+     all. That JS still runs (see bom.js) and will shrink FURTHER than
+     this for a future kit with more rows than this one, but it can never
+     rely on being the only thing standing between this sheet and a
+     2nd page: if the deployed JS is stale/cached/fails silently for any
+     reason, this CSS baseline still guarantees a single A4 page for the
+     current kit list. */
+  .bom-sheet{width:850px; margin:0 auto; zoom:0.75; background:#ffffff; transform-origin:top center;}
   .bom-table{
     width:100%; border-collapse:collapse; table-layout:fixed; background:#ffffff;
     font-family:'Calibri Light', Calibri, 'Segoe UI', Arial, sans-serif; color:#000;
