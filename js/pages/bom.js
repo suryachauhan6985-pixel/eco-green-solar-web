@@ -373,25 +373,27 @@ window.PAGES.bom = {
             <select id="bomKitSelect" style="flex:1;">
               <option value="">-- Select Kit --</option>
             </select>
-            <button type="button" class="btn btn-ghost" id="bomBtnNewKit" style="padding:9px 12px; white-space:nowrap;" title="Create a new BOM Kit / Template"><i class="fa-solid fa-plus"></i> New Kit</button>
             <button type="button" class="btn btn-red" id="bomBtnDeleteKit" style="display:none; padding:9px 12px;" title="Delete this saved template"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>
         <div class="field"><label>Order No</label><input id="bomOrderNo" placeholder="Order no."></div>
 
-        <div class="field"><label>Customer Name</label><input id="bomCustomerName" placeholder="Customer / Party"></div>
+        <div class="field"><label>Customer Short Code</label><input id="bomCustomerShort" placeholder="Optional short code" list="bomCustShortList" autocomplete="off"><datalist id="bomCustShortList"></datalist></div>
+        <div class="field"><label>Customer Name</label><input id="bomCustomerName" placeholder="Customer / Party" list="bomCustNameList" autocomplete="off"><datalist id="bomCustNameList"></datalist></div>
+
         <div class="field"><label>Dealer Name</label><input id="bomDealerName" placeholder="Dealer name"></div>
-
         <div class="field"><label>Installer Name</label><input id="bomInstallerName" placeholder="Installer name"></div>
-        <div class="field"><label>Fabricatore Name</label><input id="bomFabricatorName" placeholder="Fabricator name"></div>
 
+        <div class="field"><label>Fabricatore Name</label><input id="bomFabricatorName" placeholder="Fabricator name"></div>
         <div class="field"><label>Challan No.</label><input id="bomChallanNo" placeholder="Challan no."></div>
+
         <div class="field"><label>Ch. Date</label><input id="bomChallanDate" type="date"></div>
       </div>
       <div class="actions-row">
         <button class="btn btn-ghost" type="button" id="bomBtnPrint"><i class="fa-solid fa-print"></i> Print BOM (Excel format, 1 page)</button>
         <button class="btn btn-blue" type="button" id="bomBtnVerify"><i class="fa-solid fa-check-double"></i> Verify BOM</button>
         <button class="btn btn-green" type="button" id="bomBtnDispatch" disabled><i class="fa-solid fa-truck"></i> Create Dispatch</button>
+        <button type="button" class="btn btn-ghost" id="bomBtnNewKit" title="Create a new BOM Kit / Template"><i class="fa-solid fa-plus"></i> New Kit</button>
       </div>
       <p class="note" id="bomVerifyStatus" style="margin-top:8px;">
         <i class="fa-solid fa-circle-info"></i> Not verified yet — click <b>Verify BOM</b> once every item/quantity above is final. "Create Dispatch" stays locked until then.
@@ -447,6 +449,57 @@ window.PAGES.bom = {
     // input/select, so edits below write straight back into this object —
     // this is what actually gets printed (not the static BOM_KITS data).
     let currentKitState = null;
+
+    // ---------------- Customer ledger live autocomplete + autofill ---------
+    // Same behaviour as Sale/Purchase: typing in Customer Name or Short Code
+    // live-searches matching ledgers, and the instant the typed text exactly
+    // matches a known ledger name/short code, Customer Name auto-fills (and
+    // the resolved short code also pre-fills Order No if it's still empty —
+    // mirrors applyLedgerToCustomerFields() in sales.js). Fields stay fully
+    // editable so the person can still type over the auto-filled value.
+    const bomCustNameList = $('bomCustNameList');
+    const bomCustShortList = $('bomCustShortList');
+    let bomCustSearchTimer = null;
+
+    async function searchBomCustomerLedgers(q) {
+      try { return await window.Api.get(`/ledgers?type=Customer&q=${encodeURIComponent(q)}`); }
+      catch (e) { return []; }
+    }
+    async function searchBomCustomerShortCodes(q) {
+      try { return await window.Api.get(`/ledgers/shortcodes?type=Customer&q=${encodeURIComponent(q)}`); }
+      catch (e) { return []; }
+    }
+    function fillBomCustomerDatalist(listEl, ledgers, key) {
+      if (!listEl) return;
+      listEl.innerHTML = ledgers
+        .filter((l) => String(l[key] || '').trim() !== '')
+        .map((l) => `<option value="${String(l[key]).replace(/"/g, '&quot;')}">`).join('');
+    }
+    function applyLedgerToBomCustomerFields(l) {
+      $('bomCustomerName').value = l.name || '';
+      if ($('bomCustomerShort')) $('bomCustomerShort').value = l.short || '';
+      if (!$('bomOrderNo').value.trim() && l.short) $('bomOrderNo').value = l.short;
+    }
+    function wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn) {
+      if (!inputEl || !listEl) return;
+      inputEl.addEventListener('input', () => {
+        const text = inputEl.value;
+        clearTimeout(bomCustSearchTimer);
+        bomCustSearchTimer = setTimeout(async () => {
+          const ledgers = await searchFn(text);
+          fillBomCustomerDatalist(listEl, ledgers, matchKey);
+          const exact = ledgers.find((l) => String(l[matchKey] || '').trim().toLowerCase() === text.trim().toLowerCase());
+          if (exact) applyLedgerToBomCustomerFields(exact);
+        }, 250);
+      });
+      inputEl.addEventListener('focus', async () => {
+        if (inputEl.value.trim()) return;
+        const ledgers = await searchFn('');
+        fillBomCustomerDatalist(listEl, ledgers, matchKey);
+      });
+    }
+    wireBomCustomerAutocomplete($('bomCustomerName'), bomCustNameList, 'name', searchBomCustomerLedgers);
+    wireBomCustomerAutocomplete($('bomCustomerShort'), bomCustShortList, 'short', searchBomCustomerShortCodes);
 
     // "Verify BOM" gate: Create Dispatch stays locked until the person
     // explicitly confirms the BOM is ready. Any kit change or item edit
@@ -536,6 +589,13 @@ window.PAGES.bom = {
     const kitBuilderSectionsEl = $('bomNewKitSections');
     const newKitLabelInput = $('bomNewKitLabel');
     const newKitKwInput = $('bomNewKitKw');
+
+    // "New Kit" (creating/saving a BOM Kit template) is an Admin/SuperAdmin
+    // action only — a plain User should not see the option at all, same
+    // role gate used for the edit sections in sales.js/purchase.js.
+    const bomCurrentRole = window.currentUserRole || 'User';
+    const bomIsAdmin = bomCurrentRole === 'SuperAdmin' || bomCurrentRole === 'Admin';
+    if (btnNewKit) btnNewKit.style.display = bomIsAdmin ? '' : 'none';
 
     // Live, mutable working copy of the kit being built — same
     // {title, items:[{sr,name,model,qty,remarks}]} shape as any real kit's
