@@ -715,8 +715,17 @@ body.no-scroll{overflow:hidden; height:100%;}
      the shell with `display:none` (removes it from layout entirely) and
      forcing body's background to white fixes both at once.
   */
+  /* NOTE: #bomPrintRoot is a descendant of .shell (nested inside
+     .content, where bom.js's page HTML — including #bomPrintRoot — gets
+     injected). display:none on .shell was removing #bomPrintRoot along
+     with it, which is why the print preview went blank. #bomPrintRoot is
+     position:absolute with no positioned ancestor anywhere above it, so
+     its containing block is the viewport, not .shell — collapsing
+     .shell's box to zero height (instead of display:none-ing it) drops
+     its contribution to the printed page's total height without
+     affecting #bomPrintRoot's own rendering at all. */
   body{background:#ffffff !important;}
-  .shell{display:none !important;}
+  .shell{height:0 !important; min-height:0 !important; overflow:hidden !important;}
 
   body *{visibility:hidden;}
   .bom-print-only{display:block;}
