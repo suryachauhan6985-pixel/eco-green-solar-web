@@ -646,6 +646,18 @@ window.PAGES = window.PAGES || {};
 
   function isBtActive() { return btState.active; }
 
+  // Prevents the mobile on-screen keyboard from popping up on these fields
+  // while Bluetooth scanner mode is ON — inputmode="none" tells the phone
+  // "don't show your own keyboard here" while still letting a real
+  // hardware/Bluetooth keyboard-wedge scanner type into the field normally.
+  function applyBtInputMode() {
+    const active = isBtActive();
+    document.querySelectorAll('input[data-type="barcode"], input[data-type="text"]').forEach((el) => {
+      if (active) el.setAttribute('inputmode', 'none');
+      else el.removeAttribute('inputmode');
+    });
+  }
+
   // Keeps every Bluetooth icon on screen in sync, and disables the
   // camera-scan entry points (bottom-nav scan button + per-field scan
   // icons) while scanner mode is ON.
@@ -664,6 +676,7 @@ window.PAGES = window.PAGES || {};
         ? 'Camera disabled while Bluetooth scanner mode is ON'
         : 'Scan barcode / QR';
     });
+    applyBtInputMode();
   }
 
   // ---------------------------------------------------------------------
@@ -685,6 +698,19 @@ window.PAGES = window.PAGES || {};
       return true;
     }
     return false;
+  }
+
+  // Focuses a scannable field and re-asserts that focus one tick later —
+  // needed because saveCurrentEntry() re-renders the whole form, which can
+  // momentarily replace/steal focus from the field on some mobile browsers.
+  function focusScannableField(id) {
+    if (!id) return;
+    const f = document.getElementById(id);
+    if (f) f.focus();
+    setTimeout(() => {
+      const f2 = document.getElementById(id);
+      if (f2) f2.focus();
+    }, 30);
   }
 
   function toggleBluetoothScanner() {
@@ -710,7 +736,9 @@ window.PAGES = window.PAGES || {};
     document.addEventListener('keydown', btState.enterHandler, true);
     if (scannerState.overlayEl) closeScanner();
     syncBtButtons();
-    window.showToast('Bluetooth scanner mode ON \u2014 camera disabled. Kisi bhi text box par click karke scan karein.');
+    const targetId = resolveScanTargetId();
+    if (targetId) { ST.lastBarcodeFieldId = targetId; focusScannableField(targetId); }
+    window.showToast('Bluetooth scanner mode ON \u2014 camera disabled, keyboard chhupa hua hai. Seedha scan karein.');
   }
 
   function disableScannerMode() {
@@ -759,14 +787,14 @@ window.PAGES = window.PAGES || {};
     document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
 
-    const refocusTarget = () => { const f = document.getElementById(targetId); if (f) f.focus(); };
-    const closeOverlay = () => { overlay.remove(); document.body.style.overflow = ''; refocusTarget(); };
-    overlay.querySelector('#ssBtScanClose').onclick = closeOverlay;
-    overlay.querySelector('#ssBtScanRetry').onclick = () => { closeOverlay(); window.showToast('Retry \u2014 phir se scan karein'); };
+    const closeOverlay = () => { overlay.remove(); document.body.style.overflow = ''; };
+    overlay.querySelector('#ssBtScanClose').onclick = () => { closeOverlay(); focusScannableField(targetId); };
+    overlay.querySelector('#ssBtScanRetry').onclick = () => { closeOverlay(); focusScannableField(targetId); window.showToast('Retry \u2014 phir se scan karein'); };
     overlay.querySelector('#ssBtScanSave').onclick = () => {
       if (dup) return;
-      const saved = processScanValue(text, targetId);
-      closeOverlay();
+      closeOverlay(); // remove overlay first so it can't be left covering the form
+      const saved = processScanValue(text, targetId); // may re-render the form (single-column autosave)
+      focusScannableField(targetId); // re-assert focus after any re-render
       window.showToast(saved ? 'Row saved (Bluetooth scan)' : 'Scanned via Bluetooth \u2014 fill remaining fields and tap Save');
     };
   }
@@ -1097,6 +1125,7 @@ window.PAGES = window.PAGES || {};
     document.getElementById('ssEntryMenu').onclick = (e) => { e.stopPropagation(); openEntryMenu(document.getElementById('ssEntryMenu')); };
     document.getElementById('ssBtScanner').onclick = toggleBluetoothScanner;
     syncBtButtons();
+    if (btState.active) focusScannableField(resolveScanTargetId());
     document.getElementById('ssSaveEntry').onclick = saveCurrentEntry;
     document.getElementById('ssTypeMode').onclick = () => {
       const sheet = window.SheetsStore.getSheet(ST.activeSheetId);
