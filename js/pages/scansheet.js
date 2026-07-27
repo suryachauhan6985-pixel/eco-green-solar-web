@@ -627,70 +627,50 @@ window.PAGES = window.PAGES || {};
     return entries.some((en) => String(en.values[colId] || '').trim().toLowerCase() === norm);
   }
 
-  // ---------------- Bluetooth scanner state ----------------
-  // Kept separate from `scannerState` (the camera overlay) on purpose: once
-  // paired, a Bluetooth scanner should stay connected whether or not the
-  // camera view is open, and across switching between sheets.
-  //
-  // Common BLE "serial style" scanner profiles this supports directly:
-  //   - Nordic UART Service (most generic BLE-serial modules/scanners)
-  //   - HM-10/HM-19 style FFE0/FFE1 service (very common in cheap BT modules)
-  // Handheld scanners that pair as an HID keyboard (the majority of
-  // consumer Bluetooth barcode guns) can't be reached via these BLE GATT
-  // APIs at all — the OS pairs those directly as a keyboard — so for those
-  // we fall back to "wedge mode" below, which just listens for the Enter
-  // key the scanner sends after each code.
-  const BT_UART_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-  const BT_UART_TX_CHAR = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
-  const BT_FFE0_SERVICE = '0000ffe0-0000-1000-8000-00805f9b34fb';
-  const BT_FFE0_CHAR = '0000ffe1-0000-1000-8000-00805f9b34fb';
-
+  // ---------------- Bluetooth / external-scanner mode ----------------
+  // A website has no way to ask the OS "is a Bluetooth scanner connected?"
+  // — that pairing happens entirely at the OS level and browsers can't see
+  // it. So this button is a simple, explicit switch instead of a real
+  // connection: the person turns it ON when their scanner is paired, and
+  // OFF when it isn't. Turning it ON does two things:
+  //   1. Disables the camera scan buttons (so the camera can never get
+  //      stuck "Requesting permission" while a hardware scanner is in use).
+  //   2. Starts listening for Enter on any scannable field — most
+  //      Bluetooth/USB barcode scanners act like a keyboard: they type the
+  //      code, then send Enter. Every Enter while this mode is ON is
+  //      treated as "a scan just happened", regardless of typing speed.
   const btState = {
-    mode: null,        // null | 'ble' | 'wedge'
-    device: null,
-    server: null,
-    char: null,
-    buffer: '',
-    wedgeHandler: null,
+    active: false,
+    enterHandler: null,
   };
 
-  function isBtActive() { return btState.mode === 'ble' || btState.mode === 'wedge'; }
+  function isBtActive() { return btState.active; }
 
-  // Keeps every Bluetooth icon on screen (appbar + inside the camera
-  // overlay) showing the same connected/disconnected state, since either
-  // one can be used to connect or disconnect.
-  //
-  // Also disables the camera-scan entry points (bottom-nav scan button +
-  // per-field scan icons) while a Bluetooth scanner is connected. This is
-  // what stops the "stuck on Requesting camera permission" screen from ever
-  // happening in Bluetooth mode: the camera simply isn't opened, so scans
-  // go straight into the focused field via the keyboard-wedge/BLE pipeline
-  // instead.
+  // Keeps every Bluetooth icon on screen in sync, and disables the
+  // camera-scan entry points (bottom-nav scan button + per-field scan
+  // icons) while scanner mode is ON.
   function syncBtButtons() {
     const active = isBtActive();
-    const label = btState.mode === 'ble'
-      ? 'Bluetooth Scanner connected — tap to disconnect'
-      : btState.mode === 'wedge'
-        ? 'Bluetooth (keyboard-mode) scanner active — tap to stop'
-        : 'Connect Bluetooth Scanner';
     document.querySelectorAll('.ss-bt-btn').forEach((btn) => {
       btn.classList.toggle('active', active);
-      btn.title = label;
+      btn.title = active
+        ? 'Bluetooth scanner mode ON \u2014 tap to turn off'
+        : 'Turn ON if a Bluetooth/USB scanner is connected (disables camera)';
     });
     document.querySelectorAll('.ss-bottom-nav-scan, .ss-scan-icon-btn').forEach((btn) => {
       btn.classList.toggle('ss-disabled', active);
       btn.disabled = active;
       btn.title = active
-        ? 'Camera disabled while Bluetooth scanner is connected'
+        ? 'Camera disabled while Bluetooth scanner mode is ON'
         : 'Scan barcode / QR';
     });
   }
 
   // ---------------------------------------------------------------------
   // Shared "a code was scanned" pipeline — used by BOTH the camera decoder
-  // (onScanSuccess) and the Bluetooth scanner (BLE notification or wedge
-  // Enter-key), so a code coming from either source fills the field and
-  // saves the row in exactly the same way.
+  // (onScanSuccess) and the Bluetooth/keyboard-wedge scanner (Enter-key),
+  // so a code coming from either source fills the field and saves the row
+  // in exactly the same way.
   // ---------------------------------------------------------------------
   function processScanValue(text, fieldId) {
     const targetId = fieldId || scannerState.targetFieldId || resolveScanTargetId();
@@ -708,167 +688,44 @@ window.PAGES = window.PAGES || {};
   }
 
   function toggleBluetoothScanner() {
-    if (isBtActive()) { disconnectBluetoothScanner(); return; }
-    connectBluetoothScanner();
+    if (btState.active) disableScannerMode(); else enableScannerMode();
   }
 
-  async function connectBluetoothScanner() {
-    if (!navigator.bluetooth) {
-      window.showToast('Is browser mein direct Bluetooth (BLE) scanner support nahi hai. Agar aapka scanner keyboard/HID mode ka hai, to bas phone/PC ki Bluetooth settings se pair kar lein — pairing ke baad seedha field mein scan karein, wahi camera jaisa scan-and-save ho jayega.');
-      enableWedgeMode();
-      return;
-    }
-    try {
-      window.showToast('Bluetooth scanner dhoondh rahe hain\u2026');
-      let device;
-      try {
-        device = await navigator.bluetooth.requestDevice({
-          filters: [{ services: [BT_UART_SERVICE] }, { services: [BT_FFE0_SERVICE] }],
-          optionalServices: [BT_UART_SERVICE, BT_FFE0_SERVICE],
-        });
-      } catch (e) {
-        // Nothing matched the known scanner service UUIDs — widen the
-        // search in case this device advertises a custom/unlisted service.
-        device = await navigator.bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: [BT_UART_SERVICE, BT_FFE0_SERVICE],
-        });
-      }
-      device.addEventListener('gattserverdisconnected', onBleDisconnected);
-      const server = await device.gatt.connect();
-      let service, char;
-      try {
-        service = await server.getPrimaryService(BT_UART_SERVICE);
-        char = await service.getCharacteristic(BT_UART_TX_CHAR);
-      } catch (e1) {
-        service = await server.getPrimaryService(BT_FFE0_SERVICE);
-        char = await service.getCharacteristic(BT_FFE0_CHAR);
-      }
-      await char.startNotifications();
-      char.addEventListener('characteristicvaluechanged', onBleNotify);
-      btState.mode = 'ble';
-      btState.device = device;
-      btState.server = server;
-      btState.char = char;
-      btState.buffer = '';
-      if (scannerState.overlayEl) closeScanner();
-      syncBtButtons();
-      window.showToast('Bluetooth scanner connected: ' + (device.name || 'Scanner'));
-    } catch (err) {
-      console.warn('Bluetooth connect failed', err);
-      if (err && err.name === 'NotFoundError') { window.showToast('Koi Bluetooth scanner select nahi kiya gaya.'); return; }
-      window.showToast('BLE se connect nahi ho paya \u2014 agar scanner keyboard/HID mode mein hai, to Bluetooth settings se pair karke seedha field mein scan karein.');
-      enableWedgeMode();
-    }
-  }
-
-  function onBleNotify(event) {
-    const text = new TextDecoder('utf-8').decode(event.target.value);
-    btState.buffer += text;
-    if (/[\r\n]/.test(btState.buffer)) {
-      const code = btState.buffer.replace(/[\r\n]+$/, '').trim();
-      btState.buffer = '';
+  function enableScannerMode() {
+    if (btState.active) return;
+    btState.active = true;
+    btState.enterHandler = (e) => {
+      if (ST.view !== 'data-entry') return;
+      const el = e.target;
+      if (!el || !el.matches || !el.matches('input[data-type="barcode"], input[data-type="text"]')) return;
+      if (e.key !== 'Enter') return;
+      const code = (el.value || '').trim();
       if (!code) return;
+      e.preventDefault();
+      el.value = '';
       beep();
-      if (navigator.vibrate) { try { navigator.vibrate(180); } catch (e) { /* not supported */ } }
-      showBluetoothScanOverlay(code, scannerState.targetFieldId || resolveScanTargetId());
-    }
-  }
-
-  function onBleDisconnected() {
-    btState.mode = null; btState.device = null; btState.server = null; btState.char = null; btState.buffer = '';
-    syncBtButtons();
-    window.showToast('Bluetooth scanner disconnected');
-  }
-
-  function disconnectBluetoothScanner() {
-    if (btState.mode === 'ble') {
-      try { if (btState.char) btState.char.removeEventListener('characteristicvaluechanged', onBleNotify); } catch (e) { /* ignore */ }
-      try { if (btState.device && btState.device.gatt && btState.device.gatt.connected) btState.device.gatt.disconnect(); } catch (e) { /* ignore */ }
-      btState.device = null; btState.server = null; btState.char = null; btState.buffer = '';
-    } else if (btState.mode === 'wedge') {
-      disableWedgeMode();
-    }
-    btState.mode = null;
-    syncBtButtons();
-    window.showToast('Bluetooth scanner disconnected');
-  }
-
-  // "Keyboard wedge" fallback for Bluetooth barcode scanners that pair as an
-  // HID keyboard at the OS level (true of most handheld/consumer models).
-  // The OS handles that pairing directly — a website has no API to query
-  // which Bluetooth devices are connected at the OS level, so tapping a
-  // "Connect" button here can't reliably reflect reality.
-  //
-  // Instead, AUTO_DETECT below passively watches typing speed on any
-  // scannable field: a barcode scanner "types" a whole code in a few
-  // milliseconds followed by Enter, while a human typing on a phone
-  // keyboard takes well over 100ms per character. A fast burst + Enter is
-  // recognized as a scan automatically — no manual pairing step needed —
-  // and switches the app into wedge mode (disabling the camera) the first
-  // time it happens.
-  function enableWedgeMode() {
-    if (btState.mode === 'wedge') return;
-    btState.mode = 'wedge';
+      if (navigator.vibrate) { try { navigator.vibrate(180); } catch (err) { /* not supported */ } }
+      showBluetoothScanOverlay(code, el.id);
+    };
+    document.addEventListener('keydown', btState.enterHandler, true);
     if (scannerState.overlayEl) closeScanner();
     syncBtButtons();
-    window.showToast('Bluetooth keyboard-mode ready \u2014 pair the scanner in Bluetooth settings, tap a field, then scan.');
+    window.showToast('Bluetooth scanner mode ON \u2014 camera disabled. Kisi bhi text box par click karke scan karein.');
   }
 
-  function disableWedgeMode() {
-    // No listener to tear down any more — AUTO_DETECT below is always-on
-    // and independent of btState.mode. Disconnecting just re-enables the
-    // camera buttons; if the scanner scans again, wedge mode will be
-    // re-detected automatically.
+  function disableScannerMode() {
+    if (btState.enterHandler) document.removeEventListener('keydown', btState.enterHandler, true);
+    btState.enterHandler = null;
+    btState.active = false;
+    syncBtButtons();
+    window.showToast('Bluetooth scanner mode OFF \u2014 camera enabled again.');
   }
-
-  // ---------------- Passive scan auto-detect (keystroke speed) ----------------
-  const AUTO_SCAN_MIN_CHARS = 4;       // shortest burst we bother judging
-  const AUTO_SCAN_MAX_AVG_GAP_MS = 45; // avg ms/char below this = scanner, not a human
-  const AUTO_SCAN_RESET_GAP_MS = 700;  // pause longer than this starts a fresh burst
-  const autoScanBuffers = new Map();   // fieldId -> array of keydown timestamps
-
-  function isScannableInputEl(el) {
-    return !!(el && el.matches && el.matches('input[data-type="barcode"], input[data-type="text"]'));
-  }
-
-  function handleAutoScanKeydown(e) {
-    if (ST.view !== 'data-entry') return;
-    const el = e.target;
-    if (!isScannableInputEl(el)) return;
-    const now = Date.now();
-
-    if (e.key === 'Enter') {
-      const times = autoScanBuffers.get(el.id);
-      autoScanBuffers.delete(el.id);
-      if (times && times.length >= AUTO_SCAN_MIN_CHARS) {
-        const avgGap = (times[times.length - 1] - times[0]) / (times.length - 1);
-        if (avgGap <= AUTO_SCAN_MAX_AVG_GAP_MS) {
-          e.preventDefault();
-          const text = (el.value || '').trim();
-          el.value = '';
-          if (!text) return;
-          if (btState.mode !== 'ble') enableWedgeMode(); // marks scanner detected, disables camera
-          beep();
-          if (navigator.vibrate) { try { navigator.vibrate(180); } catch (err) { /* not supported */ } }
-          showBluetoothScanOverlay(text, el.id);
-        }
-      }
-      return;
-    }
-
-    if (e.key.length !== 1) return; // ignore Shift/Backspace/arrows/etc. (don't reset the burst)
-    let times = autoScanBuffers.get(el.id);
-    if (!times) { times = []; autoScanBuffers.set(el.id, times); }
-    if (times.length && (now - times[times.length - 1]) > AUTO_SCAN_RESET_GAP_MS) times.length = 0;
-    times.push(now);
-  }
-
-  document.addEventListener('keydown', handleAutoScanKeydown, true);
 
   // Shows the exact same "scanned value + Save/Retry + duplicate check"
   // interface the camera uses, but without ever touching the camera —
-  // used for every auto-detected Bluetooth/keyboard-wedge scan.
+  // used for every scan while Bluetooth scanner mode is ON. Refocuses the
+  // target field on every close (Retry / Save / back) so the cursor is
+  // always sitting in the box, ready for the next scan.
   function showBluetoothScanOverlay(text, fieldId) {
     if (scannerState.overlayEl) closeScanner();
     const targetId = fieldId || resolveScanTargetId();
@@ -902,7 +759,8 @@ window.PAGES = window.PAGES || {};
     document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
 
-    const closeOverlay = () => { overlay.remove(); document.body.style.overflow = ''; };
+    const refocusTarget = () => { const f = document.getElementById(targetId); if (f) f.focus(); };
+    const closeOverlay = () => { overlay.remove(); document.body.style.overflow = ''; refocusTarget(); };
     overlay.querySelector('#ssBtScanClose').onclick = closeOverlay;
     overlay.querySelector('#ssBtScanRetry').onclick = () => { closeOverlay(); window.showToast('Retry \u2014 phir se scan karein'); };
     overlay.querySelector('#ssBtScanSave').onclick = () => {
@@ -929,7 +787,7 @@ window.PAGES = window.PAGES || {};
 
   function openScanner(targetFieldId) {
     if (isBtActive()) {
-      window.showToast('Bluetooth scanner connected hai \u2014 camera disabled hai. Seedha field mein scan karein, ya camera use karne ke liye pehle Bluetooth disconnect karein.');
+      window.showToast('Bluetooth scanner mode ON hai \u2014 camera disabled hai. Seedha field mein scan karein, ya camera use karne ke liye pehle Bluetooth scanner mode OFF karein.');
       return;
     }
     if (!targetFieldId) targetFieldId = resolveScanTargetId();
