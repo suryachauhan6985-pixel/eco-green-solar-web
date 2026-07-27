@@ -4,15 +4,22 @@
 // device camera, entirely in-browser via the free/open-source html5-qrcode
 // library (see index.html's <script> tag — no API key, no external calls).
 //
-// STAGE 1 (this file): a self-contained scan tool. "Start Scanning" opens a
-// live camera preview inline on the page and decodes automatically the
-// moment a code is in frame — no capture button, no popup/new window.
-// Every distinct scan gets appended to an on-screen list (newest on top,
-// with a timestamp + detected format), plus a short beep/vibrate as
-// feedback. The camera stays open across multiple scans until "Stop
-// Scanning" is clicked. This page does NOT feed into Purchase/BOM/etc.
-// yet — that wiring is a separate, later step once it's decided which
-// screen each scanned value should land in.
+// Camera opens the moment this tab is opened (no separate "Start Scanning"
+// step) and decodes automatically the instant a code is in frame — no
+// capture button, no popup/new window, just like a normal barcode-scanner
+// app. Every distinct scan gets appended to an on-screen list (newest on
+// top, with a timestamp + detected format), plus a short beep/vibrate as
+// feedback. The camera stays open across multiple scans; a single
+// Scan/Stop toggle button lets it be paused and resumed. This page does
+// NOT feed into Purchase/BOM/etc. yet — that wiring is a separate, later
+// step once it's decided which screen each scanned value should land in.
+//
+// IMPORTANT FIX vs the first version: html5-qrcode's start() has to be
+// called while its target <div> is already visible/on-screen with real
+// width/height. This container used to be `display:none` until *after*
+// start() resolved, so the camera preview showed up but every frame was
+// captured against a zero-size element — it never actually decoded
+// anything. The container is now shown BEFORE start() is called.
 window.PAGES = window.PAGES || {};
 
 window.PAGES.scan = {
@@ -21,15 +28,14 @@ window.PAGES.scan = {
   sub: 'Scan barcodes & QR codes with your camera',
   html: `
     <div class="page-head"><i class="fa-solid fa-camera" style="color:var(--gold);"></i><h2>Scan</h2>
-      <button type="button" class="info-btn" data-info="Uses your device camera to read QR codes and barcodes (Code128, EAN-13, EAN-8, UPC-A, UPC-E, Code39, ITF, Codabar). Runs entirely in the browser — nothing is uploaded anywhere."><i class="fa-solid fa-circle-info"></i></button>
+      <button type="button" class="info-btn" data-info="Uses your device camera to read QR codes and barcodes (Code128, EAN-13, EAN-8, UPC-A, UPC-E, Code39, ITF, Codabar). Runs entirely in the browser — nothing is uploaded anywhere. Camera opens automatically when you open this tab."><i class="fa-solid fa-circle-info"></i></button>
     </div>
 
     <div class="panel">
       <h3><i class="fa-solid fa-video"></i> Camera</h3>
       <div class="actions-row" style="margin-top:0;">
-        <button class="btn btn-green" type="button" id="scanBtnStart"><i class="fa-solid fa-play"></i> Start Scanning</button>
-        <button class="btn btn-red" type="button" id="scanBtnStop" disabled><i class="fa-solid fa-stop"></i> Stop Scanning</button>
-        <span class="note" id="scanStatus" style="align-self:center; margin:0;"><i class="fa-solid fa-circle-info"></i> Camera is off. Click "Start Scanning" to begin.</span>
+        <button class="btn btn-red" type="button" id="scanBtnToggle"><i class="fa-solid fa-stop"></i> Stop Camera</button>
+        <span class="note" id="scanStatus" style="align-self:center; margin:0;"><i class="fa-solid fa-spinner fa-spin"></i> Opening camera...</span>
       </div>
 
       <div id="scanPermissionMsg" class="scan-permission-msg" style="display:none;">
@@ -72,8 +78,7 @@ window.PAGES.scan = {
   init() {
     const $ = (id) => document.getElementById(id);
 
-    const btnStart = $('scanBtnStart');
-    const btnStop = $('scanBtnStop');
+    const btnToggle = $('scanBtnToggle');
     const statusEl = $('scanStatus');
     const permMsg = $('scanPermissionMsg');
     const permMsgText = $('scanPermissionMsgText');
@@ -83,11 +88,15 @@ window.PAGES.scan = {
     const historyBody = $('scanHistoryBody');
     const btnClearHistory = $('scanBtnClearHistory');
 
+    function setStatus(html) {
+      statusEl.innerHTML = html;
+    }
+
     // html5-qrcode (see index.html) isn't loaded yet if the CDN failed —
     // fail gracefully with an on-screen message instead of a dead button.
     if (typeof Html5Qrcode === 'undefined') {
-      statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--red);"></i> Scanner library failed to load. Check your internet connection and reload the page.';
-      btnStart.disabled = true;
+      setStatus('<i class="fa-solid fa-triangle-exclamation" style="color:var(--red);"></i> Scanner library failed to load. Check your internet connection and reload the page.');
+      btnToggle.disabled = true;
       return;
     }
 
@@ -108,14 +117,11 @@ window.PAGES.scan = {
 
     let html5QrCode = null;
     let isScanning = false;
+    let starting = false;
     let scanCount = 0;
     let lastValue = null;
     let lastValueAt = 0;
     let watchdogTimer = null;
-
-    function setStatus(html) {
-      statusEl.innerHTML = html;
-    }
 
     // Short beep via Web Audio API — no external mp3 file needed, so this
     // stays self-contained like the rest of the project (no build step,
@@ -141,6 +147,10 @@ window.PAGES.scan = {
       }
     }
 
+    function escHtml(s) {
+      return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
     function addToHistory(value, formatName) {
       scanCount += 1;
       const stamp = new Date().toLocaleString();
@@ -154,10 +164,6 @@ window.PAGES.scan = {
         <td>${escHtml(formatName || 'Unknown')}</td>
         <td style="white-space:nowrap;">${escHtml(stamp)}</td>`;
       historyBody.insertBefore(row, historyBody.firstChild); // newest on top
-    }
-
-    function escHtml(s) {
-      return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
     function onScanSuccess(decodedText, decodedResult) {
@@ -182,14 +188,43 @@ window.PAGES.scan = {
       // nothing to show the user for this.
     }
 
+    function setToggleUi() {
+      if (isScanning) {
+        btnToggle.className = 'btn btn-red';
+        btnToggle.innerHTML = '<i class="fa-solid fa-stop"></i> Stop Camera';
+      } else {
+        btnToggle.className = 'btn btn-green';
+        btnToggle.innerHTML = '<i class="fa-solid fa-play"></i> Start Camera';
+      }
+    }
+
     async function startScanning() {
-      if (isScanning) return;
+      if (isScanning || starting) return;
+      starting = true;
       permMsg.style.display = 'none';
       setStatus('<i class="fa-solid fa-spinner fa-spin"></i> Requesting camera access...');
-      btnStart.disabled = true;
+      btnToggle.disabled = true;
+
+      // Show the preview box BEFORE start() runs — html5-qrcode measures
+      // this element's on-screen size to size the video/scan canvas, so it
+      // must already be visible (not display:none) at the moment start()
+      // is called, or every frame gets decoded against a zero-size canvas
+      // and nothing is ever detected even though the camera looks "on".
+      readerWrap.style.display = '';
 
       html5QrCode = new Html5Qrcode('scanReaderBox', { formatsToSupport: SUPPORTED_FORMATS, verbose: false });
-      const config = { fps: 10, qrbox: { width: 260, height: 260 } };
+      // A function-based qrbox (recommended by html5-qrcode's own docs)
+      // sizes the scan region relative to the actual camera frame instead
+      // of a fixed 260x260 — avoids failures on webcams/phones whose live
+      // feed comes in smaller than that fixed box.
+      const config = {
+        fps: 10,
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+          const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.7);
+          const size = Math.max(150, edge);
+          return { width: size, height: size };
+        },
+      };
 
       try {
         // facingMode "environment" (non-exact) asks for the rear camera on
@@ -197,8 +232,9 @@ window.PAGES.scan = {
         // concept — the browser just falls back to whatever camera it has.
         await html5QrCode.start({ facingMode: 'environment' }, config, onScanSuccess, onScanFailure);
         isScanning = true;
-        readerWrap.style.display = '';
-        btnStop.disabled = false;
+        starting = false;
+        btnToggle.disabled = false;
+        setToggleUi();
         setStatus('<i class="fa-solid fa-circle-check" style="color:var(--green);"></i> Scanning — point the camera at a QR code or barcode.');
         // Self-clears if the page is navigated away from without clicking
         // Stop first — same pattern lowstock.js uses for its refresh timer,
@@ -208,7 +244,10 @@ window.PAGES.scan = {
         }, 2000);
       } catch (err) {
         isScanning = false;
-        btnStart.disabled = false;
+        starting = false;
+        readerWrap.style.display = 'none';
+        btnToggle.disabled = false;
+        setToggleUi();
         const msg = String((err && (err.message || err)) || '').toLowerCase();
         if (msg.indexOf('permission') !== -1 || msg.indexOf('notallowed') !== -1 || msg.indexOf('denied') !== -1) {
           permMsgText.textContent = 'Camera permission was denied. Please allow camera access for this site in your browser settings and try again.';
@@ -226,9 +265,9 @@ window.PAGES.scan = {
       if (watchdogTimer) { clearInterval(watchdogTimer); watchdogTimer = null; }
       if (!html5QrCode || !isScanning) {
         isScanning = false;
-        btnStart.disabled = false;
-        btnStop.disabled = true;
+        btnToggle.disabled = false;
         readerWrap.style.display = 'none';
+        setToggleUi();
         return;
       }
       try {
@@ -238,14 +277,16 @@ window.PAGES.scan = {
         // Already stopped/torn down (e.g. tab was closed mid-scan) — ignore.
       }
       isScanning = false;
-      btnStart.disabled = false;
-      btnStop.disabled = true;
+      btnToggle.disabled = false;
       readerWrap.style.display = 'none';
-      setStatus('<i class="fa-solid fa-circle-info"></i> Camera is off. Click "Start Scanning" to begin.');
+      setToggleUi();
+      setStatus('<i class="fa-solid fa-circle-info"></i> Camera is off.');
     }
 
-    btnStart.addEventListener('click', startScanning);
-    btnStop.addEventListener('click', stopScanning);
+    btnToggle.addEventListener('click', () => {
+      if (isScanning) stopScanning();
+      else startScanning();
+    });
 
     btnClearHistory.addEventListener('click', () => {
       scanCount = 0;
@@ -253,5 +294,9 @@ window.PAGES.scan = {
       lastValueEl.value = '';
       historyBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--txt-muted); font-style:italic;">No scans yet.</td></tr>';
     });
+
+    // Camera opens the instant this tab is opened — no extra "Start
+    // Scanning" click needed, matching how a normal barcode scanner works.
+    startScanning();
   },
 };
