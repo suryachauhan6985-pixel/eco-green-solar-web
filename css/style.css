@@ -894,6 +894,34 @@ body.no-scroll{overflow:hidden; height:100%;}
    doesn't clash with the app's own dark theme/branding. */
 #scanReaderBox #qr-shaded-region{border-radius:8px !important;}
 
+/* ---------- Scanner tab: fullscreen camera overlay ----------
+   No separate Start/Stop camera buttons anymore — tapping "Scan" opens
+   this overlay (camera starts once it's visible/measurable), and the ×
+   inside it stops the camera and closes the overlay. The scan box itself
+   (drawn by html5-qrcode inside #scanReaderBox) auto-resizes: square for
+   QR, wide rectangle for barcodes — see js/pages/scanner-engine.js. */
+.scanner-overlay{
+  display:none; position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.92);
+  align-items:center; justify-content:center; padding:16px;
+}
+.scanner-overlay.show{display:flex;}
+.scanner-overlay-box{
+  width:100%; max-width:520px; max-height:100%; overflow-y:auto;
+  background:var(--panel); border:1px solid var(--border-light); border-radius:14px; padding:16px;
+}
+.scanner-overlay-box .scan-reader-wrap{margin-top:0;}
+.scanner-overlay-head{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-bottom:12px; font-size:14px; font-weight:800; color:var(--gold);
+}
+.scanner-close-btn{
+  width:34px; height:34px; border-radius:50%; flex:0 0 auto;
+  border:1px solid var(--border-light); background:var(--input-bg); color:var(--txt);
+  font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+.scanner-close-btn:hover{background:var(--red); color:#fff; border-color:var(--red);}
+.scanner-overlay-actions{margin-top:14px;}
+
 .scan-permission-msg{
   margin-top:14px; padding:10px 14px; border-radius:8px;
   background:rgba(231,76,60,0.12); border:1px solid var(--red); color:var(--red);

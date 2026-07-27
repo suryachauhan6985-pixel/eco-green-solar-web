@@ -32,6 +32,44 @@ window.ScannerEngine = (function () {
     ];
   }
 
+  // 1D barcode format names (html5-qrcode's decodedResult.result.format.formatName)
+  // — anything in this set gets the wide "barcode" scan box; QR_CODE gets the
+  // square box. Anything else/unknown leaves the current box shape as-is.
+  const BARCODE_1D_FORMATS = new Set([
+    'CODE_128', 'CODE_39', 'EAN_13', 'UPC_A', 'UPC_E', 'EAN_8', 'ITF', 'CODABAR',
+  ]);
+
+  function classifyShape(formatName) {
+    if (formatName === 'QR_CODE') return 'qr';
+    if (BARCODE_1D_FORMATS.has(formatName)) return 'barcode';
+    return null;
+  }
+
+  // Builds the qrbox callback for a given shape. 'qr' = square (fits a QR
+  // code snugly); 'barcode' = wide short rectangle (fits a 1D barcode's
+  // label shape); 'auto' = a versatile in-between box used before the
+  // engine has seen a code yet, so it can guess reasonably either way.
+  function qrboxForShape(shape) {
+    return (viewfinderWidth, viewfinderHeight) => {
+      if (shape === 'barcode') {
+        const width = Math.max(220, Math.floor(viewfinderWidth * 0.85));
+        const height = Math.max(90, Math.floor(viewfinderHeight * 0.28));
+        return { width, height };
+      }
+      if (shape === 'qr') {
+        const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.68);
+        const size = Math.max(180, edge);
+        return { width: size, height: size };
+      }
+      // 'auto' — nothing decoded yet this session; a mid-sized rectangle
+      // reads either a QR or a barcode reasonably until the real shape
+      // is learned from the first successful decode.
+      const width = Math.max(200, Math.floor(viewfinderWidth * 0.78));
+      const height = Math.max(150, Math.floor(viewfinderHeight * 0.45));
+      return { width, height };
+    };
+  }
+
   class ScannerEngine {
     /**
      * @param {Object} opts
@@ -54,6 +92,10 @@ window.ScannerEngine = (function () {
       this.torchOn = false;
       this._lastValue = null;
       this._lastAt = 0;
+      // Scan-box shape: 'auto' until a code is actually decoded, then
+      // 'qr' or 'barcode' — see qrboxForShape()/classifyShape() above.
+      this.boxShape = 'auto';
+      this._reshaping = false;
     }
 
     static isLibraryLoaded() {
@@ -63,6 +105,7 @@ window.ScannerEngine = (function () {
     get isRunning() { return this.running; }
     get currentFacingMode() { return this.facingMode; }
     get isTorchOn() { return this.torchOn; }
+    get currentBoxShape() { return this.boxShape; }
 
     async start(containerId, opts = {}) {
       if (this.running || this.starting) return;
@@ -79,12 +122,9 @@ window.ScannerEngine = (function () {
         fps: opts.fps || 10,
         // Function-based qrbox sizes the scan region relative to the real
         // camera frame instead of a fixed box — avoids failures when the
-        // live feed is smaller than a hardcoded 260x260.
-        qrbox: opts.qrbox || ((viewfinderWidth, viewfinderHeight) => {
-          const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.7);
-          const size = Math.max(150, edge);
-          return { width: size, height: size };
-        }),
+        // live feed is smaller than a hardcoded 260x260. Shape (square vs
+        // wide rectangle) is decided by this.boxShape — see reshape().
+        qrbox: opts.qrbox || qrboxForShape(this.boxShape),
       };
 
       try {
@@ -116,6 +156,32 @@ window.ScannerEngine = (function () {
       const formatName = (decodedResult && decodedResult.result && decodedResult.result.format
         && decodedResult.result.format.formatName) || 'Unknown';
       this.onDecode(decodedText, formatName, 'camera');
+      // Auto-detect: square box for QR, wide box for 1D barcodes — reshape
+      // for the NEXT read, fire-and-forget so it never delays reporting
+      // this decode to the caller.
+      const shape = classifyShape(formatName);
+      if (shape) this.reshape(shape);
+    }
+
+    /** Switches the on-screen scan-box shape ('qr' square vs 'barcode' wide
+     * rectangle vs 'auto'), restarting the live scan region to apply it.
+     * No-op if already that shape or a reshape is already underway. */
+    async reshape(shape) {
+      if (this.boxShape === shape || this._reshaping || !this.running) return;
+      this._reshaping = true;
+      this.boxShape = shape;
+      try {
+        const containerId = this.containerId;
+        const facingMode = this.facingMode;
+        await this.stop();
+        await this.start(containerId, { facingMode });
+      } catch (e) {
+        // If the reshape-restart fails, leave the camera stopped rather
+        // than throwing from a fire-and-forget call — the person can tap
+        // Scan again.
+      } finally {
+        this._reshaping = false;
+      }
     }
 
     async stop() {

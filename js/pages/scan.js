@@ -76,26 +76,39 @@ window.PAGES.scan = {
     <!-- ================= CAMERA ================= -->
     <div class="panel">
       <h3><i class="fa-solid fa-video"></i> Camera</h3>
+      <p class="note" style="margin-top:-6px;"><i class="fa-solid fa-circle-info"></i> Tap Scan to open the camera. The scan area auto-detects the code shape — square for QR, wide for barcodes. Tap the &times; inside to stop.</p>
       <div class="actions-row" style="margin-top:0;">
-        <button class="btn btn-green" type="button" id="scanBtnStart"><i class="fa-solid fa-play"></i> Start Camera</button>
-        <button class="btn btn-red" type="button" id="scanBtnStop" disabled><i class="fa-solid fa-stop"></i> Stop Camera</button>
-        <button class="btn btn-ghost" type="button" id="scanBtnSwitch" disabled><i class="fa-solid fa-camera-rotate"></i> Switch Camera</button>
-        <button class="btn btn-ghost" type="button" id="scanBtnFlash" disabled><i class="fa-solid fa-bolt"></i> Flash</button>
+        <button class="btn btn-green" type="button" id="scanBtnOpen"><i class="fa-solid fa-camera"></i> Scan</button>
       </div>
       <div class="actions-row" style="margin-top:8px;">
         <span class="note" id="scanStatus" style="align-self:center; margin:0;"><i class="fa-solid fa-circle-info"></i> Camera is off.</span>
       </div>
+    </div>
 
-      <div id="scanPermissionMsg" class="scan-permission-msg" style="display:none;">
-        <i class="fa-solid fa-triangle-exclamation"></i>
-        <span id="scanPermissionMsgText">Camera permission was denied. Please allow camera access for this site in your browser settings and try again.</span>
+    <!-- ================= CAMERA SCANNER OVERLAY ================= -->
+    <div class="scanner-overlay" id="scannerOverlay">
+      <div class="scanner-overlay-box">
+        <div class="scanner-overlay-head">
+          <span><i class="fa-solid fa-camera"></i> Scan Barcode / QR</span>
+          <button type="button" class="scanner-close-btn" id="scanBtnClose" aria-label="Close scanner"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div id="scanPermissionMsg" class="scan-permission-msg" style="display:none;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span id="scanPermissionMsgText">Camera permission was denied. Please allow camera access for this site in your browser settings and try again.</span>
+        </div>
+
+        <div id="scanReaderWrap" class="scan-reader-wrap">
+          <div id="scanReaderBox"></div>
+        </div>
+
+        <div id="scanFeedbackBanner" class="scan-feedback-banner" style="display:none;"></div>
+
+        <div class="actions-row scanner-overlay-actions">
+          <button class="btn btn-ghost" type="button" id="scanBtnSwitch" disabled><i class="fa-solid fa-camera-rotate"></i> Switch Camera</button>
+          <button class="btn btn-ghost" type="button" id="scanBtnFlash" disabled><i class="fa-solid fa-bolt"></i> Flash</button>
+        </div>
       </div>
-
-      <div id="scanReaderWrap" class="scan-reader-wrap" style="display:none;">
-        <div id="scanReaderBox"></div>
-      </div>
-
-      <div id="scanFeedbackBanner" class="scan-feedback-banner" style="display:none;"></div>
     </div>
 
     <!-- ================= USB HID SCANNER ================= -->
@@ -137,8 +150,9 @@ window.PAGES.scan = {
     const $ = (id) => document.getElementById(id);
 
     // ---------- DOM refs ----------
-    const btnStart = $('scanBtnStart');
-    const btnStop = $('scanBtnStop');
+    const btnOpen = $('scanBtnOpen');
+    const btnClose = $('scanBtnClose');
+    const overlay = $('scannerOverlay');
     const btnSwitch = $('scanBtnSwitch');
     const btnFlash = $('scanBtnFlash');
     const statusEl = $('scanStatus');
@@ -289,7 +303,7 @@ window.PAGES.scan = {
       activeFile = { name, format: scanFileFormatSelect.value, entries: [] };
       updateFileUi();
       window.showToast && window.showToast(`New file "${name}.${activeFile.format}" started — scan away!`);
-      if (!engine.isRunning) startCamera();
+      if (!engine.isRunning) openScanner();
       usbInput.focus();
     });
 
@@ -439,7 +453,7 @@ window.PAGES.scan = {
     // ---------- Camera engine ----------
     if (!ScannerEngine.isLibraryLoaded()) {
       statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--red);"></i> Scanner library failed to load. Check your internet connection and reload the page.';
-      btnStart.disabled = true;
+      btnOpen.disabled = true;
     }
 
     const engine = new ScannerEngine({
@@ -447,10 +461,18 @@ window.PAGES.scan = {
     });
 
     function setCameraButtonsUi() {
-      btnStart.disabled = engine.isRunning;
-      btnStop.disabled = !engine.isRunning;
       btnSwitch.disabled = !engine.isRunning;
       btnFlash.disabled = !engine.isRunning;
+    }
+
+    // ---------- Scanner overlay (Scan button opens it, × inside closes it) ----------
+    function showOverlay() {
+      overlay.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+    function hideOverlay() {
+      overlay.classList.remove('show');
+      document.body.style.overflow = '';
     }
 
     let watchdogTimer = null;
@@ -458,10 +480,6 @@ window.PAGES.scan = {
     async function startCamera() {
       permMsg.style.display = 'none';
       statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Requesting camera access...';
-      btnStart.disabled = true;
-      // Container must be visible (not display:none) BEFORE start() runs —
-      // html5-qrcode measures its on-screen size at that moment.
-      readerWrap.style.display = '';
       try {
         await engine.start('scanReaderBox', { facingMode: engine.currentFacingMode });
         setCameraButtonsUi();
@@ -471,7 +489,6 @@ window.PAGES.scan = {
         }, 2000);
       } catch (err) {
         setCameraButtonsUi();
-        readerWrap.style.display = 'none';
         const msg = String((err && (err.message || err)) || '').toLowerCase();
         if (msg.indexOf('permission') !== -1 || msg.indexOf('notallowed') !== -1 || msg.indexOf('denied') !== -1) {
           permMsgText.textContent = 'Camera permission was denied. Please allow camera access for this site in your browser settings and try again.';
@@ -490,12 +507,20 @@ window.PAGES.scan = {
       await engine.stop();
       setCameraButtonsUi();
       btnFlash.innerHTML = '<i class="fa-solid fa-bolt"></i> Flash';
-      readerWrap.style.display = 'none';
+      hideOverlay();
       statusEl.innerHTML = '<i class="fa-solid fa-circle-info"></i> Camera is off.';
     }
 
-    btnStart.addEventListener('click', startCamera);
-    btnStop.addEventListener('click', stopCamera);
+    // Opens the overlay first (so the reader box has real on-screen
+    // dimensions — html5-qrcode measures those at start-time) and only
+    // then requests the camera.
+    function openScanner() {
+      showOverlay();
+      requestAnimationFrame(() => startCamera());
+    }
+
+    btnOpen.addEventListener('click', openScanner);
+    btnClose.addEventListener('click', stopCamera);
 
     btnSwitch.addEventListener('click', async () => {
       btnSwitch.disabled = true;
