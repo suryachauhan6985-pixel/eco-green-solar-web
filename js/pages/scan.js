@@ -161,6 +161,11 @@ window.PAGES.scan = {
     const readerWrap = $('scanReaderWrap');
     const readerBox = $('scanReaderBox');
     const feedbackBanner = $('scanFeedbackBanner');
+    if (!btnOpen || !btnClose || !overlay || !readerBox) {
+      console.error('Scanner: one or more required elements are missing from the page HTML', {
+        btnOpen, btnClose, overlay, readerBox,
+      });
+    }
     const usbInput = $('scanUsbInput');
     const historyBody = $('scanHistoryBody');
     const tableWrap = $('scanTableWrap');
@@ -480,6 +485,24 @@ window.PAGES.scan = {
     async function startCamera() {
       permMsg.style.display = 'none';
       statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Requesting camera access...';
+
+      // Camera access needs a secure context (https:// or localhost) and
+      // navigator.mediaDevices — if either is missing, html5-qrcode may
+      // throw in a way that isn't a normal getUserMedia rejection, so we
+      // check for it ourselves and always show a clear message either way.
+      if (!window.isSecureContext) {
+        permMsgText.textContent = 'Camera needs a secure connection (https://). This page is not loaded over https, so the browser is blocking camera access.';
+        permMsg.style.display = '';
+        statusEl.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color:var(--red);"></i> Camera is off.';
+        return;
+      }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        permMsgText.textContent = 'This browser does not support camera access (navigator.mediaDevices is unavailable).';
+        permMsg.style.display = '';
+        statusEl.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color:var(--red);"></i> Camera is off.';
+        return;
+      }
+
       try {
         await engine.start('scanReaderBox', { facingMode: engine.currentFacingMode });
         setCameraButtonsUi();
@@ -488,14 +511,17 @@ window.PAGES.scan = {
           if (!document.body.contains(readerBox)) stopCamera();
         }, 2000);
       } catch (err) {
+        console.error('Scanner: camera start failed', err);
         setCameraButtonsUi();
         const msg = String((err && (err.message || err)) || '').toLowerCase();
         if (msg.indexOf('permission') !== -1 || msg.indexOf('notallowed') !== -1 || msg.indexOf('denied') !== -1) {
-          permMsgText.textContent = 'Camera permission was denied. Please allow camera access for this site in your browser settings and try again.';
+          permMsgText.textContent = 'Camera permission was denied. Please allow camera access for this site in your browser settings (click the lock/camera icon in the address bar) and try again.';
         } else if (msg.indexOf('notfound') !== -1 || msg.indexOf('no camera') !== -1) {
           permMsgText.textContent = 'No camera was found on this device.';
+        } else if (msg.indexOf('notreadable') !== -1 || msg.indexOf('trackstart') !== -1) {
+          permMsgText.textContent = 'The camera is already in use by another app/tab. Close it there and try again.';
         } else {
-          permMsgText.textContent = 'Could not start the camera. Please check camera permissions and try again.';
+          permMsgText.textContent = `Could not start the camera (${(err && err.message) || err || 'unknown error'}). Check camera permissions and try again.`;
         }
         permMsg.style.display = '';
         statusEl.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color:var(--red);"></i> Camera is off.';
@@ -511,16 +537,24 @@ window.PAGES.scan = {
       statusEl.innerHTML = '<i class="fa-solid fa-circle-info"></i> Camera is off.';
     }
 
-    // Opens the overlay first (so the reader box has real on-screen
-    // dimensions — html5-qrcode measures those at start-time) and only
-    // then requests the camera.
+    // Opens the overlay, THEN requests the camera — both happen
+    // synchronously (no requestAnimationFrame delay) so the getUserMedia
+    // call stays tied to this click's user-gesture in stricter browsers.
+    // Wrapped in try/catch so a missing element or unexpected error is
+    // never silent — it always shows up as a toast + console error.
     function openScanner() {
-      showOverlay();
-      requestAnimationFrame(() => startCamera());
+      try {
+        showOverlay();
+        startCamera();
+      } catch (err) {
+        console.error('Scanner: could not open scanner overlay', err);
+        window.showToast && window.showToast('Could not open the scanner. Check the browser console (F12) for details.');
+      }
     }
 
     btnOpen.addEventListener('click', openScanner);
     btnClose.addEventListener('click', stopCamera);
+
 
     btnSwitch.addEventListener('click', async () => {
       btnSwitch.disabled = true;
