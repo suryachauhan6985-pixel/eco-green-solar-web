@@ -899,3 +899,14 @@ body.no-scroll{overflow:hidden; height:100%;}
   background:rgba(231,76,60,0.12); border:1px solid var(--red); color:var(--red);
   font-size:12.5px; display:flex; align-items:center; gap:8px;
 }
+
+/* ---------- Scanner tab feedback banner (js/pages/scan.js) ----------
+   Transient strip shown right under the camera preview after every scan
+   attempt — green/gold/red border+text set inline per success/duplicate/
+   error via JS since the accent colour is decided at runtime. */
+.scan-feedback-banner{
+  margin-top:14px; padding:10px 14px; border-radius:8px;
+  background:var(--input-bg); border:1px solid var(--border-light);
+  font-size:12.5px; font-weight:700; align-items:center; gap:8px;
+}
+#scanUsbInput{font-family:'Courier New',monospace; letter-spacing:.3px;}

@@ -101,11 +101,17 @@
 <script src="js/pages/lowstock.js?v=2"></script>
 <script src="js/pages/backup.js?v=2"></script>
 <script src="js/pages/bom.js?v=2"></script>
-<!-- Scan tab: html5-qrcode is a free/open-source, browser-only QR + barcode
-     reader (no API key, no external calls once loaded) — must load before
-     scan.js since scan.js uses the global Html5Qrcode / Html5QrcodeSupportedFormats it defines. -->
+<!-- Scanner tab: html5-qrcode (free/open-source, browser-only QR + barcode
+     reader — no API key, no external calls once loaded) must load before
+     js/scanner-engine.js, which wraps it into a reusable engine (camera
+     start/stop/switch/flash + USB-HID + beep feedback) that js/pages/scan.js
+     builds the actual "Scanner" tab UI on top of. SheetJS (xlsx) is only
+     used for the "Export Excel" button — also free/open-source, no build
+     step, no API key. -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="js/pages/scan.js?v=2"></script>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="js/scanner-engine.js?v=1"></script>
+<script src="js/pages/scan.js?v=3"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
 <script src="js/app.js?v=2"></script>
 </body>
