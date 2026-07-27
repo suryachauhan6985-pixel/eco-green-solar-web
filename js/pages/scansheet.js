@@ -655,7 +655,7 @@ window.PAGES = window.PAGES || {};
   //      treated as "a scan just happened", regardless of typing speed.
   const btState = {
     active: false,
-    enterHandler: null,
+    keydownHandler: null,
   };
 
   function isBtActive() { return btState.active; }
@@ -734,30 +734,69 @@ window.PAGES = window.PAGES || {};
   function enableScannerMode() {
     if (btState.active) return;
     btState.active = true;
-    btState.enterHandler = (e) => {
+    // ---------------------------------------------------------------------
+    // Real-world Bluetooth/USB keyboard-wedge scanners fire genuine keydown
+    // events on the page, but on some Android WebViews/browsers the
+    // inputmode="none" trick (used to hide the on-screen keyboard) also
+    // blocks the field from ever accepting native keystrokes at all — not
+    // just from the soft keyboard. On top of that, the old handler only
+    // reacted when e.target was the exact focused field, so if focus was
+    // ever lost or a re-render swapped the DOM node, every keystroke was
+    // silently dropped and nothing appeared anywhere.
+    //
+    // Fix: listen at the document level (capture phase) so this no longer
+    // depends on which element currently has focus, and write every
+    // scanned character straight into the target field's .value ourselves
+    // via JS. Setting .value programmatically always works regardless of
+    // readonly/inputmode/focus state, so this is fully independent of
+    // whatever is blocking native typing on the field.
+    // ---------------------------------------------------------------------
+    btState.keydownHandler = (e) => {
       if (ST.view !== 'data-entry') return;
-      const el = e.target;
-      if (!el || !el.matches || !el.matches('input[data-type="barcode"], input[data-type="text"]')) return;
-      if (e.key !== 'Enter') return;
-      const code = (el.value || '').trim();
-      if (!code) return;
-      e.preventDefault();
-      el.value = '';
-      beep();
-      if (navigator.vibrate) { try { navigator.vibrate(180); } catch (err) { /* not supported */ } }
-      showBluetoothScanOverlay(code, el.id);
+      if (e.ctrlKey || e.metaKey || e.altKey) return; // leave shortcuts alone
+
+      const targetId = resolveScanTargetId();
+      const field = targetId ? document.getElementById(targetId) : null;
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const code = (field ? field.value : '').trim();
+        if (field) { field.value = ''; field.dispatchEvent(new Event('input', { bubbles: true })); }
+        if (!code) return;
+        beep();
+        if (navigator.vibrate) { try { navigator.vibrate(180); } catch (err) { /* not supported */ } }
+        showBluetoothScanOverlay(code, targetId);
+        return;
+      }
+
+      if (!field) return; // no scannable field on this sheet — nothing to type into
+
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        field.value = (field.value || '').slice(0, -1);
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+        return;
+      }
+
+      if (e.key.length === 1) {
+        // A normal printable character — this is how a keyboard-wedge
+        // scanner "types" each character of the scanned code.
+        e.preventDefault();
+        field.value = (field.value || '') + e.key;
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+      }
     };
-    document.addEventListener('keydown', btState.enterHandler, true);
+    document.addEventListener('keydown', btState.keydownHandler, true);
     if (scannerState.overlayEl) closeScanner();
     syncBtButtons();
     const targetId = resolveScanTargetId();
     if (targetId) { ST.lastBarcodeFieldId = targetId; focusScannableField(targetId); }
-    window.showToast('Bluetooth scanner mode ON \u2014 camera disabled, keyboard chhupa hua hai. Seedha scan karein.');
+    window.showToast('Bluetooth scanner mode ON \u2014 camera disabled, ab kahin bhi scan karein, seedha field mein aayega.');
   }
 
   function disableScannerMode() {
-    if (btState.enterHandler) document.removeEventListener('keydown', btState.enterHandler, true);
-    btState.enterHandler = null;
+    if (btState.keydownHandler) document.removeEventListener('keydown', btState.keydownHandler, true);
+    btState.keydownHandler = null;
     btState.active = false;
     syncBtButtons();
     window.showToast('Bluetooth scanner mode OFF \u2014 camera enabled again.');
