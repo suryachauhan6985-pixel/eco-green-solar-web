@@ -1318,6 +1318,15 @@ window.attachColumnFilters = function (table) {
   function guardField(el) {
     if (!el || el.dataset.egsGuarded === '1') return;
     if (el.closest('.login-overlay')) return; // login/register/OTP/reset stay untouched
+    // Scan Sheet's own barcode/text scan fields manage their own anti-autofill
+    // readonly state (see js/pages/scansheet.js). They must stay writable
+    // while empty and focused so a Bluetooth/USB (keyboard-wedge) scanner can
+    // type a code into them — this global guard's blur handler would
+    // re-lock them to readonly the moment they blur while still empty
+    // (e.g. while pairing/aiming the scanner), silently breaking every
+    // Bluetooth scan since a readonly field can't receive the scanned
+    // characters. So skip them here entirely.
+    if (el.matches && el.matches('input[data-type="barcode"], input[data-type="text"]') && el.closest('.ss-wrap')) return;
     el.dataset.egsGuarded = '1';
     if (!el.value) el.setAttribute('readonly', 'readonly');
     el.addEventListener('focus', () => el.removeAttribute('readonly'));
