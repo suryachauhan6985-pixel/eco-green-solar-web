@@ -659,6 +659,13 @@ window.PAGES = window.PAGES || {};
   // Keeps every Bluetooth icon on screen (appbar + inside the camera
   // overlay) showing the same connected/disconnected state, since either
   // one can be used to connect or disconnect.
+  //
+  // Also disables the camera-scan entry points (bottom-nav scan button +
+  // per-field scan icons) while a Bluetooth scanner is connected. This is
+  // what stops the "stuck on Requesting camera permission" screen from ever
+  // happening in Bluetooth mode: the camera simply isn't opened, so scans
+  // go straight into the focused field via the keyboard-wedge/BLE pipeline
+  // instead.
   function syncBtButtons() {
     const active = isBtActive();
     const label = btState.mode === 'ble'
@@ -669,6 +676,13 @@ window.PAGES = window.PAGES || {};
     document.querySelectorAll('.ss-bt-btn').forEach((btn) => {
       btn.classList.toggle('active', active);
       btn.title = label;
+    });
+    document.querySelectorAll('.ss-bottom-nav-scan, .ss-scan-icon-btn').forEach((btn) => {
+      btn.classList.toggle('ss-disabled', active);
+      btn.disabled = active;
+      btn.title = active
+        ? 'Camera disabled while Bluetooth scanner is connected'
+        : 'Scan barcode / QR';
     });
   }
 
@@ -737,6 +751,7 @@ window.PAGES = window.PAGES || {};
       btState.server = server;
       btState.char = char;
       btState.buffer = '';
+      if (scannerState.overlayEl) closeScanner();
       syncBtButtons();
       window.showToast('Bluetooth scanner connected: ' + (device.name || 'Scanner'));
     } catch (err) {
@@ -802,6 +817,7 @@ window.PAGES = window.PAGES || {};
     };
     document.addEventListener('keydown', btState.wedgeHandler, true);
     btState.mode = 'wedge';
+    if (scannerState.overlayEl) closeScanner();
     syncBtButtons();
     window.showToast('Bluetooth keyboard-mode ready \u2014 pair the scanner in Bluetooth settings, tap a field, then scan.');
   }
@@ -826,6 +842,10 @@ window.PAGES = window.PAGES || {};
   }
 
   function openScanner(targetFieldId) {
+    if (isBtActive()) {
+      window.showToast('Bluetooth scanner connected hai \u2014 camera disabled hai. Seedha field mein scan karein, ya camera use karne ke liye pehle Bluetooth disconnect karein.');
+      return;
+    }
     if (!targetFieldId) targetFieldId = resolveScanTargetId();
     if (!targetFieldId) { window.showToast('Add a Text or Barcode/QR column to this sheet first'); return; }
     scannerState.targetFieldId = targetFieldId;

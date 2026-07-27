@@ -1031,6 +1031,10 @@ body.no-scroll{overflow:hidden; height:100%;}
   box-shadow:0 6px 16px rgba(0,0,0,.4); border:3px solid var(--bg);
 }
 .ss-bottom-nav-scan:hover{filter:brightness(1.1);}
+.ss-scan-icon-btn.ss-disabled,
+.ss-bottom-nav-scan.ss-disabled{
+  background:var(--txt-muted); opacity:.5; cursor:not-allowed; filter:none; box-shadow:none;
+}
 
 /* ---------- Dropdown menu (sheet card "..." / entry screen "...") ---------- */
 .ss-dropdown{
