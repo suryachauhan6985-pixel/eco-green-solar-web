@@ -252,45 +252,68 @@ function bomBuildItemOptionsHtml(selectedName) {
 // pair, so a new item can be dropped in at any position within any
 // section (e.g. right after the 5th item in "Solar Structure") — not just
 // appended at the very end.
-function bomRenderScreenItemsHtml(state) {
+// `opts.isAdmin` gates the row/section add-delete controls (Admin/SuperAdmin
+// only — see bomIsAdmin in init()); a plain User still sees and can edit
+// every field (name/model/qty/serial/remarks/check) but cannot restructure
+// the kit. `opts.needsSerial(name)` says whether that item's category has
+// the Serial No. mandatory rule (Masters > Category), same source of truth
+// Purchase Inward uses — so the Serial No. cell only appears for items that
+// actually need one (e.g. Solar Panels), matching how outward should mirror
+// inward's serial-based tracking. The Check column is the on-screen
+// equivalent of the print sheet's blank "Checked" box: ticking every item
+// here is what unlocks the Verify BOM button (see updateVerifyButtonState).
+function bomRenderScreenItemsHtml(state, opts) {
+  const isAdmin = !!(opts && opts.isAdmin);
+  const needsSerial = (opts && opts.needsSerial) || (() => false);
   if (!state) return '<div class="empty">Select a BOM Kit above to load its item list.</div>';
   const rows = state.map((sec, si) => {
     const catRow = `
       <tr class="bom-screen-cat">
-        <td colspan="5">
+        <td colspan="7">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
             <input type="text" class="bom-field-input bom-section-title-input" data-sec="${si}" data-field="sectitle" value="${bomEscAttr(sec.title)}">
+            ${isAdmin ? `
             <span style="white-space:nowrap;">
               <button type="button" class="btn btn-ghost bom-mini-btn" data-sec-add-item="${si}" title="Add item to this section"><i class="fa-solid fa-plus"></i> Add Item</button>
               <button type="button" class="btn btn-red bom-mini-btn" data-sec-remove="${si}" title="Remove this section"><i class="fa-solid fa-trash"></i></button>
-            </span>
+            </span>` : ''}
           </div>
         </td>
       </tr>`;
-    const itemRows = sec.items.map((it, ii) => `
+    const itemRows = sec.items.map((it, ii) => {
+      const serialCell = needsSerial(it.name)
+        ? `<textarea class="bom-field-input bom-field-serial" rows="1" data-sec="${si}" data-idx="${ii}" data-field="serials" placeholder="One per line">${bomEsc(it.serials || '')}</textarea>`
+        : `<span class="bom-serial-na">—</span>`;
+      return `
       <tr>
         <td><input type="text" class="bom-field-input bom-field-sr" data-sec="${si}" data-idx="${ii}" data-field="sr" value="${bomEscAttr(it.sr)}"></td>
         <td><select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(it.name)}</select></td>
         <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="model" value="${bomEscAttr(it.model)}"></td>
         <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="qty" value="${bomEscAttr(it.qty)}"></td>
+        <td class="bom-serial-cell">${serialCell}</td>
         <td style="white-space:nowrap;">
-          <input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="remarks" value="${bomEscAttr(it.remarks)}" style="width:calc(100% - 60px); display:inline-block;">
+          <input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="remarks" value="${bomEscAttr(it.remarks)}" style="width:calc(100% - ${isAdmin ? '60px' : '0px'}); display:inline-block;">
+          ${isAdmin ? `
           <button type="button" class="btn btn-ghost bom-mini-btn" data-insert-after-sec="${si}" data-insert-after-idx="${ii}" title="Insert item below"><i class="fa-solid fa-plus"></i></button>
-          <button type="button" class="btn btn-red bom-mini-btn" data-remove-sec="${si}" data-remove-idx="${ii}" title="Remove item"><i class="fa-solid fa-xmark"></i></button>
+          <button type="button" class="btn btn-red bom-mini-btn" data-remove-sec="${si}" data-remove-idx="${ii}" title="Remove item"><i class="fa-solid fa-xmark"></i></button>` : ''}
         </td>
-      </tr>`).join('');
+        <td class="bom-check-cell">
+          <input type="checkbox" class="bom-field-check" data-sec="${si}" data-idx="${ii}" data-field="checked" ${it.checked ? 'checked' : ''} title="Tick once this item is verified">
+        </td>
+      </tr>`;
+    }).join('');
     return catRow + itemRows;
   }).join('');
 
   return `
     <div class="table-wrap">
       <table class="bom-items-form-table">
-        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th><th>Remarks</th></tr></thead>
+        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th><th>Serial No.</th><th>Remarks</th><th>Check</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
     <div style="margin-top:10px;">
-      <button type="button" class="btn btn-ghost" id="bomBtnAddSectionLive"><i class="fa-solid fa-layer-group"></i> Add Section</button>
+      ${isAdmin ? '<button type="button" class="btn btn-ghost" id="bomBtnAddSectionLive"><i class="fa-solid fa-layer-group"></i> Add Section</button>' : ''}
     </div>
   `;
 }
@@ -389,12 +412,12 @@ window.PAGES.bom = {
       </div>
       <div class="actions-row">
         <button class="btn btn-ghost" type="button" id="bomBtnPrint"><i class="fa-solid fa-print"></i> Print BOM (Excel format, 1 page)</button>
-        <button class="btn btn-blue" type="button" id="bomBtnVerify"><i class="fa-solid fa-check-double"></i> Verify BOM</button>
+        <button class="btn btn-blue" type="button" id="bomBtnVerify" disabled><i class="fa-solid fa-check-double"></i> Verify BOM</button>
         <button class="btn btn-green" type="button" id="bomBtnDispatch" disabled><i class="fa-solid fa-truck"></i> Create Dispatch</button>
         <button type="button" class="btn btn-ghost" id="bomBtnNewKit" title="Create a new BOM Kit / Template"><i class="fa-solid fa-plus"></i> New Kit</button>
       </div>
       <p class="note" id="bomVerifyStatus" style="margin-top:8px;">
-        <i class="fa-solid fa-circle-info"></i> Not verified yet — click <b>Verify BOM</b> once every item/quantity above is final. "Create Dispatch" stays locked until then.
+        <i class="fa-solid fa-circle-info"></i> Tick every item in the <b>Check</b> column below, then click <b>Verify BOM</b>. "Create Dispatch" stays locked until then.
       </p>
     </div>
 
@@ -441,6 +464,38 @@ window.PAGES.bom = {
     const kitItemsPanel = $('bomKitItemsPanel');
     const btnPrint = $('bomBtnPrint');
     const printRoot = $('bomPrintRoot');
+
+    // Row/section add-delete (Add Item, Remove Item, Add Section, Remove
+    // Section) is an Admin/SuperAdmin-only action — a plain User can still
+    // edit every field (name/model/qty/serial/remarks) and tick items, but
+    // cannot restructure the kit. Computed early so it's available to the
+    // very first render below (bomRenderScreenItemsHtml reads it via opts).
+    const bomCurrentRole = window.currentUserRole || 'User';
+    const bomIsAdmin = bomCurrentRole === 'SuperAdmin' || bomCurrentRole === 'Admin';
+
+    // Item -> category -> Serial No. mandatory lookup. Panels (and any other
+    // category with the Serial No. mandatory rule set in Masters > Category)
+    // are tracked by serial number on Purchase Inward already, so Dispatch
+    // (outward) mirrors that with a Serial No. field per matching item. This
+    // never touches the print sheet — bomRenderPrintSheetHtml is untouched.
+    let bomCategorySerialMandatory = {};
+    let bomItemCategoryByName = {};
+    async function bomLoadSerialMandatoryInfo() {
+      try {
+        const [items, cats] = await Promise.all([
+          window.Api.get('/masters/items'),
+          window.Api.get('/masters/categories'),
+        ]);
+        (cats || []).forEach((c) => { bomCategorySerialMandatory[c.name] = !!c.serial_mandatory; });
+        (items || []).forEach((it) => { if (it.name) bomItemCategoryByName[it.name] = it.category; });
+      } catch (e) {
+        // API/DB not reachable in this preview — no item is treated as serial-mandatory.
+      }
+    }
+    function bomItemNeedsSerial(name) {
+      const cat = bomItemCategoryByName[name];
+      return !!(cat && bomCategorySerialMandatory[cat]);
+    }
 
     // Live, mutable clone of the selected kit's `sections`. Selecting a kit
     // auto-fills this from BOM_KITS; every field rendered from it is a real
@@ -560,14 +615,25 @@ window.PAGES.bom = {
       if (verifyStatus) {
         verifyStatus.innerHTML = isVerified
           ? '<i class="fa-solid fa-circle-check" style="color:var(--green);"></i> Verified — ready for dispatch.'
-          : '<i class="fa-solid fa-circle-info"></i> Not verified yet — click <b>Verify BOM</b> once every item/quantity above is final. "Create Dispatch" stays locked until then.';
+          : '<i class="fa-solid fa-circle-info"></i> Tick every item in the <b>Check</b> column below, then click <b>Verify BOM</b>. "Create Dispatch" stays locked until then.';
       }
+    }
+
+    // On-screen equivalent of the print sheet's blank "Checked" box: Verify
+    // BOM stays disabled until every item, in every section, is ticked.
+    function allItemsChecked() {
+      if (!currentKitState || !currentKitState.length) return false;
+      return currentKitState.every((sec) => sec.items.length && sec.items.every((it) => it.checked));
+    }
+    function updateVerifyButtonState() {
+      if (btnVerify) btnVerify.disabled = !allItemsChecked();
     }
 
     // Real item master (Masters > Item Registration) drives the Item Name
     // dropdown once the API/DB is reachable; falls back to kit-derived names
     // otherwise (see bomLoadItemMasterNames). Load once, up front.
     await bomLoadItemMasterNames();
+    await bomLoadSerialMandatoryInfo();
 
     const btnDeleteKit = $('bomBtnDeleteKit');
 
@@ -599,8 +665,9 @@ window.PAGES.bom = {
       const kit = bomGetAllKits()[kitSelect.value];
       // Deep clone so editing on-screen never mutates the kit catalogue itself.
       currentKitState = kit ? JSON.parse(JSON.stringify(kit.sections)) : null;
-      itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState);
+      itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState, { isAdmin: bomIsAdmin, needsSerial: bomItemNeedsSerial });
       setVerified(false); // changing the kit invalidates any prior verification
+      updateVerifyButtonState(); // fresh kit — nothing ticked yet, Verify stays disabled
       if (btnDeleteKit) btnDeleteKit.style.display = bomIsCustomKitKey(kitSelect.value) ? '' : 'none';
     }
     kitSelect.addEventListener('change', refreshItemsPreview);
@@ -637,9 +704,8 @@ window.PAGES.bom = {
 
     // "New Kit" (creating/saving a BOM Kit template) is an Admin/SuperAdmin
     // action only — a plain User should not see the option at all, same
-    // role gate used for the edit sections in sales.js/purchase.js.
-    const bomCurrentRole = window.currentUserRole || 'User';
-    const bomIsAdmin = bomCurrentRole === 'SuperAdmin' || bomCurrentRole === 'Admin';
+    // role gate used for the edit sections in sales.js/purchase.js. (role
+    // computed once, near the top of init() — see bomIsAdmin above.)
     if (btnNewKit) btnNewKit.style.display = bomIsAdmin ? '' : 'none';
 
     // Live, mutable working copy of the kit being built — same
@@ -838,14 +904,35 @@ window.PAGES.bom = {
         return;
       }
       const ii = Number(el.dataset.idx);
-      if (!currentKitState[si].items[ii]) return;
-      currentKitState[si].items[ii][field] = el.value;
+      const item = currentKitState[si].items[ii];
+      if (!item) return;
+
+      // Check column: the on-screen equivalent of the print sheet's blank
+      // "Checked" box. Ticking a serial-mandatory item (e.g. a Panel) is
+      // blocked until its Serial No. is filled in — Verify BOM only unlocks
+      // once every item, including these, is genuinely ready.
+      if (field === 'checked') {
+        if (el.checked && bomItemNeedsSerial(item.name) && !String(item.serials || '').trim()) {
+          el.checked = false;
+          window.openModal('Serial No. Required', `<p>Enter the Serial No. for <strong>${bomEsc(item.name || 'this item')}</strong> before ticking it — this item is dispatched by serial number.</p>`);
+          return;
+        }
+        item.checked = el.checked;
+        updateVerifyButtonState();
+        return;
+      }
+
+      item[field] = el.value;
+      item.checked = false; // any content edit invalidates this row's tick
       setVerified(false); // any edit after verifying means it needs re-verifying
+      updateVerifyButtonState();
+      if (field === 'name') rerenderItemsPreview(); // item changed — refresh the Serial No. column for this row
     }
 
     function rerenderItemsPreview() {
-      itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState);
+      itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState, { isAdmin: bomIsAdmin, needsSerial: bomItemNeedsSerial });
       setVerified(false);
+      updateVerifyButtonState();
     }
 
     // Delegated click listener: lets a new item be inserted at ANY position
@@ -853,6 +940,10 @@ window.PAGES.bom = {
     // the 5th item in "Solar Structure" — plus removing an item, adding a
     // whole new section, or removing one. Every structural change
     // renumbers Sr No. across the whole kit so it always stays 1,2,3...
+    // Restructuring the kit (add/remove item, add/remove section) is
+    // Admin/SuperAdmin only — the buttons themselves are already hidden for
+    // a plain User (see bomRenderScreenItemsHtml), this is the defensive
+    // second check.
     itemsPreview.addEventListener('click', (e) => {
       if (!currentKitState) return;
       const insertBtn = e.target.closest('[data-insert-after-sec]');
@@ -860,7 +951,8 @@ window.PAGES.bom = {
       const addItemBtn = e.target.closest('[data-sec-add-item]');
       const removeSectionBtn = e.target.closest('[data-sec-remove]');
       const addSectionBtn = e.target.closest('#bomBtnAddSectionLive');
-      const blankItem = () => ({ sr: '', name: '', model: '', qty: '', remarks: '' });
+      if ((insertBtn || removeItemBtn || addItemBtn || removeSectionBtn || addSectionBtn) && !bomIsAdmin) return;
+      const blankItem = () => ({ sr: '', name: '', model: '', qty: '', remarks: '', serials: '', checked: false });
 
       if (insertBtn) {
         const si = Number(insertBtn.dataset.insertAfterSec);
@@ -905,6 +997,10 @@ window.PAGES.bom = {
       btnVerify.addEventListener('click', async () => {
         if (!currentKitState) {
           window.openModal('Select a Kit', '<p>Please select a BOM Kit before verifying.</p>');
+          return;
+        }
+        if (!allItemsChecked()) {
+          window.openModal('Tick Every Item', '<p>Please tick every item in the <b>Check</b> column before verifying.</p>');
           return;
         }
         const confirmed = await window.confirmDialog(
