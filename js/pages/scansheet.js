@@ -423,12 +423,26 @@ window.PAGES = window.PAGES || {};
   function fieldHtml(col) {
     const fid = 'ssField_' + col.id;
     const label = `<label>${escapeHtml(col.name)}:</label>`;
+    // Anti-autofill attribute bundle for scannable fields — Chrome (esp. on
+    // Android) ignores a plain autocomplete="off" and still pops its saved
+    // logins / addresses suggestion strip over the keyboard on these fields.
+    // Fix combines:
+    //   - a non-credential-looking name (Chrome pattern-matches on name/id,
+    //     not just autocomplete)
+    //   - vendor "ignore me" flags for Chrome/other password managers
+    //     (data-lpignore, data-1p-ignore, data-form-type="other")
+    //   - the "readonly until focused" trick: field is born readonly, so
+    //     Chrome's autofill targeting skips it on paint; the instant it's
+    //     actually focused (by the user or our own code) we drop readonly,
+    //     by which point Chrome has already decided not to suggest anything
+    //     for it — typing and JS value-setting both work normally after.
+    const antiAutofillAttrs = `name="ss_noauto_${fid}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly')"`;
     if (col.type === 'barcode') {
       return `
         <div class="field span-2">
           ${label}
           <div class="ss-scan-input-wrap">
-            <input type="text" id="${fid}" data-col="${col.id}" data-type="barcode" placeholder="Type or scan ${escapeHtml(col.name)}" autocomplete="off">
+            <input type="text" id="${fid}" data-col="${col.id}" data-type="barcode" placeholder="Type or scan ${escapeHtml(col.name)}" ${antiAutofillAttrs}>
             <button type="button" class="ss-scan-icon-btn" data-target="${fid}" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
           </div>
         </div>`;
@@ -442,7 +456,7 @@ window.PAGES = window.PAGES || {};
       <div class="field span-2">
         ${label}
         <div class="ss-scan-input-wrap">
-          <input type="text" id="${fid}" data-col="${col.id}" data-type="text" placeholder="Enter or scan ${escapeHtml(col.name)}" autocomplete="off">
+          <input type="text" id="${fid}" data-col="${col.id}" data-type="text" placeholder="Enter or scan ${escapeHtml(col.name)}" ${antiAutofillAttrs}>
           <button type="button" class="ss-scan-icon-btn" data-target="${fid}" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
         </div>
       </div>`;
