@@ -375,7 +375,10 @@ window.PAGES = window.PAGES || {};
     const sheet = window.SheetsStore.getSheet(ST.activeSheetId);
     if (!sheet) { ST.view = 'list'; return renderList(); }
     const entries = window.SheetsStore.getEntries(sheet.id);
-    const firstBarcodeCol = sheet.columns.find((c) => c.type === 'barcode');
+    // Prefer a dedicated "Barcode/QR" column, but fall back to the first
+    // scannable (text) column so the scan button always has somewhere to put
+    // the result, even on sheets like "SERIAL NO." that were created as Text.
+    const firstBarcodeCol = sheet.columns.find((c) => c.type === 'barcode') || sheet.columns.find(isScannableCol);
     if (!ST.lastBarcodeFieldId && firstBarcodeCol) ST.lastBarcodeFieldId = 'ssField_' + firstBarcodeCol.id;
 
     return `
@@ -383,6 +386,7 @@ window.PAGES = window.PAGES || {};
         <button type="button" class="ss-icon-btn" id="ssBackFromEntry"><i class="fa-solid fa-arrow-left"></i></button>
         <div class="ss-appbar-title ss-truncate" title="${escapeHtml(sheet.name)}">Enter Data to Sheet ${escapeHtml(sheet.name)}</div>
         <button type="button" class="ss-icon-btn" id="ssTogglePreview" title="Toggle preview"><i class="fa-solid fa-eye"></i></button>
+        <button type="button" class="ss-icon-btn ss-bt-btn" id="ssBtScanner" title="Connect Bluetooth Scanner"><i class="fa-solid fa-bluetooth-b"></i></button>
         <button type="button" class="ss-icon-btn" id="ssEntryMenu" title="More"><i class="fa-solid fa-ellipsis-vertical"></i></button>
       </div>
       <div class="ss-body">
@@ -410,6 +414,12 @@ window.PAGES = window.PAGES || {};
     `;
   }
 
+  // Fields eligible to receive a scanned value: explicit "Barcode/QR" columns,
+  // plus plain "Text" columns — in practice most sheets (e.g. a "SERIAL NO."
+  // column) are created as Text rather than the dedicated Barcode/QR type, and
+  // the scanner should still work for them instead of refusing to open.
+  function isScannableCol(col) { return col.type === 'barcode' || col.type === 'text'; }
+
   function fieldHtml(col) {
     const fid = 'ssField_' + col.id;
     const label = `<label>${escapeHtml(col.name)}:</label>`;
@@ -426,7 +436,16 @@ window.PAGES = window.PAGES || {};
     if (col.type === 'number') return `<div class="field">${label}<input type="number" id="${fid}" data-col="${col.id}" data-type="number" placeholder="0"></div>`;
     if (col.type === 'date') return `<div class="field">${label}<input type="date" id="${fid}" data-col="${col.id}" data-type="date"></div>`;
     if (col.type === 'image') return `<div class="field">${label}<input type="file" accept="image/*" capture="environment" id="${fid}" data-col="${col.id}" data-type="image"><div class="ss-thumb-wrap" id="${fid}_thumb"></div></div>`;
-    return `<div class="field">${label}<input type="text" id="${fid}" data-col="${col.id}" data-type="text" placeholder="Enter ${escapeHtml(col.name)}" autocomplete="off"></div>`;
+    // Plain "Text" columns also get a scan icon so scanning works even when
+    // the user didn't set the column type to "Barcode/QR" (e.g. "SERIAL NO.").
+    return `
+      <div class="field span-2">
+        ${label}
+        <div class="ss-scan-input-wrap">
+          <input type="text" id="${fid}" data-col="${col.id}" data-type="text" placeholder="Enter or scan ${escapeHtml(col.name)}" autocomplete="off">
+          <button type="button" class="ss-scan-icon-btn" data-target="${fid}" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
+        </div>
+      </div>`;
   }
 
   function entryRowHtml(entry, sheet) {
@@ -594,8 +613,207 @@ window.PAGES = window.PAGES || {};
     overlayEl: null,
   };
 
+  // ---------------- Bluetooth scanner state ----------------
+  // Kept separate from `scannerState` (the camera overlay) on purpose: once
+  // paired, a Bluetooth scanner should stay connected whether or not the
+  // camera view is open, and across switching between sheets.
+  //
+  // Common BLE "serial style" scanner profiles this supports directly:
+  //   - Nordic UART Service (most generic BLE-serial modules/scanners)
+  //   - HM-10/HM-19 style FFE0/FFE1 service (very common in cheap BT modules)
+  // Handheld scanners that pair as an HID keyboard (the majority of
+  // consumer Bluetooth barcode guns) can't be reached via these BLE GATT
+  // APIs at all — the OS pairs those directly as a keyboard — so for those
+  // we fall back to "wedge mode" below, which just listens for the Enter
+  // key the scanner sends after each code.
+  const BT_UART_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+  const BT_UART_TX_CHAR = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+  const BT_FFE0_SERVICE = '0000ffe0-0000-1000-8000-00805f9b34fb';
+  const BT_FFE0_CHAR = '0000ffe1-0000-1000-8000-00805f9b34fb';
+
+  const btState = {
+    mode: null,        // null | 'ble' | 'wedge'
+    device: null,
+    server: null,
+    char: null,
+    buffer: '',
+    wedgeHandler: null,
+  };
+
+  function isBtActive() { return btState.mode === 'ble' || btState.mode === 'wedge'; }
+
+  // Keeps every Bluetooth icon on screen (appbar + inside the camera
+  // overlay) showing the same connected/disconnected state, since either
+  // one can be used to connect or disconnect.
+  function syncBtButtons() {
+    const active = isBtActive();
+    const label = btState.mode === 'ble'
+      ? 'Bluetooth Scanner connected — tap to disconnect'
+      : btState.mode === 'wedge'
+        ? 'Bluetooth (keyboard-mode) scanner active — tap to stop'
+        : 'Connect Bluetooth Scanner';
+    document.querySelectorAll('.ss-bt-btn').forEach((btn) => {
+      btn.classList.toggle('active', active);
+      btn.title = label;
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // Shared "a code was scanned" pipeline — used by BOTH the camera decoder
+  // (onScanSuccess) and the Bluetooth scanner (BLE notification or wedge
+  // Enter-key), so a code coming from either source fills the field and
+  // saves the row in exactly the same way.
+  // ---------------------------------------------------------------------
+  function processScanValue(text, fieldId) {
+    const targetId = fieldId || scannerState.targetFieldId || resolveScanTargetId();
+    fillTargetField(text, targetId);
+    const sheet = window.SheetsStore.getSheet(ST.activeSheetId);
+    const dataCols = sheet ? sheet.columns.filter((c) => c.type !== 'image') : [];
+    if (sheet && dataCols.length <= 1) {
+      // Single-field sheets (e.g. just "SERIAL NO.") — each scan IS a row,
+      // so save it immediately and let the next scan follow right after,
+      // the same continuous scan-to-sheet flow for camera or Bluetooth.
+      saveCurrentEntry();
+      return true;
+    }
+    return false;
+  }
+
+  function toggleBluetoothScanner() {
+    if (isBtActive()) { disconnectBluetoothScanner(); return; }
+    connectBluetoothScanner();
+  }
+
+  async function connectBluetoothScanner() {
+    if (!navigator.bluetooth) {
+      window.showToast('Is browser mein direct Bluetooth (BLE) scanner support nahi hai. Agar aapka scanner keyboard/HID mode ka hai, to bas phone/PC ki Bluetooth settings se pair kar lein — pairing ke baad seedha field mein scan karein, wahi camera jaisa scan-and-save ho jayega.');
+      enableWedgeMode();
+      return;
+    }
+    try {
+      window.showToast('Bluetooth scanner dhoondh rahe hain\u2026');
+      let device;
+      try {
+        device = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [BT_UART_SERVICE] }, { services: [BT_FFE0_SERVICE] }],
+          optionalServices: [BT_UART_SERVICE, BT_FFE0_SERVICE],
+        });
+      } catch (e) {
+        // Nothing matched the known scanner service UUIDs — widen the
+        // search in case this device advertises a custom/unlisted service.
+        device = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: [BT_UART_SERVICE, BT_FFE0_SERVICE],
+        });
+      }
+      device.addEventListener('gattserverdisconnected', onBleDisconnected);
+      const server = await device.gatt.connect();
+      let service, char;
+      try {
+        service = await server.getPrimaryService(BT_UART_SERVICE);
+        char = await service.getCharacteristic(BT_UART_TX_CHAR);
+      } catch (e1) {
+        service = await server.getPrimaryService(BT_FFE0_SERVICE);
+        char = await service.getCharacteristic(BT_FFE0_CHAR);
+      }
+      await char.startNotifications();
+      char.addEventListener('characteristicvaluechanged', onBleNotify);
+      btState.mode = 'ble';
+      btState.device = device;
+      btState.server = server;
+      btState.char = char;
+      btState.buffer = '';
+      syncBtButtons();
+      window.showToast('Bluetooth scanner connected: ' + (device.name || 'Scanner'));
+    } catch (err) {
+      console.warn('Bluetooth connect failed', err);
+      if (err && err.name === 'NotFoundError') { window.showToast('Koi Bluetooth scanner select nahi kiya gaya.'); return; }
+      window.showToast('BLE se connect nahi ho paya \u2014 agar scanner keyboard/HID mode mein hai, to Bluetooth settings se pair karke seedha field mein scan karein.');
+      enableWedgeMode();
+    }
+  }
+
+  function onBleNotify(event) {
+    const text = new TextDecoder('utf-8').decode(event.target.value);
+    btState.buffer += text;
+    if (/[\r\n]/.test(btState.buffer)) {
+      const code = btState.buffer.replace(/[\r\n]+$/, '').trim();
+      btState.buffer = '';
+      if (!code) return;
+      beep();
+      if (navigator.vibrate) { try { navigator.vibrate(180); } catch (e) { /* not supported */ } }
+      const saved = processScanValue(code);
+      window.showToast(saved ? 'Row saved (Bluetooth scan)' : 'Scanned via Bluetooth \u2014 fill remaining fields and tap Save');
+    }
+  }
+
+  function onBleDisconnected() {
+    btState.mode = null; btState.device = null; btState.server = null; btState.char = null; btState.buffer = '';
+    syncBtButtons();
+    window.showToast('Bluetooth scanner disconnected');
+  }
+
+  function disconnectBluetoothScanner() {
+    if (btState.mode === 'ble') {
+      try { if (btState.char) btState.char.removeEventListener('characteristicvaluechanged', onBleNotify); } catch (e) { /* ignore */ }
+      try { if (btState.device && btState.device.gatt && btState.device.gatt.connected) btState.device.gatt.disconnect(); } catch (e) { /* ignore */ }
+      btState.device = null; btState.server = null; btState.char = null; btState.buffer = '';
+    } else if (btState.mode === 'wedge') {
+      disableWedgeMode();
+    }
+    btState.mode = null;
+    syncBtButtons();
+    window.showToast('Bluetooth scanner disconnected');
+  }
+
+  // "Keyboard wedge" fallback for Bluetooth barcode scanners that pair as an
+  // HID keyboard at the OS level (true of most handheld/consumer models).
+  // The OS handles that pairing directly — a website has no API to do it —
+  // so once paired, the scanner just "types" its code into whichever field
+  // is focused, followed by Enter. This listens for that Enter and routes
+  // the result through the exact same save pipeline the camera uses.
+  function enableWedgeMode() {
+    if (btState.mode === 'wedge') return;
+    btState.wedgeHandler = (e) => {
+      const target = e.target;
+      if (!target || !target.matches || !target.matches('input[data-type="barcode"], input[data-type="text"]')) return;
+      if (e.key !== 'Enter') return;
+      const code = (target.value || '').trim();
+      if (!code) return;
+      e.preventDefault();
+      beep();
+      if (navigator.vibrate) { try { navigator.vibrate(180); } catch (err) { /* not supported */ } }
+      const saved = processScanValue(code, target.id);
+      window.showToast(saved ? 'Row saved (Bluetooth scan)' : 'Scanned via Bluetooth \u2014 fill remaining fields and tap Save');
+    };
+    document.addEventListener('keydown', btState.wedgeHandler, true);
+    btState.mode = 'wedge';
+    syncBtButtons();
+    window.showToast('Bluetooth keyboard-mode ready \u2014 pair the scanner in Bluetooth settings, tap a field, then scan.');
+  }
+
+  function disableWedgeMode() {
+    if (btState.wedgeHandler) document.removeEventListener('keydown', btState.wedgeHandler, true);
+    btState.wedgeHandler = null;
+  }
+
+  // Works out which input field a scan result should land in, with sensible
+  // fallbacks so the camera still opens even if no field is currently
+  // focused/remembered: last-used field -> first Barcode/QR column -> first
+  // Text column (in DOM/column order) on the currently open sheet.
+  function resolveScanTargetId() {
+    if (ST.lastBarcodeFieldId && document.getElementById(ST.lastBarcodeFieldId)) {
+      return ST.lastBarcodeFieldId;
+    }
+    const sheet = window.SheetsStore.getSheet(ST.activeSheetId);
+    if (!sheet) return null;
+    const col = sheet.columns.find((c) => c.type === 'barcode') || sheet.columns.find(isScannableCol);
+    return col ? 'ssField_' + col.id : null;
+  }
+
   function openScanner(targetFieldId) {
-    if (!targetFieldId) { window.showToast('No Barcode/QR column on this sheet yet'); return; }
+    if (!targetFieldId) targetFieldId = resolveScanTargetId();
+    if (!targetFieldId) { window.showToast('Add a Text or Barcode/QR column to this sheet first'); return; }
     scannerState.targetFieldId = targetFieldId;
     scannerState.handledOnce = false;
     scannerState.torchOn = false;
@@ -609,6 +827,7 @@ window.PAGES = window.PAGES || {};
         <div class="ss-scanner-topbtns">
           <button type="button" class="ss-icon-btn light" id="ssScanTorch" title="Flashlight"><i class="fa-solid fa-bolt"></i></button>
           <button type="button" class="ss-icon-btn light" id="ssScanFlip" title="Flip camera"><i class="fa-solid fa-camera-rotate"></i></button>
+          <button type="button" class="ss-icon-btn light ss-bt-btn" id="ssScanBt" title="Connect Bluetooth Scanner"><i class="fa-solid fa-bluetooth-b"></i></button>
         </div>
       </div>
       <div class="ss-scanner-camwrap">
@@ -628,6 +847,8 @@ window.PAGES = window.PAGES || {};
     overlay.querySelector('#ssScanCancel').onclick = closeScanner;
     overlay.querySelector('#ssScanTorch').onclick = toggleTorch;
     overlay.querySelector('#ssScanFlip').onclick = flipCamera;
+    overlay.querySelector('#ssScanBt').onclick = toggleBluetoothScanner;
+    syncBtButtons();
 
     startCamera();
   }
@@ -693,12 +914,20 @@ window.PAGES = window.PAGES || {};
     scannerState.handledOnce = true;
     beep();
     if (navigator.vibrate) { try { navigator.vibrate(180); } catch (e) { /* not supported */ } }
-    fillTargetField(decodedText);
-    closeScanner();
+    const saved = processScanValue(decodedText);
+    if (saved) {
+      // Single-field sheet — row is already saved, keep the camera running
+      // so the next barcode can be scanned right away.
+      setScanStatus('Saved \u2713 \u2014 scan the next one');
+      scannerState.handledOnce = false;
+    } else {
+      closeScanner();
+    }
   }
 
-  function fillTargetField(text) {
-    const field = document.getElementById(scannerState.targetFieldId);
+  function fillTargetField(text, fieldId) {
+    const id = fieldId || scannerState.targetFieldId;
+    const field = document.getElementById(id);
     if (field) {
       field.value = text;
       field.dispatchEvent(new Event('input', { bubbles: true }));
@@ -801,18 +1030,22 @@ window.PAGES = window.PAGES || {};
       if (p) p.classList.toggle('ss-collapsed');
     };
     document.getElementById('ssEntryMenu').onclick = (e) => { e.stopPropagation(); openEntryMenu(document.getElementById('ssEntryMenu')); };
+    document.getElementById('ssBtScanner').onclick = toggleBluetoothScanner;
+    syncBtButtons();
     document.getElementById('ssSaveEntry').onclick = saveCurrentEntry;
     document.getElementById('ssTypeMode').onclick = () => {
       const sheet = window.SheetsStore.getSheet(ST.activeSheetId);
       const firstCol = sheet && sheet.columns.find((c) => c.type !== 'image');
       if (firstCol) { const f = document.getElementById('ssField_' + firstCol.id); if (f) f.focus(); }
     };
-    document.getElementById('ssScanMode').onclick = () => openScanner(ST.lastBarcodeFieldId);
+    document.getElementById('ssScanMode').onclick = () => openScanner(resolveScanTargetId());
 
     document.querySelectorAll('.ss-scan-icon-btn').forEach((btn) => {
       btn.onclick = () => { ST.lastBarcodeFieldId = btn.dataset.target; openScanner(btn.dataset.target); };
     });
-    document.querySelectorAll('input[data-type="barcode"]').forEach((input) => {
+    // Track focus on any scannable field (Barcode/QR *or* Text) so the
+    // central scan button targets whichever field the user was last in.
+    document.querySelectorAll('input[data-type="barcode"], input[data-type="text"]').forEach((input) => {
       input.addEventListener('focus', () => { ST.lastBarcodeFieldId = input.id; });
     });
     document.querySelectorAll('input[data-type="image"]').forEach((input) => {
