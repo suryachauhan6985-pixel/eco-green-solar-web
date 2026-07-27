@@ -42,6 +42,37 @@ window.PAGES.scan = {
       </div>
     </div>
 
+    <!-- ================= NEW FILE (named scan session) ================= -->
+    <div class="panel" id="scanFilePanel">
+      <h3><i class="fa-solid fa-folder-plus"></i> New File</h3>
+      <p class="note" style="margin-top:-6px;"><i class="fa-solid fa-circle-info"></i> Optional: name a file and pick its format BEFORE scanning. Once started, you'll be asked after every scan whether to scan the next item or save this file. Without this, scanning below still works directly (quick scan, no popups).</p>
+
+      <div id="scanFileSetup" class="form-grid cols-2">
+        <div class="field"><label>File Name</label><input type="text" id="scanFileName" placeholder="e.g. purchase-batch-1" autocomplete="off"></div>
+        <div class="field">
+          <label>Save Format</label>
+          <select id="scanFileFormat">
+            <option value="csv">CSV (.csv)</option>
+            <option value="xlsx">Excel (.xlsx)</option>
+          </select>
+        </div>
+        <div class="field span-full">
+          <button class="btn btn-gold" type="button" id="scanBtnStartFile"><i class="fa-solid fa-play"></i> Start New File &amp; Begin Scanning</button>
+        </div>
+      </div>
+
+      <div id="scanFileActive" class="scan-file-active" style="display:none;">
+        <div class="scan-file-active-info">
+          <i class="fa-solid fa-file-circle-check"></i>
+          <span>Active File: <strong id="scanFileActiveName"></strong> &nbsp;•&nbsp; <span id="scanFileActiveCount">0</span> item(s) scanned</span>
+        </div>
+        <div class="actions-row" style="margin-top:10px;">
+          <button class="btn btn-green" type="button" id="scanBtnFinishSave"><i class="fa-solid fa-floppy-disk"></i> Finish &amp; Save Now</button>
+          <button class="btn btn-ghost" type="button" id="scanBtnCancelFile"><i class="fa-solid fa-xmark"></i> Cancel File (discard)</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ================= CAMERA ================= -->
     <div class="panel">
       <h3><i class="fa-solid fa-video"></i> Camera</h3>
@@ -131,6 +162,17 @@ window.PAGES.scan = {
     const statDuplicate = $('scanStatDuplicate');
     const statInvalid = $('scanStatInvalid');
 
+    // New File (named scan session) refs
+    const scanFileSetup = $('scanFileSetup');
+    const scanFileActive = $('scanFileActive');
+    const scanFileNameInput = $('scanFileName');
+    const scanFileFormatSelect = $('scanFileFormat');
+    const btnStartFile = $('scanBtnStartFile');
+    const btnFinishSave = $('scanBtnFinishSave');
+    const btnCancelFile = $('scanBtnCancelFile');
+    const scanFileActiveName = $('scanFileActiveName');
+    const scanFileActiveCount = $('scanFileActiveCount');
+
     // ---------- Persistence (localStorage — no server/DB for this prototype) ----------
     const STORAGE_KEY = 'egs_scanner_history_v1';
 
@@ -165,6 +207,126 @@ window.PAGES.scan = {
     // ---------- Helpers ----------
     function escHtml(s) {
       return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function sanitizeFileName(name) {
+      const base = String(name || '').trim().replace(/\.(csv|xlsx)$/i, '');
+      const cleaned = base.replace(/[\\/:*?"<>|]+/g, '-').trim();
+      return cleaned || 'scan-file';
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function csvEscape(v) {
+      const s = String(v == null ? '' : v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }
+
+    // Shared by the main toolbar's Export CSV/Excel buttons AND the New
+    // File flow's "Save" (popup or Finish & Save Now) — same output shape,
+    // just a different slice of entries + a custom filename either way.
+    function exportEntries(entriesToExport, format, baseName) {
+      if (!entriesToExport.length) { window.showToast && window.showToast('Nothing to export yet.'); return false; }
+      const safeName = sanitizeFileName(baseName);
+      if (format === 'xlsx') {
+        if (typeof XLSX === 'undefined') {
+          window.showToast && window.showToast('Excel export library failed to load. Check your internet connection.');
+          return false;
+        }
+        const rows = entriesToExport.map((e, i) => ({
+          'Sr No': i + 1,
+          'Barcode/QR Data': e.value,
+          'Type': e.type,
+          'Scan Time': e.time,
+          'Status': e.status,
+        }));
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Scan History');
+        XLSX.writeFile(wb, `${safeName}.xlsx`);
+      } else {
+        const rows = [['Sr No', 'Barcode/QR Data', 'Type', 'Scan Time', 'Status']];
+        entriesToExport.forEach((e, i) => rows.push([i + 1, e.value, e.type, e.time, e.status]));
+        const csv = rows.map((r) => r.map(csvEscape).join(',')).join('\n');
+        downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), `${safeName}.csv`);
+      }
+      return true;
+    }
+
+    // ---------- New File (named scan session) ----------
+    // Entirely optional layer on top of normal scanning: if no file is
+    // active, scans behave exactly as before (direct/quick — no popups).
+    // Once a file is started, every NEW valid scan also gets pushed into
+    // activeFile.entries and, right after, the person is asked (via the
+    // same confirmDialog used everywhere else in this app) whether to scan
+    // the next item or save & finish this file now.
+    let activeFile = null; // { name, format, entries: [] }
+    let awaitingFileDecision = false; // pauses new scans while the popup is open
+
+    function updateFileUi() {
+      if (activeFile) {
+        scanFileSetup.style.display = 'none';
+        scanFileActive.style.display = '';
+        scanFileActiveName.textContent = `${activeFile.name}.${activeFile.format}`;
+        scanFileActiveCount.textContent = activeFile.entries.length;
+      } else {
+        scanFileSetup.style.display = '';
+        scanFileActive.style.display = 'none';
+      }
+    }
+
+    btnStartFile.addEventListener('click', () => {
+      const name = sanitizeFileName(scanFileNameInput.value);
+      activeFile = { name, format: scanFileFormatSelect.value, entries: [] };
+      updateFileUi();
+      window.showToast && window.showToast(`New file "${name}.${activeFile.format}" started — scan away!`);
+      if (!engine.isRunning) startCamera();
+      usbInput.focus();
+    });
+
+    btnCancelFile.addEventListener('click', async () => {
+      const ok = await window.confirmDialog('Cancel File', `Discard "${activeFile.name}.${activeFile.format}" without saving? The ${activeFile.entries.length} scan(s) already made will stay in the main Scan History table below — only the file itself is cancelled.`, { kind: 'warning', okLabel: 'Discard File', cancelLabel: 'Keep Scanning' });
+      if (!ok) return;
+      activeFile = null;
+      awaitingFileDecision = false;
+      updateFileUi();
+    });
+
+    btnFinishSave.addEventListener('click', () => finishAndSaveFile());
+
+    function finishAndSaveFile() {
+      if (!activeFile) return;
+      const saved = exportEntries(activeFile.entries, activeFile.format, activeFile.name);
+      if (saved) window.showToast && window.showToast(`Saved "${activeFile.name}.${activeFile.format}"`);
+      activeFile = null;
+      awaitingFileDecision = false;
+      updateFileUi();
+    }
+
+    // Shown after every new valid scan WHILE a file is active — the actual
+    // "scan next vs save file" popup the person asked for.
+    async function askContinueOrSave(entry) {
+      awaitingFileDecision = true;
+      const ok = await window.confirmDialog(
+        'Scan Added',
+        `"${entry.value}" (${entry.type}) added — ${activeFile.entries.length} item(s) in "${activeFile.name}.${activeFile.format}" so far. Scan the next item, or save this file now?`,
+        { kind: 'question', okLabel: 'Save File Now', cancelLabel: 'Scan Next' }
+      );
+      if (ok) {
+        finishAndSaveFile();
+      } else {
+        awaitingFileDecision = false;
+        usbInput.focus();
+      }
     }
 
     function showBanner(kind, text) {
@@ -225,6 +387,10 @@ window.PAGES.scan = {
     // path (camera or USB-HID) produced the value — and it's the one
     // function a future Inventory/BOM/etc. integration would call into.
     function handleScannedValue(rawValue, formatName, source) {
+      // While the "scan next vs save file" popup is open, ignore anything
+      // else coming in from the camera or USB gun until the person answers.
+      if (awaitingFileDecision) return;
+
       const value = String(rawValue == null ? '' : rawValue).trim();
 
       if (!value) {
@@ -262,6 +428,12 @@ window.PAGES.scan = {
       renderStats();
       renderTable();
       ScannerEngine.beep('success');
+
+      if (activeFile) {
+        activeFile.entries.push(entry);
+        updateFileUi();
+        askContinueOrSave(entry); // fire-and-forget: pauses further scans itself via awaitingFileDecision
+      }
     }
 
     // ---------- Camera engine ----------
@@ -410,48 +582,13 @@ window.PAGES.scan = {
       renderTable();
     });
 
-    // ---------- Export ----------
-    function downloadBlob(blob, filename) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
-
-    function csvEscape(v) {
-      const s = String(v == null ? '' : v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    }
-
+    // ---------- Export (main toolbar — always exports the FULL history) ----------
     btnExportCsv.addEventListener('click', () => {
-      if (!state.entries.length) { window.showToast && window.showToast('Nothing to export yet.'); return; }
-      const rows = [['Sr No', 'Barcode/QR Data', 'Type', 'Scan Time', 'Status']];
-      state.entries.forEach((e, i) => rows.push([i + 1, e.value, e.type, e.time, e.status]));
-      const csv = rows.map((r) => r.map(csvEscape).join(',')).join('\n');
-      downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), `scan-history-${Date.now()}.csv`);
+      exportEntries(state.entries, 'csv', `scan-history-${Date.now()}`);
     });
 
     btnExportXlsx.addEventListener('click', () => {
-      if (!state.entries.length) { window.showToast && window.showToast('Nothing to export yet.'); return; }
-      if (typeof XLSX === 'undefined') {
-        window.showToast && window.showToast('Excel export library failed to load. Check your internet connection.');
-        return;
-      }
-      const rows = state.entries.map((e, i) => ({
-        'Sr No': i + 1,
-        'Barcode/QR Data': e.value,
-        'Type': e.type,
-        'Scan Time': e.time,
-        'Status': e.status,
-      }));
-      const ws = XLSX.utils.json_to_sheet(rows);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Scan History');
-      XLSX.writeFile(wb, `scan-history-${Date.now()}.xlsx`);
+      exportEntries(state.entries, 'xlsx', `scan-history-${Date.now()}`);
     });
 
     // ---------- Teardown when navigating away ----------
@@ -470,5 +607,6 @@ window.PAGES.scan = {
     // ---------- Initial paint ----------
     renderStats();
     renderTable();
+    updateFileUi();
   },
 };

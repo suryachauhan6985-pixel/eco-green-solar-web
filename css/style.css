@@ -910,3 +910,12 @@ body.no-scroll{overflow:hidden; height:100%;}
   font-size:12.5px; font-weight:700; align-items:center; gap:8px;
 }
 #scanUsbInput{font-family:'Courier New',monospace; letter-spacing:.3px;}
+
+/* ---------- Scanner tab: "New File" named scan session ---------- */
+.scan-file-active{
+  margin-top:6px; padding:12px 14px; border-radius:8px;
+  background:rgba(212,175,55,0.10); border:1px solid var(--gold);
+}
+.scan-file-active-info{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--txt);}
+.scan-file-active-info i{color:var(--gold); font-size:15px;}
+.scan-file-active-info strong{color:var(--gold);}
