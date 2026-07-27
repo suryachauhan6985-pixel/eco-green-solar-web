@@ -196,6 +196,18 @@ window.PAGES.masters = {
     let editingUomOldName = null;
     let editingSubOldName = null;
 
+    // Role-based visibility: "Users Accounts" subtab is only for Admin/SuperAdmin.
+    // Same role gate pattern used in purchase.js/sales.js/partyledger.js
+    // (window.currentUserRole set by app.js after login).
+    const currentRole = window.currentUserRole || 'User';
+    const isAdmin = currentRole === 'SuperAdmin' || currentRole === 'Admin';
+    if (!isAdmin) {
+      const usersTabBtn = document.querySelector('#mastersSubtabs .subtab[data-sub="users"]');
+      const usersPanel = document.querySelector('.subtab-panel[data-panel="users"]');
+      if (usersTabBtn) usersTabBtn.style.display = 'none';
+      if (usersPanel) usersPanel.classList.remove('active');
+    }
+
     // Responsive Subtabs routing engine
     const tabs = document.querySelectorAll("#mastersSubtabs .subtab");
     const panels = document.querySelectorAll(".subtab-panel");
