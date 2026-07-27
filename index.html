@@ -101,19 +101,6 @@
 <script src="js/pages/lowstock.js?v=2"></script>
 <script src="js/pages/backup.js?v=2"></script>
 <script src="js/pages/bom.js?v=2"></script>
-<!-- Scanner tab: html5-qrcode (free/open-source, browser-only QR + barcode
-     reader — no API key, no external calls once loaded) must load before
-     js/scanner-engine.js, which wraps it into a reusable engine (camera
-     open/close/switch/flash + USB-HID + beep feedback) that js/pages/scan.js
-     builds the actual "Scanner" tab UI on top of. SheetJS (xlsx) is only
-     used for the "Export Excel" button — also free/open-source, no build
-     step, no API key. Both are now vendored locally in js/vendor/ (instead
-     of unpkg CDN) so the scanner works even with no internet / a blocked
-     CDN — that was the reason "Start Camera" previously did nothing. -->
-<script src="js/vendor/html5-qrcode.min.js?v=1"></script>
-<script src="js/vendor/xlsx.full.min.js?v=1"></script>
-<script src="js/scanner-engine.js?v=2"></script>
-<script src="js/pages/scan.js?v=4"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
 <script src="js/app.js?v=2"></script>
 </body>
