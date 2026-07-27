@@ -426,17 +426,15 @@ window.PAGES = window.PAGES || {};
     // Anti-autofill attribute bundle for scannable fields — Chrome (esp. on
     // Android) ignores a plain autocomplete="off" and still pops its saved
     // logins / addresses suggestion strip over the keyboard on these fields.
-    // Fix combines:
-    //   - a non-credential-looking name (Chrome pattern-matches on name/id,
-    //     not just autocomplete)
-    //   - vendor "ignore me" flags for Chrome/other password managers
-    //     (data-lpignore, data-1p-ignore, data-form-type="other")
-    //   - the "readonly until focused" trick: field is born readonly, so
-    //     Chrome's autofill targeting skips it on paint; the instant it's
-    //     actually focused (by the user or our own code) we drop readonly,
-    //     by which point Chrome has already decided not to suggest anything
-    //     for it — typing and JS value-setting both work normally after.
-    const antiAutofillAttrs = `name="ss_noauto_${fid}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" readonly onfocus="this.removeAttribute('readonly')"`;
+    // NOTE: this used to also add a "readonly until focused" trick (born
+    // readonly, dropped on focus) to keep Chrome's autofill targeting away.
+    // That readonly window was blocking/eating a Bluetooth/USB scanner's
+    // very first keystrokes on some devices before focus caught up, so it
+    // has been removed — fields are plain (never readonly) now. Autofill is
+    // still discouraged via the non-credential-looking name + vendor
+    // "ignore me" flags below; the keyboard popping up is fine, we just
+    // need the scanned value to land in the field.
+    const antiAutofillAttrs = `name="ss_noauto_${fid}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"`;
     if (col.type === 'barcode') {
       return `
         <div class="field span-2">
@@ -660,15 +658,15 @@ window.PAGES = window.PAGES || {};
 
   function isBtActive() { return btState.active; }
 
-  // Prevents the mobile on-screen keyboard from popping up on these fields
-  // while Bluetooth scanner mode is ON — inputmode="none" tells the phone
-  // "don't show your own keyboard here" while still letting a real
-  // hardware/Bluetooth keyboard-wedge scanner type into the field normally.
+  // Used to force inputmode="none" on these fields while Bluetooth scanner
+  // mode was ON, to hide the on-screen keyboard. That trick was blocking
+  // native keystrokes on some Android devices before the scan value could
+  // land in the field, so it's been removed — the keyboard is now left
+  // alone (it's fine if it shows) and every field keeps its normal
+  // inputmode, no matter what BT mode is doing.
   function applyBtInputMode() {
-    const active = isBtActive();
     document.querySelectorAll('input[data-type="barcode"], input[data-type="text"]').forEach((el) => {
-      if (active) el.setAttribute('inputmode', 'none');
-      else el.removeAttribute('inputmode');
+      el.removeAttribute('inputmode');
     });
   }
 
