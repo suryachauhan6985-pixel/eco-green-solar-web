@@ -611,7 +611,21 @@ window.PAGES = window.PAGES || {};
     handledOnce: false,
     targetFieldId: null,
     overlayEl: null,
+    pendingText: null,    // value that was just decoded, awaiting Save/Retry
+    pendingColId: null,   // column it would be saved into
+    pendingIsDup: false,
   };
+
+  // Checks whether `value` already exists (case-insensitive, trimmed) in
+  // this sheet's existing rows for the given column — used to block saving
+  // a duplicate serial no./barcode until the old row is deleted first.
+  function isDuplicateScanValue(sheet, colId, value) {
+    if (!sheet || !colId) return false;
+    const norm = String(value == null ? '' : value).trim().toLowerCase();
+    if (!norm) return false;
+    const entries = window.SheetsStore.getEntries(sheet.id);
+    return entries.some((en) => String(en.values[colId] || '').trim().toLowerCase() === norm);
+  }
 
   // ---------------- Bluetooth scanner state ----------------
   // Kept separate from `scannerState` (the camera overlay) on purpose: once
@@ -832,10 +846,21 @@ window.PAGES = window.PAGES || {};
       </div>
       <div class="ss-scanner-camwrap">
         <div id="ssScanRegion" class="ss-scanner-camfeed"></div>
-        <div class="ss-scanner-target"></div>
+        <div class="ss-scanner-target" id="ssScanTargetBox"></div>
         <div class="ss-scanner-instruction" id="ssScanStatus">Requesting camera permission&hellip;</div>
+        <div class="ss-scanner-result" id="ssScanResult" style="display:none;">
+          <div class="ss-scanner-result-card" id="ssScanResultCard">
+            <div class="ss-scanner-result-label" id="ssScanResultLabel">Scanned value</div>
+            <div class="ss-scanner-result-value" id="ssScanResultValue"></div>
+            <div class="ss-scanner-result-msg" id="ssScanResultMsg"></div>
+          </div>
+          <div class="ss-scanner-result-actions">
+            <button type="button" class="btn btn-ghost" id="ssScanRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
+            <button type="button" class="btn btn-green" id="ssScanSave"><i class="fa-solid fa-check"></i> Save</button>
+          </div>
+        </div>
       </div>
-      <div class="ss-scanner-bottom">
+      <div class="ss-scanner-bottom" id="ssScannerBottom">
         <button type="button" class="btn btn-red ss-scanner-cancel" id="ssScanCancel"><i class="fa-solid fa-xmark"></i> Cancel</button>
       </div>
     `;
@@ -848,6 +873,8 @@ window.PAGES = window.PAGES || {};
     overlay.querySelector('#ssScanTorch').onclick = toggleTorch;
     overlay.querySelector('#ssScanFlip').onclick = flipCamera;
     overlay.querySelector('#ssScanBt').onclick = toggleBluetoothScanner;
+    overlay.querySelector('#ssScanRetry').onclick = retryScan;
+    overlay.querySelector('#ssScanSave').onclick = confirmScanSave;
     syncBtButtons();
 
     startCamera();
@@ -883,7 +910,13 @@ window.PAGES = window.PAGES || {};
     scannerState.handledOnce = false;
     setScanStatus('Place QR & barcode in the box');
 
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    // No `qrbox` here on purpose: passing one makes the html5-qrcode
+    // library inject its OWN shaded-region/border overlay on top of the
+    // video feed, which clashed with our custom `.ss-scanner-target` box
+    // and produced the broken double-frame look. Omitting it means the
+    // library scans the full video frame (still fast/reliable) and draws
+    // no overlay of its own — our custom gold box below is purely visual.
+    const config = { fps: 10 };
     if (window.Html5QrcodeSupportedFormats) {
       config.formatsToSupport = [
         window.Html5QrcodeSupportedFormats.QR_CODE,
@@ -910,17 +943,82 @@ window.PAGES = window.PAGES || {};
   }
 
   function onScanSuccess(decodedText) {
+    // `handledOnce` stays true from here until the user taps Save or Retry
+    // — this is what stops the old "keeps scanning the same code over and
+    // over" behaviour. Decoding only resumes after an explicit choice.
     if (scannerState.handledOnce) return;
     scannerState.handledOnce = true;
     beep();
     if (navigator.vibrate) { try { navigator.vibrate(180); } catch (e) { /* not supported */ } }
-    const saved = processScanValue(decodedText);
+    showScanResult(decodedText);
+  }
+
+  // Shows the decoded value on the scan screen itself, with a duplicate
+  // check against whichever column it would be saved into. Scanning stays
+  // paused (see handledOnce above) until Save or Retry is tapped.
+  function showScanResult(text) {
+    const targetId = scannerState.targetFieldId || resolveScanTargetId();
+    const field = targetId ? document.getElementById(targetId) : null;
+    const colId = field ? field.dataset.col : null;
+    const sheet = window.SheetsStore.getSheet(ST.activeSheetId);
+    const dup = isDuplicateScanValue(sheet, colId, text);
+
+    scannerState.pendingText = text;
+    scannerState.pendingColId = colId;
+    scannerState.pendingIsDup = dup;
+
+    const panel = document.getElementById('ssScanResult');
+    const card = document.getElementById('ssScanResultCard');
+    const valueEl = document.getElementById('ssScanResultValue');
+    const msgEl = document.getElementById('ssScanResultMsg');
+    const saveBtn = document.getElementById('ssScanSave');
+    const targetBox = document.getElementById('ssScanTargetBox');
+    if (!panel || !valueEl) return;
+
+    valueEl.textContent = text;
+    if (card) card.classList.toggle('dup', dup);
+    if (msgEl) msgEl.textContent = dup
+      ? 'This serial no. already exists in the record. Delete the old row first, or Retry with a different code.'
+      : 'Scanned successfully.';
+    if (saveBtn) saveBtn.style.display = dup ? 'none' : '';
+
+    panel.style.display = 'flex';
+    setScanStatus('');
+    if (targetBox) targetBox.style.visibility = 'hidden';
+  }
+
+  function hideScanResult() {
+    const panel = document.getElementById('ssScanResult');
+    const targetBox = document.getElementById('ssScanTargetBox');
+    if (panel) panel.style.display = 'none';
+    if (targetBox) targetBox.style.visibility = '';
+    scannerState.pendingText = null;
+    scannerState.pendingColId = null;
+    scannerState.pendingIsDup = false;
+  }
+
+  // "Retry" — discard the paused result and resume live scanning.
+  function retryScan() {
+    hideScanResult();
+    scannerState.handledOnce = false;
+    setScanStatus('Place QR & barcode in the box');
+  }
+
+  // "Save" — only reachable when the value isn't a duplicate (the button is
+  // hidden otherwise). Fills the target field and, for single-field sheets,
+  // saves the row immediately; then resumes scanning for the next code.
+  function confirmScanSave() {
+    if (scannerState.pendingIsDup) return; // guard — should already be hidden
+    const text = scannerState.pendingText;
+    if (text == null) return;
+    const saved = processScanValue(text);
+    hideScanResult();
     if (saved) {
-      // Single-field sheet — row is already saved, keep the camera running
-      // so the next barcode can be scanned right away.
       setScanStatus('Saved \u2713 \u2014 scan the next one');
       scannerState.handledOnce = false;
     } else {
+      // Multi-column sheet — field is filled, remaining columns still need
+      // to be entered by hand, so hand control back to the data-entry form.
       closeScanner();
     }
   }
@@ -958,6 +1056,9 @@ window.PAGES = window.PAGES || {};
 
   function closeScanner() {
     const qr = scannerState.html5QrCode;
+    scannerState.pendingText = null;
+    scannerState.pendingColId = null;
+    scannerState.pendingIsDup = false;
     const finish = () => {
       if (scannerState.overlayEl) { scannerState.overlayEl.remove(); scannerState.overlayEl = null; }
       document.body.style.overflow = '';
