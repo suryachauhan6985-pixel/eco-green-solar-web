@@ -65,7 +65,7 @@
   const NAV_ORDER = [
     'dashboard', 'masters', 'purchase', 'sales', 'stockassign',
     'purchaseregister', 'saleregister', 'reports', 'returns',
-    'partyledger', 'lowstock', 'backup', 'bom'
+    'partyledger', 'lowstock', 'backup', 'bom', 'scan'
   ];
 
   const navScroll = document.getElementById('navScroll');

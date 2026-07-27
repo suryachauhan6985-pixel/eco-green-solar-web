@@ -879,3 +879,23 @@ body.no-scroll{overflow:hidden; height:100%;}
      page setup stay here. */
   @page{size:A4 portrait; margin:19.05mm 6.35mm;}
 }
+
+/* ---------- Scan page (js/pages/scan.js) ---------- */
+/* Inline camera preview box html5-qrcode renders its <video>/<canvas> into.
+   Capped width so it doesn't blow out the layout on a wide desktop screen,
+   full-width (and therefore full-camera-frame) on mobile. */
+.scan-reader-wrap{margin-top:16px; display:flex; justify-content:center;}
+#scanReaderBox{
+  width:100%; max-width:480px; border-radius:10px; overflow:hidden;
+  border:1px solid var(--border-light); background:#000;
+}
+#scanReaderBox video, #scanReaderBox canvas{width:100% !important; border-radius:10px;}
+/* html5-qrcode's built-in "Powered by" footer link — kept, but muted so it
+   doesn't clash with the app's own dark theme/branding. */
+#scanReaderBox #qr-shaded-region{border-radius:8px !important;}
+
+.scan-permission-msg{
+  margin-top:14px; padding:10px 14px; border-radius:8px;
+  background:rgba(231,76,60,0.12); border:1px solid var(--red); color:var(--red);
+  font-size:12.5px; display:flex; align-items:center; gap:8px;
+}
