@@ -879,3 +879,198 @@ body.no-scroll{overflow:hidden; height:100%;}
      page setup stay here. */
   @page{size:A4 portrait; margin:19.05mm 6.35mm;}
 }
+
+/* =========================================================================
+   SCAN TO SHEET — Barcode & QR Code Scanner to Spreadsheet feature
+   (js/pages/scansheet.js + js/data/sheets-store.js)
+   ========================================================================= */
+.ss-wrap{position:relative; min-height:calc(100vh - 230px); padding-bottom:86px;}
+
+.ss-tabs{display:flex; gap:6px; border-bottom:1px solid var(--border); margin-bottom:16px;}
+.ss-tab{
+  background:transparent; border:none; color:var(--txt-muted); font-weight:700; font-size:13px;
+  padding:10px 16px; border-bottom:2px solid transparent;
+}
+.ss-tab:hover{color:var(--txt);}
+.ss-tab.active{color:var(--gold); border-bottom-color:var(--gold);}
+
+.ss-body{min-width:0;}
+
+/* ---------- Empty state (Screen 1) ---------- */
+.ss-empty{
+  display:flex; flex-direction:column; align-items:center; text-align:center;
+  padding:60px 20px; background:var(--panel); border:1px dashed var(--border-light); border-radius:var(--radius);
+}
+.ss-empty-icon{
+  width:74px; height:74px; border-radius:50%; background:rgba(212,175,55,.12); color:var(--gold);
+  display:flex; align-items:center; justify-content:center; font-size:30px; margin-bottom:16px;
+}
+.ss-empty h3{margin:0 0 8px; color:var(--txt); font-size:17px;}
+.ss-empty p{margin:0 0 20px; color:var(--txt-muted); font-size:13px; max-width:340px;}
+.ss-create-btn{margin-top:4px;}
+
+/* ---------- Sheets list (Screen 4) ---------- */
+.ss-list-head{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px;}
+.ss-total{font-weight:800; font-size:14px; color:var(--txt-label);}
+
+.ss-sheet-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:14px;}
+.ss-sheet-card{
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px; display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;
+}
+.ss-sheet-card:hover{border-color:var(--blue);}
+.ss-sheet-card-main{display:flex; align-items:center; gap:12px; min-width:0;}
+.ss-sheet-icon{
+  width:42px; height:42px; border-radius:9px; background:rgba(59,142,208,.15); color:var(--blue);
+  display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0;
+}
+.ss-sheet-info{min-width:0;}
+.ss-sheet-name{font-weight:800; font-size:14px; color:var(--txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.ss-sheet-meta{font-size:11.5px; color:var(--txt-muted); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.ss-sheet-actions{display:flex; gap:4px; flex-shrink:0;}
+
+.ss-icon-btn{
+  background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt);
+  width:32px; height:32px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:13px;
+}
+.ss-icon-btn:hover{border-color:var(--blue); color:var(--blue);}
+.ss-icon-btn.light{background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.25); color:#fff;}
+.ss-icon-btn.light:hover{background:rgba(255,255,255,.22); color:#fff;}
+.ss-icon-btn.light.active{background:var(--gold); color:#1a1a1a; border-color:var(--gold);}
+
+/* ---------- FAB + Go Pro ---------- */
+.ss-fab{
+  position:fixed; right:26px; bottom:26px; z-index:30;
+  width:56px; height:56px; border-radius:50%; background:var(--green); color:#fff; border:none;
+  font-size:20px; box-shadow:0 8px 20px rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center;
+}
+.ss-fab:hover{filter:brightness(1.1);}
+.ss-gopro{
+  position:fixed; left:calc(var(--sidebar-w) + 26px); bottom:26px; z-index:30;
+  background:var(--gold); color:#1a1a1a; border:none; border-radius:24px; padding:10px 18px;
+  font-weight:800; font-size:12.5px; display:inline-flex; align-items:center; gap:8px;
+  box-shadow:0 8px 20px rgba(0,0,0,.35);
+}
+@media (max-width:900px){ .ss-gopro{left:20px;} }
+
+/* ---------- Create-sheet modal options (Screen 2) ---------- */
+.ss-modal-options{display:flex; flex-direction:column; gap:10px;}
+.ss-modal-opt{
+  display:flex; align-items:center; gap:14px; text-align:left; width:100%;
+  background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; padding:14px;
+  color:var(--txt);
+}
+.ss-modal-opt i{font-size:18px; color:var(--blue); width:22px; text-align:center; flex-shrink:0;}
+.ss-modal-opt strong{display:block; font-size:13.5px;}
+.ss-modal-opt small{display:block; color:var(--txt-muted); font-size:11.5px; margin-top:2px;}
+.ss-modal-opt:hover{border-color:var(--blue);}
+.ss-modal-opt.primary{background:rgba(39,174,96,.12); border-color:var(--green);}
+.ss-modal-opt.primary i{color:var(--green);}
+
+/* ---------- App bar (Screens 3 & 5) ---------- */
+.ss-appbar{display:flex; align-items:center; gap:12px; margin-bottom:16px;}
+.ss-appbar-title{flex:1; font-weight:800; font-size:15px; color:var(--txt);}
+.ss-appbar-title.ss-truncate{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.ss-save-check{background:var(--green); border-color:var(--green); color:#fff;}
+.ss-save-check:hover{color:#fff; filter:brightness(1.1);}
+
+/* ---------- Manual create columns (Screen 3) ---------- */
+.ss-col-count{color:var(--txt-muted); font-weight:600; font-size:12px;}
+.ss-col-row{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
+.ss-col-handle{color:var(--txt-muted); cursor:grab; flex-shrink:0;}
+.ss-col-name{flex:2; min-width:0; background:var(--input-bg); border:1px solid var(--border); color:var(--txt); padding:9px 10px; border-radius:7px; font-size:13px;}
+.ss-col-type{flex:1; min-width:120px; background:var(--input-bg); border:1px solid var(--border); color:var(--txt); padding:9px 10px; border-radius:7px; font-size:13px;}
+.ss-col-del{flex-shrink:0; color:var(--red); border-color:var(--red);}
+.ss-add-col{
+  width:100%; margin-top:4px; background:transparent; border:1px dashed var(--border-light); color:var(--blue);
+  border-radius:8px; padding:10px; font-weight:700; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.ss-add-col:hover{border-color:var(--blue); background:rgba(59,142,208,.08);}
+.ss-bottom-bar{
+  position:fixed; left:var(--sidebar-w); right:0; bottom:0; z-index:25;
+  background:var(--panel); border-top:1px solid var(--border); padding:12px 24px;
+}
+@media (max-width:900px){ .ss-bottom-bar{left:0;} }
+.ss-wide-btn{width:100%; justify-content:center; font-size:14px; padding:12px;}
+
+/* ---------- Data entry (Screen 5) ---------- */
+.ss-entry-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px;}
+@media (max-width:700px){ .ss-entry-grid{grid-template-columns:1fr;} }
+.ss-scan-input-wrap{position:relative;}
+.ss-scan-input-wrap input{padding-right:42px !important;}
+.ss-scan-icon-btn{
+  position:absolute; right:5px; top:50%; transform:translateY(-50%);
+  width:32px; height:32px; border-radius:6px; background:var(--blue); border:none; color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:13px;
+}
+.ss-scan-icon-btn:hover{filter:brightness(1.1);}
+.ss-thumb-wrap{margin-top:8px;}
+.ss-thumb{width:60px; height:60px; object-fit:cover; border-radius:8px; border:1px solid var(--border-light);}
+.ss-row-thumb{width:34px; height:34px; object-fit:cover; border-radius:6px;}
+.ss-preview-table{margin-top:2px;}
+.ss-collapsed .table-wrap{display:none;}
+
+.ss-bottom-nav{
+  position:fixed; left:var(--sidebar-w); right:0; bottom:0; z-index:25;
+  background:var(--panel); border-top:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-around; padding:10px 20px;
+}
+@media (max-width:900px){ .ss-bottom-nav{left:0;} }
+.ss-bottom-nav-btn{
+  background:transparent; border:none; color:var(--txt-muted); display:flex; flex-direction:column;
+  align-items:center; gap:4px; font-size:10.5px; font-weight:700; min-width:60px;
+}
+.ss-bottom-nav-btn i{font-size:17px;}
+.ss-bottom-nav-btn:hover{color:var(--txt);}
+.ss-bottom-nav-btn.ss-save-entry{color:var(--green);}
+.ss-bottom-nav-scan{
+  width:56px; height:56px; border-radius:50%; background:var(--blue); color:#fff; border:none;
+  font-size:20px; display:flex; align-items:center; justify-content:center; margin-top:-24px;
+  box-shadow:0 6px 16px rgba(0,0,0,.4); border:3px solid var(--bg);
+}
+.ss-bottom-nav-scan:hover{filter:brightness(1.1);}
+
+/* ---------- Dropdown menu (sheet card "..." / entry screen "...") ---------- */
+.ss-dropdown{
+  position:fixed; z-index:80; background:var(--panel); border:1px solid var(--border-light);
+  border-radius:10px; min-width:190px; padding:6px; box-shadow:0 10px 30px rgba(0,0,0,.5);
+}
+.ss-dropdown-item{
+  display:flex; align-items:center; gap:10px; width:100%; text-align:left; background:transparent;
+  border:none; color:var(--txt); padding:9px 10px; border-radius:7px; font-size:12.5px; font-weight:600;
+}
+.ss-dropdown-item:hover{background:var(--input-bg);}
+.ss-dropdown-item.danger{color:var(--red);}
+.ss-dropdown-item i{width:16px; text-align:center;}
+
+/* ---------- Camera scanner overlay (Screens 6 & 7) ---------- */
+.ss-scanner-overlay{
+  position:fixed; inset:0; z-index:200; background:#000;
+  display:flex; flex-direction:column;
+}
+.ss-scanner-topbar{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:14px 16px; padding-top:max(14px, env(safe-area-inset-top));
+  position:relative; z-index:2;
+}
+.ss-scanner-title{color:#fff; font-weight:800; font-size:15px;}
+.ss-scanner-topbtns{display:flex; gap:8px;}
+.ss-scanner-camwrap{position:relative; flex:1; overflow:hidden; background:#000;}
+.ss-scanner-camfeed{position:absolute; inset:0;}
+.ss-scanner-camfeed video{width:100% !important; height:100% !important; object-fit:cover;}
+.ss-scanner-target{
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:250px; height:250px; max-width:70vw; max-height:70vw;
+  border:3px solid var(--gold); border-radius:16px;
+  box-shadow:0 0 0 2000px rgba(0,0,0,.58);
+  pointer-events:none;
+}
+.ss-scanner-instruction{
+  position:absolute; left:0; right:0; bottom:14%; text-align:center;
+  color:#fff; font-size:13px; font-weight:600; text-shadow:0 1px 4px rgba(0,0,0,.6); padding:0 24px;
+}
+.ss-scanner-bottom{
+  padding:18px 16px; padding-bottom:max(18px, env(safe-area-inset-bottom));
+  display:flex; justify-content:center; position:relative; z-index:2;
+}
+.ss-scanner-cancel{padding:12px 28px; font-size:13.5px;}

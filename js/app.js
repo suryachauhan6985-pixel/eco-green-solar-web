@@ -63,7 +63,7 @@
 
 (function () {
   const NAV_ORDER = [
-    'dashboard', 'masters', 'purchase', 'sales', 'stockassign',
+    'dashboard', 'scansheet', 'masters', 'purchase', 'sales', 'stockassign',
     'purchaseregister', 'saleregister', 'reports', 'returns',
     'partyledger', 'lowstock', 'backup', 'bom'
   ];
