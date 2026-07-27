@@ -771,8 +771,7 @@ window.PAGES = window.PAGES || {};
       if (!code) return;
       beep();
       if (navigator.vibrate) { try { navigator.vibrate(180); } catch (e) { /* not supported */ } }
-      const saved = processScanValue(code);
-      window.showToast(saved ? 'Row saved (Bluetooth scan)' : 'Scanned via Bluetooth \u2014 fill remaining fields and tap Save');
+      showBluetoothScanOverlay(code, scannerState.targetFieldId || resolveScanTargetId());
     }
   }
 
@@ -797,25 +796,19 @@ window.PAGES = window.PAGES || {};
 
   // "Keyboard wedge" fallback for Bluetooth barcode scanners that pair as an
   // HID keyboard at the OS level (true of most handheld/consumer models).
-  // The OS handles that pairing directly — a website has no API to do it —
-  // so once paired, the scanner just "types" its code into whichever field
-  // is focused, followed by Enter. This listens for that Enter and routes
-  // the result through the exact same save pipeline the camera uses.
+  // The OS handles that pairing directly — a website has no API to query
+  // which Bluetooth devices are connected at the OS level, so tapping a
+  // "Connect" button here can't reliably reflect reality.
+  //
+  // Instead, AUTO_DETECT below passively watches typing speed on any
+  // scannable field: a barcode scanner "types" a whole code in a few
+  // milliseconds followed by Enter, while a human typing on a phone
+  // keyboard takes well over 100ms per character. A fast burst + Enter is
+  // recognized as a scan automatically — no manual pairing step needed —
+  // and switches the app into wedge mode (disabling the camera) the first
+  // time it happens.
   function enableWedgeMode() {
     if (btState.mode === 'wedge') return;
-    btState.wedgeHandler = (e) => {
-      const target = e.target;
-      if (!target || !target.matches || !target.matches('input[data-type="barcode"], input[data-type="text"]')) return;
-      if (e.key !== 'Enter') return;
-      const code = (target.value || '').trim();
-      if (!code) return;
-      e.preventDefault();
-      beep();
-      if (navigator.vibrate) { try { navigator.vibrate(180); } catch (err) { /* not supported */ } }
-      const saved = processScanValue(code, target.id);
-      window.showToast(saved ? 'Row saved (Bluetooth scan)' : 'Scanned via Bluetooth \u2014 fill remaining fields and tap Save');
-    };
-    document.addEventListener('keydown', btState.wedgeHandler, true);
     btState.mode = 'wedge';
     if (scannerState.overlayEl) closeScanner();
     syncBtButtons();
@@ -823,8 +816,101 @@ window.PAGES = window.PAGES || {};
   }
 
   function disableWedgeMode() {
-    if (btState.wedgeHandler) document.removeEventListener('keydown', btState.wedgeHandler, true);
-    btState.wedgeHandler = null;
+    // No listener to tear down any more — AUTO_DETECT below is always-on
+    // and independent of btState.mode. Disconnecting just re-enables the
+    // camera buttons; if the scanner scans again, wedge mode will be
+    // re-detected automatically.
+  }
+
+  // ---------------- Passive scan auto-detect (keystroke speed) ----------------
+  const AUTO_SCAN_MIN_CHARS = 4;       // shortest burst we bother judging
+  const AUTO_SCAN_MAX_AVG_GAP_MS = 45; // avg ms/char below this = scanner, not a human
+  const AUTO_SCAN_RESET_GAP_MS = 700;  // pause longer than this starts a fresh burst
+  const autoScanBuffers = new Map();   // fieldId -> array of keydown timestamps
+
+  function isScannableInputEl(el) {
+    return !!(el && el.matches && el.matches('input[data-type="barcode"], input[data-type="text"]'));
+  }
+
+  function handleAutoScanKeydown(e) {
+    if (ST.view !== 'data-entry') return;
+    const el = e.target;
+    if (!isScannableInputEl(el)) return;
+    const now = Date.now();
+
+    if (e.key === 'Enter') {
+      const times = autoScanBuffers.get(el.id);
+      autoScanBuffers.delete(el.id);
+      if (times && times.length >= AUTO_SCAN_MIN_CHARS) {
+        const avgGap = (times[times.length - 1] - times[0]) / (times.length - 1);
+        if (avgGap <= AUTO_SCAN_MAX_AVG_GAP_MS) {
+          e.preventDefault();
+          const text = (el.value || '').trim();
+          el.value = '';
+          if (!text) return;
+          if (btState.mode !== 'ble') enableWedgeMode(); // marks scanner detected, disables camera
+          beep();
+          if (navigator.vibrate) { try { navigator.vibrate(180); } catch (err) { /* not supported */ } }
+          showBluetoothScanOverlay(text, el.id);
+        }
+      }
+      return;
+    }
+
+    if (e.key.length !== 1) return; // ignore Shift/Backspace/arrows/etc. (don't reset the burst)
+    let times = autoScanBuffers.get(el.id);
+    if (!times) { times = []; autoScanBuffers.set(el.id, times); }
+    if (times.length && (now - times[times.length - 1]) > AUTO_SCAN_RESET_GAP_MS) times.length = 0;
+    times.push(now);
+  }
+
+  document.addEventListener('keydown', handleAutoScanKeydown, true);
+
+  // Shows the exact same "scanned value + Save/Retry + duplicate check"
+  // interface the camera uses, but without ever touching the camera —
+  // used for every auto-detected Bluetooth/keyboard-wedge scan.
+  function showBluetoothScanOverlay(text, fieldId) {
+    if (scannerState.overlayEl) closeScanner();
+    const targetId = fieldId || resolveScanTargetId();
+    const field = targetId ? document.getElementById(targetId) : null;
+    const colId = field ? field.dataset.col : null;
+    const sheet = window.SheetsStore.getSheet(ST.activeSheetId);
+    const dup = isDuplicateScanValue(sheet, colId, text);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'ss-scanner-overlay';
+    overlay.innerHTML = `
+      <div class="ss-scanner-topbar">
+        <button type="button" class="ss-icon-btn light" id="ssBtScanClose" title="Close"><i class="fa-solid fa-arrow-left"></i></button>
+        <div class="ss-scanner-title"><i class="fa-solid fa-bluetooth-b"></i>&nbsp;Bluetooth Scan</div>
+        <div class="ss-scanner-topbtns"></div>
+      </div>
+      <div class="ss-scanner-camwrap" style="display:flex;align-items:center;justify-content:center;">
+        <div class="ss-scanner-result" style="display:flex;">
+          <div class="ss-scanner-result-card${dup ? ' dup' : ''}" id="ssBtScanResultCard">
+            <div class="ss-scanner-result-label">Scanned value</div>
+            <div class="ss-scanner-result-value">${escapeHtml(text)}</div>
+            <div class="ss-scanner-result-msg">${dup ? 'This serial no. already exists in the record. Delete the old row first, or Retry with a different code.' : 'Scanned successfully.'}</div>
+          </div>
+          <div class="ss-scanner-result-actions">
+            <button type="button" class="btn btn-ghost" id="ssBtScanRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
+            <button type="button" class="btn btn-green" id="ssBtScanSave" style="${dup ? 'display:none;' : ''}"><i class="fa-solid fa-check"></i> Save</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    const closeOverlay = () => { overlay.remove(); document.body.style.overflow = ''; };
+    overlay.querySelector('#ssBtScanClose').onclick = closeOverlay;
+    overlay.querySelector('#ssBtScanRetry').onclick = () => { closeOverlay(); window.showToast('Retry \u2014 phir se scan karein'); };
+    overlay.querySelector('#ssBtScanSave').onclick = () => {
+      if (dup) return;
+      const saved = processScanValue(text, targetId);
+      closeOverlay();
+      window.showToast(saved ? 'Row saved (Bluetooth scan)' : 'Scanned via Bluetooth \u2014 fill remaining fields and tap Save');
+    };
   }
 
   // Works out which input field a scan result should land in, with sensible
