@@ -202,6 +202,23 @@ function bomDefaultSectionsTemplate() {
 const bomEsc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const bomEscAttr = (s) => bomEsc(s).replace(/"/g, '&quot;');
 
+// ---------- Serial No. helpers (shared by the Serial No. button + modal) ----------
+// Pulls the required serial COUNT out of a Quantity string like "06 Nos" or
+// "1 Nos" — the same qty text already shown in the Quantity cell, just read
+// as a number. Returns null when the qty has no digit in it at all (e.g.
+// "-"), meaning there's no fixed count to enforce.
+function bomParseQtyNumber(qtyStr) {
+  const m = String(qtyStr || '').match(/\d+/);
+  return m ? parseInt(m[0], 10) : null;
+}
+
+// Mirrors Purchase/Sale's serial box: split on ANY separator (space, comma,
+// tab, pipe, semicolon, newline) and keep only letters/digits/hyphens — so
+// pasting or scanning a run of codes always turns into one serial per line.
+function bomSplitSerials(text) {
+  return String(text || '').match(/[A-Za-z0-9-]+/g) || [];
+}
+
 // ---------- Item Name dropdown source ----------
 // Real item master (Masters > Item Registration) is the source of truth once
 // the API/DB is reachable. Until then (or for any kit item not yet registered
@@ -281,9 +298,18 @@ function bomRenderScreenItemsHtml(state, opts) {
         </td>
       </tr>`;
     const itemRows = sec.items.map((it, ii) => {
-      const serialCell = needsSerial(it.name)
-        ? `<textarea class="bom-field-input bom-field-serial" rows="1" data-sec="${si}" data-idx="${ii}" data-field="serials" placeholder="One per line">${bomEsc(it.serials || '')}</textarea>`
-        : `<span class="bom-serial-na">—</span>`;
+      let serialCell;
+      if (needsSerial(it.name)) {
+        const required = bomParseQtyNumber(it.qty);
+        const entered = bomSplitSerials(it.serials).length;
+        const isComplete = required != null && entered === required;
+        const btnClass = isComplete ? 'btn-green' : (entered > 0 ? 'btn-ghost' : 'btn-red');
+        serialCell = `<button type="button" class="btn ${btnClass} bom-serial-btn" data-sec="${si}" data-idx="${ii}" title="Enter Serial No.">
+          <i class="fa-solid fa-barcode"></i> ${entered}/${required != null ? required : '?'}
+        </button>`;
+      } else {
+        serialCell = `<span class="bom-serial-na">—</span>`;
+      }
       return `
       <tr>
         <td><input type="text" class="bom-field-input bom-field-sr" data-sec="${si}" data-idx="${ii}" data-field="sr" value="${bomEscAttr(it.sr)}"></td>
@@ -912,10 +938,19 @@ window.PAGES.bom = {
       // blocked until its Serial No. is filled in — Verify BOM only unlocks
       // once every item, including these, is genuinely ready.
       if (field === 'checked') {
-        if (el.checked && bomItemNeedsSerial(item.name) && !String(item.serials || '').trim()) {
-          el.checked = false;
-          window.openModal('Serial No. Required', `<p>Enter the Serial No. for <strong>${bomEsc(item.name || 'this item')}</strong> before ticking it — this item is dispatched by serial number.</p>`);
-          return;
+        if (el.checked && bomItemNeedsSerial(item.name)) {
+          const required = bomParseQtyNumber(item.qty);
+          const entered = bomSplitSerials(item.serials).length;
+          if (!entered) {
+            el.checked = false;
+            window.openModal('Serial No. Required', '<p>Please enter Serial No. first.</p>');
+            return;
+          }
+          if (required != null && entered !== required) {
+            el.checked = false;
+            window.openModal('Serial No. Required', `<p>Please enter Serial No. first — <strong>${bomEsc(item.name || 'this item')}</strong> needs exactly ${required} serial number(s), but ${entered} ${entered === 1 ? 'is' : 'are'} entered.</p>`);
+            return;
+          }
         }
         item.checked = el.checked;
         updateVerifyButtonState();
@@ -935,6 +970,153 @@ window.PAGES.bom = {
       updateVerifyButtonState();
     }
 
+    // Serial No. popup — click the Serial No. button on a serial-mandatory
+    // row (Solar Panel, Inverter, etc.) to open the same style of box
+    // Purchase/Sale already use: scan-or-type with auto-newline on any
+    // delimiter, paste normalization, and a live count against the item's
+    // Quantity. Adds "Scan Serial No." / "Upload Serial No. through File"
+    // as two entry modes on top of the same box, per the requested flow.
+    function openBomSerialModal(si, ii) {
+      const item = currentKitState[si] && currentKitState[si].items[ii];
+      if (!item) return;
+      const required = bomParseQtyNumber(item.qty);
+
+      window.openModal(`Serial No. — ${item.name || 'Item'}`, `
+        <div class="bom-serial-modal">
+          <p class="note" style="margin-bottom:10px;">
+            <i class="fa-solid fa-box"></i> <b>${bomEsc(item.name || 'Item')}</b>
+            &nbsp;—&nbsp; Quantity required: <b>${required != null ? required : '—'}</b> serial number(s)
+          </p>
+          <div class="actions-row bom-serial-mode-row" style="margin-bottom:10px;">
+            <button type="button" class="btn btn-ghost bom-serial-mode-btn active" id="bomSerialModeScan"><i class="fa-solid fa-barcode"></i> Scan Serial No.</button>
+            <button type="button" class="btn btn-ghost bom-serial-mode-btn" id="bomSerialModeUpload"><i class="fa-solid fa-file-arrow-up"></i> Upload Serial No. (File)</button>
+          </div>
+          <div id="bomSerialUploadPane" style="display:none; margin-bottom:10px;">
+            <input type="file" id="bomSerialFileInput" accept=".txt,.csv">
+            <p class="note" style="margin-top:6px;">Pick a .txt or .csv file — one serial per line, or comma/space separated. It loads into the box below so you can review before saving.</p>
+          </div>
+          <textarea id="bomSerialModalBox" rows="8" placeholder="Scan or type serial numbers — one per line...">${bomEsc(item.serials || '')}</textarea>
+          <p class="note" id="bomSerialCountNote" style="margin-top:8px;"></p>
+          <div class="actions-row" style="margin-top:12px;">
+            <button type="button" class="btn btn-blue" id="bomSerialSaveBtn"><i class="fa-solid fa-check"></i> Save</button>
+            <button type="button" class="btn btn-ghost" id="bomSerialCancelBtn">Cancel</button>
+          </div>
+        </div>
+      `);
+
+      const box = document.getElementById('bomSerialModalBox');
+      const countNote = document.getElementById('bomSerialCountNote');
+      const modeScanBtn = document.getElementById('bomSerialModeScan');
+      const modeUploadBtn = document.getElementById('bomSerialModeUpload');
+      const uploadPane = document.getElementById('bomSerialUploadPane');
+      const fileInput = document.getElementById('bomSerialFileInput');
+      const saveBtn = document.getElementById('bomSerialSaveBtn');
+      const cancelBtn = document.getElementById('bomSerialCancelBtn');
+      if (!box) return;
+
+      function updateCountNote() {
+        const count = bomSplitSerials(box.value).length;
+        if (required != null) {
+          const ok = count === required;
+          countNote.style.color = ok ? 'var(--green)' : 'var(--red)';
+          countNote.innerHTML = `<i class="fa-solid ${ok ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i> ${count} of ${required} serial number(s) entered${ok ? ' — matches quantity.' : ''}`;
+        } else {
+          countNote.style.color = '';
+          countNote.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${count} serial number(s) entered.`;
+        }
+      }
+
+      // Auto-newline on delimiter + paste normalization — identical logic
+      // to Purchase/Sale's serial box (splitSerials there === bomSplitSerials here).
+      box.addEventListener('keydown', (e) => {
+        if ([',', ' ', '|', ';', 'Tab'].includes(e.key)) {
+          e.preventDefault();
+          const before = box.value.slice(0, box.selectionStart);
+          const after = box.value.slice(box.selectionEnd);
+          const needsNewline = before && !before.endsWith('\n');
+          box.value = before + (needsNewline ? '\n' : '') + after;
+          const pos = before.length + (needsNewline ? 1 : 0);
+          box.setSelectionRange(pos, pos);
+        }
+        updateCountNote();
+      });
+      box.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pasted = (e.clipboardData || window.clipboardData).getData('text');
+        const normalized = bomSplitSerials(pasted).join('\n');
+        const before = box.value.slice(0, box.selectionStart);
+        const after = box.value.slice(box.selectionEnd);
+        const prefix = before && !before.endsWith('\n') ? '\n' : '';
+        box.value = before + prefix + normalized + '\n' + after;
+        updateCountNote();
+      });
+      box.addEventListener('input', updateCountNote);
+      box.addEventListener('blur', () => {
+        box.value = bomSplitSerials(box.value).join('\n');
+        updateCountNote();
+      });
+
+      modeScanBtn.addEventListener('click', () => {
+        modeScanBtn.classList.add('active');
+        modeUploadBtn.classList.remove('active');
+        uploadPane.style.display = 'none';
+        box.focus();
+      });
+      modeUploadBtn.addEventListener('click', () => {
+        modeUploadBtn.classList.add('active');
+        modeScanBtn.classList.remove('active');
+        uploadPane.style.display = '';
+      });
+      fileInput.addEventListener('change', () => {
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const parsed = bomSplitSerials(String(reader.result || ''));
+          const merged = bomSplitSerials(box.value).concat(parsed);
+          box.value = merged.join('\n');
+          updateCountNote();
+          modeScanBtn.click(); // back to the box so it can be reviewed/edited before Save
+          if (window.showToast) window.showToast(`${parsed.length} serial number(s) loaded from file.`);
+        };
+        reader.onerror = () => window.openModal('File Read Error', '<p>Could not read that file. Please try a plain .txt or .csv file.</p>');
+        reader.readAsText(file);
+        fileInput.value = '';
+      });
+
+      saveBtn.addEventListener('click', () => {
+        const serials = bomSplitSerials(box.value);
+        if (!serials.length) {
+          countNote.style.color = 'var(--red)';
+          countNote.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Please enter Serial No. first.';
+          return;
+        }
+        const seen = new Set();
+        const dupes = new Set();
+        serials.forEach((s) => { if (seen.has(s)) dupes.add(s); seen.add(s); });
+        if (dupes.size) {
+          countNote.style.color = 'var(--red)';
+          countNote.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Duplicate serial number(s): ${[...dupes].map(bomEsc).join(', ')}`;
+          return;
+        }
+        if (required != null && serials.length !== required) {
+          countNote.style.color = 'var(--red)';
+          countNote.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Please enter Serial No. first — exactly ${required} needed, ${serials.length} entered.`;
+          return;
+        }
+        item.serials = serials.join('\n');
+        item.checked = false; // any serial change invalidates this row's tick
+        setVerified(false);
+        window.closeModal();
+        rerenderItemsPreview();
+        if (window.showToast) window.showToast('Serial numbers saved.');
+      });
+
+      cancelBtn.addEventListener('click', () => window.closeModal());
+
+      updateCountNote();
+    }
+
     // Delegated click listener: lets a new item be inserted at ANY position
     // within any section (not just appended at the end) — e.g. right after
     // the 5th item in "Solar Structure" — plus removing an item, adding a
@@ -943,9 +1125,16 @@ window.PAGES.bom = {
     // Restructuring the kit (add/remove item, add/remove section) is
     // Admin/SuperAdmin only — the buttons themselves are already hidden for
     // a plain User (see bomRenderScreenItemsHtml), this is the defensive
-    // second check.
-    itemsPreview.addEventListener('click', (e) => {
+    // second check. Remove actions (item/section) ask for confirmation
+    // first — a stray tap used to delete a row instantly with no way back;
+    // Add actions still fire immediately since they're non-destructive.
+    itemsPreview.addEventListener('click', async (e) => {
       if (!currentKitState) return;
+      const serialBtn = e.target.closest('.bom-serial-btn');
+      if (serialBtn) {
+        openBomSerialModal(Number(serialBtn.dataset.sec), Number(serialBtn.dataset.idx));
+        return;
+      }
       const insertBtn = e.target.closest('[data-insert-after-sec]');
       const removeItemBtn = e.target.closest('[data-remove-sec]');
       const addItemBtn = e.target.closest('[data-sec-add-item]');
@@ -961,6 +1150,9 @@ window.PAGES.bom = {
       } else if (removeItemBtn) {
         const si = Number(removeItemBtn.dataset.removeSec);
         const idx = Number(removeItemBtn.dataset.removeIdx);
+        const itemName = (currentKitState[si].items[idx] && currentKitState[si].items[idx].name) || 'this item';
+        const confirmed = await window.confirmDanger('Remove Item', `Remove "${itemName}" from this BOM? This cannot be undone.`);
+        if (!confirmed) return;
         currentKitState[si].items.splice(idx, 1);
       } else if (addItemBtn) {
         const si = Number(addItemBtn.dataset.secAddItem);
@@ -971,6 +1163,9 @@ window.PAGES.bom = {
           return;
         }
         const si = Number(removeSectionBtn.dataset.secRemove);
+        const secTitle = currentKitState[si].title || 'this section';
+        const confirmed = await window.confirmDanger('Remove Section', `Remove the section "${secTitle}" and all ${currentKitState[si].items.length} item(s) in it? This cannot be undone.`);
+        if (!confirmed) return;
         currentKitState.splice(si, 1);
       } else if (addSectionBtn) {
         currentKitState.push({ title: 'New Section', items: [blankItem()] });
