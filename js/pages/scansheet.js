@@ -654,6 +654,11 @@ window.PAGES = window.PAGES || {};
   const btState = {
     active: false,
     keydownHandler: null,
+    buffer: '',
+    lastKeyAt: 0,
+    idleTimer: null,
+    targetId: null,
+    noticeShown: false,
   };
 
   function isBtActive() { return btState.active; }
@@ -689,6 +694,86 @@ window.PAGES = window.PAGES || {};
         : 'Scan barcode / QR';
     });
     applyBtInputMode();
+  }
+
+  function resetBluetoothBuffer() {
+    btState.buffer = '';
+    btState.lastKeyAt = 0;
+    if (btState.idleTimer) {
+      clearTimeout(btState.idleTimer);
+      btState.idleTimer = null;
+    }
+  }
+
+  function getBluetoothTarget() {
+    const targetId = btState.targetId || resolveScanTargetId();
+    const field = targetId ? document.getElementById(targetId) : null;
+    if (targetId) ST.lastBarcodeFieldId = targetId;
+    return { targetId, field };
+  }
+
+  function dispatchFieldInput(field) {
+    if (!field) return;
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    field.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  // Barcode scanners paired as "keyboard/HID" devices do not expose a
+  // Bluetooth API to the browser. They send a very fast sequence of key
+  // events, normally followed by Enter (sometimes Tab). This function keeps
+  // the scanner path separate from ordinary text entry and lets us support
+  // both suffixes reliably.
+  function finishBluetoothScan() {
+    const code = btState.buffer.trim();
+    const { targetId, field } = getBluetoothTarget();
+    resetBluetoothBuffer();
+
+    if (!code) return;
+
+    if (field) {
+      field.value = '';
+      dispatchFieldInput(field);
+    }
+
+    beep();
+    if (navigator.vibrate) {
+      try { navigator.vibrate(180); } catch (err) { /* not supported */ }
+    }
+    showBluetoothScanOverlay(code, targetId);
+  }
+
+  function appendBluetoothCharacter(key) {
+    const now = Date.now();
+    const gap = btState.lastKeyAt ? now - btState.lastKeyAt : 0;
+    const { field } = getBluetoothTarget();
+
+    // A pause means this is a new scan. Clear the previous scan value rather
+    // than appending to it. A normal scanner sends characters within a few
+    // milliseconds of one another.
+    if (gap > 180 || !btState.buffer) {
+      btState.buffer = '';
+      if (field && gap > 180 && field.value) {
+        field.value = '';
+        dispatchFieldInput(field);
+      }
+    }
+
+    btState.buffer += key;
+    btState.lastKeyAt = now;
+
+    if (field) {
+      field.value = btState.buffer;
+      dispatchFieldInput(field);
+    }
+
+    if (btState.idleTimer) clearTimeout(btState.idleTimer);
+    // Some scanners are configured without a suffix. Finish after a short
+    // quiet period so those devices work as well.
+    btState.idleTimer = setTimeout(() => {
+      if (btState.buffer && Date.now() - btState.lastKeyAt >= 180) {
+        finishBluetoothScan();
+      }
+    }, 220);
   }
 
   // ---------------------------------------------------------------------
@@ -732,6 +817,8 @@ window.PAGES = window.PAGES || {};
   function enableScannerMode() {
     if (btState.active) return;
     btState.active = true;
+    resetBluetoothBuffer();
+    btState.targetId = resolveScanTargetId();
     // ---------------------------------------------------------------------
     // Real-world Bluetooth/USB keyboard-wedge scanners fire genuine keydown
     // events on the page, but on some Android WebViews/browsers the
@@ -753,48 +840,52 @@ window.PAGES = window.PAGES || {};
       if (ST.view !== 'data-entry') return;
       if (e.ctrlKey || e.metaKey || e.altKey) return; // leave shortcuts alone
 
-      const targetId = resolveScanTargetId();
+      const targetId = btState.targetId || resolveScanTargetId();
       const field = targetId ? document.getElementById(targetId) : null;
 
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' || e.key === 'Tab') {
         e.preventDefault();
-        const code = (field ? field.value : '').trim();
-        if (field) { field.value = ''; field.dispatchEvent(new Event('input', { bubbles: true })); }
-        if (!code) return;
-        beep();
-        if (navigator.vibrate) { try { navigator.vibrate(180); } catch (err) { /* not supported */ } }
-        showBluetoothScanOverlay(code, targetId);
+        finishBluetoothScan();
         return;
       }
 
-      if (!field) return; // no scannable field on this sheet — nothing to type into
-
-      if (e.key === 'Backspace') {
-        e.preventDefault();
-        field.value = (field.value || '').slice(0, -1);
-        field.dispatchEvent(new Event('input', { bubbles: true }));
+      if (!field) {
+        if (!btState.noticeShown) {
+          btState.noticeShown = true;
+          window.showToast('Add a Text or Barcode/QR column before scanning');
+        }
         return;
       }
+
+      // Scanner prefixes are not data. Ignore common Code 128 keyboard-wedge
+      // prefix characters when they arrive before the actual value.
+      if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt') return;
 
       if (e.key.length === 1) {
-        // A normal printable character — this is how a keyboard-wedge
-        // scanner "types" each character of the scanned code.
         e.preventDefault();
-        field.value = (field.value || '') + e.key;
-        field.dispatchEvent(new Event('input', { bubbles: true }));
+        appendBluetoothCharacter(e.key);
       }
     };
     document.addEventListener('keydown', btState.keydownHandler, true);
     if (scannerState.overlayEl) closeScanner();
     syncBtButtons();
     const targetId = resolveScanTargetId();
-    if (targetId) { ST.lastBarcodeFieldId = targetId; focusScannableField(targetId); }
-    window.showToast('Bluetooth scanner mode ON \u2014 camera disabled, ab kahin bhi scan karein, seedha field mein aayega.');
+    if (targetId) {
+      ST.lastBarcodeFieldId = targetId;
+      btState.targetId = targetId;
+      focusScannableField(targetId);
+      window.showToast('Bluetooth scanner ON \u2014 scanner ko pair karke barcode scan karein.');
+    } else {
+      window.showToast('Add a Text or Barcode/QR column before scanning');
+    }
   }
 
   function disableScannerMode() {
     if (btState.keydownHandler) document.removeEventListener('keydown', btState.keydownHandler, true);
     btState.keydownHandler = null;
+    resetBluetoothBuffer();
+    btState.targetId = null;
+    btState.noticeShown = false;
     btState.active = false;
     syncBtButtons();
     window.showToast('Bluetooth scanner mode OFF \u2014 camera enabled again.');
