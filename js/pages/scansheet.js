@@ -395,7 +395,7 @@ window.PAGES = window.PAGES || {};
           ${ST.bluetoothScanMode ? `
             <div class="ss-bt-scan-box" id="ssBtScanBox">
               <label><i class="fa-brands fa-bluetooth-b"></i> BT scanner mode</label>
-              <div class="ss-direct-scanner-status" id="ssDirectScannerStatus">Tap the Serial field below, then scan. The scanner should type into that same field.</div>
+              <div class="ss-direct-scanner-status" id="ssDirectScannerStatus">Tap Serial field, wait half a second for keyboard to hide, then scan.</div>
             </div>` : ''}
           <div class="ss-entry-grid">${sheet.columns.map(fieldHtml).join('')}</div>
         </div>
@@ -1080,6 +1080,20 @@ window.PAGES = window.PAGES || {};
     field.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
+  function prepBluetoothFieldForFocus(input) {
+    if (!ST.bluetoothScanMode || !input) return;
+    input.setAttribute('readonly', 'readonly');
+  }
+
+  function releaseBluetoothFieldForScanner(input) {
+    if (!ST.bluetoothScanMode || !input) return;
+    window.setTimeout(() => {
+      input.removeAttribute('readonly');
+      const len = String(input.value || '').length;
+      if (typeof input.setSelectionRange === 'function') input.setSelectionRange(len, len);
+    }, 450);
+  }
+
   function focusBluetoothScanTarget() {
     window.setTimeout(() => {
       const targetId = resolveScanTargetId();
@@ -1088,7 +1102,9 @@ window.PAGES = window.PAGES || {};
       ST.lastBarcodeFieldId = targetId;
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
       if (field) {
+        prepBluetoothFieldForFocus(field);
         field.focus({ preventScroll: true });
+        releaseBluetoothFieldForScanner(field);
         const len = String(field.value || '').length;
         if (typeof field.setSelectionRange === 'function') field.setSelectionRange(len, len);
       }
@@ -1262,7 +1278,7 @@ window.PAGES = window.PAGES || {};
       bluetoothScannerState.pendingTargetId = null;
       bluetoothScannerState.pendingTimer = null;
       handleBluetoothScanValue(pending, pendingTarget);
-    }, 180);
+    }, 2000);
   }
 
   function handleBluetoothScanValue(text, fieldId) {
@@ -1512,7 +1528,13 @@ window.PAGES = window.PAGES || {};
     // Track focus on any scannable field (Barcode/QR *or* Text) so the
     // central scan button targets whichever field the user was last in.
     document.querySelectorAll('input[data-type="barcode"], input[data-type="text"]').forEach((input) => {
-      input.addEventListener('focus', () => { ST.lastBarcodeFieldId = input.id; });
+      input.addEventListener('touchstart', () => prepBluetoothFieldForFocus(input), { passive: true });
+      input.addEventListener('pointerdown', () => prepBluetoothFieldForFocus(input));
+      input.addEventListener('mousedown', () => prepBluetoothFieldForFocus(input));
+      input.addEventListener('focus', () => {
+        ST.lastBarcodeFieldId = input.id;
+        releaseBluetoothFieldForScanner(input);
+      });
       input.addEventListener('input', () => {
         if (!ST.bluetoothScanMode) return;
         queueBluetoothScanValue(input.value, input.id);
