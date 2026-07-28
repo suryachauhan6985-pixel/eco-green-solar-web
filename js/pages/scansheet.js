@@ -646,6 +646,8 @@ window.PAGES = window.PAGES || {};
     keyBuffer: '',
     keyBufferTargetId: null,
     keyBufferTimer: null,
+    keyBufferStartedAt: 0,
+    keyBufferLastAt: 0,
   };
 
   // Checks whether `value` already exists (case-insensitive, trimmed) in
@@ -1032,6 +1034,8 @@ window.PAGES = window.PAGES || {};
     bluetoothScannerState.pendingTargetId = null;
     bluetoothScannerState.keyBuffer = '';
     bluetoothScannerState.keyBufferTargetId = null;
+    bluetoothScannerState.keyBufferStartedAt = 0;
+    bluetoothScannerState.keyBufferLastAt = 0;
     if (bluetoothScannerState.pendingTimer) {
       window.clearTimeout(bluetoothScannerState.pendingTimer);
       bluetoothScannerState.pendingTimer = null;
@@ -1073,8 +1077,12 @@ window.PAGES = window.PAGES || {};
   }
 
   function onBluetoothScannerKeydown(e) {
-    if (!ST.bluetoothScanMode || ST.view !== 'data-entry') return;
+    if (ST.view !== 'data-entry') return;
     if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) return;
+    if (!ST.bluetoothScanMode) {
+      observeKeyboardWedgeScan(e);
+      return;
+    }
     if (e.ctrlKey || e.altKey || e.metaKey) return;
 
     const key = e.key;
@@ -1124,13 +1132,15 @@ window.PAGES = window.PAGES || {};
       const targetId = bluetoothScannerState.keyBufferTargetId;
       bluetoothScannerState.keyBuffer = '';
       bluetoothScannerState.keyBufferTargetId = null;
+      bluetoothScannerState.keyBufferStartedAt = 0;
+      bluetoothScannerState.keyBufferLastAt = 0;
       bluetoothScannerState.keyBufferTimer = null;
       handleBluetoothScanValue(text, targetId);
     }, 500);
   }
 
   function onBluetoothScannerPaste(e) {
-    if (!ST.bluetoothScanMode || ST.view !== 'data-entry') return;
+    if (ST.view !== 'data-entry') return;
     if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) return;
     const text = String((e.clipboardData || window.clipboardData)?.getData('text') || '').trim();
     if (!text) return;
@@ -1143,6 +1153,61 @@ window.PAGES = window.PAGES || {};
     e.preventDefault();
     e.stopPropagation();
     handleBluetoothScanValue(text, targetId);
+  }
+
+  function observeKeyboardWedgeScan(e) {
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    const key = e.key;
+    const now = Date.now();
+
+    if (key === 'Enter' || key === 'Tab') {
+      const text = String(bluetoothScannerState.keyBuffer || '').trim();
+      if (isLikelyScannerBurst(text, now)) {
+        e.preventDefault();
+        e.stopPropagation();
+        clearBluetoothKeyBufferTimer();
+        const targetId = bluetoothScannerState.keyBufferTargetId || resolveScanTargetId();
+        bluetoothScannerState.keyBuffer = '';
+        bluetoothScannerState.keyBufferTargetId = null;
+        bluetoothScannerState.keyBufferStartedAt = 0;
+        bluetoothScannerState.keyBufferLastAt = 0;
+        handleBluetoothScanValue(text, targetId);
+      }
+      return;
+    }
+
+    if (!key || key.length !== 1) return;
+
+    // Barcode scanners type much faster than humans. Keep a passive buffer
+    // even outside BT mode so keyboard-wedge scanners work from any focused
+    // element on the data-entry screen.
+    if (!bluetoothScannerState.keyBuffer || now - bluetoothScannerState.keyBufferLastAt > 85) {
+      bluetoothScannerState.keyBuffer = '';
+      bluetoothScannerState.keyBufferStartedAt = now;
+    }
+    bluetoothScannerState.keyBuffer += key;
+    bluetoothScannerState.keyBufferLastAt = now;
+    bluetoothScannerState.keyBufferTargetId = resolveScanTargetId();
+
+    clearBluetoothKeyBufferTimer();
+    bluetoothScannerState.keyBufferTimer = window.setTimeout(() => {
+      const pending = String(bluetoothScannerState.keyBuffer || '').trim();
+      const targetId = bluetoothScannerState.keyBufferTargetId || resolveScanTargetId();
+      const finishedAt = Date.now();
+      bluetoothScannerState.keyBuffer = '';
+      bluetoothScannerState.keyBufferTargetId = null;
+      bluetoothScannerState.keyBufferStartedAt = 0;
+      bluetoothScannerState.keyBufferLastAt = 0;
+      bluetoothScannerState.keyBufferTimer = null;
+      if (isLikelyScannerBurst(pending, finishedAt)) handleBluetoothScanValue(pending, targetId);
+    }, 260);
+  }
+
+  function isLikelyScannerBurst(text, now) {
+    if (!text || text.length < 4) return false;
+    const started = bluetoothScannerState.keyBufferStartedAt || now;
+    const elapsed = Math.max(1, now - started);
+    return elapsed <= 1400 && (elapsed / text.length) <= 80;
   }
 
   function appendBluetoothScannerChar(ch, preferredField) {
@@ -1194,6 +1259,8 @@ window.PAGES = window.PAGES || {};
     clearBluetoothKeyBufferTimer();
     bluetoothScannerState.keyBuffer = '';
     bluetoothScannerState.keyBufferTargetId = null;
+    bluetoothScannerState.keyBufferStartedAt = 0;
+    bluetoothScannerState.keyBufferLastAt = 0;
     if (normText === bluetoothScannerState.lastProcessed && now - bluetoothScannerState.lastProcessedAt < 1000) return;
     bluetoothScannerState.lastProcessed = normText;
     bluetoothScannerState.lastProcessedAt = now;
