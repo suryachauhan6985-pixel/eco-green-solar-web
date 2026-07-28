@@ -392,7 +392,13 @@ window.PAGES = window.PAGES || {};
       <div class="ss-body">
         <div class="panel" id="ssEntryForm">
           <h3><i class="fa-solid fa-pen"></i> New Entry</h3>
-          ${ST.bluetoothScanMode ? '<input type="text" id="ssBluetoothCapture" class="ss-bt-capture" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-hidden="true">' : ''}
+          ${ST.bluetoothScanMode ? `
+            <input type="text" id="ssBluetoothCapture" class="ss-bt-capture" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-hidden="true">
+            <div class="ss-direct-scanner">
+              <button type="button" class="btn btn-blue" id="ssConnectHidScanner"><i class="fa-solid fa-plug"></i> Connect HID Scanner</button>
+              <button type="button" class="btn btn-ghost" id="ssConnectSerialScanner"><i class="fa-solid fa-usb"></i> Connect Serial Scanner</button>
+              <div class="ss-direct-scanner-status" id="ssDirectScannerStatus">BT mode ready. If normal scan does not type, connect scanner here.</div>
+            </div>` : ''}
           <div class="ss-entry-grid">${sheet.columns.map(fieldHtml).join('')}</div>
         </div>
         <div class="panel" id="ssPreviewPanel">
@@ -648,6 +654,17 @@ window.PAGES = window.PAGES || {};
     keyBufferTimer: null,
     keyBufferStartedAt: 0,
     keyBufferLastAt: 0,
+  };
+
+  const directScannerState = {
+    hidDevice: null,
+    hidCodes: [],
+    hidBuffer: '',
+    hidTimer: null,
+    serialPort: null,
+    serialReader: null,
+    serialBuffer: '',
+    serialTimer: null,
   };
 
   // Checks whether `value` already exists (case-insensitive, trimmed) in
@@ -1275,6 +1292,161 @@ window.PAGES = window.PAGES || {};
     openBluetoothScanResult(normText, targetId);
   }
 
+  function setDirectScannerStatus(msg, isError) {
+    const el = document.getElementById('ssDirectScannerStatus');
+    if (el) {
+      el.textContent = msg;
+      el.style.color = isError ? 'var(--red)' : 'var(--txt-muted)';
+    }
+    if (window.showToast) window.showToast(msg);
+  }
+
+  async function connectHidScanner() {
+    if (!('hid' in navigator)) {
+      setDirectScannerStatus('WebHID is not available in this browser. Use latest Chrome/Edge on HTTPS or localhost.', true);
+      return;
+    }
+    try {
+      const devices = await navigator.hid.requestDevice({
+        filters: [
+          { usagePage: 0x8c },   // POS barcode scanner page
+          { usagePage: 0xff00 }, // vendor-defined scanners
+          { usagePage: 0x01 },   // generic desktop HID fallback
+        ],
+      });
+      const device = devices && devices[0];
+      if (!device) return;
+      directScannerState.hidDevice = device;
+      if (!device.opened) await device.open();
+      device.removeEventListener('inputreport', onHidScannerInputReport);
+      device.addEventListener('inputreport', onHidScannerInputReport);
+      setDirectScannerStatus(`HID scanner connected: ${device.productName || 'Scanner'}`, false);
+      focusBluetoothScanTarget();
+    } catch (err) {
+      console.warn('HID scanner connect failed', err);
+      setDirectScannerStatus('Could not connect HID scanner. If it is a protected keyboard device, try Serial Scanner or scanner HID/keyboard mode.', true);
+    }
+  }
+
+  function onHidScannerInputReport(event) {
+    if (ST.view !== 'data-entry') return;
+    const bytes = [];
+    for (let i = 0; i < event.data.byteLength; i++) bytes.push(event.data.getUint8(i));
+    const parsed = parseHidKeyboardReport(bytes);
+    directScannerState.hidCodes = parsed.codes;
+    parsed.chars.forEach((ch) => {
+      if (ch === '\n' || ch === '\t') finishDirectScannerBuffer('hid');
+      else addDirectScannerChar(ch, 'hid');
+    });
+  }
+
+  function parseHidKeyboardReport(bytes) {
+    const bootLike = bytes.length >= 8;
+    const modifier = bootLike ? bytes[0] : 0;
+    const codeBytes = bootLike ? bytes.slice(2) : bytes;
+    const prev = new Set(directScannerState.hidCodes || []);
+    const shift = !!(modifier & 0x22);
+    const codes = codeBytes.filter((code) => code && code !== 1);
+    const chars = [];
+    codes.forEach((code) => {
+      if (prev.has(code)) return;
+      const ch = hidKeyCodeToChar(code, shift);
+      if (ch) chars.push(ch);
+    });
+    return { codes, chars };
+  }
+
+  function hidKeyCodeToChar(code, shift) {
+    if (code >= 4 && code <= 29) {
+      const ch = String.fromCharCode(97 + code - 4);
+      return shift ? ch.toUpperCase() : ch;
+    }
+    if (code >= 30 && code <= 38) {
+      const normal = String(code - 29);
+      const shifted = '!@#$%^&*(';
+      return shift ? shifted[code - 30] : normal;
+    }
+    if (code === 39) return shift ? ')' : '0';
+    if (code === 40) return '\n';
+    if (code === 43) return '\t';
+    if (code === 44) return ' ';
+    const normal = {
+      45: '-', 46: '=', 47: '[', 48: ']', 49: '\\', 51: ';', 52: "'", 53: '`',
+      54: ',', 55: '.', 56: '/',
+    };
+    const shifted = {
+      45: '_', 46: '+', 47: '{', 48: '}', 49: '|', 51: ':', 52: '"', 53: '~',
+      54: '<', 55: '>', 56: '?',
+    };
+    return shift ? shifted[code] : normal[code];
+  }
+
+  function addDirectScannerChar(ch, source) {
+    if (source === 'hid') directScannerState.hidBuffer += ch;
+    else directScannerState.serialBuffer += ch;
+    const timerKey = source === 'hid' ? 'hidTimer' : 'serialTimer';
+    if (directScannerState[timerKey]) window.clearTimeout(directScannerState[timerKey]);
+    directScannerState[timerKey] = window.setTimeout(() => finishDirectScannerBuffer(source), 900);
+  }
+
+  function finishDirectScannerBuffer(source) {
+    const key = source === 'hid' ? 'hidBuffer' : 'serialBuffer';
+    const timerKey = source === 'hid' ? 'hidTimer' : 'serialTimer';
+    const value = String(directScannerState[key] || '').trim();
+    directScannerState[key] = '';
+    if (directScannerState[timerKey]) {
+      window.clearTimeout(directScannerState[timerKey]);
+      directScannerState[timerKey] = null;
+    }
+    if (value) handleBluetoothScanValue(value, resolveScanTargetId());
+  }
+
+  async function connectSerialScanner() {
+    if (!('serial' in navigator)) {
+      setDirectScannerStatus('Web Serial is not available in this browser. Use latest Chrome/Edge on HTTPS or localhost.', true);
+      return;
+    }
+    try {
+      const port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 9600 });
+      directScannerState.serialPort = port;
+      setDirectScannerStatus('Serial scanner connected. Scan now.', false);
+      readSerialScannerLoop(port);
+      focusBluetoothScanTarget();
+    } catch (err) {
+      console.warn('Serial scanner connect failed', err);
+      setDirectScannerStatus('Could not connect Serial scanner. Try another baud/mode if your scanner manual supports it.', true);
+    }
+  }
+
+  async function readSerialScannerLoop(port) {
+    const decoder = new TextDecoder();
+    while (port.readable && directScannerState.serialPort === port) {
+      const reader = port.readable.getReader();
+      directScannerState.serialReader = reader;
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          if (!value) continue;
+          handleSerialScannerText(decoder.decode(value, { stream: true }));
+        }
+      } catch (err) {
+        console.warn('Serial scanner read failed', err);
+        setDirectScannerStatus('Serial scanner disconnected or read failed.', true);
+      } finally {
+        reader.releaseLock();
+      }
+    }
+  }
+
+  function handleSerialScannerText(text) {
+    String(text || '').split('').forEach((ch) => {
+      if (ch === '\r' || ch === '\n' || ch === '\t') finishDirectScannerBuffer('serial');
+      else addDirectScannerChar(ch, 'serial');
+    });
+  }
+
   // =========================================================================
   // Wiring
   // =========================================================================
@@ -1366,6 +1538,10 @@ window.PAGES = window.PAGES || {};
       btCapture.addEventListener('paste', () => window.setTimeout(() => queueBluetoothScanValue(btCapture.value, resolveScanTargetId()), 0));
       btCapture.addEventListener('change', () => queueBluetoothScanValue(btCapture.value, resolveScanTargetId()));
     }
+    const hidBtn = document.getElementById('ssConnectHidScanner');
+    if (hidBtn) hidBtn.onclick = connectHidScanner;
+    const serialBtn = document.getElementById('ssConnectSerialScanner');
+    if (serialBtn) serialBtn.onclick = connectSerialScanner;
     document.querySelectorAll('input[data-type="image"]').forEach((input) => {
       input.addEventListener('change', () => handleImageFieldChange(input));
     });

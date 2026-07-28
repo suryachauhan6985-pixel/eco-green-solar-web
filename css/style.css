@@ -1014,6 +1014,13 @@ body.no-scroll{overflow:hidden; height:100%;}
   position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;
   overflow:hidden; left:-9999px; top:auto;
 }
+.ss-direct-scanner{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  background:rgba(59,142,208,.09); border:1px solid rgba(59,142,208,.35);
+  border-radius:8px; padding:10px; margin-bottom:12px;
+}
+.ss-direct-scanner .btn{padding:8px 11px; font-size:12px;}
+.ss-direct-scanner-status{font-size:11.5px; color:var(--txt-muted); font-weight:600; flex:1; min-width:220px;}
 
 .ss-bottom-nav{
   position:fixed; left:var(--sidebar-w); right:0; bottom:0; z-index:25;
