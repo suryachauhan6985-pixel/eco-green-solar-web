@@ -894,8 +894,8 @@ window.PAGES = window.PAGES || {};
             <div class="ss-scanner-result-msg" id="ssScanResultMsg"></div>
           </div>
           <div class="ss-scanner-result-actions">
-            <button type="button" class="btn btn-ghost" id="ssScanRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
-            <button type="button" class="btn btn-green" id="ssScanSave"><i class="fa-solid fa-check"></i> Save</button>
+            <button type="button" class="btn btn-ghost" id="ssScanRetry" tabindex="-1"><i class="fa-solid fa-rotate-left"></i> Retry</button>
+            <button type="button" class="btn btn-green" id="ssScanSave" tabindex="-1"><i class="fa-solid fa-check"></i> Save</button>
           </div>
         </div>
       </div>
@@ -907,7 +907,39 @@ window.PAGES = window.PAGES || {};
     bindBtResultAction(overlay.querySelector('#ssScanBack'), closeBluetoothResultAndResume);
     bindBtResultAction(overlay.querySelector('#ssScanRetry'), retryScan);
     bindBtResultAction(overlay.querySelector('#ssScanSave'), confirmScanSave);
-    showScanResult(text);
+    overlay.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    showBluetoothScanResult(text);
+  }
+
+  function showBluetoothScanResult(text) {
+    const targetId = scannerState.targetFieldId || resolveScanTargetId();
+    const field = targetId ? document.getElementById(targetId) : null;
+    const colId = field ? field.dataset.col : null;
+    const sheet = window.SheetsStore.getSheet(ST.activeSheetId);
+    const dup = isDuplicateScanValue(sheet, colId, text);
+
+    scannerState.pendingText = text;
+    scannerState.pendingColId = colId;
+    scannerState.pendingIsDup = dup;
+
+    const panel = document.getElementById('ssScanResult');
+    const card = document.getElementById('ssScanResultCard');
+    const valueEl = document.getElementById('ssScanResultValue');
+    const msgEl = document.getElementById('ssScanResultMsg');
+    const saveBtn = document.getElementById('ssScanSave');
+    if (valueEl) valueEl.textContent = text;
+    if (card) card.classList.toggle('dup', dup);
+    if (msgEl) msgEl.textContent = dup
+      ? 'This serial no. already exists in the record. Delete the old row first, or Retry with a different code.'
+      : 'Scanned successfully.';
+    if (saveBtn) saveBtn.style.display = dup ? 'none' : '';
+    if (panel) panel.style.display = 'flex';
   }
 
   function bindBtResultAction(btn, handler) {
@@ -1153,7 +1185,13 @@ window.PAGES = window.PAGES || {};
 
   function onBluetoothScannerKeydown(e) {
     if (ST.view !== 'data-entry') return;
-    if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) return;
+    if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) {
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      return;
+    }
     if (!ST.bluetoothScanMode) {
       observeKeyboardWedgeScan(e);
       return;
