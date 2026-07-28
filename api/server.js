@@ -20,7 +20,7 @@ const registerPurchaseRoutes = require('./routes/purchase');
 const registerLedgersRoutes = require('./routes/ledgers');
 const registerSalesRoutes = require('./routes/sales');
 const registerStockassignRoutes = require('./routes/stockassign');
-const registerScanSheetRoutes = require('./routes/scansheet');
+const registerScanSheetRoutes = require('./routes/scansheet.routes');
 const registerReportsRoutes = require('./routes/reports');
 const registerBackupRoutes = require('./routes/backup');
 
