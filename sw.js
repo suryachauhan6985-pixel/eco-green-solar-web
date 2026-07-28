@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eco-green-solar-erp-v1';
+const CACHE_NAME = 'eco-green-solar-erp-v2';
 
 const APP_SHELL = [
   '/',
