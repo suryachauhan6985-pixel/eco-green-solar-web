@@ -435,7 +435,8 @@ window.PAGES = window.PAGES || {};
     // still discouraged via the non-credential-looking name + vendor
     // "ignore me" flags below; the keyboard popping up is fine, we just
     // need the scanned value to land in the field.
-    const antiAutofillAttrs = `name="ss_noauto_${fid}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"`;
+    const scanInputModeAttr = ST.bluetoothScanMode ? 'inputmode="none"' : 'inputmode="text"';
+    const antiAutofillAttrs = `name="ss_noauto_${fid}" ${scanInputModeAttr} autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"`;
     if (col.type === 'barcode') {
       return `
         <div class="field span-2">
@@ -997,17 +998,27 @@ window.PAGES = window.PAGES || {};
       return;
     }
 
-    if (!activeIsScanField && key && key.length === 1) {
-      const targetId = resolveScanTargetId();
-      const field = targetId ? document.getElementById(targetId) : null;
-      if (!field) return;
-      ST.lastBarcodeFieldId = targetId;
-      field.focus();
-      field.value = String(field.value || '') + key;
-      field.dispatchEvent(new Event('input', { bubbles: true }));
+    if (key && key.length === 1) {
+      appendBluetoothScannerChar(key, activeIsScanField ? active : null);
       e.preventDefault();
       e.stopPropagation();
     }
+  }
+
+  function appendBluetoothScannerChar(ch, preferredField) {
+    const targetId = resolveScanTargetId();
+    const field = preferredField || (targetId ? document.getElementById(targetId) : null);
+    if (!field) return;
+    ST.lastBarcodeFieldId = field.id;
+    if (document.activeElement !== field) field.focus();
+
+    const oldValue = String(field.value || '');
+    const start = typeof field.selectionStart === 'number' ? field.selectionStart : oldValue.length;
+    const end = typeof field.selectionEnd === 'number' ? field.selectionEnd : start;
+    field.value = oldValue.slice(0, start) + ch + oldValue.slice(end);
+    const caret = start + ch.length;
+    if (typeof field.setSelectionRange === 'function') field.setSelectionRange(caret, caret);
+    field.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
   function handleBluetoothScanValue(text) {
