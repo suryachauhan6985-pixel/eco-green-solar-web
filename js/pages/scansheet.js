@@ -440,9 +440,11 @@ window.PAGES = window.PAGES || {};
     // still discouraged via the non-credential-looking name + vendor
     // "ignore me" flags below; the keyboard popping up is fine, we just
     // need the scanned value to land in the field.
-    // In BT mode fields must stay writable. Android Bluetooth scanners that
-    // appear as a paired keyboard type only into normal text inputs.
-    const scanInputModeAttr = 'inputmode="text"';
+    // In BT mode keep the real Serial field writable, but hide the mobile
+    // soft keyboard. The Bluetooth scanner is paired as a hardware keyboard,
+    // so it can still type into this focused input while Android's keyboard
+    // stays out of the way.
+    const scanInputModeAttr = ST.bluetoothScanMode ? 'inputmode="none"' : 'inputmode="text"';
     const antiAutofillAttrs = `name="ss_noauto_${fid}" ${scanInputModeAttr} autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"`;
     if (col.type === 'barcode') {
       return `
