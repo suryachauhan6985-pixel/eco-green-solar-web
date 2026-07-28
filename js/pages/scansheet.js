@@ -392,6 +392,7 @@ window.PAGES = window.PAGES || {};
       <div class="ss-body">
         <div class="panel" id="ssEntryForm">
           <h3><i class="fa-solid fa-pen"></i> New Entry</h3>
+          ${ST.bluetoothScanMode ? '<div id="ssBluetoothCapture" class="ss-bt-capture" tabindex="0" aria-hidden="true"></div>' : ''}
           <div class="ss-entry-grid">${sheet.columns.map(fieldHtml).join('')}</div>
         </div>
         <div class="panel" id="ssPreviewPanel">
@@ -435,7 +436,7 @@ window.PAGES = window.PAGES || {};
     // still discouraged via the non-credential-looking name + vendor
     // "ignore me" flags below; the keyboard popping up is fine, we just
     // need the scanned value to land in the field.
-    const scanInputModeAttr = ST.bluetoothScanMode ? 'inputmode="none"' : 'inputmode="text"';
+    const scanInputModeAttr = ST.bluetoothScanMode ? 'inputmode="none" readonly' : 'inputmode="text"';
     const antiAutofillAttrs = `name="ss_noauto_${fid}" ${scanInputModeAttr} autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"`;
     if (col.type === 'barcode') {
       return `
@@ -968,10 +969,11 @@ window.PAGES = window.PAGES || {};
     window.setTimeout(() => {
       const targetId = resolveScanTargetId();
       const field = targetId ? document.getElementById(targetId) : null;
+      const capture = document.getElementById('ssBluetoothCapture');
       if (!field) return;
       ST.lastBarcodeFieldId = targetId;
-      field.focus();
-      if (typeof field.select === 'function' && !field.value) field.select();
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      if (capture) capture.focus({ preventScroll: true });
     }, 0);
   }
 
@@ -983,9 +985,9 @@ window.PAGES = window.PAGES || {};
     const active = document.activeElement;
     const activeIsScanField = active && active.matches && active.matches('input[data-type="barcode"], input[data-type="text"]');
     if (key === 'Enter' || key === 'Tab') {
-      const activeValue = activeIsScanField
-        ? String(active.value || '').trim()
-        : '';
+      const targetId = resolveScanTargetId();
+      const targetField = targetId ? document.getElementById(targetId) : null;
+      const activeValue = String((activeIsScanField ? active : targetField)?.value || '').trim();
       if (activeValue) {
         e.preventDefault();
         e.stopPropagation();
@@ -1010,7 +1012,6 @@ window.PAGES = window.PAGES || {};
     const field = preferredField || (targetId ? document.getElementById(targetId) : null);
     if (!field) return;
     ST.lastBarcodeFieldId = field.id;
-    if (document.activeElement !== field) field.focus();
 
     const oldValue = String(field.value || '');
     const start = typeof field.selectionStart === 'number' ? field.selectionStart : oldValue.length;

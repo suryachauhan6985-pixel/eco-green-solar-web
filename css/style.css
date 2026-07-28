@@ -1010,6 +1010,10 @@ body.no-scroll{overflow:hidden; height:100%;}
 .ss-row-thumb{width:34px; height:34px; object-fit:cover; border-radius:6px;}
 .ss-preview-table{margin-top:2px;}
 .ss-collapsed .table-wrap{display:none;}
+.ss-bt-capture{
+  position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;
+  overflow:hidden; left:-9999px; top:auto;
+}
 
 .ss-bottom-nav{
   position:fixed; left:var(--sidebar-w); right:0; bottom:0; z-index:25;
