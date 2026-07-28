@@ -630,16 +630,9 @@ window.PAGES = window.PAGES || {};
   };
 
   const bluetoothScannerState = {
-    buffer: '',
-    lastKeyAt: 0,
-    flushTimer: null,
-    fieldTimer: null,
     lastProcessed: '',
     lastProcessedAt: 0,
     listenerAttached: false,
-    burstGapMs: 350,
-    flushDelayMs: 220,
-    minChars: 3,
   };
 
   // Checks whether `value` already exists (case-insensitive, trimmed) in
@@ -966,16 +959,8 @@ window.PAGES = window.PAGES || {};
   }
 
   function resetBluetoothScanBuffer() {
-    bluetoothScannerState.buffer = '';
-    bluetoothScannerState.lastKeyAt = 0;
-    if (bluetoothScannerState.flushTimer) {
-      clearTimeout(bluetoothScannerState.flushTimer);
-      bluetoothScannerState.flushTimer = null;
-    }
-    if (bluetoothScannerState.fieldTimer) {
-      clearTimeout(bluetoothScannerState.fieldTimer);
-      bluetoothScannerState.fieldTimer = null;
-    }
+    bluetoothScannerState.lastProcessed = '';
+    bluetoothScannerState.lastProcessedAt = 0;
   }
 
   function focusBluetoothScanTarget() {
@@ -989,40 +974,21 @@ window.PAGES = window.PAGES || {};
     }, 0);
   }
 
-  function scheduleBluetoothScanFlush() {
-    if (bluetoothScannerState.flushTimer) clearTimeout(bluetoothScannerState.flushTimer);
-    bluetoothScannerState.flushTimer = setTimeout(() => {
-      flushBluetoothScanBuffer(false);
-    }, bluetoothScannerState.flushDelayMs);
-  }
-
-  function flushBluetoothScanBuffer(force) {
-    const text = bluetoothScannerState.buffer.trim();
-    resetBluetoothScanBuffer();
-    if (!force && text.length < bluetoothScannerState.minChars) return;
-    if (!text) return;
-    handleBluetoothScanValue(text);
-  }
-
   function onBluetoothScannerKeydown(e) {
     if (!ST.bluetoothScanMode || ST.view !== 'data-entry') return;
     if (e.ctrlKey || e.altKey || e.metaKey) return;
 
     const key = e.key;
+    const active = document.activeElement;
+    const activeIsScanField = active && active.matches && active.matches('input[data-type="barcode"], input[data-type="text"]');
     if (key === 'Enter' || key === 'Tab') {
-      const active = document.activeElement;
-      const activeValue = active && active.matches && active.matches('input[data-type="barcode"], input[data-type="text"]')
+      const activeValue = activeIsScanField
         ? String(active.value || '').trim()
         : '';
       if (activeValue) {
         e.preventDefault();
         e.stopPropagation();
-        resetBluetoothScanBuffer();
         handleBluetoothScanValue(activeValue);
-      } else if (bluetoothScannerState.buffer) {
-        e.preventDefault();
-        e.stopPropagation();
-        flushBluetoothScanBuffer(true);
       }
       return;
     }
@@ -1030,27 +996,18 @@ window.PAGES = window.PAGES || {};
       resetBluetoothScanBuffer();
       return;
     }
-    if (!key || key.length !== 1) return;
 
-    const now = Date.now();
-    if (bluetoothScannerState.lastKeyAt && now - bluetoothScannerState.lastKeyAt > bluetoothScannerState.burstGapMs) {
-      resetBluetoothScanBuffer();
+    if (!activeIsScanField && key && key.length === 1) {
+      const targetId = resolveScanTargetId();
+      const field = targetId ? document.getElementById(targetId) : null;
+      if (!field) return;
+      ST.lastBarcodeFieldId = targetId;
+      field.focus();
+      field.value = String(field.value || '') + key;
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      e.preventDefault();
+      e.stopPropagation();
     }
-    bluetoothScannerState.lastKeyAt = now;
-    bluetoothScannerState.buffer += key;
-    scheduleBluetoothScanFlush();
-  }
-
-  function scheduleBluetoothInputFlush(input) {
-    if (!ST.bluetoothScanMode || !input) return;
-    if (bluetoothScannerState.fieldTimer) clearTimeout(bluetoothScannerState.fieldTimer);
-    bluetoothScannerState.fieldTimer = setTimeout(() => {
-      const text = String(input.value || '').trim();
-      if (text.length >= bluetoothScannerState.minChars) {
-        resetBluetoothScanBuffer();
-        handleBluetoothScanValue(text);
-      }
-    }, bluetoothScannerState.flushDelayMs);
   }
 
   function handleBluetoothScanValue(text) {
@@ -1142,7 +1099,6 @@ window.PAGES = window.PAGES || {};
     // central scan button targets whichever field the user was last in.
     document.querySelectorAll('input[data-type="barcode"], input[data-type="text"]').forEach((input) => {
       input.addEventListener('focus', () => { ST.lastBarcodeFieldId = input.id; });
-      input.addEventListener('input', () => scheduleBluetoothInputFlush(input));
     });
     document.querySelectorAll('input[data-type="image"]').forEach((input) => {
       input.addEventListener('change', () => handleImageFieldChange(input));
