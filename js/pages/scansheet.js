@@ -874,23 +874,37 @@ window.PAGES = window.PAGES || {};
     scannerState.handledOnce = true;
 
     const overlay = document.createElement('div');
-    overlay.className = 'ss-bt-result-overlay';
+    overlay.className = 'ss-scanner-overlay ss-bt-result-overlay';
     overlay.innerHTML = `
-      <div class="ss-bt-result-sheet">
-        <div class="ss-scanner-result-card" id="ssScanResultCard">
-          <div class="ss-scanner-result-label" id="ssScanResultLabel">Scanned value</div>
-          <div class="ss-scanner-result-value" id="ssScanResultValue"></div>
-          <div class="ss-scanner-result-msg" id="ssScanResultMsg"></div>
+      <div class="ss-scanner-topbar">
+        <button type="button" class="ss-icon-btn light" id="ssScanBack" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
+        <div class="ss-scanner-title">Bluetooth Scan</div>
+        <div class="ss-scanner-topbtns"></div>
+      </div>
+      <div class="ss-scanner-camwrap">
+        <div class="ss-bt-result-blank">
+          <i class="fa-brands fa-bluetooth-b"></i>
+          <span>Scanner paused</span>
         </div>
-        <div class="ss-scanner-result-actions" id="ssScanResult">
-          <button type="button" class="btn btn-ghost" id="ssScanRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
-          <button type="button" class="btn btn-green" id="ssScanSave"><i class="fa-solid fa-check"></i> Save</button>
+        <div class="ss-scanner-instruction" id="ssScanStatus"></div>
+        <div class="ss-scanner-result" id="ssScanResult">
+          <div class="ss-scanner-result-card" id="ssScanResultCard">
+            <div class="ss-scanner-result-label" id="ssScanResultLabel">Scanned value</div>
+            <div class="ss-scanner-result-value" id="ssScanResultValue"></div>
+            <div class="ss-scanner-result-msg" id="ssScanResultMsg"></div>
+          </div>
+          <div class="ss-scanner-result-actions">
+            <button type="button" class="btn btn-ghost" id="ssScanRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
+            <button type="button" class="btn btn-green" id="ssScanSave"><i class="fa-solid fa-check"></i> Save</button>
+          </div>
         </div>
       </div>
     `;
     document.body.appendChild(overlay);
     scannerState.overlayEl = overlay;
+    document.body.style.overflow = 'hidden';
 
+    overlay.querySelector('#ssScanBack').onclick = closeScanner;
     overlay.querySelector('#ssScanRetry').onclick = retryScan;
     overlay.querySelector('#ssScanSave').onclick = confirmScanSave;
     showScanResult(text);
@@ -919,7 +933,7 @@ window.PAGES = window.PAGES || {};
     scannerState.handledOnce = false;
     if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) {
       clearBluetoothTargetValue(scannerState.targetFieldId);
-      closeBluetoothResultOverlay();
+      closeScanner();
       resetBluetoothScanBuffer();
       focusBluetoothScanTarget();
       return;
@@ -940,8 +954,7 @@ window.PAGES = window.PAGES || {};
       setScanStatus('Saved \u2713 \u2014 scan the next one');
       scannerState.handledOnce = false;
       if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) {
-        closeBluetoothResultOverlay();
-        clearBluetoothTargetValue(scannerState.targetFieldId);
+        closeScanner();
         resetBluetoothScanBuffer();
         focusBluetoothScanTarget();
       }
