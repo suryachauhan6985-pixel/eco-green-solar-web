@@ -20,6 +20,7 @@ const registerPurchaseRoutes = require('./routes/purchase');
 const registerLedgersRoutes = require('./routes/ledgers');
 const registerSalesRoutes = require('./routes/sales');
 const registerStockassignRoutes = require('./routes/stockassign');
+const registerScanSheetRoutes = require('./routes/scansheet');
 const registerReportsRoutes = require('./routes/reports');
 const registerBackupRoutes = require('./routes/backup');
 
@@ -40,6 +41,7 @@ registerPurchaseRoutes(app, deps);
 registerLedgersRoutes(app, deps);
 registerSalesRoutes(app, deps);
 registerStockassignRoutes(app, deps);
+registerScanSheetRoutes(app, deps);
 registerReportsRoutes(app, deps);
 const backupTasks = registerBackupRoutes(app, deps);
 

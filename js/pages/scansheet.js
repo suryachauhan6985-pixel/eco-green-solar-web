@@ -529,6 +529,38 @@ window.PAGES = window.PAGES || {};
     });
   }
 
+  // Saves text content to disk. On browsers that support it (Chrome/Edge
+  // desktop), this opens the native "Save As" dialog so the user can pick the
+  // folder + file name themselves. On browsers that don't (Firefox, Safari,
+  // most mobile browsers), it falls back to a normal download, which the
+  // browser puts straight into its default Downloads folder on the device.
+  async function saveTextFile(content, suggestedName, mimeType, pickerTypes) {
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({ suggestedName, types: pickerTypes });
+        const writable = await handle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        window.showToast(`Saved "${suggestedName}"`);
+        return true;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return false; // user cancelled the save dialog
+        console.warn('showSaveFilePicker failed, falling back to a direct download', err);
+      }
+    }
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = suggestedName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    window.showToast(`Saved "${suggestedName}" to your Downloads folder`);
+    return true;
+  }
+
   function exportSheetCsv(sheetId) {
     const sheet = window.SheetsStore.getSheet(sheetId);
     if (!sheet) return;
@@ -539,16 +571,10 @@ window.PAGES = window.PAGES || {};
       const row = [en.sno, ...sheet.columns.map((c) => (c.type === 'image' ? '' : (en.values[c.id] || '')))];
       lines.push(row.map(csvEscape).join(','));
     });
-    const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${sheet.name.replace(/[^a-z0-9]+/gi, '_')}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    window.showToast('CSV exported');
+    const fileName = `${sheet.name.replace(/[^a-z0-9]+/gi, '_')}.csv`;
+    saveTextFile(lines.join('\r\n'), fileName, 'text/csv;charset=utf-8;', [
+      { description: 'CSV file', accept: { 'text/csv': ['.csv'] } },
+    ]);
   }
 
   // ---------------- small dropdown menus (sheet card "..." + entry screen "...") ----------------
@@ -1719,7 +1745,11 @@ window.PAGES = window.PAGES || {};
       ST.tab = 'sheets';
       ST.activeSheetId = null;
       ST.editingSheetId = null;
-      render();
+      const r = root();
+      if (r) r.innerHTML = '<div style="padding:60px 20px;text-align:center;color:#888;"><i class="fa-solid fa-spinner fa-spin"></i>&nbsp; Loading your sheets…</div>';
+      // Pull the latest sheets/rows from the database (not just whatever this
+      // browser had cached) so data survives logout/login and works across devices.
+      window.SheetsStore.hydrate().then(render);
     },
   };
 })();
