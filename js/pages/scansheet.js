@@ -436,7 +436,11 @@ window.PAGES = window.PAGES || {};
     // still discouraged via the non-credential-looking name + vendor
     // "ignore me" flags below; the keyboard popping up is fine, we just
     // need the scanned value to land in the field.
-    const scanInputModeAttr = ST.bluetoothScanMode ? 'inputmode="none" readonly' : 'inputmode="text"';
+    // In BT mode the real visible field must stay writable. Many Bluetooth
+    // scanners are keyboard-wedge devices and refuse to inject text into a
+    // readonly/hidden target, so inputmode only hints Chrome not to show the
+    // soft keyboard while keeping the hardware scanner path open.
+    const scanInputModeAttr = ST.bluetoothScanMode ? 'inputmode="none"' : 'inputmode="text"';
     const antiAutofillAttrs = `name="ss_noauto_${fid}" ${scanInputModeAttr} autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"`;
     if (col.type === 'barcode') {
       return `
@@ -639,6 +643,9 @@ window.PAGES = window.PAGES || {};
     pendingTargetId: null,
     pendingTimer: null,
     captureSyncing: false,
+    keyBuffer: '',
+    keyBufferTargetId: null,
+    keyBufferTimer: null,
   };
 
   // Checks whether `value` already exists (case-insensitive, trimmed) in
@@ -901,6 +908,7 @@ window.PAGES = window.PAGES || {};
     hideScanResult();
     scannerState.handledOnce = false;
     if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) {
+      clearBluetoothTargetValue(scannerState.targetFieldId);
       closeScanner();
       resetBluetoothScanBuffer();
       focusBluetoothScanTarget();
@@ -1001,6 +1009,7 @@ window.PAGES = window.PAGES || {};
   function ensureBluetoothScannerListener() {
     if (bluetoothScannerState.listenerAttached) return;
     document.addEventListener('keydown', onBluetoothScannerKeydown, true);
+    document.addEventListener('paste', onBluetoothScannerPaste, true);
     bluetoothScannerState.listenerAttached = true;
   }
 
@@ -1021,9 +1030,25 @@ window.PAGES = window.PAGES || {};
     bluetoothScannerState.lastProcessedAt = 0;
     bluetoothScannerState.pendingText = null;
     bluetoothScannerState.pendingTargetId = null;
+    bluetoothScannerState.keyBuffer = '';
+    bluetoothScannerState.keyBufferTargetId = null;
     if (bluetoothScannerState.pendingTimer) {
       window.clearTimeout(bluetoothScannerState.pendingTimer);
       bluetoothScannerState.pendingTimer = null;
+    }
+    if (bluetoothScannerState.keyBufferTimer) {
+      window.clearTimeout(bluetoothScannerState.keyBufferTimer);
+      bluetoothScannerState.keyBufferTimer = null;
+    }
+    const capture = document.getElementById('ssBluetoothCapture');
+    if (capture) capture.value = '';
+  }
+
+  function clearBluetoothTargetValue(targetId) {
+    const field = targetId ? document.getElementById(targetId) : null;
+    if (field && field.matches && field.matches('input[data-type="barcode"], input[data-type="text"]')) {
+      field.value = '';
+      field.dispatchEvent(new Event('input', { bubbles: true }));
     }
     const capture = document.getElementById('ssBluetoothCapture');
     if (capture) capture.value = '';
@@ -1037,9 +1062,12 @@ window.PAGES = window.PAGES || {};
       if (!field) return;
       ST.lastBarcodeFieldId = targetId;
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      field.removeAttribute('readonly');
+      field.focus({ preventScroll: true });
+      const len = String(field.value || '').length;
+      if (typeof field.setSelectionRange === 'function') field.setSelectionRange(len, len);
       if (capture) {
         capture.value = '';
-        capture.focus({ preventScroll: true });
       }
     }, 0);
   }
@@ -1057,10 +1085,12 @@ window.PAGES = window.PAGES || {};
       const targetField = targetId ? document.getElementById(targetId) : null;
       const capture = document.getElementById('ssBluetoothCapture');
       const captureValue = String(capture?.value || '').trim();
-      const activeValue = String(captureValue || (activeIsScanField ? active : targetField)?.value || '').trim();
+      const bufferValue = String(bluetoothScannerState.keyBuffer || '').trim();
+      const activeValue = String(bufferValue || captureValue || (activeIsScanField ? active : targetField)?.value || '').trim();
       if (activeValue) {
         e.preventDefault();
         e.stopPropagation();
+        clearBluetoothKeyBufferTimer();
         handleBluetoothScanValue(activeValue, targetId);
       }
       return;
@@ -1071,10 +1101,48 @@ window.PAGES = window.PAGES || {};
     }
 
     if (key && key.length === 1) {
+      addBluetoothKeyBufferChar(key);
       appendBluetoothScannerChar(key, activeIsScanField ? active : null);
       e.preventDefault();
       e.stopPropagation();
     }
+  }
+
+  function clearBluetoothKeyBufferTimer() {
+    if (bluetoothScannerState.keyBufferTimer) {
+      window.clearTimeout(bluetoothScannerState.keyBufferTimer);
+      bluetoothScannerState.keyBufferTimer = null;
+    }
+  }
+
+  function addBluetoothKeyBufferChar(ch) {
+    bluetoothScannerState.keyBuffer += ch;
+    bluetoothScannerState.keyBufferTargetId = resolveScanTargetId();
+    clearBluetoothKeyBufferTimer();
+    bluetoothScannerState.keyBufferTimer = window.setTimeout(() => {
+      const text = bluetoothScannerState.keyBuffer;
+      const targetId = bluetoothScannerState.keyBufferTargetId;
+      bluetoothScannerState.keyBuffer = '';
+      bluetoothScannerState.keyBufferTargetId = null;
+      bluetoothScannerState.keyBufferTimer = null;
+      handleBluetoothScanValue(text, targetId);
+    }, 500);
+  }
+
+  function onBluetoothScannerPaste(e) {
+    if (!ST.bluetoothScanMode || ST.view !== 'data-entry') return;
+    if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) return;
+    const text = String((e.clipboardData || window.clipboardData)?.getData('text') || '').trim();
+    if (!text) return;
+    const targetId = resolveScanTargetId();
+    const field = targetId ? document.getElementById(targetId) : null;
+    if (field) {
+      field.value = text;
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    handleBluetoothScanValue(text, targetId);
   }
 
   function appendBluetoothScannerChar(ch, preferredField) {
@@ -1105,6 +1173,7 @@ window.PAGES = window.PAGES || {};
   function queueBluetoothScanValue(text, targetId) {
     const normText = String(text == null ? '' : text).trim();
     if (!normText) return;
+    if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) return;
     bluetoothScannerState.pendingText = normText;
     bluetoothScannerState.pendingTargetId = targetId || resolveScanTargetId();
     if (bluetoothScannerState.pendingTimer) window.clearTimeout(bluetoothScannerState.pendingTimer);
@@ -1122,6 +1191,9 @@ window.PAGES = window.PAGES || {};
     const now = Date.now();
     const normText = String(text == null ? '' : text).trim();
     if (!normText) return;
+    clearBluetoothKeyBufferTimer();
+    bluetoothScannerState.keyBuffer = '';
+    bluetoothScannerState.keyBufferTargetId = null;
     if (normText === bluetoothScannerState.lastProcessed && now - bluetoothScannerState.lastProcessedAt < 1000) return;
     bluetoothScannerState.lastProcessed = normText;
     bluetoothScannerState.lastProcessedAt = now;
