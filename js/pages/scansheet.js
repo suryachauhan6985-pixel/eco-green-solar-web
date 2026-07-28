@@ -393,11 +393,9 @@ window.PAGES = window.PAGES || {};
         <div class="panel" id="ssEntryForm">
           <h3><i class="fa-solid fa-pen"></i> New Entry</h3>
           ${ST.bluetoothScanMode ? `
-            <input type="text" id="ssBluetoothCapture" class="ss-bt-capture" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-hidden="true">
-            <div class="ss-direct-scanner">
-              <button type="button" class="btn btn-blue" id="ssConnectHidScanner"><i class="fa-solid fa-plug"></i> Connect HID Scanner</button>
-              <button type="button" class="btn btn-ghost" id="ssConnectSerialScanner"><i class="fa-solid fa-usb"></i> Connect Serial Scanner</button>
-              <div class="ss-direct-scanner-status" id="ssDirectScannerStatus">BT mode ready. If normal scan does not type, connect scanner here.</div>
+            <div class="ss-bt-scan-box" id="ssBtScanBox">
+              <label><i class="fa-brands fa-bluetooth-b"></i> BT scanner mode</label>
+              <div class="ss-direct-scanner-status" id="ssDirectScannerStatus">Tap the Serial field below, then scan. The scanner should type into that same field.</div>
             </div>` : ''}
           <div class="ss-entry-grid">${sheet.columns.map(fieldHtml).join('')}</div>
         </div>
@@ -442,11 +440,9 @@ window.PAGES = window.PAGES || {};
     // still discouraged via the non-credential-looking name + vendor
     // "ignore me" flags below; the keyboard popping up is fine, we just
     // need the scanned value to land in the field.
-    // In BT mode the real visible field must stay writable. Many Bluetooth
-    // scanners are keyboard-wedge devices and refuse to inject text into a
-    // readonly/hidden target, so inputmode only hints Chrome not to show the
-    // soft keyboard while keeping the hardware scanner path open.
-    const scanInputModeAttr = ST.bluetoothScanMode ? 'inputmode="none"' : 'inputmode="text"';
+    // In BT mode fields must stay writable. Android Bluetooth scanners that
+    // appear as a paired keyboard type only into normal text inputs.
+    const scanInputModeAttr = 'inputmode="text"';
     const antiAutofillAttrs = `name="ss_noauto_${fid}" ${scanInputModeAttr} autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other"`;
     if (col.type === 'barcode') {
       return `
@@ -1061,8 +1057,6 @@ window.PAGES = window.PAGES || {};
       window.clearTimeout(bluetoothScannerState.keyBufferTimer);
       bluetoothScannerState.keyBufferTimer = null;
     }
-    const capture = document.getElementById('ssBluetoothCapture');
-    if (capture) capture.value = '';
   }
 
   function clearBluetoothTargetValue(targetId) {
@@ -1071,24 +1065,30 @@ window.PAGES = window.PAGES || {};
       field.value = '';
       field.dispatchEvent(new Event('input', { bubbles: true }));
     }
-    const capture = document.getElementById('ssBluetoothCapture');
-    if (capture) capture.value = '';
+  }
+
+  function getBluetoothCaptureValue() {
+    return '';
+  }
+
+  function setTargetFieldValue(text, targetId) {
+    const field = targetId ? document.getElementById(targetId) : null;
+    if (!field) return;
+    field.value = text;
+    field.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
   function focusBluetoothScanTarget() {
     window.setTimeout(() => {
       const targetId = resolveScanTargetId();
       const field = targetId ? document.getElementById(targetId) : null;
-      const capture = document.getElementById('ssBluetoothCapture');
-      if (!field) return;
+      if (!targetId) return;
       ST.lastBarcodeFieldId = targetId;
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-      field.removeAttribute('readonly');
-      field.focus({ preventScroll: true });
-      const len = String(field.value || '').length;
-      if (typeof field.setSelectionRange === 'function') field.setSelectionRange(len, len);
-      if (capture) {
-        capture.value = '';
+      if (field) {
+        field.focus({ preventScroll: true });
+        const len = String(field.value || '').length;
+        if (typeof field.setSelectionRange === 'function') field.setSelectionRange(len, len);
       }
     }, 0);
   }
@@ -1108,10 +1108,8 @@ window.PAGES = window.PAGES || {};
     if (key === 'Enter' || key === 'Tab') {
       const targetId = resolveScanTargetId();
       const targetField = targetId ? document.getElementById(targetId) : null;
-      const capture = document.getElementById('ssBluetoothCapture');
-      const captureValue = String(capture?.value || '').trim();
       const bufferValue = String(bluetoothScannerState.keyBuffer || '').trim();
-      const activeValue = String(bufferValue || captureValue || (activeIsScanField ? active : targetField)?.value || '').trim();
+      const activeValue = String(bufferValue || (activeIsScanField ? active : targetField)?.value || '').trim();
       if (activeValue) {
         e.preventDefault();
         e.stopPropagation();
@@ -1125,12 +1123,9 @@ window.PAGES = window.PAGES || {};
       return;
     }
 
-    if (key && key.length === 1) {
-      addBluetoothKeyBufferChar(key);
-      appendBluetoothScannerChar(key, activeIsScanField ? active : null);
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    // In BT mode do not intercept printable keys. Android Bluetooth scanners
+    // are keyboards; preventing keydown blocks the browser from inserting the
+    // scanned characters into the focused Serial field.
   }
 
   function clearBluetoothKeyBufferTimer() {
@@ -1153,7 +1148,7 @@ window.PAGES = window.PAGES || {};
       bluetoothScannerState.keyBufferLastAt = 0;
       bluetoothScannerState.keyBufferTimer = null;
       handleBluetoothScanValue(text, targetId);
-    }, 500);
+    }, 2000);
   }
 
   function onBluetoothScannerPaste(e) {
@@ -1164,8 +1159,7 @@ window.PAGES = window.PAGES || {};
     const targetId = resolveScanTargetId();
     const field = targetId ? document.getElementById(targetId) : null;
     if (field) {
-      field.value = text;
-      field.dispatchEvent(new Event('input', { bubbles: true }));
+      setTargetFieldValue(text, targetId);
     }
     e.preventDefault();
     e.stopPropagation();
@@ -1386,7 +1380,7 @@ window.PAGES = window.PAGES || {};
     else directScannerState.serialBuffer += ch;
     const timerKey = source === 'hid' ? 'hidTimer' : 'serialTimer';
     if (directScannerState[timerKey]) window.clearTimeout(directScannerState[timerKey]);
-    directScannerState[timerKey] = window.setTimeout(() => finishDirectScannerBuffer(source), 900);
+    directScannerState[timerKey] = window.setTimeout(() => finishDirectScannerBuffer(source), 2000);
   }
 
   function finishDirectScannerBuffer(source) {
@@ -1528,16 +1522,22 @@ window.PAGES = window.PAGES || {};
       btCapture.addEventListener('input', () => {
         if (bluetoothScannerState.captureSyncing) return;
         const targetId = resolveScanTargetId();
-        const field = targetId ? document.getElementById(targetId) : null;
-        if (field) {
-          field.value = btCapture.value;
-          field.dispatchEvent(new Event('input', { bubbles: true }));
-        }
+        setTargetFieldValue(btCapture.value, targetId);
         queueBluetoothScanValue(btCapture.value, targetId);
       });
-      btCapture.addEventListener('paste', () => window.setTimeout(() => queueBluetoothScanValue(btCapture.value, resolveScanTargetId()), 0));
+      btCapture.addEventListener('paste', () => window.setTimeout(() => {
+        const targetId = resolveScanTargetId();
+        setTargetFieldValue(btCapture.value, targetId);
+        queueBluetoothScanValue(btCapture.value, targetId);
+      }, 0));
       btCapture.addEventListener('change', () => queueBluetoothScanValue(btCapture.value, resolveScanTargetId()));
+      btCapture.addEventListener('focus', () => {
+        const targetId = resolveScanTargetId();
+        if (targetId) ST.lastBarcodeFieldId = targetId;
+      });
     }
+    const btBox = document.getElementById('ssBtScanBox');
+    if (btBox) btBox.onclick = focusBluetoothScanTarget;
     const hidBtn = document.getElementById('ssConnectHidScanner');
     if (hidBtn) hidBtn.onclick = connectHidScanner;
     const serialBtn = document.getElementById('ssConnectSerialScanner');

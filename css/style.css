@@ -1010,15 +1010,19 @@ body.no-scroll{overflow:hidden; height:100%;}
 .ss-row-thumb{width:34px; height:34px; object-fit:cover; border-radius:6px;}
 .ss-preview-table{margin-top:2px;}
 .ss-collapsed .table-wrap{display:none;}
-.ss-bt-capture{
-  position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;
-  overflow:hidden; left:-9999px; top:auto;
-}
+.ss-bt-capture{position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; overflow:hidden; left:-9999px; top:auto;}
+.ss-bt-scan-box,
 .ss-direct-scanner{
-  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  display:flex; flex-direction:column; gap:8px;
   background:rgba(59,142,208,.09); border:1px solid rgba(59,142,208,.35);
   border-radius:8px; padding:10px; margin-bottom:12px;
 }
+.ss-bt-scan-box label{color:var(--blue); font-size:13px; font-weight:800; display:flex; align-items:center; gap:8px;}
+.ss-bt-visible-capture{
+  width:100%; background:var(--input-bg); border:2px solid var(--blue); color:var(--txt);
+  border-radius:8px; padding:13px 12px; font-size:16px; font-weight:700; outline:none;
+}
+.ss-bt-visible-capture:focus{box-shadow:0 0 0 3px rgba(59,142,208,.22);}
 .ss-direct-scanner .btn{padding:8px 11px; font-size:12px;}
 .ss-direct-scanner-status{font-size:11.5px; color:var(--txt-muted); font-weight:600; flex:1; min-width:220px;}
 
