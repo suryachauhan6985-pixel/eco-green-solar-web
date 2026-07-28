@@ -392,7 +392,7 @@ window.PAGES = window.PAGES || {};
       <div class="ss-body">
         <div class="panel" id="ssEntryForm">
           <h3><i class="fa-solid fa-pen"></i> New Entry</h3>
-          ${ST.bluetoothScanMode ? '<div id="ssBluetoothCapture" class="ss-bt-capture" tabindex="0" aria-hidden="true"></div>' : ''}
+          ${ST.bluetoothScanMode ? '<input type="text" id="ssBluetoothCapture" class="ss-bt-capture" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-hidden="true">' : ''}
           <div class="ss-entry-grid">${sheet.columns.map(fieldHtml).join('')}</div>
         </div>
         <div class="panel" id="ssPreviewPanel">
@@ -635,6 +635,10 @@ window.PAGES = window.PAGES || {};
     lastProcessed: '',
     lastProcessedAt: 0,
     listenerAttached: false,
+    pendingText: null,
+    pendingTargetId: null,
+    pendingTimer: null,
+    captureSyncing: false,
   };
 
   // Checks whether `value` already exists (case-insensitive, trimmed) in
@@ -841,6 +845,47 @@ window.PAGES = window.PAGES || {};
     if (targetBox) targetBox.style.visibility = 'hidden';
   }
 
+  function openBluetoothScanResult(text, targetId) {
+    scannerState.targetFieldId = targetId || resolveScanTargetId();
+    scannerState.handledOnce = true;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'ss-scanner-overlay ss-bt-result-overlay';
+    overlay.innerHTML = `
+      <div class="ss-scanner-topbar">
+        <button type="button" class="ss-icon-btn light" id="ssScanBack" title="Back"><i class="fa-solid fa-arrow-left"></i></button>
+        <div class="ss-scanner-title">Bluetooth Scan</div>
+        <div class="ss-scanner-topbtns"></div>
+      </div>
+      <div class="ss-scanner-camwrap">
+        <div class="ss-bt-result-blank">
+          <i class="fa-brands fa-bluetooth-b"></i>
+          <span>Scanner paused</span>
+        </div>
+        <div class="ss-scanner-instruction" id="ssScanStatus"></div>
+        <div class="ss-scanner-result" id="ssScanResult">
+          <div class="ss-scanner-result-card" id="ssScanResultCard">
+            <div class="ss-scanner-result-label" id="ssScanResultLabel">Scanned value</div>
+            <div class="ss-scanner-result-value" id="ssScanResultValue"></div>
+            <div class="ss-scanner-result-msg" id="ssScanResultMsg"></div>
+          </div>
+          <div class="ss-scanner-result-actions">
+            <button type="button" class="btn btn-ghost" id="ssScanRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
+            <button type="button" class="btn btn-green" id="ssScanSave"><i class="fa-solid fa-check"></i> Save</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    scannerState.overlayEl = overlay;
+    document.body.style.overflow = 'hidden';
+
+    overlay.querySelector('#ssScanBack').onclick = closeScanner;
+    overlay.querySelector('#ssScanRetry').onclick = retryScan;
+    overlay.querySelector('#ssScanSave').onclick = confirmScanSave;
+    showScanResult(text);
+  }
+
   function hideScanResult() {
     const panel = document.getElementById('ssScanResult');
     const targetBox = document.getElementById('ssScanTargetBox');
@@ -855,6 +900,12 @@ window.PAGES = window.PAGES || {};
   function retryScan() {
     hideScanResult();
     scannerState.handledOnce = false;
+    if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) {
+      closeScanner();
+      resetBluetoothScanBuffer();
+      focusBluetoothScanTarget();
+      return;
+    }
     setScanStatus('Place QR & barcode in the box');
   }
 
@@ -870,6 +921,11 @@ window.PAGES = window.PAGES || {};
     if (saved) {
       setScanStatus('Saved \u2713 \u2014 scan the next one');
       scannerState.handledOnce = false;
+      if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) {
+        closeScanner();
+        resetBluetoothScanBuffer();
+        focusBluetoothScanTarget();
+      }
     } else {
       // Multi-column sheet — field is filled, remaining columns still need
       // to be entered by hand, so hand control back to the data-entry form.
@@ -963,6 +1019,14 @@ window.PAGES = window.PAGES || {};
   function resetBluetoothScanBuffer() {
     bluetoothScannerState.lastProcessed = '';
     bluetoothScannerState.lastProcessedAt = 0;
+    bluetoothScannerState.pendingText = null;
+    bluetoothScannerState.pendingTargetId = null;
+    if (bluetoothScannerState.pendingTimer) {
+      window.clearTimeout(bluetoothScannerState.pendingTimer);
+      bluetoothScannerState.pendingTimer = null;
+    }
+    const capture = document.getElementById('ssBluetoothCapture');
+    if (capture) capture.value = '';
   }
 
   function focusBluetoothScanTarget() {
@@ -973,12 +1037,16 @@ window.PAGES = window.PAGES || {};
       if (!field) return;
       ST.lastBarcodeFieldId = targetId;
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-      if (capture) capture.focus({ preventScroll: true });
+      if (capture) {
+        capture.value = '';
+        capture.focus({ preventScroll: true });
+      }
     }, 0);
   }
 
   function onBluetoothScannerKeydown(e) {
     if (!ST.bluetoothScanMode || ST.view !== 'data-entry') return;
+    if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) return;
     if (e.ctrlKey || e.altKey || e.metaKey) return;
 
     const key = e.key;
@@ -987,11 +1055,13 @@ window.PAGES = window.PAGES || {};
     if (key === 'Enter' || key === 'Tab') {
       const targetId = resolveScanTargetId();
       const targetField = targetId ? document.getElementById(targetId) : null;
-      const activeValue = String((activeIsScanField ? active : targetField)?.value || '').trim();
+      const capture = document.getElementById('ssBluetoothCapture');
+      const captureValue = String(capture?.value || '').trim();
+      const activeValue = String(captureValue || (activeIsScanField ? active : targetField)?.value || '').trim();
       if (activeValue) {
         e.preventDefault();
         e.stopPropagation();
-        handleBluetoothScanValue(activeValue);
+        handleBluetoothScanValue(activeValue, targetId);
       }
       return;
     }
@@ -1020,9 +1090,35 @@ window.PAGES = window.PAGES || {};
     const caret = start + ch.length;
     if (typeof field.setSelectionRange === 'function') field.setSelectionRange(caret, caret);
     field.dispatchEvent(new Event('input', { bubbles: true }));
+    queueBluetoothScanValue(field.value, field.id);
+    syncBluetoothCapture(field.value);
   }
 
-  function handleBluetoothScanValue(text) {
+  function syncBluetoothCapture(value) {
+    const capture = document.getElementById('ssBluetoothCapture');
+    if (!capture) return;
+    bluetoothScannerState.captureSyncing = true;
+    capture.value = String(value || '');
+    bluetoothScannerState.captureSyncing = false;
+  }
+
+  function queueBluetoothScanValue(text, targetId) {
+    const normText = String(text == null ? '' : text).trim();
+    if (!normText) return;
+    bluetoothScannerState.pendingText = normText;
+    bluetoothScannerState.pendingTargetId = targetId || resolveScanTargetId();
+    if (bluetoothScannerState.pendingTimer) window.clearTimeout(bluetoothScannerState.pendingTimer);
+    bluetoothScannerState.pendingTimer = window.setTimeout(() => {
+      const pending = bluetoothScannerState.pendingText;
+      const pendingTarget = bluetoothScannerState.pendingTargetId;
+      bluetoothScannerState.pendingText = null;
+      bluetoothScannerState.pendingTargetId = null;
+      bluetoothScannerState.pendingTimer = null;
+      handleBluetoothScanValue(pending, pendingTarget);
+    }, 180);
+  }
+
+  function handleBluetoothScanValue(text, fieldId) {
     const now = Date.now();
     const normText = String(text == null ? '' : text).trim();
     if (!normText) return;
@@ -1030,15 +1126,14 @@ window.PAGES = window.PAGES || {};
     bluetoothScannerState.lastProcessed = normText;
     bluetoothScannerState.lastProcessedAt = now;
 
-    const targetId = resolveScanTargetId();
+    const targetId = fieldId || resolveScanTargetId();
     const field = targetId ? document.getElementById(targetId) : null;
     const colId = field ? field.dataset.col : null;
     const sheet = window.SheetsStore.getSheet(ST.activeSheetId);
     if (!sheet || !targetId || !colId) return;
-    if (isDuplicateScanValue(sheet, colId, normText)) return;
     beep();
     if (navigator.vibrate) { try { navigator.vibrate(120); } catch (e) { /* not supported */ } }
-    processScanValue(normText, targetId);
+    openBluetoothScanResult(normText, targetId);
   }
 
   // =========================================================================
@@ -1111,7 +1206,27 @@ window.PAGES = window.PAGES || {};
     // central scan button targets whichever field the user was last in.
     document.querySelectorAll('input[data-type="barcode"], input[data-type="text"]').forEach((input) => {
       input.addEventListener('focus', () => { ST.lastBarcodeFieldId = input.id; });
+      input.addEventListener('input', () => {
+        if (!ST.bluetoothScanMode) return;
+        queueBluetoothScanValue(input.value, input.id);
+        syncBluetoothCapture(input.value);
+      });
     });
+    const btCapture = document.getElementById('ssBluetoothCapture');
+    if (btCapture) {
+      btCapture.addEventListener('input', () => {
+        if (bluetoothScannerState.captureSyncing) return;
+        const targetId = resolveScanTargetId();
+        const field = targetId ? document.getElementById(targetId) : null;
+        if (field) {
+          field.value = btCapture.value;
+          field.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        queueBluetoothScanValue(btCapture.value, targetId);
+      });
+      btCapture.addEventListener('paste', () => window.setTimeout(() => queueBluetoothScanValue(btCapture.value, resolveScanTargetId()), 0));
+      btCapture.addEventListener('change', () => queueBluetoothScanValue(btCapture.value, resolveScanTargetId()));
+    }
     document.querySelectorAll('input[data-type="image"]').forEach((input) => {
       input.addEventListener('change', () => handleImageFieldChange(input));
     });
