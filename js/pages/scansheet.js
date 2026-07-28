@@ -633,9 +633,12 @@ window.PAGES = window.PAGES || {};
     buffer: '',
     lastKeyAt: 0,
     flushTimer: null,
+    fieldTimer: null,
+    lastProcessed: '',
+    lastProcessedAt: 0,
     listenerAttached: false,
-    burstGapMs: 80,
-    flushDelayMs: 120,
+    burstGapMs: 350,
+    flushDelayMs: 220,
     minChars: 3,
   };
 
@@ -956,13 +959,10 @@ window.PAGES = window.PAGES || {};
     if (ST.bluetoothScanMode) {
       closeScanner();
       const targetId = resolveScanTargetId();
-      if (targetId) {
-        ST.lastBarcodeFieldId = targetId;
-        const field = document.getElementById(targetId);
-        if (field) field.focus();
-      }
+      if (targetId) ST.lastBarcodeFieldId = targetId;
     }
     render();
+    if (ST.bluetoothScanMode) focusBluetoothScanTarget();
   }
 
   function resetBluetoothScanBuffer() {
@@ -972,6 +972,21 @@ window.PAGES = window.PAGES || {};
       clearTimeout(bluetoothScannerState.flushTimer);
       bluetoothScannerState.flushTimer = null;
     }
+    if (bluetoothScannerState.fieldTimer) {
+      clearTimeout(bluetoothScannerState.fieldTimer);
+      bluetoothScannerState.fieldTimer = null;
+    }
+  }
+
+  function focusBluetoothScanTarget() {
+    window.setTimeout(() => {
+      const targetId = resolveScanTargetId();
+      const field = targetId ? document.getElementById(targetId) : null;
+      if (!field) return;
+      ST.lastBarcodeFieldId = targetId;
+      field.focus();
+      if (typeof field.select === 'function' && !field.value) field.select();
+    }, 0);
   }
 
   function scheduleBluetoothScanFlush() {
@@ -995,7 +1010,16 @@ window.PAGES = window.PAGES || {};
 
     const key = e.key;
     if (key === 'Enter' || key === 'Tab') {
-      if (bluetoothScannerState.buffer) {
+      const active = document.activeElement;
+      const activeValue = active && active.matches && active.matches('input[data-type="barcode"], input[data-type="text"]')
+        ? String(active.value || '').trim()
+        : '';
+      if (activeValue) {
+        e.preventDefault();
+        e.stopPropagation();
+        resetBluetoothScanBuffer();
+        handleBluetoothScanValue(activeValue);
+      } else if (bluetoothScannerState.buffer) {
         e.preventDefault();
         e.stopPropagation();
         flushBluetoothScanBuffer(true);
@@ -1014,21 +1038,38 @@ window.PAGES = window.PAGES || {};
     }
     bluetoothScannerState.lastKeyAt = now;
     bluetoothScannerState.buffer += key;
-    e.preventDefault();
-    e.stopPropagation();
     scheduleBluetoothScanFlush();
   }
 
+  function scheduleBluetoothInputFlush(input) {
+    if (!ST.bluetoothScanMode || !input) return;
+    if (bluetoothScannerState.fieldTimer) clearTimeout(bluetoothScannerState.fieldTimer);
+    bluetoothScannerState.fieldTimer = setTimeout(() => {
+      const text = String(input.value || '').trim();
+      if (text.length >= bluetoothScannerState.minChars) {
+        resetBluetoothScanBuffer();
+        handleBluetoothScanValue(text);
+      }
+    }, bluetoothScannerState.flushDelayMs);
+  }
+
   function handleBluetoothScanValue(text) {
+    const now = Date.now();
+    const normText = String(text == null ? '' : text).trim();
+    if (!normText) return;
+    if (normText === bluetoothScannerState.lastProcessed && now - bluetoothScannerState.lastProcessedAt < 1000) return;
+    bluetoothScannerState.lastProcessed = normText;
+    bluetoothScannerState.lastProcessedAt = now;
+
     const targetId = resolveScanTargetId();
     const field = targetId ? document.getElementById(targetId) : null;
     const colId = field ? field.dataset.col : null;
     const sheet = window.SheetsStore.getSheet(ST.activeSheetId);
     if (!sheet || !targetId || !colId) return;
-    if (isDuplicateScanValue(sheet, colId, text)) return;
+    if (isDuplicateScanValue(sheet, colId, normText)) return;
     beep();
     if (navigator.vibrate) { try { navigator.vibrate(120); } catch (e) { /* not supported */ } }
-    processScanValue(text, targetId);
+    processScanValue(normText, targetId);
   }
 
   // =========================================================================
@@ -1101,6 +1142,7 @@ window.PAGES = window.PAGES || {};
     // central scan button targets whichever field the user was last in.
     document.querySelectorAll('input[data-type="barcode"], input[data-type="text"]').forEach((input) => {
       input.addEventListener('focus', () => { ST.lastBarcodeFieldId = input.id; });
+      input.addEventListener('input', () => scheduleBluetoothInputFlush(input));
     });
     document.querySelectorAll('input[data-type="image"]').forEach((input) => {
       input.addEventListener('change', () => handleImageFieldChange(input));
