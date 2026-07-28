@@ -904,10 +904,27 @@ window.PAGES = window.PAGES || {};
     scannerState.overlayEl = overlay;
     document.body.style.overflow = 'hidden';
 
-    overlay.querySelector('#ssScanBack').onclick = closeScanner;
-    overlay.querySelector('#ssScanRetry').onclick = retryScan;
-    overlay.querySelector('#ssScanSave').onclick = confirmScanSave;
+    bindBtResultAction(overlay.querySelector('#ssScanBack'), closeBluetoothResultAndResume);
+    bindBtResultAction(overlay.querySelector('#ssScanRetry'), retryScan);
+    bindBtResultAction(overlay.querySelector('#ssScanSave'), confirmScanSave);
     showScanResult(text);
+  }
+
+  function bindBtResultAction(btn, handler) {
+    if (!btn) return;
+    const run = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (btn.dataset.busy === '1') return;
+      btn.dataset.busy = '1';
+      handler();
+      window.setTimeout(() => { btn.dataset.busy = ''; }, 700);
+    };
+    btn.addEventListener('click', run);
+    btn.addEventListener('touchend', run, { passive: false });
+    btn.addEventListener('pointerup', run);
   }
 
   function hideScanResult() {
@@ -924,7 +941,16 @@ window.PAGES = window.PAGES || {};
     if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) {
       scannerState.overlayEl.remove();
       scannerState.overlayEl = null;
+      document.body.style.overflow = '';
     }
+  }
+
+  function closeBluetoothResultAndResume() {
+    const targetId = scannerState.targetFieldId;
+    hideScanResult();
+    scannerState.handledOnce = false;
+    closeBluetoothResultOverlay();
+    resumeBluetoothScannerAfterResult(targetId, false);
   }
 
   // "Retry" — discard the paused result and resume live scanning.
@@ -932,10 +958,9 @@ window.PAGES = window.PAGES || {};
     hideScanResult();
     scannerState.handledOnce = false;
     if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) {
-      clearBluetoothTargetValue(scannerState.targetFieldId);
-      closeScanner();
-      resetBluetoothScanBuffer();
-      focusBluetoothScanTarget();
+      const targetId = scannerState.targetFieldId;
+      closeBluetoothResultOverlay();
+      resumeBluetoothScannerAfterResult(targetId, true);
       return;
     }
     setScanStatus('Place QR & barcode in the box');
@@ -954,9 +979,9 @@ window.PAGES = window.PAGES || {};
       setScanStatus('Saved \u2713 \u2014 scan the next one');
       scannerState.handledOnce = false;
       if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) {
-        closeScanner();
-        resetBluetoothScanBuffer();
-        focusBluetoothScanTarget();
+        const targetId = scannerState.targetFieldId;
+        closeBluetoothResultOverlay();
+        resumeBluetoothScannerAfterResult(targetId, true);
       }
     } else {
       // Multi-column sheet — field is filled, remaining columns still need
@@ -1099,6 +1124,14 @@ window.PAGES = window.PAGES || {};
       const len = String(input.value || '').length;
       if (typeof input.setSelectionRange === 'function') input.setSelectionRange(len, len);
     }, 450);
+  }
+
+  function resumeBluetoothScannerAfterResult(targetId, clearValue) {
+    if (clearValue) clearBluetoothTargetValue(targetId);
+    resetBluetoothScanBuffer();
+    [0, 350, 900].forEach((delay) => {
+      window.setTimeout(() => focusBluetoothScanTarget(), delay);
+    });
   }
 
   function focusBluetoothScanTarget() {
