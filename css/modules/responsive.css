@@ -1,0 +1,56 @@
+/* =================== RESPONSIVE =================== */
+@media (max-width: 900px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .overlay.show{display:block;}
+  .mobile-topbar{display:flex;}
+  .main{margin-left:0;}
+  .topbar{display:none;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+  .form-grid{grid-template-columns:repeat(2,1fr);}
+  .field.span-2, .field.span-3{grid-column:span 2;}
+  .grid-2{grid-template-columns:1fr;}
+  .content{padding:14px;}
+
+  /* ---- Purchase / Sales: mobile shows ONE page at a time, sliding in
+     from the side, instead of both entry + edit panels stacked together. ---- */
+  .btn-toggle-edit{display:inline-flex; flex-basis:100%; margin-top:8px;}
+  .edit-panel-actions{display:block; margin-bottom:14px;}
+
+  .split-two{
+    position:relative;
+    overflow:hidden;         /* viewport: hides the half of the track that's off-screen */
+  }
+  .split-two-track{
+    display:flex;
+    align-items:flex-start;
+    width:200%;              /* two panels side by side, each = 100% of the screen */
+    transition:transform .32s ease;
+    transform:translateX(0); /* default: entry panel showing */
+  }
+  .split-two-track > .panel{
+    width:50%;
+    flex:0 0 50%;
+    margin-bottom:0;
+  }
+  /* Edit toggle button removes "edit-closed" from #purSplit/#saleSplit ->
+     slide the track left by half its width so the edit panel comes into view. */
+  .split-two:not(.edit-closed) .split-two-track{
+    transform:translateX(-52%);
+  }
+
+  /* Tables stay real tables on mobile too (matches the desktop software) —
+     they just scroll horizontally inside .table-wrap instead of turning
+     into stacked cards. */
+  .table-wrap{-webkit-overflow-scrolling:touch; max-height:calc(100vh - 190px);}
+}
+@media (max-width: 700px){
+  .form-grid.cols-2{grid-template-columns:1fr;}
+}
+@media (max-width: 560px){
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .form-grid{grid-template-columns:1fr;}
+  .form-grid.cols-2{grid-template-columns:1fr;}
+  .field.span-2, .field.span-3{grid-column:span 1;}
+  .stat-card .value{font-size:21px;}
+}

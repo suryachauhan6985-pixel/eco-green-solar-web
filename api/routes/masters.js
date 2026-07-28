@@ -1,0 +1,242 @@
+module.exports = function registerMastersRoutes(app, deps) {
+  const { pool, route, requireRole, hashPassword } = deps;
+  const VALID_ROLES = ['User', 'Admin', 'SuperAdmin'];
+
+  // ---------------------------------------------------------------------------
+  // MASTER MANAGEMENT SYSTEM ENDPOINTS
+  // ---------------------------------------------------------------------------
+
+  // Categories
+  app.get('/api/masters/categories', route(async (req, res) => {
+    const [rows] = await pool.query(`SELECT c.id, c.name, COALESCE(c.watt_mandatory,0) AS watt_mandatory, COALESCE(c.serial_mandatory,0) AS serial_mandatory, (SELECT COUNT(*) FROM items i WHERE i.category = c.name) AS item_count FROM categories c ORDER BY c.name ASC`);
+    res.json(rows);
+  }));
+
+  app.post('/api/masters/categories', route(async (req, res) => {
+    const { name, watt_mandatory, serial_mandatory } = req.body;
+    if (!name) return res.status(400).json({ error: 'Category name required' });
+    await pool.query(`INSERT INTO categories (name, watt_mandatory, serial_mandatory) VALUES (?, ?, ?)`, [name, watt_mandatory ? 1 : 0, serial_mandatory ? 1 : 0]);
+    res.json({ success: true });
+  }));
+
+  // Category: update wattage-mandatory rule
+  app.put('/api/masters/categories/:name/watt-rule', route(async (req, res) => {
+    const { name } = req.params;
+    const { watt_mandatory } = req.body;
+    await pool.query(`UPDATE categories SET watt_mandatory = ? WHERE name = ?`, [watt_mandatory ? 1 : 0, name]);
+    res.json({ success: true });
+  }));
+
+  // Category: update serial-no-mandatory rule
+  app.put('/api/masters/categories/:name/serial-rule', route(async (req, res) => {
+    const { name } = req.params;
+    const { serial_mandatory } = req.body;
+    await pool.query(`UPDATE categories SET serial_mandatory = ? WHERE name = ?`, [serial_mandatory ? 1 : 0, name]);
+    res.json({ success: true });
+  }));
+
+  // Category: delete (blocked if items still exist under it)
+  app.delete('/api/masters/categories/:name', route(async (req, res) => {
+    const { name } = req.params;
+    const [[{ cnt }]] = await pool.query(`SELECT COUNT(*) AS cnt FROM items WHERE category = ?`, [name]);
+    if (cnt > 0) {
+      return res.status(400).json({ error: `Cannot delete '${name}': ${cnt} item(s) still registered under this category.` });
+    }
+    const [result] = await pool.query(`DELETE FROM categories WHERE name = ?`, [name]);
+    if (result.affectedRows === 0) return res.status(400).json({ error: 'Category not found.' });
+    res.json({ success: true });
+  }));
+
+  // ---------------------------------------------------------------------------
+  // SUBTYPES (per category) — DCR / Non-DCR / On-Grid / Hybrid etc.
+  // ---------------------------------------------------------------------------
+  app.get('/api/masters/subtypes/:category', route(async (req, res) => {
+    const { category } = req.params;
+    const [rows] = await pool.query(`SELECT subtype_name FROM subtypes WHERE category_name = ? ORDER BY subtype_name ASC`, [category]);
+    res.json(rows.map(r => r.subtype_name));
+  }));
+
+  app.post('/api/masters/subtypes', route(async (req, res) => {
+    const { category_name, subtype_name } = req.body;
+    if (!category_name || !subtype_name) return res.status(400).json({ error: 'Category and subtype name required' });
+    await pool.query(`INSERT INTO subtypes (category_name, subtype_name) VALUES (?, ?)`, [category_name, subtype_name]);
+    res.json({ success: true });
+  }));
+
+  app.put('/api/masters/subtypes', route(async (req, res) => {
+    const { category_name, old_name, new_name } = req.body;
+    const [result] = await pool.query(`UPDATE subtypes SET subtype_name = ? WHERE category_name = ? AND subtype_name = ?`, [new_name, category_name, old_name]);
+    if (result.affectedRows === 0) return res.status(400).json({ error: 'Original subtype not found.' });
+    res.json({ success: true });
+  }));
+
+  app.delete('/api/masters/subtypes', route(async (req, res) => {
+    const { category_name, subtype_name } = req.body;
+    const [result] = await pool.query(`DELETE FROM subtypes WHERE category_name = ? AND subtype_name = ?`, [category_name, subtype_name]);
+    if (result.affectedRows === 0) return res.status(400).json({ error: 'Subtype not found.' });
+    res.json({ success: true });
+  }));
+
+  // ---------------------------------------------------------------------------
+  // UNITS (UOM) MASTER — previously hardcoded on the frontend
+  // ---------------------------------------------------------------------------
+  app.get('/api/masters/units', route(async (req, res) => {
+    const [rows] = await pool.query(`SELECT name FROM units ORDER BY name ASC`);
+    res.json(rows.map(r => r.name));
+  }));
+
+  app.post('/api/masters/units', route(async (req, res) => {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: 'Unit name required' });
+    await pool.query(`INSERT INTO units (name) VALUES (?)`, [name]);
+    res.json({ success: true });
+  }));
+
+  app.put('/api/masters/units', route(async (req, res) => {
+    const { old_name, new_name } = req.body;
+    const [result] = await pool.query(`UPDATE units SET name = ? WHERE name = ?`, [new_name, old_name]);
+    if (result.affectedRows === 0) return res.status(400).json({ error: 'Original unit not found.' });
+    await pool.query(`UPDATE items SET uom = ? WHERE uom = ?`, [new_name, old_name]);
+    res.json({ success: true });
+  }));
+
+  app.delete('/api/masters/units', route(async (req, res) => {
+    const { name } = req.body;
+    const [[{ cnt }]] = await pool.query(`SELECT COUNT(*) AS cnt FROM items WHERE uom = ?`, [name]);
+    if (cnt > 0) return res.status(400).json({ error: `Cannot delete '${name}': ${cnt} item(s) using this unit.` });
+    const [result] = await pool.query(`DELETE FROM units WHERE name = ?`, [name]);
+    if (result.affectedRows === 0) return res.status(400).json({ error: 'Unit not found.' });
+    res.json({ success: true });
+  }));
+
+  // Items Read + Create + Update Profile (Desktop matching attributes)
+  app.get('/api/masters/items', route(async (req, res) => {
+    const [rows] = await pool.query(`SELECT id, name, brand_name, watt, solar_type, category, uom, minimum_stock FROM items ORDER BY category ASC, brand_name ASC`);
+    res.json(rows);
+  }));
+
+  app.post('/api/masters/items', route(async (req, res) => {
+    const { name, brand_name, watt, solar_type, category, uom, minimum_stock } = req.body;
+    await pool.query(`
+      INSERT INTO items (name, brand_name, watt, solar_type, category, uom, minimum_stock) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [name || `${brand_name} ${watt || ''}`.trim(), brand_name, watt || 0, solar_type || '-', category, uom || 'Nos', minimum_stock || 0]);
+    res.json({ success: true });
+  }));
+
+  app.put('/api/masters/items/:id', route(async (req, res) => {
+    const { id } = req.params;
+    const { name, brand_name, watt, solar_type, category, uom, minimum_stock } = req.body;
+    await pool.query(`
+      UPDATE items 
+      SET name = ?, brand_name = ?, watt = ?, solar_type = ?, category = ?, uom = ?, minimum_stock = ?
+      WHERE id = ?
+    `, [name || `${brand_name} ${watt || ''}`.trim(), brand_name, watt || 0, solar_type || '-', category, uom || 'Nos', minimum_stock || 0, id]);
+    res.json({ success: true });
+  }));
+
+  // Warehouses
+  app.get('/api/masters/warehouses', route(async (req, res) => {
+    const [rows] = await pool.query(`SELECT w.id, w.name, w.location, (SELECT COUNT(*) FROM stock_ledger sl WHERE sl.warehouse = w.name) AS items_stored FROM warehouses w ORDER BY w.name ASC`);
+    res.json(rows);
+  }));
+
+  app.post('/api/masters/warehouses', route(async (req, res) => {
+    const { name, location } = req.body;
+    await pool.query(`INSERT INTO warehouses (name, location) VALUES (?, ?)`, [name, location || '']);
+    res.json({ success: true });
+  }));
+
+  app.put('/api/masters/warehouses', route(async (req, res) => {
+    const { old_name, new_name } = req.body;
+    const [result] = await pool.query(`UPDATE warehouses SET name = ? WHERE name = ?`, [new_name, old_name]);
+    if (result.affectedRows === 0) return res.status(400).json({ error: 'Original warehouse not found.' });
+    await pool.query(`UPDATE stock_ledger SET warehouse = ? WHERE warehouse = ?`, [new_name, old_name]);
+    res.json({ success: true });
+  }));
+
+  app.delete('/api/masters/warehouses', route(async (req, res) => {
+    const { name } = req.body;
+    const [[{ cnt }]] = await pool.query(`SELECT COUNT(*) AS cnt FROM stock_ledger WHERE warehouse = ?`, [name]);
+    if (cnt > 0) return res.status(400).json({ error: `Cannot delete '${name}': ${cnt} stock record(s) tagged with this warehouse.` });
+    const [result] = await pool.query(`DELETE FROM warehouses WHERE name = ?`, [name]);
+    if (result.affectedRows === 0) return res.status(400).json({ error: 'Warehouse not found.' });
+    res.json({ success: true });
+  }));
+
+  // Dummy placeholder for user registry matching system sessions
+  app.get('/api/masters/brands', route(async (req, res) => {
+    const [rows] = await pool.query(`
+      SELECT brand_name, COUNT(*) AS item_count
+      FROM items
+      WHERE brand_name IS NOT NULL AND brand_name <> ''
+      GROUP BY brand_name
+      ORDER BY brand_name ASC
+    `);
+    res.json(rows);
+  }));
+
+  // Users — same 2 actions as desktop app's Masters > System Access & User
+  // Management: Create User + Update Password. No delete/edit — desktop app
+  // doesn't have that either, so web mirrors it exactly.
+  app.get('/api/masters/users', route(async (req, res) => {
+    const [rows] = await pool.query(`SELECT username, role, email FROM users ORDER BY username ASC`);
+    res.json(rows);
+  }));
+
+  app.post('/api/masters/users', requireRole('SuperAdmin'), route(async (req, res) => {
+    const { username, password, role, email } = req.body;
+    if (!username || !password) return res.status(400).json({ error: 'Username and Password are mandatory.' });
+    const uname = username.trim().toLowerCase();
+    const mail = email ? email.trim().toLowerCase() : null;
+    const finalRole = role || 'User';
+    if (!VALID_ROLES.includes(finalRole)) {
+      return res.status(400).json({ error: `Role must be one of: ${VALID_ROLES.join(', ')}.` });
+    }
+    // Same email can be reused across different roles, but never twice for
+    // the same role — mirrors the rule enforced on self-registration.
+    if (mail) {
+      const [[emailRoleTaken]] = await pool.query(`SELECT username FROM users WHERE LOWER(email) = ? AND role = ?`, [mail, finalRole]);
+      if (emailRoleTaken) return res.status(400).json({ error: `A ${finalRole} account with that email already exists.` });
+    }
+    try {
+      const hashed = await hashPassword(password);
+      await pool.query(`INSERT INTO users (username, password, role, email) VALUES (?, ?, ?, ?)`, [uname, hashed, finalRole, mail]);
+      await pool.query(`INSERT IGNORE INTO user_sessions (username, is_logged_in, last_login_time) VALUES (?, 0, '-')`, [uname]);
+      res.json({ success: true });
+    } catch (err) {
+      if (err && err.code === 'ER_DUP_ENTRY') {
+        const msg = String(err.sqlMessage || err.message || '');
+        if (msg.includes('uniq_email_role')) {
+          return res.status(400).json({ error: `A ${finalRole} account with that email already exists.` });
+        }
+        return res.status(400).json({ error: 'Username already taken.' });
+      }
+      res.status(400).json({ error: 'Username already taken.' });
+    }
+  }));
+
+  app.put('/api/masters/users/password', requireRole('SuperAdmin'), route(async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: 'Username and new Password are mandatory.' });
+    const hashed = await hashPassword(password);
+    const [result] = await pool.query(`UPDATE users SET password = ? WHERE username = ?`, [hashed, username.trim().toLowerCase()]);
+    if (result.affectedRows === 0) return res.status(400).json({ error: 'User configuration profile not found.' });
+    res.json({ success: true });
+  }));
+
+  // Sets/updates the email OTP login relies on for a given user — separate
+  // from the password update so an admin can fix/add just the email without
+  // touching the password.
+  app.put('/api/masters/users/email', requireRole('SuperAdmin'), route(async (req, res) => {
+    const { username, email } = req.body;
+    if (!username || !email) return res.status(400).json({ error: 'Username and Email are mandatory.' });
+    const [result] = await pool.query(
+      `UPDATE users SET email = ? WHERE username = ?`,
+      [email.trim().toLowerCase(), username.trim().toLowerCase()]
+    );
+    if (result.affectedRows === 0) return res.status(400).json({ error: 'User configuration profile not found.' });
+    res.json({ success: true });
+  }));
+
+};

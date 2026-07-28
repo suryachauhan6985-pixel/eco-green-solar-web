@@ -1,0 +1,23 @@
+:root{
+  --bg:#111111; --nav:#1A1A1A; --input-bg:#2D2D2D; --panel:#1E1E1E; --panel-alt:#1A1A1A;
+  --card:#1F1F1F; --table-bg:#151515; --table-header:#202020;
+  --txt:#FFFFFF; --txt-muted:#8A8F98; --txt-label:#BDC3C7;
+  --border:#2D2D2D; --border-light:#3E3E3E;
+  --gold:#D4AF37; --gold-dim:#B6952C; --blue:#3B8ED0; --green:#27AE60;
+  --red:#E74C3C; --orange:#F39C12; --purple:#8E44AD;
+  --radius:10px;
+  --sidebar-w:230px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  background:var(--bg); color:var(--txt);
+  font-family:'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none;}
+button{font-family:inherit;cursor:pointer;}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--input-bg);border-radius:5px;}
+::-webkit-scrollbar-thumb:hover{background:var(--blue);}

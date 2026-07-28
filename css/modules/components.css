@@ -1,0 +1,275 @@
+/* Cards / stats */
+.stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px;}
+.stat-card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; display:flex; flex-direction:column; gap:6px; position:relative; overflow:hidden;}
+.stat-card .top{display:flex; align-items:center; justify-content:space-between;}
+.stat-card .label{color:var(--txt-muted); font-size:12px; font-weight:600;}
+.stat-card .value{font-size:26px; font-weight:800;}
+.stat-card i{font-size:18px; opacity:.85;}
+.stat-card.available{border-left:4px solid #2ECC71;}
+.stat-card.assigned{border-left:4px solid var(--blue);}
+.stat-card.sold{border-left:4px solid var(--red);}
+.stat-card.damaged{border-left:4px solid var(--orange);}
+
+/* ---------- Stat card item slider ----------
+   Each stat card can flip between "Total" and a per-item (Panel / Inverter /
+   ...) breakdown of that same status. Desktop: a small corner arrow steps
+   to the next slide. Mobile: swipe the value area left/right instead (arrow
+   is hidden there). Extra slides + the corner arrow only appear once JS has
+   real category data (.has-slides class) — until then a card looks exactly
+   like before. */
+.stat-slider-viewport{overflow:hidden; width:100%; touch-action:pan-y;}
+.stat-slider{display:flex; transition:transform .32s cubic-bezier(.4,0,.2,1);}
+.stat-slide{min-width:100%; flex:0 0 100%; display:flex; flex-direction:column; gap:2px;}
+.stat-slide-tag{font-size:10.5px; color:var(--txt-muted); font-weight:700; text-transform:uppercase; letter-spacing:.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.stat-nav-arrow{position:absolute; right:8px; bottom:8px; width:22px; height:22px; border-radius:50%; border:1px solid var(--border-light); background:var(--panel-alt); color:var(--txt-muted); align-items:center; justify-content:center; font-size:10px; cursor:pointer; display:none; z-index:2;}
+.stat-nav-arrow:hover{background:var(--blue); color:#fff; border-color:var(--blue);}
+.stat-card.has-slides .stat-nav-arrow{display:flex;}
+.stat-dots{display:none; gap:4px; margin-top:2px;}
+.stat-card.has-slides .stat-dots{display:flex;}
+.stat-dot{width:5px; height:5px; border-radius:50%; background:var(--border-light); flex:0 0 auto;}
+.stat-dot.active{background:var(--blue);}
+@media (max-width:900px){
+  .stat-nav-arrow{display:none !important;}
+}
+
+.panel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:18px; min-width:0;}
+.panel h3{margin:0 0 14px; font-size:14px; color:var(--gold); font-weight:800; display:flex; align-items:center; gap:8px;}
+.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:18px; min-width:0;}
+.grid-2 > *{min-width:0;}
+
+/* ---------- Dashboard panels ----------
+   Desktop (PC, >900px): "User Sessions" moves into the header/topbar (like
+   the desktop .py app), so this container is a single full-width column and
+   the User Sessions panel is hidden here.
+   Mobile (<=900px): unchanged — behaves exactly like the old grid-2 (both
+   panels stacked, User Sessions panel visible). */
+.dashboard-grid{display:grid; grid-template-columns:1fr; gap:18px; min-width:0;}
+.dashboard-grid > *{min-width:0;}
+
+/* Hide the in-page "User Sessions" panel on desktop only — it lives in the
+   header/topbar instead (see .topbar-live-btn below). */
+@media (min-width:901px){
+  .dash-usersession-panel{display:none;}
+}
+
+/* ---------- Header/topbar "Live Users" widget (desktop/PC only) ----------
+   Injected into .topbar by js/pages/dashboard.js while the Dashboard page is
+   active. .topbar itself is already hidden on mobile (see max-width:900px
+   rule below), so this widget only ever shows on the PC layout. */
+.topbar-extra{display:flex; align-items:center; margin-left:auto;}
+.topbar-live-btn{
+  display:flex; align-items:center; gap:9px;
+  background:var(--input-bg); border:1px solid var(--border-light); border-radius:25px;
+  padding:8px 14px; color:var(--txt); font-size:12.5px; font-weight:700;
+  white-space:nowrap;
+}
+.topbar-live-btn .dot{width:9px;height:9px;border-radius:50%; background:#2ECC71; box-shadow:0 0 8px #2ECC71; flex-shrink:0;}
+.topbar-live-btn strong{font-size:12.5px;}
+.topbar-live-btn small{display:block; color:var(--txt-muted); font-size:10.5px; font-weight:500; margin-top:1px;}
+.topbar-live-btn i.chevron{color:var(--txt-muted); margin-left:2px;}
+.topbar-live-btn:hover{border-color:var(--blue);}
+
+/* Forms */
+.form-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+.field{display:flex; flex-direction:column; gap:6px;}
+.field label{font-size:12px; color:var(--txt-label); font-weight:600;}
+.field label .req{color:var(--red);}
+.field input, .field select, .field textarea{
+  background:var(--input-bg); border:1px solid var(--border); color:var(--txt);
+  padding:9px 10px; border-radius:7px; font-size:13px; width:100%; outline:none;
+}
+.field input:focus, .field select:focus, .field textarea:focus{border-color:var(--blue);}
+.field textarea{resize:vertical; min-height:70px; font-family:'Courier New',monospace; color:var(--orange); background:#111;}
+.field.span-2{grid-column:span 2;}
+.field.span-3{grid-column:span 3;}
+.field.span-full{grid-column:1/-1;}
+.form-grid.cols-2{grid-template-columns:repeat(2,1fr);}
+
+.btn{display:inline-flex; align-items:center; gap:8px; border:none; border-radius:8px; padding:10px 18px; font-weight:700; font-size:13px; color:#fff;}
+.btn i{font-size:13px;}
+.btn-blue{background:var(--blue);}
+.btn-green{background:var(--green);}
+.btn:disabled, .btn[disabled]{opacity:0.4; cursor:not-allowed; filter:grayscale(60%); pointer-events:none;}
+.bom-mini-btn{padding:5px 9px; font-size:11px; gap:4px;}
+.btn-red{background:var(--red);}
+.btn-gold{background:var(--gold); color:#1a1a1a;}
+.btn-ghost{background:var(--input-bg); color:var(--txt); border:1px solid var(--border-light);}
+.btn:hover{filter:brightness(1.1);}
+.actions-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;}
+
+.toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px;}
+.toolbar .grow{flex:1; min-width:160px;}
+.toolbar label{font-size:11.5px; color:var(--txt-label); font-weight:700; margin-right:-4px;}
+.toolbar input, .toolbar select{background:var(--input-bg); border:1px solid var(--border); color:var(--txt); padding:8px 10px; border-radius:7px; font-size:12.5px;}
+
+/* ---------- Tables: real tables everywhere, scroll horizontally inside their own box ----------
+   .table-wrap is capped to a height that fits under the topbar/page-head/toolbar, and scrolls
+   BOTH ways internally. That keeps its horizontal scrollbar pinned to the bottom of this box
+   (which is always on-screen) instead of the bottom of the whole table — so you never have to
+   scroll the page down just to reach the horizontal scrollbar. Nudge the calc() below if your
+   topbar/page-head/toolbar height differs. */
+.table-wrap{
+  overflow-x:auto; overflow-y:auto;
+  max-height:calc(100vh - 230px);
+  border:1px solid var(--border); border-radius:var(--radius);
+}
+/* Global quick-search (topbar): rows jo current search text match nahi karti unhe hide karta hai */
+tbody tr.search-hide{display:none !important;}
+table{border-collapse:collapse; width:100%; min-width:640px; background:var(--table-bg); font-size:12.5px;}
+thead th{background:var(--table-header); color:var(--blue); padding:10px 12px; text-align:left; font-weight:700; white-space:nowrap; border-bottom:1px solid var(--border); position:sticky; top:0;}
+thead th i{margin-left:6px; color:var(--txt-muted); font-size:10px; cursor:pointer;}
+
+/* ---------- Excel-style column header filters ----------
+   Click the funnel icon in a <th> to open a checkbox list of that column's
+   unique values (like Excel AutoFilter). Used on the Dashboard's
+   Category-wise Snapshot table (js/pages/dashboard.js). */
+.th-filter-btn{
+  background:transparent; border:none; color:var(--txt-muted); font-size:10px;
+  margin-left:6px; cursor:pointer; padding:3px 5px; border-radius:5px; vertical-align:middle;
+}
+.th-filter-btn:hover{color:var(--blue); background:rgba(59,142,208,.15);}
+.th-filter-btn.active{color:var(--gold); background:rgba(212,175,55,.15);}
+
+.th-filter-menu{
+  position:fixed; z-index:70;
+  background:var(--panel); border:1px solid var(--border-light); border-radius:8px;
+  min-width:190px; max-width:240px; padding:10px; box-shadow:0 10px 30px rgba(0,0,0,.5);
+  font-weight:400; white-space:normal; color:var(--txt); text-transform:none;
+}
+.th-filter-search input{
+  width:100%; background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt);
+  border-radius:6px; padding:6px 8px; font-size:12px; margin-bottom:8px; outline:none; box-sizing:border-box;
+}
+.th-filter-list{max-height:160px; overflow-y:auto; margin-bottom:8px;}
+.th-filter-item{display:flex; align-items:center; gap:8px; font-size:12px; font-weight:500; padding:4px 2px; cursor:pointer;}
+.th-filter-item input{margin:0; cursor:pointer;}
+.th-filter-selectall{border-bottom:1px solid var(--border); padding-bottom:7px; margin-bottom:6px; font-weight:700;}
+.th-filter-actions{display:flex; justify-content:flex-end; gap:8px;}
+.th-filter-actions .btn{padding:6px 12px; font-size:11.5px;}
+tbody td{padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap; color:var(--txt);}
+tbody tr:hover{background:#1c1c1c;}
+.pill{padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; display:inline-block;}
+.pill.available{background:rgba(46,204,113,.15); color:#2ECC71;}
+.pill.assigned{background:rgba(59,142,208,.15); color:var(--blue);}
+.pill.sold{background:rgba(231,76,60,.15); color:var(--red);}
+.pill.damaged{background:rgba(243,156,18,.15); color:var(--orange);}
+.gold-txt{color:var(--gold); font-weight:700;}
+
+/* ---------- Two-column form + edit-panel layout (Purchase / Sales) ----------
+   NOTE: .split-two is just a plain wrapper (becomes the sliding "viewport"
+   on mobile). .split-two-track is the REAL layout container — a 2-column
+   grid on desktop, a horizontal flex slider on mobile. We deliberately do
+   NOT use display:contents anywhere here — it's unreliable across mobile
+   browsers when combined with dynamic class toggling and was the cause of
+   the edit panel rendering blank. */
+.split-two{min-width:0;}
+.split-two-track{
+  display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; min-width:0;
+}
+.split-two-track > *{min-width:0;}
+.edit-panel{border-top:3px solid var(--orange);}
+.edit-panel.sales-edit{border-top-color:var(--purple);}
+.edit-panel h3{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.edit-panel .role-tag{color:var(--txt-muted); font-weight:600; font-size:11px;}
+
+/* The "Edit / Modify" toggle button (page header) and the "New Purchase/Sale
+   Entry" back-button inside the edit panel only make sense on the mobile
+   one-page-at-a-time layout. On desktop both panels are already visible
+   together, so neither element is shown. */
+.btn-toggle-edit{display:none;}
+.edit-panel-actions{display:none;}
+
+.search-row{display:flex; gap:8px; margin-bottom:16px;}
+.search-row input{flex:1; background:var(--input-bg); border:1px solid var(--border); color:var(--txt); padding:9px 10px; border-radius:7px; font-size:13px; outline:none;}
+.search-row input:focus{border-color:var(--blue);}
+
+.field input[readonly]{color:var(--txt-muted); cursor:not-allowed;}
+
+.proof-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.proof-row .proof-name{color:var(--txt-muted); font-size:12px; flex:1; min-width:140px; display:inline-flex; flex-wrap:wrap; gap:6px;}
+.proof-row .btn{padding:8px 12px; font-size:12px;}
+.proof-chip{display:inline-flex; align-items:center; gap:6px; background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.35); color:var(--txt); border-radius:999px; padding:3px 6px 3px 10px; font-size:12px; max-width:220px; cursor:pointer;}
+.proof-chip:hover{background:rgba(212,175,55,0.22);}
+.proof-chip-remove{background:none; border:none; color:var(--txt-muted); cursor:pointer; font-size:14px; line-height:1; padding:0 2px;}
+.proof-chip-remove:hover{color:var(--red);}
+
+.line-list{
+  background:var(--table-bg); border:1px solid var(--border); border-radius:7px;
+  min-height:64px; max-height:120px; overflow-y:auto; padding:6px; font-size:12.5px;
+}
+.line-list .empty{color:var(--txt-muted); font-style:italic; padding:8px;}
+.line-list .line-item{
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
+  background:var(--card); border:1px solid transparent; border-radius:6px;
+  padding:7px 10px; margin-bottom:5px; cursor:pointer; color:var(--txt);
+}
+.line-list .line-item:hover{border-color:var(--border-light);}
+.line-list .line-item.selected{border-color:var(--blue); background:#1c2733;}
+.line-list .line-item .qty-badge{color:var(--gold); font-weight:700; margin-left:8px;}
+.line-btns{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
+.line-btns .btn{padding:8px 12px; font-size:12px;}
+
+@media (max-width:1100px){
+  .split-two-track{grid-template-columns:1fr;}
+}
+
+/* Subtabs (Masters) */
+.subtabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+.subtab{background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt); padding:8px 16px; border-radius:7px; font-size:12.5px; font-weight:700;}
+.subtab.active{background:var(--blue); border-color:var(--blue);}
+.subtab-panel{display:none;}
+.subtab-panel.active{display:block;}
+
+.banner{display:flex; align-items:center; gap:12px; background:rgba(231,76,60,.12); border:1px solid var(--red); border-radius:var(--radius); padding:12px 16px; margin-bottom:18px; font-size:13px;}
+.banner i{color:var(--red); font-size:18px;}
+
+footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:16px; opacity:.7;}
+
+/* ---------- Live-session style button (dashboard) ---------- */
+.live-btn{
+  display:flex; align-items:center; gap:12px; width:100%; background:var(--card);
+  border:1px solid var(--border); border-radius:var(--radius); padding:16px; color:var(--txt);
+}
+.live-btn .dot{width:10px;height:10px;border-radius:50%; background:#2ECC71; box-shadow:0 0 8px #2ECC71;}
+.live-btn strong{font-size:13.5px;}
+.live-btn small{display:block; color:var(--txt-muted); font-size:11.5px; margin-top:2px;}
+.live-btn i.chevron{margin-left:auto; color:var(--txt-muted);}
+.live-btn:hover{border-color:var(--blue);}
+
+/* ---------- Modal ---------- */
+.modal-overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:60; align-items:center; justify-content:center; padding:16px;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:var(--panel); border:1px solid var(--border-light); border-radius:var(--radius); width:100%; max-width:480px; max-height:80vh; overflow:auto; box-shadow:0 12px 40px rgba(0,0,0,.5);}
+.modal-head{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:14px 18px; border-bottom:1px solid var(--border);}
+.modal-head h3{margin:0; font-size:15px; color:var(--gold); font-weight:800; flex:1 1 auto; min-width:0; overflow-wrap:break-word; word-break:break-word;}
+.modal-close{background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt); width:30px;height:30px;min-width:30px;border-radius:7px; flex:0 0 auto;}
+.modal-body{padding:16px 18px;}
+
+/* ---------- Confirm Dialog (replaces native window.confirm/alert popups,
+   styled like the desktop app's ui/notify.py custom dialogs: dark rounded
+   card, coloured accent border + icon per "kind", Cancel/Confirm buttons) ---------- */
+.confirm-overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:70; align-items:center; justify-content:center; padding:16px;}
+.confirm-overlay.show{display:flex;}
+.confirm-card{
+  background:var(--panel); border:1px solid var(--confirm-accent, var(--gold)); border-radius:14px;
+  width:100%; max-width:420px; box-shadow:0 14px 44px rgba(0,0,0,.55); padding:20px 20px 16px;
+  animation:confirmPop .15s ease-out;
+}
+@keyframes confirmPop{ from{ transform:scale(.96); opacity:0; } to{ transform:scale(1); opacity:1; } }
+.confirm-row{display:flex; gap:14px; align-items:flex-start;}
+.confirm-icon{
+  width:38px; height:38px; min-width:38px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:18px; background:color-mix(in srgb, var(--confirm-accent, var(--gold)) 16%, transparent);
+  color:var(--confirm-accent, var(--gold));
+}
+.confirm-text{flex:1 1 auto; min-width:0;}
+.confirm-title{margin:0 0 6px; font-size:14.5px; font-weight:800; color:var(--confirm-accent, var(--gold)); word-break:break-word;}
+.confirm-msg{margin:0; font-size:13px; color:var(--txt); line-height:1.5; white-space:pre-line; word-break:break-word;}
+.confirm-btns{display:flex; justify-content:flex-end; gap:8px; margin-top:18px;}
+.confirm-btns button{
+  border-radius:7px; padding:7px 20px; font-weight:700; font-size:12.5px; cursor:pointer; min-width:76px;
+  border:1px solid var(--confirm-accent, var(--gold)); background:var(--input-bg); color:var(--txt);
+}
+.confirm-btns button:hover{background:var(--confirm-accent, var(--gold)); color:#fff;}
+.confirm-btns button.confirm-primary{background:var(--confirm-accent, var(--gold)); color:#fff;}
+.confirm-btns button.confirm-primary:hover{filter:brightness(1.1);}

@@ -1,0 +1,88 @@
+/* ---------- Shell layout ---------- */
+.shell{display:flex;min-height:100vh;}
+
+.sidebar{
+  width:var(--sidebar-w); min-width:var(--sidebar-w);
+  background:var(--nav); border-right:2px solid var(--border);
+  display:flex; flex-direction:column; padding:16px 12px;
+  position:fixed; top:0; bottom:0; left:0; z-index:40;
+  transition:transform .25s ease;
+}
+.brand{
+  display:flex; align-items:center; gap:10px; justify-content:center;
+  padding:6px 4px 18px; border-bottom:1px solid var(--border); margin-bottom:14px;
+}
+.brand .bolt{color:var(--blue); font-size:20px;}
+.brand span{font-weight:800; letter-spacing:.5px; color:var(--blue); font-size:14px;}
+
+.nav-scroll{overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:6px; padding-right:2px;}
+.nav-btn{
+  display:flex; align-items:center; gap:10px;
+  background:#252525; color:var(--txt); border:1px solid var(--border-light);
+  padding:10px 12px; border-radius:8px; font-size:12.5px; font-weight:600; text-align:left;
+  white-space:nowrap;
+}
+.nav-btn i{width:16px; text-align:center; color:var(--txt);}
+.nav-btn:hover{background:var(--nav); border-color:var(--blue);}
+.nav-btn.active{background:var(--purple); border-color:var(--purple); color:#fff;}
+
+.profile-box{
+  margin-top:12px; padding-top:12px; border-top:1px solid var(--border);
+  display:flex; align-items:center; gap:10px;
+}
+.avatar{
+  width:40px;height:40px;border-radius:50%; background:var(--gold); color:#1A1A1A;
+  display:flex;align-items:center;justify-content:center; font-weight:800; border:2px solid var(--gold-dim);
+  flex-shrink:0;
+}
+.profile-box .role{color:var(--gold); font-size:12px; font-weight:700;}
+.profile-box .user{color:var(--txt-muted); font-size:10.5px;}
+
+.mobile-topbar{
+  display:none; flex-direction:column; gap:10px; position:sticky; top:0; z-index:30;
+  background:var(--nav); border-bottom:2px solid var(--border);
+  padding:10px 14px;
+}
+.mobile-topbar-row{
+  display:flex; align-items:center; justify-content:space-between; width:100%;
+}
+.mobile-search{
+  width:100%; min-width:0;
+}
+.mobile-topbar .brand{border:none; padding:0; margin:0;}
+.hamburger{
+  background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt);
+  width:38px;height:38px;border-radius:8px; display:flex;align-items:center;justify-content:center; font-size:16px;
+}
+.overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:35;}
+
+.main{margin-left:var(--sidebar-w); flex:1; min-width:0; display:flex; flex-direction:column;}
+.topbar{
+  display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+  padding:14px 22px; border-bottom:1px solid var(--border); background:var(--bg);
+  position:sticky; top:0; z-index:20;
+}
+.topbar h1{font-size:17px; margin:0; font-weight:800; color:var(--blue);}
+.topbar .sub{color:var(--txt-muted); font-size:12px; margin-top:2px;}
+.search-mini{
+  display:flex; align-items:center; gap:8px; background:var(--input-bg);
+  border:1px solid var(--border-light); border-radius:25px; padding:15px 12px; min-width:420px;
+}
+.search-mini input{background:transparent;border:none;color:var(--txt);outline:none;font-size:12.5px;width:100%;}
+.search-mini i{color:var(--txt-muted);}
+
+.content{padding:22px; flex:1;}
+.page-head{display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;}
+.page-head i{font-size:18px;}
+.page-head h2{font-size:18px; margin:0; font-weight:800;}
+.page-head .hint{color:var(--txt-muted); font-size:11.5px; font-style:italic; width:100%; margin-top:-6px;}
+
+/* ---------- Info button ----------
+   Replaces hardcoded hint paragraphs project-wide. A small (i) button sits
+   next to the relevant heading/label; clicking it shows the explanation as
+   a toast instead of permanently occupying page space. Populate with
+   data-info="..." and wire via the single delegated click handler in
+   js/app.js — no per-instance JS needed. */
+.info-btn{display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; border:1px solid var(--border-light); background:transparent; color:var(--txt-muted); font-size:10px; line-height:1; padding:0; margin-left:6px; cursor:pointer; vertical-align:middle; flex:0 0 auto;}
+.info-btn:hover{color:var(--gold); border-color:var(--gold); background:rgba(212,175,55,0.12);}
+.info-btn i{font-size:10px; pointer-events:none;}

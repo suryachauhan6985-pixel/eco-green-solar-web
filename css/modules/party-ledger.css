@@ -1,0 +1,158 @@
+/* =================== Party Ledger page =================== */
+.pl-grid{display:grid; grid-template-columns:320px 1fr; gap:18px; align-items:start; min-width:0;}
+.pl-grid > *{min-width:0;}
+@media (max-width:900px){ .pl-grid{grid-template-columns:1fr;} }
+
+/* Desktop only: the right panel (search + party list + selected-party
+   summary) should behave like the desktop app's fixed-size panel with a
+   QListWidget inside — top (search/toolbar) and bottom (selected-party
+   row + summary) stay put, and ONLY the party list in the middle scrolls
+   vertically, filling whatever empty space is left instead of shrinking
+   to fit its own content. On mobile the panel still grows/shrinks
+   naturally with the page, since the whole page scrolls there anyway. */
+@media (min-width:901px){
+  .pl-right{
+    height:calc(100vh - 190px); /* nudge this if your topbar/footer height differs */
+    display:flex;
+    flex-direction:column;
+  }
+  .pl-right > h3{flex:0 0 auto;}
+  .pl-toolbar{flex:0 0 auto;}
+  .party-list{
+    flex:1 1 auto;
+    min-height:0;
+    max-height:none !important;
+    overflow-y:auto;
+    overflow-x:hidden;
+  }
+  .pl-header-row, .mini-stat-grid, .pl-empty-hint{flex:0 0 auto;}
+}
+
+.pl-left{background:var(--panel); border-radius:var(--radius); padding:16px; display:flex; flex-direction:column; gap:10px; border:1px solid var(--border);}
+.pl-left h3{margin:0; font-size:16px; color:var(--purple); font-weight:800; display:flex; align-items:center; gap:8px;}
+.pl-left .pl-sub{color:var(--txt-muted); font-size:11px; font-style:italic; margin:-4px 0 4px;}
+.pl-left .btn{width:100%; justify-content:flex-start;}
+
+.pl-right{background:var(--panel); border:1px solid var(--purple); border-radius:var(--radius); padding:16px; min-width:0;}
+.pl-right > h3{margin:0 0 12px; font-size:15px; color:var(--purple); font-weight:800; display:flex; flex-wrap:wrap; gap:6px; align-items:baseline;}
+
+.pl-toolbar{display:flex; gap:10px; align-items:center; background:var(--panel-alt); border:1px solid var(--border); border-radius:8px; padding:9px 12px; margin-bottom:12px; flex-wrap:wrap;}
+.pl-toolbar input{flex:1; min-width:140px; background:transparent; border:none; color:var(--txt); outline:none; font-size:13px;}
+.pl-toolbar select{background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt); padding:7px 10px; border-radius:6px; font-size:12.5px;}
+.pl-toolbar i{color:var(--purple);}
+
+.party-list{list-style:none; margin:0 0 14px; padding:0; background:var(--table-bg); border:1px solid var(--border); border-radius:8px; max-height:320px; overflow-y:auto;}
+.party-item{display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid #232323; cursor:pointer; flex-wrap:wrap;}
+.party-item:last-child{border-bottom:none;}
+.party-item:hover{background:#232323;}
+.party-item.selected{background:#5B2C6F; color:#fff;}
+.party-item.selected .p-tag{background:rgba(255,255,255,.18);}
+.party-item.unregistered{color:var(--txt-muted);}
+.party-item i{color:var(--purple); width:16px; text-align:center;}
+.party-item.selected i{color:#fff;}
+.party-item .p-name{flex:1; font-size:13px; font-weight:600; min-width:120px;}
+.party-item .p-tag{font-size:10.5px; padding:3px 9px; border-radius:20px; font-weight:700; background:rgba(255,255,255,.08); white-space:nowrap;}
+.party-item .p-tag.supplier{color:#2ECC71;}
+.party-item .p-tag.customer{color:var(--blue);}
+.party-item .p-tag.both{color:var(--gold);}
+.party-item .p-tag.dealer{color:var(--orange);}
+.party-item .p-tag.installer{color:var(--purple);}
+.party-item .p-tag.fabricator{color:#16A2B8;}
+.party-item .p-badge-unreg{font-size:10px; font-style:italic; color:var(--txt-muted); white-space:nowrap;}
+
+.pl-header-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
+.pl-header-row .p-title{flex:1; font-size:14px; font-weight:800; color:var(--txt); min-width:180px;}
+
+.mini-stat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px;}
+.mini-stat{background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 12px;}
+.mini-stat .m-label{color:var(--txt-muted); font-size:11px; font-weight:700;}
+.mini-stat .m-val{font-size:20px; font-weight:800; margin-top:2px;}
+.mini-stat.in{border-left:3px solid #2ECC71;} .mini-stat.in .m-val{color:#2ECC71;}
+.mini-stat.out{border-left:3px solid var(--red);} .mini-stat.out .m-val{color:var(--red);}
+.mini-stat.bal{border-left:3px solid var(--gold);} .mini-stat.bal .m-val{color:var(--gold);}
+@media (max-width:560px){.mini-stat-grid{grid-template-columns:1fr;}}
+
+.pl-empty-hint{color:var(--txt-muted); font-size:12.5px; font-style:italic; padding:16px; text-align:center;}
+
+/* Reusable "maximized dialog" pattern — matches the desktop app's
+   dialog.showMaximized() behaviour, where every popup window opens as a
+   full window instead of a small floating box, and the page behind it is
+   locked (not visible/scrollable) while it's open.
+   Add class="modal-overlay modal-fullscreen" (in addition to the normal
+   modal-overlay markup) to ANY dialog — current or future — that should
+   open fully maximized on every screen size (mobile AND desktop), instead
+   of the small centered popup style. Currently used by Create/Edit Ledger
+   and the Ledger Statement dialogs in Party Ledger; use the same class on
+   any new big dialog added later (Purchase/Sales edit popups etc.) to get
+   the same maximized behaviour automatically. */
+.modal-overlay.modal-fullscreen{padding:0; align-items:stretch; justify-content:stretch;}
+.modal-overlay.modal-fullscreen .modal-box{
+  width:100%; height:100%; max-width:100%; max-height:100%;
+  border-radius:0; margin:0; display:flex; flex-direction:column;
+}
+.modal-overlay.modal-fullscreen .modal-head{flex:0 0 auto;}
+.modal-overlay.modal-fullscreen .modal-body{flex:1 1 auto; overflow-y:auto;}
+.modal-overlay.modal-fullscreen .modal-box .form-grid,
+.modal-overlay.modal-fullscreen .modal-box .actions-row{max-width:640px;}
+
+/* Locks the underlying page in place while a fullscreen modal is open, so
+   scrolling inside the modal never bleeds through to the page behind it. */
+body.no-scroll{overflow:hidden; height:100%;}
+
+/* Keyboard-selected row inside the statement drill-down table (Arrow keys +
+   Enter to drill in, Backspace to go back — mirrors the desktop app). */
+#stmtTbody tr.kbd-active{outline:2px solid var(--blue); outline-offset:-2px; background:#1c2733;}
+
+.stmt-head{display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+.stmt-actions{display:flex; gap:8px; flex-wrap:wrap;}
+
+.stmt-profile{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; background:var(--panel-alt); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:14px;}
+.stmt-profile .pf-item{display:flex; flex-direction:column; gap:3px; min-width:0;}
+.stmt-profile .pf-label{color:var(--txt-muted); font-size:11px; font-weight:700;}
+.stmt-profile .pf-val{color:var(--txt); font-size:13px; font-weight:700; word-break:break-word;}
+.stmt-profile .pf-val.accent{color:var(--blue);}
+@media (max-width:700px){.stmt-profile{grid-template-columns:1fr 1fr;}}
+@media (max-width:480px){.stmt-profile{grid-template-columns:1fr;}}
+
+.stmt-unreg{color:var(--orange); font-style:italic; font-size:13px; background:var(--panel-alt); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:14px;}
+
+.stmt-nav{display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap;}
+.stmt-nav .breadcrumb{color:var(--purple); font-size:13px; font-weight:700;}
+.stmt-nav .hint{color:var(--txt-muted); font-size:11px; font-style:italic; margin-left:auto;}
+
+/* ---------- Voucher Attachments panel (Party Ledger drill-down) ---------- */
+.stmt-attachments{background:var(--panel-alt); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:12px;}
+.stmt-attachments-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;}
+.stmt-attachments-head > span{color:var(--txt-label); font-size:12.5px; font-weight:700;}
+.stmt-attachments-head > span i{color:var(--purple); margin-right:4px;}
+.stmt-attach-add{cursor:pointer; display:inline-flex; align-items:center; gap:6px;}
+.stmt-attachments-list{display:flex; flex-wrap:wrap; gap:8px;}
+.stmt-attach-empty{color:var(--txt-muted); font-size:12px; font-style:italic;}
+.stmt-attach-chip{
+  display:flex; align-items:center; gap:8px; background:var(--input-bg); border:1px solid var(--border-light);
+  border-radius:20px; padding:6px 6px 6px 12px; font-size:12px; max-width:280px;
+}
+.stmt-attach-chip i.fa-file-pdf{color:var(--red);}
+.stmt-attach-chip i.fa-file-image{color:var(--blue);}
+.stmt-attach-chip .name{color:var(--txt); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:150px;}
+.stmt-attach-chip .size{color:var(--txt-muted); font-size:10.5px; white-space:nowrap;}
+.stmt-attach-chip button{padding:4px 7px; font-size:11px; border-radius:50%;}
+.stmt-attach-chip .attach-remove:hover{color:var(--red);}
+
+.stmt-table-row{cursor:pointer;}
+.stmt-table-row:hover{background:#1c2733;}
+.stmt-table-row.leaf{cursor:default;}
+.stmt-table-row.leaf:hover{background:inherit;}
+
+/* ---------- Lightweight toast (used across pages for "UI preview" actions) ---------- */
+.toast-wrap{position:fixed; bottom:20px; right:20px; z-index:80; display:flex; flex-direction:column; gap:8px; max-width:calc(100% - 40px);}
+.toast{background:var(--panel); border:1px solid var(--purple); color:var(--txt); padding:10px 16px; border-radius:8px; font-size:12.5px; box-shadow:0 8px 24px rgba(0,0,0,.4); opacity:0; transform:translateY(8px); transition:all .25s ease;}
+.toast.show{opacity:1; transform:translateY(0);}
+@media (max-width:560px){
+  .toast-wrap{left:16px; right:16px; bottom:16px; align-items:stretch;}
+}
+@media (max-width:480px){
+  .modal-head{padding:12px 14px;}
+  .modal-head h3{font-size:13px; line-height:1.35;}
+  .modal-close{width:28px; height:28px; min-width:28px; font-size:12px;}
+}

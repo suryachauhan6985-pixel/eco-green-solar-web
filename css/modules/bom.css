@@ -1,0 +1,202 @@
+/* ---------- BOM page (js/pages/bom.js) ----------
+   The ON-SCREEN form is just normal software UI (.panel/.form-grid/.field,
+   same as every other page) — no bespoke CSS needed for it beyond the
+   category-divider row below. The Excel-exact look (white sheet, black
+   text, purple #666699 bars, same 6 columns/column-widths as the
+   original workbook) is PRINT-ONLY: .bom-print-only is hidden on screen
+   entirely (incl. mobile) and only rendered inside the print stylesheet,
+   built fresh from the live form fields right before window.print(). */
+.bom-print-only{display:none;}
+/* Lets bom.js measure the print sheet's TRUE rendered height on demand,
+   any time (not just while @media print is actually active). Chromium
+   never fires 'beforeprint' reliably enough (timing varies by OS/printer
+   dialog) to be the only way we measure — so the Print button handler
+   below flips this class on, measures with getBoundingClientRect (NOT
+   scrollHeight — see the long comment in bom.js on why scrollHeight lies
+   once `zoom` is applied), then flips it back off before window.print().
+   position:fixed + far off-screen keeps it invisible to the user even
+   though display is briefly 'block'. */
+.bom-print-only.bom-measuring{display:block; position:fixed; top:0; left:-99999px; visibility:visible;}
+
+/* ---- Excel-exact print sheet look (sheet, table, columns, colors) ----
+   Previously these rules lived inside `@media print{}`, which meant they
+   only existed while the browser's print engine was actually active —
+   so bom.js could never measure the sheet's real dimensions ahead of
+   time (it's display:none outside of print, so all this styling was
+   absent and every measurement read a collapsed/zero size). Moved here
+   as always-on rules: .bom-print-only's own display:none above still
+   keeps this fully invisible on screen and off mobile layouts, so moving
+   the styling out of @media print changes nothing about what the user
+   sees — it only makes the sheet measurable (via .bom-measuring above)
+   whenever bom.js needs to check its size, not just mid-print.
+   SIZED LIKE THE REAL WORKBOOK, NOT LIKE THE PAGE: the original Excel
+   sheet's 6 columns add up to ~850px at their real stored widths (Sr No.
+   68px, Item Name 243px, Model 132px, Qty 117px, Checked 89px, Remarks
+   201px @96dpi) — noticeably WIDER than one A4 page. That's expected:
+   Excel prints this sheet at a flat 77% scale (Page Setup → Scale: 77%,
+   not "Fit to page"), which shrinks that 850px-wide sheet down until it
+   fits one page, and — because "Center on page: Horizontally" is also
+   on in the workbook — centers the now-smaller sheet left/right on the
+   page. We replicate that instead of stretching the table to fill page
+   width: .bom-sheet gets a FIXED 850px width and bom.js's
+   computeFitZoom() scales it down (computed dynamically from the
+   sheet's real measured height so it always lands on one page), with
+   margin:auto centering the shrunk sheet horizontally.
+   NOTE: no static zoom here anymore — a fixed CSS zoom guessed to "just
+   about" fit this particular 53-item kit is exactly what silently broke
+   the moment the kit grew (or printed on a machine with different
+   default fonts/margins): it always needs to be computed from the
+   sheet's actual rendered height, which is what computeFitZoom() in
+   bom.js now does every single time, unconditionally, right when Print
+   is clicked — never skipped, never assumed. */
+.bom-sheet{width:850px; margin:0 auto; background:#ffffff; transform-origin:top center;}
+.bom-table{
+  width:100%; border-collapse:collapse; table-layout:fixed; background:#ffffff;
+  font-family:'Calibri Light', Calibri, 'Segoe UI', Arial, sans-serif; color:#000;
+}
+.bom-table th, .bom-table td{
+  border:1px solid #000; padding:1px 4px; font-size:11pt; line-height:1.25; vertical-align:middle;
+  background:#ffffff; color:#000;
+  white-space:nowrap; overflow:hidden;
+}
+.bom-col-sr{width:8.00%;}
+.bom-col-name{width:28.59%;}
+.bom-col-model{width:15.53%;}
+.bom-col-qty{width:13.76%;}
+.bom-col-checked{width:10.47%;}
+.bom-col-remarks{width:23.65%;}
+.bom-table .bom-c-sr{text-align:center;}
+.bom-table .bom-c-name{text-align:left;}
+.bom-table .bom-c-model{text-align:center;}
+.bom-table .bom-c-qty{text-align:center;}
+.bom-table .bom-c-checked{text-align:center;}
+.bom-table .bom-c-remarks{text-align:center;}
+.bom-info-cell{border:1px solid #000; font-size:10pt; font-weight:700; color:#000; background:#ffffff; padding:1px 4px; line-height:1.25;}
+.bom-spacer{border:1px solid #000; height:4pt; padding:0; background:#ffffff;}
+.bom-kw-cell{
+  border:1px solid #000; text-align:right; font-weight:800; font-size:12pt; color:#000; background:#ffffff;
+  font-family:'Arial Rounded MT Bold','Segoe UI',Arial,sans-serif;
+}
+.bom-kw-unit{border:1px solid #000; text-align:left; font-weight:800; font-size:12pt; color:#000; background:#ffffff;}
+.bom-head-row th{
+  background:#666699; color:#ffffff; font-weight:800; text-align:center;
+  font-family:'Arial Rounded MT Bold','Segoe UI',Arial,sans-serif; font-size:12pt;
+}
+.bom-cat-row td{
+  background:#f2f2f2; color:#000000; font-weight:800; text-align:center;
+  font-family:'Arial Rounded MT Bold','Segoe UI',Arial,sans-serif; font-size:12pt;
+}
+.bom-table tr{page-break-inside:avoid;}
+
+/* Dark-theme category divider row used in the ON-SCREEN "Kit Items" preview table */
+.bom-screen-cat td{
+  background:var(--table-header); color:var(--gold); font-weight:800; text-align:center;
+}
+/* Section-title field inside that divider row: still a real <input> (so the
+   name stays editable) but restyled to look like the highlighted, bold,
+   centered section heading it always was — the generic .bom-field-input
+   rule (light box, left-aligned, normal weight, fixed max-width) had made
+   it look like an ordinary side-aligned form field instead. It only takes
+   on the "editable input" look on hover/focus. */
+.bom-screen-cat .bom-section-title-input{
+  flex:1; min-width:0; max-width:none;
+  background:transparent; border:1px solid transparent;
+  color:var(--gold); font-weight:800; font-size:13px; text-align:center;
+  text-transform:none; padding:6px 8px; border-radius:5px;
+}
+.bom-screen-cat .bom-section-title-input:hover{
+  border-color:var(--border-light);
+}
+.bom-screen-cat .bom-section-title-input:focus{
+  background:var(--input-bg); color:var(--txt); border-color:var(--blue); font-weight:700;
+}
+
+/* ON-SCREEN "Kit Items" fields: real inputs/select, auto-filled from the
+   chosen kit but fully editable — user changes only the cell(s) they need
+   to, everything else keeps its auto-filled value. */
+.bom-items-form-table th, .bom-items-form-table td{padding:5px 6px;}
+.bom-items-form-table .bom-field-input{
+  width:100%; box-sizing:border-box; background:var(--input-bg);
+  border:1px solid var(--border-light); color:var(--txt);
+  border-radius:5px; padding:6px 8px; font-size:12px; outline:none;
+}
+.bom-items-form-table .bom-field-input:focus{border-color:var(--blue);}
+.bom-items-form-table .bom-field-sr{width:56px; text-align:center; padding-left:4px; padding-right:4px;}
+.bom-items-form-table select.bom-field-input{cursor:pointer;}
+
+/* Serial No. column — only rendered as a button for items whose category
+   has the Serial No. mandatory rule (see bomItemNeedsSerial in bom.js);
+   everything else shows a plain "—" so the column doesn't look broken.
+   Clicking the button opens the scan/type/upload popup (openBomSerialModal
+   in bom.js). Red = nothing entered yet, ghost = partially entered, green =
+   entered count matches the required Quantity exactly. */
+.bom-serial-btn{padding:6px 10px; font-size:11.5px; white-space:nowrap; width:100%;}
+.bom-serial-na{display:block; text-align:center; color:var(--txt-muted); font-size:12px;}
+
+/* Serial No. popup (openBomSerialModal): Scan / Upload mode toggle + the
+   same auto-newline textarea Purchase/Sale already use. */
+.bom-serial-mode-row{gap:8px; flex-wrap:wrap;}
+.bom-serial-mode-btn.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+#bomSerialModalBox{
+  width:100%; box-sizing:border-box; min-height:140px; resize:vertical;
+  background:var(--input-bg); border:1px solid var(--border-light); color:var(--orange);
+  border-radius:6px; padding:10px; font-size:13px; font-family:'Courier New',monospace; outline:none;
+}
+#bomSerialModalBox:focus{border-color:var(--blue);}
+#bomSerialFileInput{color:var(--txt);}
+
+/* Check column — on-screen equivalent of the print sheet's blank "Checked"
+   box; ticking every row here is what unlocks the Verify BOM button. */
+.bom-check-cell{text-align:center; white-space:nowrap;}
+.bom-field-check{width:18px; height:18px; cursor:pointer; accent-color:var(--blue);}
+
+@media print{
+  /* The `body *{visibility:hidden}` rule below only hides body's
+     DESCENDANTS — it never touches `body` itself, so body's own dark
+     theme background-color (--bg, near-black) stayed visible and kept
+     painting behind everything. Worse, `visibility:hidden` (unlike
+     `display:none`) does NOT remove an element from layout — the whole
+     app shell (.shell: sidebar + content area, which can be quite tall
+     in this SPA) still occupied its full normal-flow height on the
+     printed page even though invisible. That invisible-but-still-tall
+     leftover space, combined with body's own dark background showing
+     through, is exactly what was spilling onto a 2nd page — blank when
+     "Background graphics" was off, solid black when it was on. Hiding
+     the shell with `display:none` (removes it from layout entirely) and
+     forcing body's background to white fixes both at once.
+  */
+  /* NOTE: #bomPrintRoot is a descendant of .shell (nested inside
+     .content, where bom.js's page HTML — including #bomPrintRoot — gets
+     injected). display:none on .shell was removing #bomPrintRoot along
+     with it, which is why the print preview went blank. #bomPrintRoot is
+     position:absolute with no positioned ancestor anywhere above it, so
+     its containing block is the viewport, not .shell — collapsing
+     .shell's box to zero height (instead of display:none-ing it) drops
+     its contribution to the printed page's total height without
+     affecting #bomPrintRoot's own rendering at all. */
+  body{background:#ffffff !important;}
+  .shell{height:0 !important; min-height:0 !important; overflow:hidden !important;}
+
+  body *{visibility:hidden;}
+  .bom-print-only{display:block;}
+  #bomPrintRoot, #bomPrintRoot *{visibility:visible;}
+  #bomPrintRoot{position:absolute; left:0; top:0; width:100%;}
+
+  /* Force every background color in the sheet to actually print. Chrome,
+     Edge and Firefox all suppress background colors/images by default
+     unless the print dialog's "Background graphics" box is ticked — this
+     tells them to print backgrounds regardless of that checkbox, which is
+     why the purple category bars were showing as plain white before. */
+  #bomPrintRoot, #bomPrintRoot *{
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;
+  }
+
+  /* Margins matched to the workbook's real Page Setup (0.25in left/right,
+     0.75in top/bottom) instead of a flat 10mm — this is also what gives
+     Excel's print its wide top/bottom margin and comparatively narrow
+     side margins. The look/sizing of .bom-sheet/.bom-table itself now
+     lives outside this @media print block (see above) so bom.js can
+     measure it any time — only the print-time visibility swap and the
+     page setup stay here. */
+  @page{size:A4 portrait; margin:19.05mm 6.35mm;}
+}
