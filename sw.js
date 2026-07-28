@@ -14,6 +14,8 @@ const APP_SHELL = [
   '/css/modules/bom.css',
   '/css/modules/scan-sheet.css',
   '/assets/icon.ico',
+  '/assets/icons/icon-192.png',
+  '/assets/icons/icon-512.png',
   '/assets/logo.png',
   '/js/data/purchase-data.js?v=2',
   '/js/data/api.js?v=2',
