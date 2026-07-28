@@ -872,6 +872,13 @@ window.PAGES = window.PAGES || {};
   function openBluetoothScanResult(text, targetId) {
     scannerState.targetFieldId = targetId || resolveScanTargetId();
     scannerState.handledOnce = true;
+    bluetoothScannerState.pendingText = null;
+    bluetoothScannerState.pendingTargetId = null;
+    if (bluetoothScannerState.pendingTimer) {
+      window.clearTimeout(bluetoothScannerState.pendingTimer);
+      bluetoothScannerState.pendingTimer = null;
+    }
+    clearBluetoothKeyBufferTimer();
 
     const overlay = document.createElement('div');
     overlay.className = 'ss-scanner-overlay ss-bt-result-overlay';
@@ -951,8 +958,22 @@ window.PAGES = window.PAGES || {};
       }
       if (btn.dataset.busy === '1') return;
       btn.dataset.busy = '1';
-      handler();
-      window.setTimeout(() => { btn.dataset.busy = ''; }, 700);
+      // The busy-flag reset used to happen AFTER handler(), so if handler()
+      // ever threw (stale field reference, bad sheet/entry data, etc.) the
+      // setTimeout below never ran and btn.dataset.busy stayed '1' forever —
+      // every later tap on that button (Save/Retry/Back) then did nothing
+      // because of the `if (btn.dataset.busy === '1') return;` guard above.
+      // That is exactly the "popup gets stuck, nothing responds" symptom.
+      // try/finally guarantees the button is always re-armed even if
+      // something inside handler() throws, and logs the real error instead
+      // of failing silently.
+      try {
+        handler();
+      } catch (err) {
+        console.error('[BT scan result] action failed:', err);
+      } finally {
+        window.setTimeout(() => { btn.dataset.busy = ''; }, 700);
+      }
     };
     btn.addEventListener('click', run);
     btn.addEventListener('touchend', run, { passive: false });
@@ -1005,7 +1026,24 @@ window.PAGES = window.PAGES || {};
     if (scannerState.pendingIsDup) return; // guard — should already be hidden
     const text = scannerState.pendingText;
     if (text == null) return;
-    const saved = processScanValue(text);
+    let saved = false;
+    try {
+      saved = processScanValue(text);
+    } catch (err) {
+      // If saving blows up mid-way (corrupt sheet/entry data, storage error,
+      // etc.) we must NOT leave the popup sitting there with a dead Save
+      // button — that's the "stuck, nothing happens" state. Close it, tell
+      // the user, and let them retry the scan instead.
+      console.error('[BT scan result] save failed:', err);
+      hideScanResult();
+      if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) {
+        const targetId = scannerState.targetFieldId;
+        closeBluetoothResultOverlay();
+        resumeBluetoothScannerAfterResult(targetId, false);
+      }
+      if (window.showToast) window.showToast('Could not save — please scan again');
+      return;
+    }
     hideScanResult();
     if (saved) {
       setScanStatus('Saved \u2713 \u2014 scan the next one');
@@ -1363,6 +1401,7 @@ window.PAGES = window.PAGES || {};
     const now = Date.now();
     const normText = String(text == null ? '' : text).trim();
     if (!normText) return;
+    if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) return;
     clearBluetoothKeyBufferTimer();
     bluetoothScannerState.keyBuffer = '';
     bluetoothScannerState.keyBufferTargetId = null;
