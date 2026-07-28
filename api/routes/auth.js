@@ -1,5 +1,7 @@
 module.exports = function registerAuthRoutes(app, deps) {
   const { pool, route, issueToken, hashPassword, verifyPassword, generateOtp, sendOtpEmail, maskEmail, OTP_TTL_MINUTES, loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter } = deps;
+  const SESSION_STALE_SECONDS = 40;
+
   async function completeLoginSession(uname, role, res) {
     // ---------- One session at a time per user ----------
     // First self-heal: if this username's last session went stale (crashed
