@@ -928,25 +928,42 @@ window.PAGES = window.PAGES || {};
     const targetId = scannerState.targetFieldId || resolveScanTargetId();
     const field = targetId ? document.getElementById(targetId) : null;
     const colId = field ? field.dataset.col : null;
-    const sheet = window.SheetsStore.getSheet(ST.activeSheetId);
-    const dup = isDuplicateScanValue(sheet, colId, text);
-
-    scannerState.pendingText = text;
-    scannerState.pendingColId = colId;
-    scannerState.pendingIsDup = dup;
 
     const panel = document.getElementById('ssScanResult');
     const card = document.getElementById('ssScanResultCard');
     const valueEl = document.getElementById('ssScanResultValue');
     const msgEl = document.getElementById('ssScanResultMsg');
     const saveBtn = document.getElementById('ssScanSave');
+
+    // Paint the actual scanned value FIRST, unconditionally. Everything
+    // below (the duplicate-serial check) is a nice-to-have; it must never
+    // be able to prevent the real value from showing.
+    scannerState.pendingText = text;
+    scannerState.pendingColId = colId;
     if (valueEl) valueEl.textContent = text;
+    if (panel) panel.style.display = 'flex';
+
+    let dup = false;
+    try {
+      const sheet = window.SheetsStore.getSheet(ST.activeSheetId);
+      dup = isDuplicateScanValue(sheet, colId, text);
+    } catch (err) {
+      // Previously this check ran BEFORE the value/message were ever set,
+      // so a thrown error here (corrupt sheet/entry data, etc.) left the
+      // popup showing only the static "Scanned value" label with nothing
+      // filled in — looked exactly like the value had "reverted" to the
+      // placeholder text, with no clue why. Now we log it and just treat
+      // the scan as "not a duplicate" instead of losing the value.
+      console.error('[BT scan result] duplicate check failed:', err);
+      dup = false;
+    }
+    scannerState.pendingIsDup = dup;
+
     if (card) card.classList.toggle('dup', dup);
     if (msgEl) msgEl.textContent = dup
       ? 'This serial no. already exists in the record. Delete the old row first, or Retry with a different code.'
       : 'Scanned successfully.';
     if (saveBtn) saveBtn.style.display = dup ? 'none' : '';
-    if (panel) panel.style.display = 'flex';
   }
 
   function bindBtResultAction(btn, handler) {
