@@ -28,6 +28,7 @@ window.PAGES = window.PAGES || {};
     draftColumns: [],       // [{id, name, type}] while on Screen 3
     activeSheetId: null,    // sheet open on Screen 5
     lastBarcodeFieldId: null,
+    bluetoothScanMode: false,
   };
 
   const COL_TYPES = [
@@ -407,7 +408,8 @@ window.PAGES = window.PAGES || {};
       </div>
       <div class="ss-bottom-nav">
         <button type="button" class="ss-bottom-nav-btn" id="ssTypeMode" title="Type mode"><i class="fa-solid fa-keyboard"></i><span>Type</span></button>
-        <button type="button" class="ss-bottom-nav-scan" id="ssScanMode" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
+        <button type="button" class="ss-bottom-nav-btn ${ST.bluetoothScanMode ? 'active' : ''}" id="ssBluetoothScanMode" title="Bluetooth scanner mode"><i class="fa-brands fa-bluetooth-b"></i><span>BT Scan</span></button>
+        <button type="button" class="ss-bottom-nav-scan ${ST.bluetoothScanMode ? 'ss-disabled' : ''}" id="ssScanMode" title="${ST.bluetoothScanMode ? 'Camera disabled in Bluetooth scanner mode' : 'Scan barcode / QR'}" ${ST.bluetoothScanMode ? 'aria-disabled="true"' : ''}><i class="fa-solid fa-barcode"></i></button>
         <button type="button" class="ss-bottom-nav-btn ss-save-entry" id="ssSaveEntry" title="Save entry"><i class="fa-solid fa-floppy-disk"></i><span>Save</span></button>
       </div>
     `;
@@ -440,7 +442,7 @@ window.PAGES = window.PAGES || {};
           ${label}
           <div class="ss-scan-input-wrap">
             <input type="text" id="${fid}" data-col="${col.id}" data-type="barcode" placeholder="Type or scan ${escapeHtml(col.name)}" ${antiAutofillAttrs}>
-            <button type="button" class="ss-scan-icon-btn" data-target="${fid}" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
+            <button type="button" class="ss-scan-icon-btn ${ST.bluetoothScanMode ? 'ss-disabled' : ''}" data-target="${fid}" title="${ST.bluetoothScanMode ? 'Camera disabled in Bluetooth scanner mode' : 'Scan barcode / QR'}" ${ST.bluetoothScanMode ? 'aria-disabled="true"' : ''}><i class="fa-solid fa-barcode"></i></button>
           </div>
         </div>`;
     }
@@ -454,7 +456,7 @@ window.PAGES = window.PAGES || {};
         ${label}
         <div class="ss-scan-input-wrap">
           <input type="text" id="${fid}" data-col="${col.id}" data-type="text" placeholder="Enter or scan ${escapeHtml(col.name)}" ${antiAutofillAttrs}>
-          <button type="button" class="ss-scan-icon-btn" data-target="${fid}" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
+          <button type="button" class="ss-scan-icon-btn ${ST.bluetoothScanMode ? 'ss-disabled' : ''}" data-target="${fid}" title="${ST.bluetoothScanMode ? 'Camera disabled in Bluetooth scanner mode' : 'Scan barcode / QR'}" ${ST.bluetoothScanMode ? 'aria-disabled="true"' : ''}><i class="fa-solid fa-barcode"></i></button>
         </div>
       </div>`;
   }
@@ -627,6 +629,16 @@ window.PAGES = window.PAGES || {};
     pendingIsDup: false,
   };
 
+  const bluetoothScannerState = {
+    buffer: '',
+    lastKeyAt: 0,
+    flushTimer: null,
+    listenerAttached: false,
+    burstGapMs: 80,
+    flushDelayMs: 120,
+    minChars: 3,
+  };
+
   // Checks whether `value` already exists (case-insensitive, trimmed) in
   // this sheet's existing rows for the given column — used to block saving
   // a duplicate serial no./barcode until the old row is deleted first.
@@ -672,6 +684,7 @@ window.PAGES = window.PAGES || {};
   }
 
   function openScanner(targetFieldId) {
+    if (ST.bluetoothScanMode) return;
     if (!targetFieldId) targetFieldId = resolveScanTargetId();
     if (!targetFieldId) { window.showToast('Add a Text or Barcode/QR column to this sheet first'); return; }
     scannerState.targetFieldId = targetFieldId;
@@ -928,6 +941,96 @@ window.PAGES = window.PAGES || {};
     } catch (e) { /* Web Audio not available — silently skip the beep */ }
   }
 
+  // Bluetooth barcode scanners normally act like fast keyboards. Browsers do
+  // not expose a reliable "which Bluetooth device is connected" signal, so
+  // this only listens while the user manually enables BT Scan.
+  function ensureBluetoothScannerListener() {
+    if (bluetoothScannerState.listenerAttached) return;
+    document.addEventListener('keydown', onBluetoothScannerKeydown, true);
+    bluetoothScannerState.listenerAttached = true;
+  }
+
+  function setBluetoothScanMode(enabled) {
+    ST.bluetoothScanMode = !!enabled;
+    resetBluetoothScanBuffer();
+    if (ST.bluetoothScanMode) {
+      closeScanner();
+      const targetId = resolveScanTargetId();
+      if (targetId) {
+        ST.lastBarcodeFieldId = targetId;
+        const field = document.getElementById(targetId);
+        if (field) field.focus();
+      }
+    }
+    render();
+  }
+
+  function resetBluetoothScanBuffer() {
+    bluetoothScannerState.buffer = '';
+    bluetoothScannerState.lastKeyAt = 0;
+    if (bluetoothScannerState.flushTimer) {
+      clearTimeout(bluetoothScannerState.flushTimer);
+      bluetoothScannerState.flushTimer = null;
+    }
+  }
+
+  function scheduleBluetoothScanFlush() {
+    if (bluetoothScannerState.flushTimer) clearTimeout(bluetoothScannerState.flushTimer);
+    bluetoothScannerState.flushTimer = setTimeout(() => {
+      flushBluetoothScanBuffer(false);
+    }, bluetoothScannerState.flushDelayMs);
+  }
+
+  function flushBluetoothScanBuffer(force) {
+    const text = bluetoothScannerState.buffer.trim();
+    resetBluetoothScanBuffer();
+    if (!force && text.length < bluetoothScannerState.minChars) return;
+    if (!text) return;
+    handleBluetoothScanValue(text);
+  }
+
+  function onBluetoothScannerKeydown(e) {
+    if (!ST.bluetoothScanMode || ST.view !== 'data-entry') return;
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+    const key = e.key;
+    if (key === 'Enter' || key === 'Tab') {
+      if (bluetoothScannerState.buffer) {
+        e.preventDefault();
+        e.stopPropagation();
+        flushBluetoothScanBuffer(true);
+      }
+      return;
+    }
+    if (key === 'Escape') {
+      resetBluetoothScanBuffer();
+      return;
+    }
+    if (!key || key.length !== 1) return;
+
+    const now = Date.now();
+    if (bluetoothScannerState.lastKeyAt && now - bluetoothScannerState.lastKeyAt > bluetoothScannerState.burstGapMs) {
+      resetBluetoothScanBuffer();
+    }
+    bluetoothScannerState.lastKeyAt = now;
+    bluetoothScannerState.buffer += key;
+    e.preventDefault();
+    e.stopPropagation();
+    scheduleBluetoothScanFlush();
+  }
+
+  function handleBluetoothScanValue(text) {
+    const targetId = resolveScanTargetId();
+    const field = targetId ? document.getElementById(targetId) : null;
+    const colId = field ? field.dataset.col : null;
+    const sheet = window.SheetsStore.getSheet(ST.activeSheetId);
+    if (!sheet || !targetId || !colId) return;
+    if (isDuplicateScanValue(sheet, colId, text)) return;
+    beep();
+    if (navigator.vibrate) { try { navigator.vibrate(120); } catch (e) { /* not supported */ } }
+    processScanValue(text, targetId);
+  }
+
   // =========================================================================
   // Wiring
   // =========================================================================
@@ -968,6 +1071,7 @@ window.PAGES = window.PAGES || {};
   }
 
   function wireDataEntry() {
+    ensureBluetoothScannerListener();
     document.getElementById('ssBackFromEntry').onclick = () => { ST.view = 'list'; render(); };
     document.getElementById('ssTogglePreview').onclick = () => {
       const p = document.getElementById('ssPreviewPanel');
@@ -980,10 +1084,18 @@ window.PAGES = window.PAGES || {};
       const firstCol = sheet && sheet.columns.find((c) => c.type !== 'image');
       if (firstCol) { const f = document.getElementById('ssField_' + firstCol.id); if (f) f.focus(); }
     };
-    document.getElementById('ssScanMode').onclick = () => openScanner(resolveScanTargetId());
+    document.getElementById('ssBluetoothScanMode').onclick = () => setBluetoothScanMode(!ST.bluetoothScanMode);
+    document.getElementById('ssScanMode').onclick = () => {
+      if (ST.bluetoothScanMode) return;
+      openScanner(resolveScanTargetId());
+    };
 
     document.querySelectorAll('.ss-scan-icon-btn').forEach((btn) => {
-      btn.onclick = () => { ST.lastBarcodeFieldId = btn.dataset.target; openScanner(btn.dataset.target); };
+      btn.onclick = () => {
+        if (ST.bluetoothScanMode) return;
+        ST.lastBarcodeFieldId = btn.dataset.target;
+        openScanner(btn.dataset.target);
+      };
     });
     // Track focus on any scannable field (Barcode/QR *or* Text) so the
     // central scan button targets whichever field the user was last in.

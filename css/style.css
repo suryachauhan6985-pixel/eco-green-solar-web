@@ -1023,6 +1023,7 @@ body.no-scroll{overflow:hidden; height:100%;}
 }
 .ss-bottom-nav-btn i{font-size:17px;}
 .ss-bottom-nav-btn:hover{color:var(--txt);}
+.ss-bottom-nav-btn.active{color:var(--blue);}
 .ss-bottom-nav-btn.ss-save-entry{color:var(--green);}
 .ss-bottom-nav-scan{
   width:56px; height:56px; border-radius:50%; background:var(--blue); color:#fff; border:none;
