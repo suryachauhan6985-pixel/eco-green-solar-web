@@ -1086,6 +1086,18 @@ body.no-scroll{overflow:hidden; height:100%;}
 }
 .ss-bt-result-blank i{font-size:48px; color:var(--blue);}
 .ss-bt-result-blank span{font-size:14px; opacity:.88;}
+.ss-bt-result-overlay{
+  position:fixed; left:0; right:0; bottom:76px; z-index:90;
+  padding:0 14px; pointer-events:none;
+}
+.ss-bt-result-sheet{
+  width:100%; max-width:480px; margin:0 auto; pointer-events:auto;
+  display:flex; flex-direction:column; align-items:center; gap:12px;
+  background:rgba(0,0,0,.88); border:1px solid var(--border-light);
+  border-radius:12px; padding:12px; box-shadow:0 10px 28px rgba(0,0,0,.5);
+}
+.ss-bt-result-sheet .ss-scanner-result-card{max-width:none; padding:10px 12px;}
+.ss-bt-result-sheet .ss-scanner-result-actions{max-width:none;}
 .ss-scanner-target{
   position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
   width:250px; height:250px; max-width:70vw; max-height:70vw;
