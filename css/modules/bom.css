@@ -125,6 +125,20 @@
   padding:4px 4px;
   line-height:1.4;
 }
+/* Overrides the shared .bom-head-row th purple-bar styling (meant for the
+   BOM kit sheet) back to the Challan sheet's real look: white background,
+   bold black text, Calibri — matches every header cell in the source
+   workbook (Customer Copy/Company Copy label AND the Sr.No./Item Name/
+   Model/Qty./Description column headers all use fill=white, font=black). */
+#bomChallanPrintRoot .bom-head-row th{
+  background:#ffffff; color:#000000; font-family:Calibri,'Segoe UI',Arial,sans-serif;
+  font-size:11pt; font-weight:700;
+}
+/* Customer Copy / Company Copy label row: same white-bg/bold-black look,
+   just larger (14pt in the workbook vs. 11pt for the column headers). */
+#bomChallanPrintRoot .bom-challan-copylabel th{
+  font-size:14pt;
+}
 #bomChallanPrintRoot .bom-challan-footer-row .bom-info-cell{
   padding:5px 4px;
   line-height:1.4;
@@ -134,6 +148,12 @@
 #bomChallanPrintRoot .bom-challan-item-row td{
   padding:1px 4px;
   line-height:1.15;
+}
+/* Workbook uses a thicker "medium" border around each copy's outer edge,
+   vs. the thin 1px grid lines between cells — this approximates that
+   bolder outline without touching the shared per-cell border rules. */
+#bomChallanPrintRoot .bom-table{
+  border:2px solid #000;
 }
 
 /* Company logo, top-left of each copy's header block, ~257x51px in the

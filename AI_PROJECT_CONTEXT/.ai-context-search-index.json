@@ -421,15 +421,27 @@
   },
   {
     "type": "function",
+    "label": "bomCollectChallanTemplateValues",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderChallanPrintTemplateRowsHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(template, values)"
+  },
+  {
+    "type": "function",
     "label": "bomRenderChallanPrintSheetHalfHtml",
     "file": "js/pages/bom.js",
-    "detail": "(header, kit, copyLabel, side)"
+    "detail": "(header, kit, copyLabel, templateValues)"
   },
   {
     "type": "function",
     "label": "bomRenderChallanPrintSheetHtml",
     "file": "js/pages/bom.js",
-    "detail": "(header, kit)"
+    "detail": "(header, kit, templateValues)"
   },
   {
     "type": "function",
@@ -602,6 +614,24 @@
   {
     "type": "function",
     "label": "descInput",
+    "file": "js/pages/bom.js",
+    "detail": "(sr)"
+  },
+  {
+    "type": "function",
+    "label": "setVal",
+    "file": "js/pages/bom.js",
+    "detail": "(key, patch)"
+  },
+  {
+    "type": "function",
+    "label": "getQty",
+    "file": "js/pages/bom.js",
+    "detail": "(sr, size)"
+  },
+  {
+    "type": "function",
+    "label": "getDesc",
     "file": "js/pages/bom.js",
     "detail": "(sr)"
   },

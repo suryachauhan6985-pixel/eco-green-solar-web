@@ -599,7 +599,7 @@ function bomRenderChallanPrintTemplateRowsHtml(template, values) {
         <td class="bom-c-sr">${it.sr}</td>
         <td class="bom-c-name">${bomEsc(it.name)}</td>
         <td class="bom-c-model">${bomEsc(it.model || '')}</td>
-        <td class="bom-c-size">&mdash;</td>
+        <td class="bom-c-size"></td>
         <td class="bom-c-qty">${bomEsc(getQty(it.sr))}</td>
         <td class="bom-c-unit">${bomEsc(it.unit)}</td>
         <td class="bom-c-remarks">${bomEsc(desc)}</td>
@@ -621,7 +621,7 @@ function bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValu
         <tr><td colspan="7" style="border:none; background:#ffffff; text-align:left;">
           <img class="bom-challan-logo" src="assets/logo.png" alt="Eco Green Solar">
         </td></tr>
-        <tr class="bom-head-row"><th colspan="7">${bomEsc(copyLabel)}</th></tr>
+        <tr class="bom-head-row bom-challan-copylabel"><th colspan="7">${bomEsc(copyLabel)}</th></tr>
         <tr><td colspan="7" class="bom-info-cell">GST NO. 24AAHFG9142N1Z1</td></tr>
         <tr>
           <td colspan="7" class="bom-info-cell" style="font-weight:400; font-size:9pt; line-height:1.3; white-space:normal;">
@@ -646,9 +646,9 @@ function bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValu
           <th class="bom-c-sr">Sr. No.</th>
           <th class="bom-c-name">Item Name</th>
           <th class="bom-c-model">Model</th>
-          <th class="bom-c-size">Size</th>
+          <th class="bom-c-size"></th>
           <th class="bom-c-qty">Qty.</th>
-          <th class="bom-c-unit">Unit</th>
+          <th class="bom-c-unit"></th>
           <th class="bom-c-remarks">Description</th>
         </tr>
         ${itemRows}
@@ -731,7 +731,10 @@ window.PAGES.bom = {
     </div>
 
     <div class="panel" id="bomKitItemsPanel">
-      <h3><i class="fa-solid fa-list"></i> Kit Items <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(auto-filled from selected kit)</span></h3>
+      <h3 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <span><i class="fa-solid fa-list"></i> Kit Items <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(auto-filled from selected kit)</span></span>
+        <button type="button" class="btn btn-blue bom-mini-btn" id="bomBtnTickAll" title="Tick every item's Check box in one click"><i class="fa-solid fa-check-double"></i> Tick All</button>
+      </h3>
       <div id="bomItemsPreview">${bomRenderScreenItemsHtml(null)}</div>
     </div>
 
@@ -973,6 +976,42 @@ window.PAGES.bom = {
     }
     function updateVerifyButtonState() {
       if (btnVerify) btnVerify.disabled = !allItemsChecked();
+    }
+
+    // "Tick All" — ticks every item's Check box in one click instead of
+    // clicking each row individually. Items whose category needs a Serial
+    // No. (see bomItemNeedsSerial) are still held to the same rule as
+    // ticking them one-by-one in handleItemFieldEdit below: they only get
+    // ticked if their serials are already fully entered, otherwise they're
+    // left unticked and the person is told how many still need serials.
+    const btnTickAll = $('bomBtnTickAll');
+    if (btnTickAll) {
+      btnTickAll.addEventListener('click', () => {
+        if (!currentKitState || !currentKitState.length) {
+          window.openModal('Select a Kit', '<p>Select a BOM Kit above to load its items before ticking all.</p>');
+          return;
+        }
+        let blocked = 0;
+        currentKitState.forEach((sec) => {
+          sec.items.forEach((it) => {
+            if (bomItemNeedsSerial(it.name)) {
+              const required = bomParseQtyNumber(it.qty);
+              const entered = bomSplitSerials(it.serials).length;
+              if (!entered || (required != null && entered !== required)) {
+                blocked += 1;
+                return; // leave this one unticked — same rule as a manual tick
+              }
+            }
+            it.checked = true;
+          });
+        });
+        rerenderItemsPreview();
+        if (blocked > 0) {
+          window.openModal('Some Items Skipped', `<p>${blocked} item(s) still need their Serial No. entered before they can be ticked — fill those in, then click <b>Tick All</b> again.</p>`);
+        } else if (window.showToast) {
+          window.showToast('All items ticked.');
+        }
+      });
     }
 
     // Real item master (Masters > Item Registration) drives the Item Name
