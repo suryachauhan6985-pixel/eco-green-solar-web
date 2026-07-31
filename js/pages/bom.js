@@ -579,21 +579,71 @@ function bomCollectChallanTemplateValues() {
   return values;
 }
 
-// Renders the Challan print sheet's item rows from BOM_CHALLAN_TEMPLATE —
-// the SAME 13-line/7-column data set (Sr No./Item Name/Model/Size/Qty./
-// Unit/Description) the entry table already renders — populated with the
-// actual Qty./Description values the user typed into that entry table,
-// instead of the unrelated BOM-kit sections. GI Pipe's 4 size sub-rows
-// merge Sr/Name/Model/Description via rowspan exactly like the entry
-// table does, so the print sheet is a true Excel-exact mirror of what's
-// on screen, not a different item list.
-function bomRenderChallanPrintTemplateRowsHtml(template, values) {
+// ---------- Challan print sheet — layout engine (CHALLAN_SPEC.md) ----------
+// Everything below reproduces the reverse-engineered Excel layout in
+// CHALLAN_SPEC.md exactly: one flat 7-column <table> per copy (Sr./Item
+// Name/Model/Model-cont./Qty-label/Qty-unit/Description — §3), a fixed
+// 28-row body (§4/§15) padded with blank numbered rows past the real
+// item list, and the exact rowspan/colspan merge pattern from §5. No
+// column widths/row heights/scale are computed here — those are static
+// values in bom.css (§14/§15: "no client-side layout computation").
+
+// Fixed total body-row count the printed table always pads/truncates to
+// (§4: rows 8–35 = 28 rows; §15: "fill remaining rows to reach 28").
+const CHALLAN_PRINT_TOTAL_BODY_ROWS = 28;
+
+// Walks BOM_CHALLAN_TEMPLATE and turns it into physical "row groups": one
+// group per template item (rowCount = 4 for GI Pipe's size sub-rows, 1 for
+// everything else), then appends blank, sequentially-numbered groups
+// (continuing the Sr. No. sequence) until the physical row total reaches
+// CHALLAN_PRINT_TOTAL_BODY_ROWS — the exact padding rule in §15.
+function bomChallanBuildRowGroups(template) {
+  const groups = [];
+  let physicalRows = 0;
+  let lastSr = 0;
+  template.forEach((it) => {
+    const rowCount = (it.sizes && it.sizes.length) ? it.sizes.length : 1;
+    groups.push({ sr: it.sr, item: it, rowCount, blank: false });
+    physicalRows += rowCount;
+    lastSr = it.sr;
+  });
+  let nextSr = lastSr + 1;
+  while (physicalRows < CHALLAN_PRINT_TOTAL_BODY_ROWS) {
+    groups.push({ sr: nextSr, item: null, rowCount: 1, blank: true });
+    physicalRows += 1;
+    nextSr += 1;
+  }
+  return groups;
+}
+
+// Renders rows 8–35 (the item table body) from the row groups above,
+// populated with the actual Qty./Description values collected from the
+// entry modal (bomCollectChallanTemplateValues). Merge pattern per §5:
+//  - Multi-length items (GI Pipe): Sr./Item/Model rowspan across the
+//    sub-rows (A10:A13-style), one unmerged Model-cont. + Qty-label +
+//    Qty-unit cell per sub-row, Description rowspan across the group.
+//  - Single-variant items: Item Name colspan across the Model + Model-cont.
+//    columns (B18:D18-style) since those items carry no sub-model text.
+//  - Blank spacer rows: same colspan shape as a single-variant row, all
+//    cells empty except the auto-numbered Sr. No.
+function bomRenderChallanBodyRowsHtml(groups, values) {
   const getQty = (sr, size) => (values[`${sr}|${size || ''}`] && values[`${sr}|${size || ''}`].qty) || '';
   const getDesc = (sr) => (values[`${sr}|`] && values[`${sr}|`].desc) || '';
 
-  return template.map((it) => {
-    const desc = getDesc(it.sr);
+  return groups.map((g) => {
+    if (g.blank) {
+      return `
+      <tr class="bom-challan-row bom-challan-row-blank">
+        <td class="bom-c-sr">${g.sr}</td>
+        <td class="bom-c-name" colspan="3"></td>
+        <td class="bom-c-qtylabel"></td>
+        <td class="bom-c-qtyunit"></td>
+        <td class="bom-c-desc"></td>
+      </tr>`;
+    }
+    const it = g.item;
     if (it.sizes && it.sizes.length) {
+      const desc = getDesc(it.sr);
       return it.sizes.map((size, i) => {
         const leadCells = i === 0
           ? `<td class="bom-c-sr" rowspan="${it.sizes.length}">${it.sr}</td>
@@ -601,100 +651,147 @@ function bomRenderChallanPrintTemplateRowsHtml(template, values) {
              <td class="bom-c-model" rowspan="${it.sizes.length}">${bomEsc(it.model || '')}</td>`
           : '';
         const descCell = i === 0
-          ? `<td class="bom-c-remarks" rowspan="${it.sizes.length}">${bomEsc(desc)}</td>`
+          ? `<td class="bom-c-desc" rowspan="${it.sizes.length}">${bomEsc(desc)}</td>`
           : '';
         return `
-      <tr class="bom-challan-item-row">
+      <tr class="bom-challan-row">
         ${leadCells}
-        <td class="bom-c-size">${bomEsc(size)}</td>
-        <td class="bom-c-qty">${bomEsc(getQty(it.sr, size))}</td>
-        <td class="bom-c-unit">${bomEsc(it.unit)}</td>
+        <td class="bom-c-modelcont">${bomEsc(size)}</td>
+        <td class="bom-c-qtylabel">${bomEsc(getQty(it.sr, size))}</td>
+        <td class="bom-c-qtyunit">${bomEsc(it.unit)}</td>
         ${descCell}
       </tr>`;
       }).join('');
     }
     return `
-      <tr class="bom-challan-item-row">
+      <tr class="bom-challan-row">
         <td class="bom-c-sr">${it.sr}</td>
-        <td class="bom-c-name">${bomEsc(it.name)}</td>
-        <td class="bom-c-model">${bomEsc(it.model || '')}</td>
-        <td class="bom-c-size"></td>
-        <td class="bom-c-qty">${bomEsc(getQty(it.sr))}</td>
-        <td class="bom-c-unit">${bomEsc(it.unit)}</td>
-        <td class="bom-c-remarks">${bomEsc(desc)}</td>
+        <td class="bom-c-name" colspan="3">${bomEsc(it.name)}</td>
+        <td class="bom-c-qtylabel">${bomEsc(getQty(it.sr))}</td>
+        <td class="bom-c-qtyunit">${bomEsc(it.unit)}</td>
+        <td class="bom-c-desc">${bomEsc(getDesc(it.sr))}</td>
       </tr>`;
   }).join('');
 }
 
-function bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues) {
-  const itemRows = bomRenderChallanPrintTemplateRowsHtml(BOM_CHALLAN_TEMPLATE, templateValues);
-
-  // Header block matches the source Excel layout: logo + GST No. + company
-  // name + address sit in ONE cell on the left (rowspan across the 4 field
-  // rows), while Customer Copy/Company Copy + the Challan No./Date, Order
-  // No./Capacity, Name/City pairs sit on the right, row by row — instead of
-  // the old version's full-width stacked rows (which is what made the logo,
-  // GST No., address and copy label print as separate full-width bars
-  // instead of the compact side-by-side block the workbook actually uses).
+// Renders rows 1–6 (§4/§5/§6): logo + copy title on row 1; Challan No. on
+// row 2; GST line + Challan Date on row 3; the 2-row company name/address
+// block + Order No./Capacity on rows 4–5; Name/City on row 6. Every row
+// sums to the same 7 column-units as the item table below it (A–G), so the
+// header block and the item grid share one continuous column structure —
+// no nested tables (§13). isCompanyCopy switches ONLY the title cell's
+// color scheme (§6 asymmetry: Customer = black-on-white, Company =
+// white-on-black) — nothing else differs between the two copies.
+function bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy) {
+  const titleClass = isCompanyCopy ? 'bom-challan-title-inverse' : 'bom-challan-title-normal';
   return `
-    <div class="bom-challan-half">
-      <table class="bom-table bom-challan-table" style="table-layout:fixed;">
-        <colgroup>
-          <col class="bom-challan-col-sr"><col class="bom-challan-col-name"><col class="bom-challan-col-model">
-          <col class="bom-challan-col-size"><col class="bom-challan-col-qty"><col class="bom-challan-col-unit">
-          <col class="bom-challan-col-remarks">
-        </colgroup>
-        <tr>
-          <td colspan="3" rowspan="4" class="bom-challan-brand-cell">
-            <img class="bom-challan-logo" src="assets/logo.png" alt="Eco Green Solar">
-            <div class="bom-challan-gst">GST NO. 24AAHFG9142N1Z1</div>
-            <div class="bom-challan-company-name">Green Energy</div>
-            <div class="bom-challan-address">
-              Plot No – 4,5,6, Gajanand Ind. Area, Rev. S. No.: 183<br>
-              Nr R K Exotica, To.: Chhapra–360021 Ta. Metoda (Rajkot)
-            </div>
-          </td>
-          <td colspan="4" class="bom-info-cell bom-challan-copylabel-cell">${bomEsc(copyLabel)}</td>
-        </tr>
-        <tr>
-          <td colspan="2" class="bom-info-cell">Challan No.: ${bomEsc(header.challanNo)}</td>
-          <td colspan="2" class="bom-info-cell">Ch. Date: ${bomEsc(header.challanDate)}</td>
-        </tr>
-        <tr>
-          <td colspan="2" class="bom-info-cell">Order No.: ${bomEsc(header.orderNo)}</td>
-          <td colspan="2" class="bom-info-cell">Capacity: ${bomEsc(kit.kw)} kW</td>
-        </tr>
-        <tr>
-          <td colspan="2" class="bom-info-cell">Name: ${bomEsc(header.customerName)}</td>
-          <td colspan="2" class="bom-info-cell">City: ${bomEsc(header.city)}</td>
-        </tr>
-        <tr><td colspan="7" class="bom-spacer"></td></tr>
-        <tr class="bom-head-row">
-          <th class="bom-c-sr">Sr. No.</th>
-          <th class="bom-c-name">Item Name</th>
-          <th class="bom-c-model">Model</th>
-          <th class="bom-c-size"></th>
-          <th class="bom-c-qty">Qty.</th>
-          <th class="bom-c-unit"></th>
-          <th class="bom-c-remarks">Description</th>
-        </tr>
-        ${itemRows}
-        <tr><td colspan="7" class="bom-spacer"></td></tr>
-        <tr class="bom-challan-footer-row">
-          <td colspan="2" class="bom-info-cell">Issued by</td>
-          <td colspan="3" class="bom-info-cell bom-challan-vehicle-cell">Vehicle No.: ${bomEsc(header.vehicleNo)}</td>
-          <td colspan="2" class="bom-info-cell">Received by</td>
-        </tr>
-      </table>
-    </div>
+    <tr class="bom-challan-row1">
+      <td class="bom-challan-logo-cell" colspan="2">
+        <img class="bom-challan-logo" src="assets/logo.png" alt="Eco Green Solar">
+      </td>
+      <td class="bom-challan-spacer-cell" colspan="2"></td>
+      <td class="bom-challan-title-cell ${titleClass}" colspan="3">${bomEsc(copyLabel)}</td>
+    </tr>
+    <tr class="bom-challan-row2">
+      <td class="bom-challan-blank-cell" colspan="4"></td>
+      <td class="bom-challan-field-cell" colspan="3">Challan No.: ${bomEsc(header.challanNo)}</td>
+    </tr>
+    <tr class="bom-challan-row3">
+      <td class="bom-challan-gst-cell" colspan="4">GST NO. 24AAHFG9142N1Z1</td>
+      <td class="bom-challan-field-cell" colspan="3">Challan Date: ${bomEsc(header.challanDate)}</td>
+    </tr>
+    <tr class="bom-challan-row4">
+      <td class="bom-challan-address-cell" colspan="4" rowspan="2">
+        <div class="bom-challan-company-name">Green Energy</div>
+        <div class="bom-challan-address">Plot No &ndash; 4,5,6, Gajanand Ind. Area, Rev. S. No.: 183<br>Nr R K Exotica, To.: Chhapra&ndash;360021 Ta. Metoda (Rajkot)</div>
+      </td>
+      <td class="bom-challan-field-cell" colspan="3">Order No.: ${bomEsc(header.orderNo)}</td>
+    </tr>
+    <tr class="bom-challan-row5">
+      <td class="bom-challan-field-cell" colspan="3">Capacity : ${bomEsc(kit.kw)} kW</td>
+    </tr>
+    <tr class="bom-challan-row6">
+      <td class="bom-challan-name-cell" colspan="4">Name: ${bomEsc(header.customerName)}</td>
+      <td class="bom-challan-field-cell" colspan="3">City: ${bomEsc(header.city)}</td>
+    </tr>
   `;
 }
 
+// Renders row 7 — the item-table column headers (§7): Sr. No. / Item Name
+// / Model (colspan across Model + Model-cont., matching C7:D7) / Qty.
+// (colspan across the two Qty. columns, matching E7:F7) / Description.
+function bomRenderChallanTableHeadRowHtml() {
+  return `
+    <tr class="bom-challan-tablehead-row">
+      <th class="bom-c-sr">Sr. No.</th>
+      <th class="bom-c-name">Item Name</th>
+      <th class="bom-c-model" colspan="2">Model</th>
+      <th class="bom-c-qty" colspan="2">Qty.</th>
+      <th class="bom-c-desc">Description</th>
+    </tr>
+  `;
+}
+
+// Renders rows 36–37 — the footer (§11): "Issued by" / "Received by"
+// signature boxes (each rowspan across both footer rows), the Vehicle No.
+// value on row 36, and a blank signature line captioned "Vehicle No."
+// directly beneath it on row 37 — same cell shape/column span on both rows
+// (C36:F36 / C37:F37) so the write-in line sits flush under the value.
+function bomRenderChallanFooterRowsHtml(header) {
+  return `
+    <tr class="bom-challan-footer-row1">
+      <td class="bom-challan-issuedby-cell" colspan="2" rowspan="2">Issued by</td>
+      <td class="bom-challan-vehicle-cell" colspan="4">Vehicle No.: ${bomEsc(header.vehicleNo)}</td>
+      <td class="bom-challan-receivedby-cell" rowspan="2">Received by</td>
+    </tr>
+    <tr class="bom-challan-footer-row2">
+      <td class="bom-challan-vehicle-caption-cell" colspan="4">Vehicle No.</td>
+    </tr>
+  `;
+}
+
+// Assembles one full copy (Customer or Company) as a single flat <table>
+// with a fixed 7-column <colgroup> (§3 ratio: 10.4:20.9:13.4:11.9:10.4:
+// 7.5:25.4) — header rows, the column-header row, the fixed 28-row body,
+// then the footer, all inside one continuous grid (§13: no nested tables).
+function bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy) {
+  const groups = bomChallanBuildRowGroups(BOM_CHALLAN_TEMPLATE);
+  return `
+    <table class="bom-challan-table">
+      <colgroup>
+        <col class="bom-challan-col-sr">
+        <col class="bom-challan-col-name">
+        <col class="bom-challan-col-model">
+        <col class="bom-challan-col-modelcont">
+        <col class="bom-challan-col-qtylabel">
+        <col class="bom-challan-col-qtyunit">
+        <col class="bom-challan-col-desc">
+      </colgroup>
+      <tbody>
+        ${bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy)}
+        ${bomRenderChallanTableHeadRowHtml()}
+        ${bomRenderChallanBodyRowsHtml(groups, templateValues)}
+        ${bomRenderChallanFooterRowsHtml(header)}
+      </tbody>
+    </table>
+  `;
+}
+
+// Top-level Challan sheet: two structurally identical copies, generated
+// from ONE shared template (bomRenderChallanPrintSheetHalfHtml) so they
+// can never drift out of sync, separated by a fixed-width gutter that
+// carries the dashed "cut here" rule running the sheet's full height
+// (§9/§13 — the gutter is a spacer, not a CSS margin/gap).
 function bomRenderChallanPrintSheetHtml(header, kit, templateValues) {
   return `
-    <div class="bom-sheet bom-challan-sheet" id="bomChallanSheet">
-      ${bomRenderChallanPrintSheetHalfHtml(header, kit, 'Customer Copy', templateValues)}
-      ${bomRenderChallanPrintSheetHalfHtml(header, kit, 'Company Copy', templateValues)}
+    <div class="bom-challan-sheet" id="bomChallanSheet">
+      <div class="bom-challan-copy bom-challan-copy-customer">
+        ${bomRenderChallanPrintSheetHalfHtml(header, kit, 'Customer Copy', templateValues, false)}
+      </div>
+      <div class="bom-challan-gutter"></div>
+      <div class="bom-challan-copy bom-challan-copy-company">
+        ${bomRenderChallanPrintSheetHalfHtml(header, kit, 'Company Copy', templateValues, true)}
+      </div>
     </div>
   `;
 }
@@ -1634,8 +1731,11 @@ window.PAGES.bom = {
             const challanKit = { kw: modalCapacity ? modalCapacity.value : kw };
             const templateValues = bomCollectChallanTemplateValues();
             challanPrintRoot.innerHTML = bomRenderChallanPrintSheetHtml(challanHeader, challanKit, templateValues);
-            bomSetPrintPageSize('size:A4 landscape; margin:5mm;');
-            computeAndApplyChallanFitZoom();
+            // §1: A4 landscape, ~0.5cm left margin, 0 on every other side —
+            // no runtime measuring/zoom (§15): the 96% scale and every
+            // column/row size are static CSS values (bom.css), since this
+            // layout is fixed-height by design (always exactly 28 body rows).
+            bomSetPrintPageSize('size:A4 landscape; margin:0 0 0 5mm;');
             window.print();
           });
         }
@@ -1791,66 +1891,14 @@ window.PAGES.bom = {
       });
     }
 
-    // ---------- Challan print: same fit-to-one-page zoom approach, kept
-    // completely separate from computeAndApplyFitZoom/#bomPrintRoot above so
-    // the existing BOM print is never touched by this. Measures
-    // #bomChallanSheet (both mirrored copies together) exactly the way
-    // computeAndApplyFitZoom measures #bomSheet, then scales it to fit one
-    // A4 page the same way.
-    function computeAndApplyChallanFitZoom() {
-      const sheet = $('bomChallanSheet');
-      if (!sheet || !challanPrintRoot) return;
-      sheet.style.transform = '';
-      sheet.style.width = '1000px'; // arbitrary baseline just to measure natural height
-      sheet.style.zoom = 1; // measure the sheet's true, un-scaled height first
-      challanPrintRoot.classList.add('bom-measuring');
-      const naturalHeightPx = sheet.getBoundingClientRect().height;
-      challanPrintRoot.classList.remove('bom-measuring');
-      if (!naturalHeightPx) return; // nothing rendered yet — nothing to scale
-
-      const PX_PER_MM = 96 / 25.4;
-      // Own @page rule (named `bomChallanPage` in bom.css), deliberately
-      // NOT the same as the BOM sheet's: the source Challan sheet is
-      // landscape A4. Margins are a flat symmetric 5mm on every side —
-      // an equal-on-both-sides margin so the sheet sits centered on the
-      // page, not lopsided (previously left-only 5mm with 0 on the other
-      // three sides, which is why the printed page looked like it had a
-      // margin on one side but not the other).
-      const A4_HEIGHT_MM = 210; // landscape: the A4 "height" is the short 210mm edge
-      const MARGIN_TOP_MM = 5;
-      const MARGIN_BOTTOM_MM = 5;
-      const A4_WIDTH_MM = 297; // landscape: the A4 "width" is the long 297mm edge
-      const MARGIN_LEFT_MM = 5;
-      const MARGIN_RIGHT_MM = 5;
-
-      // SAFETY_MARGIN_H doubles as the flat 96% print scale the source
-      // sheet uses (Page Setup → Scale: 96%, not "fit to page") — same
-      // flat-scale approach as the BOM sheet's computeAndApplyFitZoom,
-      // just against this sheet's own landscape page dimensions.
-      const SAFETY_MARGIN_H = 0.96;
-      const usableHeightPx = (A4_HEIGHT_MM - MARGIN_TOP_MM - MARGIN_BOTTOM_MM) * PX_PER_MM * SAFETY_MARGIN_H;
-      const vScale = Math.min(1, usableHeightPx / naturalHeightPx);
-
-      const SAFETY_MARGIN_W = 0.99;
-      const usableWidthPx = (A4_WIDTH_MM - MARGIN_LEFT_MM - MARGIN_RIGHT_MM) * PX_PER_MM * SAFETY_MARGIN_W;
-      const baseWidthPx = usableWidthPx / vScale;
-
-      const supportsZoom = window.CSS && CSS.supports && CSS.supports('zoom', '1');
-      if (supportsZoom) {
-        sheet.style.width = baseWidthPx + 'px';
-        sheet.style.zoom = vScale;
-      } else {
-        sheet.style.zoom = '';
-        sheet.style.width = '1000px';
-        sheet.style.transform = `scale(${usableWidthPx / 1000}, ${vScale})`;
-      }
-    }
-
-    // Defensive backup mirroring the one above, for the Challan sheet.
-    if (window.__bomChallanBeforePrintHandler) {
-      window.removeEventListener('beforeprint', window.__bomChallanBeforePrintHandler);
-    }
-    window.__bomChallanBeforePrintHandler = computeAndApplyChallanFitZoom;
-    window.addEventListener('beforeprint', computeAndApplyChallanFitZoom);
+    // ---------- Challan print: no runtime scaling ----------
+    // CHALLAN_SPEC.md §1/§15: the source sheet prints at a fixed, manual
+    // 96% scale (NOT "fit to page"), and its 28-row body is a fixed height
+    // by design — there is nothing here to measure. The @page size/margin
+    // is set once above (bomSetPrintPageSize, in the Print Challan click
+    // handler); the 96% scale and every column/row dimension live as
+    // static rules in bom.css. Unlike the BOM kit sheet above (a genuinely
+    // variable-length list that has to be measured and fitted every time),
+    // the Challan sheet never needs a beforeprint handler at all.
   },
 };
