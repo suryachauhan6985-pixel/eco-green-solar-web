@@ -1,0 +1,75 @@
+# Project Structure
+
+Folder tree (ignored directories such as node_modules, .git, dist, build,
+coverage, .cache, tmp, logs are excluded):
+
+```
+api/
+    config/
+        cors.js
+    db/
+        pool.js
+        schema.js
+    middleware/
+        auth.js
+        rateLimiters.js
+    routes/
+        attachments.js
+        auth.js
+        backup.js
+        health.js
+        ledgers.js
+        masters.js
+        purchase.js
+        reports.js
+        sales.js
+        scansheet.routes.js
+        stockassign.js
+    services/
+        email.js
+        passwords.js
+        stockHelpers.js
+    utils/
+        route.js
+        time.js
+    api.js
+    package.json
+    server.js
+css/
+    modules/
+        auth.css
+        base.css
+        bom.css
+        components.css
+        layout.css
+        party-ledger.css
+        responsive.css
+        scan-sheet.css
+    style.css
+js/
+    data/
+        api.js
+        purchase-data.js
+        sales-data.js
+        sheets-store.js
+    pages/
+        backup.js
+        bom.js
+        dashboard.js
+        lowstock.js
+        masters.js
+        partyledger.js
+        purchase.js
+        purchaseregister.js
+        reports.js
+        returns.js
+        saleregister.js
+        sales.js
+        scansheet.js
+        stockassign.js
+    app.js
+index.html
+manifest.webmanifest
+package.json
+sw.js
+```

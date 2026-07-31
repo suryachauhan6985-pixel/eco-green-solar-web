@@ -1,0 +1,285 @@
+{
+  "generatedAt": "2026-07-30T13:14:10.908Z",
+  "files": {
+    "index.html": {
+      "hash": "4fab371f7fe74c0d6a4a048ea2516e112c66fe1c",
+      "size": 6617,
+      "mtimeMs": 1785238750938.765
+    },
+    "manifest.webmanifest": {
+      "hash": "0c2a6378e12786af496a44c10e6597067d266f1b",
+      "size": 704,
+      "mtimeMs": 1785237018433.584
+    },
+    "package.json": {
+      "hash": "6e52e7e0ba8fccdb9b5e223a551002fddf61f97f",
+      "size": 219,
+      "mtimeMs": 1784466417241.658
+    },
+    "sw.js": {
+      "hash": "2e62eceaad219e91576d350a763a518b20ca8fcd",
+      "size": 2412,
+      "mtimeMs": 1785238754812.125
+    },
+    "js/app.js": {
+      "hash": "09a0e9d9ed7f3e81a8b6f7f87198bee99d0e83fd",
+      "size": 63328,
+      "mtimeMs": 1785157468002.5522
+    },
+    "js/pages/backup.js": {
+      "hash": "15f5b22b9fcb33d1b29b73bcd9a2d38abdadb104",
+      "size": 6833,
+      "mtimeMs": 1784943992000
+    },
+    "js/pages/bom.js": {
+      "hash": "3e75790019561b3d7e25ebef2dbe3e1f606f6969",
+      "size": 70598,
+      "mtimeMs": 1785128942265.716
+    },
+    "js/pages/dashboard.js": {
+      "hash": "44cc77fecac36b223d21b6e973819b7c606edba1",
+      "size": 22822,
+      "mtimeMs": 1784961928408.9395
+    },
+    "js/pages/lowstock.js": {
+      "hash": "63e2290ce7a7af03dc55c5051e74db386d86c682",
+      "size": 11464,
+      "mtimeMs": 1784943992000
+    },
+    "js/pages/masters.js": {
+      "hash": "df97f1f45b8c2e01969fa623a6909669c0ee9dd5",
+      "size": 41089,
+      "mtimeMs": 1785156375121.9175
+    },
+    "js/pages/partyledger.js": {
+      "hash": "1648db6f2544ae217d146320ecfd348698448507",
+      "size": 46570,
+      "mtimeMs": 1785070246476.3562
+    },
+    "js/pages/purchase.js": {
+      "hash": "a27d22cd8caaba22eda6bcda6f0daaaaad238ca1",
+      "size": 48357,
+      "mtimeMs": 1784964844000
+    },
+    "js/pages/purchaseregister.js": {
+      "hash": "e155cf368a8b35e8dd7b493aa7f7e1e0c3c335a4",
+      "size": 13346,
+      "mtimeMs": 1784943992000
+    },
+    "js/pages/reports.js": {
+      "hash": "8cf1eca54bd2adddb958b631f0ef0e05e3d768d6",
+      "size": 14816,
+      "mtimeMs": 1784943992000
+    },
+    "js/pages/returns.js": {
+      "hash": "10593abae5e931d3eebd9fe0bad1a7336ead37dc",
+      "size": 6528,
+      "mtimeMs": 1784465054999.5994
+    },
+    "js/pages/saleregister.js": {
+      "hash": "5c8e773944f5a374c0298338ad5765d11b2b793f",
+      "size": 13924,
+      "mtimeMs": 1784943992000
+    },
+    "js/pages/sales.js": {
+      "hash": "33f0e93147225956cd4994a6344c962113c0e590",
+      "size": 46302,
+      "mtimeMs": 1784964844000
+    },
+    "js/pages/scansheet.js": {
+      "hash": "8fa99e1e75299b9422d10b0dbd83d9b52de8b598",
+      "size": 80707,
+      "mtimeMs": 1785241284134.7773
+    },
+    "js/pages/stockassign.js": {
+      "hash": "99fbf8a99413d402260265d7e82631a10de49ed1",
+      "size": 34038,
+      "mtimeMs": 1784964844000
+    },
+    "js/data/api.js": {
+      "hash": "18a90a270527fc7b0bceea4fcdfe5b96789fee35",
+      "size": 4050,
+      "mtimeMs": 1784979527554.8374
+    },
+    "js/data/purchase-data.js": {
+      "hash": "44a2dc25fe0b41b6de6b20e657a225e9e005e632",
+      "size": 1928,
+      "mtimeMs": 1784455165466.718
+    },
+    "js/data/sales-data.js": {
+      "hash": "0cd64d84e6272aae17841d248c0b1ff00a998aa2",
+      "size": 1008,
+      "mtimeMs": 1784457949949.923
+    },
+    "js/data/sheets-store.js": {
+      "hash": "dd04062c008823d1bfd96a8069f34a67187e3e8d",
+      "size": 6597,
+      "mtimeMs": 1785241279100.322
+    },
+    "css/style.css": {
+      "hash": "4ffe2f727768147dceac6c3bdef95797792ddd40",
+      "size": 291,
+      "mtimeMs": 1785235534626.1204
+    },
+    "css/modules/auth.css": {
+      "hash": "9ee0c1968973de201ca4219fa0cd9a0e3d5d17c9",
+      "size": 3947,
+      "mtimeMs": 1785235534624.119
+    },
+    "css/modules/base.css": {
+      "hash": "f2f1cda2e98cdfca536eb352999276dfe5acc1bb",
+      "size": 962,
+      "mtimeMs": 1785235534621.1167
+    },
+    "css/modules/bom.css": {
+      "hash": "ca98232a99f09d1ddf75e418db4e67b7a5b7eb98",
+      "size": 11602,
+      "mtimeMs": 1785235534624.119
+    },
+    "css/modules/components.css": {
+      "hash": "f28a2816be537a1efb80fe34738941a6dd2f72fd",
+      "size": 17330,
+      "mtimeMs": 1785235534622.1187
+    },
+    "css/modules/layout.css": {
+      "hash": "2f98189aaa28a2d04fc092f3a309dc4d1d812506",
+      "size": 4371,
+      "mtimeMs": 1785235534622.1187
+    },
+    "css/modules/party-ledger.css": {
+      "hash": "295039f989edfe53fff8bffd0bac7e4eb7c39d29",
+      "size": 10086,
+      "mtimeMs": 1785235534623.1187
+    },
+    "css/modules/responsive.css": {
+      "hash": "16c3aebd11fd0e8c4c2c17079c2958218cdb691d",
+      "size": 2095,
+      "mtimeMs": 1785235534623.1187
+    },
+    "css/modules/scan-sheet.css": {
+      "hash": "19983582b56e2500137c7563bb8444c843f3ad1a",
+      "size": 13292,
+      "mtimeMs": 1785235534626.1204
+    },
+    "api/api.js": {
+      "hash": "68bb318e4fce61efd6b34312fd930868afef1de6",
+      "size": 5790,
+      "mtimeMs": 1784964844000
+    },
+    "api/package.json": {
+      "hash": "a2aa3097daff7cfae0ba782460059a88a5902588",
+      "size": 543,
+      "mtimeMs": 1784981514487.0725
+    },
+    "api/server.js": {
+      "hash": "6949b501c69faab5cd626b4fda49a598fd3f2530",
+      "size": 2794,
+      "mtimeMs": 1785241673148.7388
+    },
+    "api/utils/route.js": {
+      "hash": "a3aa995b6d3f373aac34725907b963ada59eb150",
+      "size": 250,
+      "mtimeMs": 1785235534566.8728
+    },
+    "api/utils/time.js": {
+      "hash": "ca34cde5bc638166c142a6b58d766419fd70112a",
+      "size": 529,
+      "mtimeMs": 1785235534567.7344
+    },
+    "api/services/email.js": {
+      "hash": "b019522dfe72d319f6dffb7c9115576eca5cae59",
+      "size": 4858,
+      "mtimeMs": 1785235629234.0254
+    },
+    "api/services/passwords.js": {
+      "hash": "ead195a4edbcb13d92fd32f25fa2c5846661cf5b",
+      "size": 662,
+      "mtimeMs": 1785235534568.3574
+    },
+    "api/services/stockHelpers.js": {
+      "hash": "75c0ca7c25a41058e3225753c417a54f8b6f05f6",
+      "size": 3781,
+      "mtimeMs": 1785235629234.0254
+    },
+    "api/routes/attachments.js": {
+      "hash": "49afcb842f5b3094bdf9e3b5614f91a5e941a94e",
+      "size": 5621,
+      "mtimeMs": 1785235629234.0254
+    },
+    "api/routes/auth.js": {
+      "hash": "c9bdc12354942249febc29edb70851ad96e70fdc",
+      "size": 19556,
+      "mtimeMs": 1785236130018.3235
+    },
+    "api/routes/backup.js": {
+      "hash": "3905a9bcf09f5bde292cf5b0adb6774af7389a3a",
+      "size": 6895,
+      "mtimeMs": 1785235629252.7383
+    },
+    "api/routes/health.js": {
+      "hash": "7463337414b429c191095dfd1b8cbea450c9ba46",
+      "size": 3607,
+      "mtimeMs": 1785235629234.0254
+    },
+    "api/routes/ledgers.js": {
+      "hash": "e3952a6d5bfdee08ad1e1df53f8d17fcaecb5d03",
+      "size": 11977,
+      "mtimeMs": 1785235629234.0254
+    },
+    "api/routes/masters.js": {
+      "hash": "83c81d1c2bfac991bbfed29cff5dbd7a411ea465",
+      "size": 12853,
+      "mtimeMs": 1785235629234.0254
+    },
+    "api/routes/purchase.js": {
+      "hash": "b7558920f9fb3629ede91d3e0976aaa4f5dc3ea8",
+      "size": 16940,
+      "mtimeMs": 1785235629234.0254
+    },
+    "api/routes/reports.js": {
+      "hash": "fd5cb651ec5846e7d1c1d2b70cf307eefd6c0283",
+      "size": 1847,
+      "mtimeMs": 1785235629234.0254
+    },
+    "api/routes/sales.js": {
+      "hash": "ca587dfae57c5e97284fe3f1ea7af1cf9ed4f73a",
+      "size": 22676,
+      "mtimeMs": 1785235629234.0254
+    },
+    "api/routes/scansheet.routes.js": {
+      "hash": "a583c622cb0e3b76257b10d27af47923ca702bda",
+      "size": 5682,
+      "mtimeMs": 1785241286570.7944
+    },
+    "api/routes/stockassign.js": {
+      "hash": "896bb7ede4f4c9cd520212d72fd1ee53fcbe10b7",
+      "size": 13945,
+      "mtimeMs": 1785235629234.0254
+    },
+    "api/middleware/auth.js": {
+      "hash": "931b7757e067af25d722df77a3f797e148269eb8",
+      "size": 1684,
+      "mtimeMs": 1785235534568.3574
+    },
+    "api/middleware/rateLimiters.js": {
+      "hash": "4c614a83db118dca9d4a668fad7ef36616593c36",
+      "size": 853,
+      "mtimeMs": 1785235534568.3574
+    },
+    "api/db/pool.js": {
+      "hash": "cf4a32334d2d2be1b9d3d3f40dc7b28d241f3b88",
+      "size": 898,
+      "mtimeMs": 1785235534568.3574
+    },
+    "api/db/schema.js": {
+      "hash": "2d72d60f07a3685a741bb1d4e73253a156a53a8b",
+      "size": 3872,
+      "mtimeMs": 1785241289950.9956
+    },
+    "api/config/cors.js": {
+      "hash": "cdaa33c1bcc263ca91547bb202a000fc912f12ee",
+      "size": 546,
+      "mtimeMs": 1785235534568.3574
+    }
+  }
+}

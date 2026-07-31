@@ -1,0 +1,3590 @@
+[
+  {
+    "type": "file",
+    "label": "package.json",
+    "file": "package.json",
+    "detail": "Supporting source file."
+  },
+  {
+    "type": "file",
+    "label": "sw.js",
+    "file": "sw.js",
+    "detail": "Supporting source file."
+  },
+  {
+    "type": "file",
+    "label": "js/app.js",
+    "file": "js/app.js",
+    "detail": "Application entry point / bootstrap file."
+  },
+  {
+    "type": "function",
+    "label": "applyGlobalTableSearch",
+    "file": "js/app.js",
+    "detail": "(query)"
+  },
+  {
+    "type": "function",
+    "label": "applyAllFilters",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closeMenu",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "positionMenu",
+    "file": "js/app.js",
+    "detail": "(menu, btn)"
+  },
+  {
+    "type": "function",
+    "label": "openMenuFor",
+    "file": "js/app.js",
+    "detail": "(btn)"
+  },
+  {
+    "type": "function",
+    "label": "updateProfileDisplay",
+    "file": "js/app.js",
+    "detail": "(username, role)"
+  },
+  {
+    "type": "function",
+    "label": "showApp",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "saveSession",
+    "file": "js/app.js",
+    "detail": "(username, role, persist, token)"
+  },
+  {
+    "type": "function",
+    "label": "loadSession",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "clearSession",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "startHeartbeat",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "stopHeartbeat",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "resetIdleTimer",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "stopIdleTimer",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "notifyServerLogout",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "showLoginOverlay",
+    "file": "js/app.js",
+    "detail": "(message)"
+  },
+  {
+    "type": "function",
+    "label": "buildLoginOverlay",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "showCredsStep",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "showOtpStep",
+    "file": "js/app.js",
+    "detail": "(maskedEmail)"
+  },
+  {
+    "type": "function",
+    "label": "hideAllSteps",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "showRegisterStep",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "showRegisterOtpStep",
+    "file": "js/app.js",
+    "detail": "(maskedEmail)"
+  },
+  {
+    "type": "function",
+    "label": "showForgotStep",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "showResetStep",
+    "file": "js/app.js",
+    "detail": "(maskedEmail)"
+  },
+  {
+    "type": "function",
+    "label": "finishLogin",
+    "file": "js/app.js",
+    "detail": "(data)"
+  },
+  {
+    "type": "function",
+    "label": "attemptLogin",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "attemptVerifyOtp",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "attemptResendOtp",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "attemptRegister",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "attemptVerifyRegisterOtp",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "attemptResendRegisterOtp",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "attemptForgotPassword",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "attemptResendForgotOtp",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "attemptResetPassword",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closeProfileMenu",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "endSessionAndShowLogin",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "openProfileMenu",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "go",
+    "file": "js/app.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "function",
+    "label": "closeConfirmDialog",
+    "file": "js/app.js",
+    "detail": "(result)"
+  },
+  {
+    "type": "function",
+    "label": "guardField",
+    "file": "js/app.js",
+    "detail": "(el)"
+  },
+  {
+    "type": "function",
+    "label": "guardAllFields",
+    "file": "js/app.js",
+    "detail": "(root)"
+  },
+  {
+    "type": "function",
+    "label": "getRows",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "cellValue",
+    "file": "js/app.js",
+    "detail": "(row, idx)"
+  },
+  {
+    "type": "function",
+    "label": "uniqueValues",
+    "file": "js/app.js",
+    "detail": "(idx)"
+  },
+  {
+    "type": "function",
+    "label": "itemCbs",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "ping",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/backup.js",
+    "file": "js/pages/backup.js",
+    "detail": "Defines 3 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "downloadBackup",
+    "file": "js/pages/backup.js",
+    "detail": "(fileName)"
+  },
+  {
+    "type": "function",
+    "label": "refreshStatus",
+    "file": "js/pages/backup.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "$",
+    "file": "js/pages/backup.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/bom.js",
+    "file": "js/pages/bom.js",
+    "detail": "Defines 1 class(es) implementing core logic."
+  },
+  {
+    "type": "function",
+    "label": "bomLoadCustomKits",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomSaveCustomKits",
+    "file": "js/pages/bom.js",
+    "detail": "(obj)"
+  },
+  {
+    "type": "function",
+    "label": "bomGetAllKits",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomIsCustomKitKey",
+    "file": "js/pages/bom.js",
+    "detail": "(key)"
+  },
+  {
+    "type": "function",
+    "label": "bomSlugify",
+    "file": "js/pages/bom.js",
+    "detail": "(label)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenumberAll",
+    "file": "js/pages/bom.js",
+    "detail": "(sections)"
+  },
+  {
+    "type": "function",
+    "label": "bomDefaultSectionsTemplate",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomParseQtyNumber",
+    "file": "js/pages/bom.js",
+    "detail": "(qtyStr)"
+  },
+  {
+    "type": "function",
+    "label": "bomSplitSerials",
+    "file": "js/pages/bom.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "bomCollectKitItemNames",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomLoadItemMasterNames",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomBuildItemOptionsHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(selectedName)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderScreenItemsHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(state, opts)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderPrintSheetHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(kit, header)"
+  },
+  {
+    "type": "function",
+    "label": "bomLoadSerialMandatoryInfo",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomItemNeedsSerial",
+    "file": "js/pages/bom.js",
+    "detail": "(name)"
+  },
+  {
+    "type": "function",
+    "label": "searchBomCustomerLedgers",
+    "file": "js/pages/bom.js",
+    "detail": "(q)"
+  },
+  {
+    "type": "function",
+    "label": "searchBomCustomerShortCodes",
+    "file": "js/pages/bom.js",
+    "detail": "(q)"
+  },
+  {
+    "type": "function",
+    "label": "fillBomCustomerDatalist",
+    "file": "js/pages/bom.js",
+    "detail": "(listEl, ledgers, key)"
+  },
+  {
+    "type": "function",
+    "label": "wireBomCustomerAutocomplete",
+    "file": "js/pages/bom.js",
+    "detail": "(inputEl, listEl, matchKey, searchFn)"
+  },
+  {
+    "type": "function",
+    "label": "wireBomPartyTypeAutocomplete",
+    "file": "js/pages/bom.js",
+    "detail": "(inputEl, listEl, ledgerType)"
+  },
+  {
+    "type": "function",
+    "label": "search",
+    "file": "js/pages/bom.js",
+    "detail": "(q)"
+  },
+  {
+    "type": "function",
+    "label": "fillList",
+    "file": "js/pages/bom.js",
+    "detail": "(ledgers)"
+  },
+  {
+    "type": "function",
+    "label": "setVerified",
+    "file": "js/pages/bom.js",
+    "detail": "(isVerified)"
+  },
+  {
+    "type": "function",
+    "label": "allItemsChecked",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "updateVerifyButtonState",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "populateKitDropdown",
+    "file": "js/pages/bom.js",
+    "detail": "(selectKey)"
+  },
+  {
+    "type": "function",
+    "label": "refreshItemsPreview",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "renderKitBuilderSections",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "handleBuilderFieldEdit",
+    "file": "js/pages/bom.js",
+    "detail": "(e)"
+  },
+  {
+    "type": "function",
+    "label": "handleItemFieldEdit",
+    "file": "js/pages/bom.js",
+    "detail": "(e)"
+  },
+  {
+    "type": "function",
+    "label": "rerenderItemsPreview",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "openBomSerialModal",
+    "file": "js/pages/bom.js",
+    "detail": "(si, ii)"
+  },
+  {
+    "type": "function",
+    "label": "updateCountNote",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "getHeaderValues",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "computeAndApplyFitZoom",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomEsc",
+    "file": "js/pages/bom.js",
+    "detail": "(s)"
+  },
+  {
+    "type": "function",
+    "label": "bomEscAttr",
+    "file": "js/pages/bom.js",
+    "detail": "(s)"
+  },
+  {
+    "type": "function",
+    "label": "$",
+    "file": "js/pages/bom.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "function",
+    "label": "blankItem",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "class",
+    "label": "in",
+    "file": "js/pages/bom.js",
+    "detail": ""
+  },
+  {
+    "type": "file",
+    "label": "js/pages/dashboard.js",
+    "file": "js/pages/dashboard.js",
+    "detail": "Defines 18 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "loadRealDashboardData",
+    "file": "js/pages/dashboard.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "animateCountUp",
+    "file": "js/pages/dashboard.js",
+    "detail": "(el, endValue, duration = 900)"
+  },
+  {
+    "type": "function",
+    "label": "tick",
+    "file": "js/pages/dashboard.js",
+    "detail": "(now)"
+  },
+  {
+    "type": "function",
+    "label": "goTo",
+    "file": "js/pages/dashboard.js",
+    "detail": "(i)"
+  },
+  {
+    "type": "function",
+    "label": "timeAgo",
+    "file": "js/pages/dashboard.js",
+    "detail": "(iso)"
+  },
+  {
+    "type": "function",
+    "label": "liveUsersTableHtml",
+    "file": "js/pages/dashboard.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "updateSummaryLabels",
+    "file": "js/pages/dashboard.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshLiveSessions",
+    "file": "js/pages/dashboard.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "openLiveUsersModal",
+    "file": "js/pages/dashboard.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "cellValue",
+    "file": "js/pages/dashboard.js",
+    "detail": "(row, col)"
+  },
+  {
+    "type": "function",
+    "label": "uniqueValues",
+    "file": "js/pages/dashboard.js",
+    "detail": "(col)"
+  },
+  {
+    "type": "function",
+    "label": "applyAllFilters",
+    "file": "js/pages/dashboard.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closeMenu",
+    "file": "js/pages/dashboard.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "positionMenu",
+    "file": "js/pages/dashboard.js",
+    "detail": "(menu, btn)"
+  },
+  {
+    "type": "function",
+    "label": "openMenuFor",
+    "file": "js/pages/dashboard.js",
+    "detail": "(btn)"
+  },
+  {
+    "type": "function",
+    "label": "fmt",
+    "file": "js/pages/dashboard.js",
+    "detail": "(n)"
+  },
+  {
+    "type": "function",
+    "label": "setText",
+    "file": "js/pages/dashboard.js",
+    "detail": "(id, val)"
+  },
+  {
+    "type": "function",
+    "label": "itemCbs",
+    "file": "js/pages/dashboard.js",
+    "detail": "()"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/lowstock.js",
+    "file": "js/pages/lowstock.js",
+    "detail": "Defines 12 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "rowToValues",
+    "file": "js/pages/lowstock.js",
+    "detail": "(r)"
+  },
+  {
+    "type": "function",
+    "label": "matchesSearch",
+    "file": "js/pages/lowstock.js",
+    "detail": "(values)"
+  },
+  {
+    "type": "function",
+    "label": "isRowVisible",
+    "file": "js/pages/lowstock.js",
+    "detail": "(values)"
+  },
+  {
+    "type": "function",
+    "label": "loadData",
+    "file": "js/pages/lowstock.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "renderTable",
+    "file": "js/pages/lowstock.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "uniqueValues",
+    "file": "js/pages/lowstock.js",
+    "detail": "(col)"
+  },
+  {
+    "type": "function",
+    "label": "applyAllFilters",
+    "file": "js/pages/lowstock.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closeMenu",
+    "file": "js/pages/lowstock.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "positionMenu",
+    "file": "js/pages/lowstock.js",
+    "detail": "(menu, btn)"
+  },
+  {
+    "type": "function",
+    "label": "openMenuFor",
+    "file": "js/pages/lowstock.js",
+    "detail": "(btn)"
+  },
+  {
+    "type": "function",
+    "label": "$",
+    "file": "js/pages/lowstock.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "function",
+    "label": "itemCbs",
+    "file": "js/pages/lowstock.js",
+    "detail": "()"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/masters.js",
+    "file": "js/pages/masters.js",
+    "detail": "Defines 8 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "loadMastersSystemEngine",
+    "file": "js/pages/masters.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "syncWattMandatoryUI",
+    "file": "js/pages/masters.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "resetItemFormState",
+    "file": "js/pages/masters.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "loadSubtypesForCategory",
+    "file": "js/pages/masters.js",
+    "detail": "(cat)"
+  },
+  {
+    "type": "function",
+    "label": "resetSubForm",
+    "file": "js/pages/masters.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "resetUomForm",
+    "file": "js/pages/masters.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "resetWhForm",
+    "file": "js/pages/masters.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "$",
+    "file": "js/pages/masters.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/partyledger.js",
+    "file": "js/pages/partyledger.js",
+    "detail": "Defines 39 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "loadDirectory",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "renderList",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "selectParty",
+    "file": "js/pages/partyledger.js",
+    "detail": "(p)"
+  },
+  {
+    "type": "function",
+    "label": "fetchStatementRows",
+    "file": "js/pages/partyledger.js",
+    "detail": "(partyName, type)"
+  },
+  {
+    "type": "function",
+    "label": "updateLedgerFormMode",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "lockPageScroll",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "unlockPageScroll",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "attachLedgerFormEscape",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "detachLedgerFormEscape",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "openLedgerForm",
+    "file": "js/pages/partyledger.js",
+    "detail": "(editing)"
+  },
+  {
+    "type": "function",
+    "label": "closeLedgerForm",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "downloadCsv",
+    "file": "js/pages/partyledger.js",
+    "detail": "(filename, rows)"
+  },
+  {
+    "type": "function",
+    "label": "downloadTemplate",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "parseCsv",
+    "file": "js/pages/partyledger.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "handleImportFile",
+    "file": "js/pages/partyledger.js",
+    "detail": "(e)"
+  },
+  {
+    "type": "function",
+    "label": "openStatement",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closeStatement",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "renderProfile",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "renderSummary",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "parseDate",
+    "file": "js/pages/partyledger.js",
+    "detail": "(d)"
+  },
+  {
+    "type": "function",
+    "label": "monthKey",
+    "file": "js/pages/partyledger.js",
+    "detail": "(d)"
+  },
+  {
+    "type": "function",
+    "label": "monthLabel",
+    "file": "js/pages/partyledger.js",
+    "detail": "(key)"
+  },
+  {
+    "type": "function",
+    "label": "refDisplay",
+    "file": "js/pages/partyledger.js",
+    "detail": "(row)"
+  },
+  {
+    "type": "function",
+    "label": "updateBreadcrumb",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "setHead",
+    "file": "js/pages/partyledger.js",
+    "detail": "(cols)"
+  },
+  {
+    "type": "function",
+    "label": "renderLevel",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "fmtFileSize",
+    "file": "js/pages/partyledger.js",
+    "detail": "(bytes)"
+  },
+  {
+    "type": "function",
+    "label": "updateAttachmentsPanel",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshAttachmentsList",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "highlightStatementRow",
+    "file": "js/pages/partyledger.js",
+    "detail": "(idx)"
+  },
+  {
+    "type": "function",
+    "label": "attachStatementKeyboardNav",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "detachStatementKeyboardNav",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "renderMonths",
+    "file": "js/pages/partyledger.js",
+    "detail": "(tbody)"
+  },
+  {
+    "type": "function",
+    "label": "renderDates",
+    "file": "js/pages/partyledger.js",
+    "detail": "(tbody)"
+  },
+  {
+    "type": "function",
+    "label": "renderRefs",
+    "file": "js/pages/partyledger.js",
+    "detail": "(tbody)"
+  },
+  {
+    "type": "function",
+    "label": "renderSerials",
+    "file": "js/pages/partyledger.js",
+    "detail": "(tbody)"
+  },
+  {
+    "type": "function",
+    "label": "goBackLevel",
+    "file": "js/pages/partyledger.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "splitLine",
+    "file": "js/pages/partyledger.js",
+    "detail": "(line)"
+  },
+  {
+    "type": "function",
+    "label": "valueFrom",
+    "file": "js/pages/partyledger.js",
+    "detail": "(row, keys, def = '')"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/purchase.js",
+    "file": "js/pages/purchase.js",
+    "detail": "Defines 23 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "splitSerials",
+    "file": "js/pages/purchase.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "setPurEditOpen",
+    "file": "js/pages/purchase.js",
+    "detail": "(open)"
+  },
+  {
+    "type": "function",
+    "label": "renderLineList",
+    "file": "js/pages/purchase.js",
+    "detail": "(container, lines, emptyText)"
+  },
+  {
+    "type": "function",
+    "label": "wireLineSelection",
+    "file": "js/pages/purchase.js",
+    "detail": "(container)"
+  },
+  {
+    "type": "function",
+    "label": "selectedLineIndex",
+    "file": "js/pages/purchase.js",
+    "detail": "(container)"
+  },
+  {
+    "type": "function",
+    "label": "wireProofButtons",
+    "file": "js/pages/purchase.js",
+    "detail": "(fileInputId, attachBtnId, clearBtnId, labelId, state)"
+  },
+  {
+    "type": "function",
+    "label": "renderFileList",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "fillSelect",
+    "file": "js/pages/purchase.js",
+    "detail": "(selectEl, items, placeholder)"
+  },
+  {
+    "type": "function",
+    "label": "loadPurCategories",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshPurBrandsAndType",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshPurWattages",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "fillSelectFromApi",
+    "file": "js/pages/purchase.js",
+    "detail": "(selectEl, apiPath, emptyLabel, injectValue)"
+  },
+  {
+    "type": "function",
+    "label": "loadPurWarehouses",
+    "file": "js/pages/purchase.js",
+    "detail": "(injectEditValue)"
+  },
+  {
+    "type": "function",
+    "label": "searchSupplierLedgers",
+    "file": "js/pages/purchase.js",
+    "detail": "(q)"
+  },
+  {
+    "type": "function",
+    "label": "searchSupplierShortCodes",
+    "file": "js/pages/purchase.js",
+    "detail": "(q)"
+  },
+  {
+    "type": "function",
+    "label": "fillSupplierDatalist",
+    "file": "js/pages/purchase.js",
+    "detail": "(listEl, ledgers, key)"
+  },
+  {
+    "type": "function",
+    "label": "applyLedgerToSupplierFields",
+    "file": "js/pages/purchase.js",
+    "detail": "(l)"
+  },
+  {
+    "type": "function",
+    "label": "wireSupplierAutocomplete",
+    "file": "js/pages/purchase.js",
+    "detail": "(inputEl, listEl, matchKey, searchFn)"
+  },
+  {
+    "type": "function",
+    "label": "clearPurchaseForm",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshPurEditBrandsAndType",
+    "file": "js/pages/purchase.js",
+    "detail": "(injectBrand, injectType)"
+  },
+  {
+    "type": "function",
+    "label": "refreshPurEditWattages",
+    "file": "js/pages/purchase.js",
+    "detail": "(injectWatt)"
+  },
+  {
+    "type": "function",
+    "label": "loadEditCascadeForLine",
+    "file": "js/pages/purchase.js",
+    "detail": "(line)"
+  },
+  {
+    "type": "function",
+    "label": "$",
+    "file": "js/pages/purchase.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/purchaseregister.js",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "Defines 15 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "toISO",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "(d)"
+  },
+  {
+    "type": "function",
+    "label": "loadCategoryFilter",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "rowToValues",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "(r)"
+  },
+  {
+    "type": "function",
+    "label": "inDateRange",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "(dmy)"
+  },
+  {
+    "type": "function",
+    "label": "matchesSearch",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "(values)"
+  },
+  {
+    "type": "function",
+    "label": "loadData",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "isRowVisible",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "(values)"
+  },
+  {
+    "type": "function",
+    "label": "renderTable",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "uniqueValues",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "(col)"
+  },
+  {
+    "type": "function",
+    "label": "applyAllFilters",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closeMenu",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "positionMenu",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "(menu, btn)"
+  },
+  {
+    "type": "function",
+    "label": "openMenuFor",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "(btn)"
+  },
+  {
+    "type": "function",
+    "label": "$",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "function",
+    "label": "itemCbs",
+    "file": "js/pages/purchaseregister.js",
+    "detail": "()"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/reports.js",
+    "file": "js/pages/reports.js",
+    "detail": "Defines 14 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "loadCategoryFilter",
+    "file": "js/pages/reports.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "rowToValues",
+    "file": "js/pages/reports.js",
+    "detail": "(r)"
+  },
+  {
+    "type": "function",
+    "label": "matchesSearch",
+    "file": "js/pages/reports.js",
+    "detail": "(r)"
+  },
+  {
+    "type": "function",
+    "label": "loadData",
+    "file": "js/pages/reports.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "isRowVisible",
+    "file": "js/pages/reports.js",
+    "detail": "(values)"
+  },
+  {
+    "type": "function",
+    "label": "statusPillClass",
+    "file": "js/pages/reports.js",
+    "detail": "(status)"
+  },
+  {
+    "type": "function",
+    "label": "renderTable",
+    "file": "js/pages/reports.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "uniqueValues",
+    "file": "js/pages/reports.js",
+    "detail": "(col)"
+  },
+  {
+    "type": "function",
+    "label": "applyAllFilters",
+    "file": "js/pages/reports.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closeMenu",
+    "file": "js/pages/reports.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "positionMenu",
+    "file": "js/pages/reports.js",
+    "detail": "(menu, btn)"
+  },
+  {
+    "type": "function",
+    "label": "openMenuFor",
+    "file": "js/pages/reports.js",
+    "detail": "(btn)"
+  },
+  {
+    "type": "function",
+    "label": "$",
+    "file": "js/pages/reports.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "function",
+    "label": "itemCbs",
+    "file": "js/pages/reports.js",
+    "detail": "()"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/returns.js",
+    "file": "js/pages/returns.js",
+    "detail": "Defines 4 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "splitSerials",
+    "file": "js/pages/returns.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "wireSerialBox",
+    "file": "js/pages/returns.js",
+    "detail": "(el)"
+  },
+  {
+    "type": "function",
+    "label": "resetForm",
+    "file": "js/pages/returns.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "$",
+    "file": "js/pages/returns.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/saleregister.js",
+    "file": "js/pages/saleregister.js",
+    "detail": "Defines 15 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "toISO",
+    "file": "js/pages/saleregister.js",
+    "detail": "(d)"
+  },
+  {
+    "type": "function",
+    "label": "loadCategoryFilter",
+    "file": "js/pages/saleregister.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "rowToValues",
+    "file": "js/pages/saleregister.js",
+    "detail": "(r)"
+  },
+  {
+    "type": "function",
+    "label": "inDateRange",
+    "file": "js/pages/saleregister.js",
+    "detail": "(dmy)"
+  },
+  {
+    "type": "function",
+    "label": "matchesSearch",
+    "file": "js/pages/saleregister.js",
+    "detail": "(values)"
+  },
+  {
+    "type": "function",
+    "label": "loadData",
+    "file": "js/pages/saleregister.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "isRowVisible",
+    "file": "js/pages/saleregister.js",
+    "detail": "(values)"
+  },
+  {
+    "type": "function",
+    "label": "renderTable",
+    "file": "js/pages/saleregister.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "uniqueValues",
+    "file": "js/pages/saleregister.js",
+    "detail": "(col)"
+  },
+  {
+    "type": "function",
+    "label": "applyAllFilters",
+    "file": "js/pages/saleregister.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closeMenu",
+    "file": "js/pages/saleregister.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "positionMenu",
+    "file": "js/pages/saleregister.js",
+    "detail": "(menu, btn)"
+  },
+  {
+    "type": "function",
+    "label": "openMenuFor",
+    "file": "js/pages/saleregister.js",
+    "detail": "(btn)"
+  },
+  {
+    "type": "function",
+    "label": "$",
+    "file": "js/pages/saleregister.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "function",
+    "label": "itemCbs",
+    "file": "js/pages/saleregister.js",
+    "detail": "()"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/sales.js",
+    "file": "js/pages/sales.js",
+    "detail": "Defines 29 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "fillSelect",
+    "file": "js/pages/sales.js",
+    "detail": "(selectEl, items, placeholder)"
+  },
+  {
+    "type": "function",
+    "label": "fillSelectFromApi",
+    "file": "js/pages/sales.js",
+    "detail": "(selectEl, apiPath, emptyLabel, injectValue)"
+  },
+  {
+    "type": "function",
+    "label": "loadCategoryWattRules",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "isWattMandatory",
+    "file": "js/pages/sales.js",
+    "detail": "(cat)"
+  },
+  {
+    "type": "function",
+    "label": "splitSerials",
+    "file": "js/pages/sales.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "wireSerialBox",
+    "file": "js/pages/sales.js",
+    "detail": "(el)"
+  },
+  {
+    "type": "function",
+    "label": "renderLineList",
+    "file": "js/pages/sales.js",
+    "detail": "(container, lines, emptyText)"
+  },
+  {
+    "type": "function",
+    "label": "wireLineSelection",
+    "file": "js/pages/sales.js",
+    "detail": "(container)"
+  },
+  {
+    "type": "function",
+    "label": "selectedLineIndex",
+    "file": "js/pages/sales.js",
+    "detail": "(container)"
+  },
+  {
+    "type": "function",
+    "label": "wireProofButtons",
+    "file": "js/pages/sales.js",
+    "detail": "(fileInputId, attachBtnId, clearBtnId, labelId, state)"
+  },
+  {
+    "type": "function",
+    "label": "renderFileList",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "loadSaleCategories",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshSaleBrandsAndWatt",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshSaleWattage",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshSaleType",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "searchCustomerLedgers",
+    "file": "js/pages/sales.js",
+    "detail": "(q)"
+  },
+  {
+    "type": "function",
+    "label": "searchCustomerShortCodes",
+    "file": "js/pages/sales.js",
+    "detail": "(q)"
+  },
+  {
+    "type": "function",
+    "label": "fillCustomerDatalist",
+    "file": "js/pages/sales.js",
+    "detail": "(listEl, ledgers, key)"
+  },
+  {
+    "type": "function",
+    "label": "applyLedgerToCustomerFields",
+    "file": "js/pages/sales.js",
+    "detail": "(l)"
+  },
+  {
+    "type": "function",
+    "label": "wireCustomerAutocomplete",
+    "file": "js/pages/sales.js",
+    "detail": "(inputEl, listEl, matchKey, searchFn)"
+  },
+  {
+    "type": "function",
+    "label": "clearSalesForm",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshSaleEditBrandsAndWatt",
+    "file": "js/pages/sales.js",
+    "detail": "(injectBrand, injectWatt)"
+  },
+  {
+    "type": "function",
+    "label": "refreshSaleEditWattage",
+    "file": "js/pages/sales.js",
+    "detail": "(injectWatt)"
+  },
+  {
+    "type": "function",
+    "label": "refreshSaleEditType",
+    "file": "js/pages/sales.js",
+    "detail": "(injectType)"
+  },
+  {
+    "type": "function",
+    "label": "loadEditCascadeForLine",
+    "file": "js/pages/sales.js",
+    "detail": "(line)"
+  },
+  {
+    "type": "function",
+    "label": "clearEditPanel",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "findSalesOrderForEditing",
+    "file": "js/pages/sales.js",
+    "detail": "(term)"
+  },
+  {
+    "type": "function",
+    "label": "prefillFromAssign",
+    "file": "js/pages/sales.js",
+    "detail": "(customerName, orderNo, mobile, address, lines)"
+  },
+  {
+    "type": "function",
+    "label": "$",
+    "file": "js/pages/sales.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/scansheet.js",
+    "file": "js/pages/scansheet.js",
+    "detail": "Defines 95 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "escapeHtml",
+    "file": "js/pages/scansheet.js",
+    "detail": "(str)"
+  },
+  {
+    "type": "function",
+    "label": "fmtTimestamp",
+    "file": "js/pages/scansheet.js",
+    "detail": "(iso)"
+  },
+  {
+    "type": "function",
+    "label": "root",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "render",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "renderList",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "sheetCardHtml",
+    "file": "js/pages/scansheet.js",
+    "detail": "(sheet)"
+  },
+  {
+    "type": "function",
+    "label": "openCreateModal",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "openTemplateModal",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "handleImportFile",
+    "file": "js/pages/scansheet.js",
+    "detail": "(file)"
+  },
+  {
+    "type": "function",
+    "label": "parseCsv",
+    "file": "js/pages/scansheet.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "importFromRows",
+    "file": "js/pages/scansheet.js",
+    "detail": "(rows, fileName)"
+  },
+  {
+    "type": "function",
+    "label": "startManualCreate",
+    "file": "js/pages/scansheet.js",
+    "detail": "(prefill)"
+  },
+  {
+    "type": "function",
+    "label": "startEditSheet",
+    "file": "js/pages/scansheet.js",
+    "detail": "(sheetId)"
+  },
+  {
+    "type": "function",
+    "label": "renderManualCreate",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "colRowHtml",
+    "file": "js/pages/scansheet.js",
+    "detail": "(col)"
+  },
+  {
+    "type": "function",
+    "label": "syncDraftFromDom",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "addDraftColumn",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "deleteDraftColumn",
+    "file": "js/pages/scansheet.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "function",
+    "label": "saveDraftSheet",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "backToList",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "openSheetDataEntry",
+    "file": "js/pages/scansheet.js",
+    "detail": "(sheetId)"
+  },
+  {
+    "type": "function",
+    "label": "renderDataEntry",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "isScannableCol",
+    "file": "js/pages/scansheet.js",
+    "detail": "(col)"
+  },
+  {
+    "type": "function",
+    "label": "fieldHtml",
+    "file": "js/pages/scansheet.js",
+    "detail": "(col)"
+  },
+  {
+    "type": "function",
+    "label": "entryRowHtml",
+    "file": "js/pages/scansheet.js",
+    "detail": "(entry, sheet)"
+  },
+  {
+    "type": "function",
+    "label": "handleImageFieldChange",
+    "file": "js/pages/scansheet.js",
+    "detail": "(inputEl)"
+  },
+  {
+    "type": "function",
+    "label": "saveCurrentEntry",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "deleteEntryRow",
+    "file": "js/pages/scansheet.js",
+    "detail": "(entryId)"
+  },
+  {
+    "type": "function",
+    "label": "saveTextFile",
+    "file": "js/pages/scansheet.js",
+    "detail": "(content, suggestedName, mimeType, pickerTypes)"
+  },
+  {
+    "type": "function",
+    "label": "exportSheetCsv",
+    "file": "js/pages/scansheet.js",
+    "detail": "(sheetId)"
+  },
+  {
+    "type": "function",
+    "label": "dropdownOutsideHandler",
+    "file": "js/pages/scansheet.js",
+    "detail": "(e)"
+  },
+  {
+    "type": "function",
+    "label": "closeAnyDropdown",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "placeDropdown",
+    "file": "js/pages/scansheet.js",
+    "detail": "(menu, anchorBtn)"
+  },
+  {
+    "type": "function",
+    "label": "openSheetCardMenu",
+    "file": "js/pages/scansheet.js",
+    "detail": "(sheetId, anchorBtn)"
+  },
+  {
+    "type": "function",
+    "label": "openEntryMenu",
+    "file": "js/pages/scansheet.js",
+    "detail": "(anchorBtn)"
+  },
+  {
+    "type": "function",
+    "label": "isDuplicateScanValue",
+    "file": "js/pages/scansheet.js",
+    "detail": "(sheet, colId, value)"
+  },
+  {
+    "type": "function",
+    "label": "processScanValue",
+    "file": "js/pages/scansheet.js",
+    "detail": "(text, fieldId)"
+  },
+  {
+    "type": "function",
+    "label": "resolveScanTargetId",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "openScanner",
+    "file": "js/pages/scansheet.js",
+    "detail": "(targetFieldId)"
+  },
+  {
+    "type": "function",
+    "label": "setScanStatus",
+    "file": "js/pages/scansheet.js",
+    "detail": "(msg)"
+  },
+  {
+    "type": "function",
+    "label": "startCamera",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "launchCamera",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "onScanSuccess",
+    "file": "js/pages/scansheet.js",
+    "detail": "(decodedText)"
+  },
+  {
+    "type": "function",
+    "label": "showScanResult",
+    "file": "js/pages/scansheet.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "openBluetoothScanResult",
+    "file": "js/pages/scansheet.js",
+    "detail": "(text, targetId)"
+  },
+  {
+    "type": "function",
+    "label": "showBluetoothScanResult",
+    "file": "js/pages/scansheet.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "bindBtResultAction",
+    "file": "js/pages/scansheet.js",
+    "detail": "(btn, handler)"
+  },
+  {
+    "type": "function",
+    "label": "hideScanResult",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closeBluetoothResultOverlay",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closeBluetoothResultAndResume",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "retryScan",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "confirmScanSave",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "fillTargetField",
+    "file": "js/pages/scansheet.js",
+    "detail": "(text, fieldId)"
+  },
+  {
+    "type": "function",
+    "label": "toggleTorch",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "flipCamera",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closeScanner",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "beep",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "ensureBluetoothScannerListener",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "setBluetoothScanMode",
+    "file": "js/pages/scansheet.js",
+    "detail": "(enabled)"
+  },
+  {
+    "type": "function",
+    "label": "resetBluetoothScanBuffer",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "clearBluetoothTargetValue",
+    "file": "js/pages/scansheet.js",
+    "detail": "(targetId)"
+  },
+  {
+    "type": "function",
+    "label": "getBluetoothCaptureValue",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "setTargetFieldValue",
+    "file": "js/pages/scansheet.js",
+    "detail": "(text, targetId)"
+  },
+  {
+    "type": "function",
+    "label": "prepBluetoothFieldForFocus",
+    "file": "js/pages/scansheet.js",
+    "detail": "(input)"
+  },
+  {
+    "type": "function",
+    "label": "releaseBluetoothFieldForScanner",
+    "file": "js/pages/scansheet.js",
+    "detail": "(input)"
+  },
+  {
+    "type": "function",
+    "label": "resumeBluetoothScannerAfterResult",
+    "file": "js/pages/scansheet.js",
+    "detail": "(targetId, clearValue)"
+  },
+  {
+    "type": "function",
+    "label": "focusBluetoothScanTarget",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "onBluetoothScannerKeydown",
+    "file": "js/pages/scansheet.js",
+    "detail": "(e)"
+  },
+  {
+    "type": "function",
+    "label": "clearBluetoothKeyBufferTimer",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "addBluetoothKeyBufferChar",
+    "file": "js/pages/scansheet.js",
+    "detail": "(ch)"
+  },
+  {
+    "type": "function",
+    "label": "onBluetoothScannerPaste",
+    "file": "js/pages/scansheet.js",
+    "detail": "(e)"
+  },
+  {
+    "type": "function",
+    "label": "observeKeyboardWedgeScan",
+    "file": "js/pages/scansheet.js",
+    "detail": "(e)"
+  },
+  {
+    "type": "function",
+    "label": "isLikelyScannerBurst",
+    "file": "js/pages/scansheet.js",
+    "detail": "(text, now)"
+  },
+  {
+    "type": "function",
+    "label": "appendBluetoothScannerChar",
+    "file": "js/pages/scansheet.js",
+    "detail": "(ch, preferredField)"
+  },
+  {
+    "type": "function",
+    "label": "syncBluetoothCapture",
+    "file": "js/pages/scansheet.js",
+    "detail": "(value)"
+  },
+  {
+    "type": "function",
+    "label": "queueBluetoothScanValue",
+    "file": "js/pages/scansheet.js",
+    "detail": "(text, targetId)"
+  },
+  {
+    "type": "function",
+    "label": "handleBluetoothScanValue",
+    "file": "js/pages/scansheet.js",
+    "detail": "(text, fieldId)"
+  },
+  {
+    "type": "function",
+    "label": "setDirectScannerStatus",
+    "file": "js/pages/scansheet.js",
+    "detail": "(msg, isError)"
+  },
+  {
+    "type": "function",
+    "label": "connectHidScanner",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "onHidScannerInputReport",
+    "file": "js/pages/scansheet.js",
+    "detail": "(event)"
+  },
+  {
+    "type": "function",
+    "label": "parseHidKeyboardReport",
+    "file": "js/pages/scansheet.js",
+    "detail": "(bytes)"
+  },
+  {
+    "type": "function",
+    "label": "hidKeyCodeToChar",
+    "file": "js/pages/scansheet.js",
+    "detail": "(code, shift)"
+  },
+  {
+    "type": "function",
+    "label": "addDirectScannerChar",
+    "file": "js/pages/scansheet.js",
+    "detail": "(ch, source)"
+  },
+  {
+    "type": "function",
+    "label": "finishDirectScannerBuffer",
+    "file": "js/pages/scansheet.js",
+    "detail": "(source)"
+  },
+  {
+    "type": "function",
+    "label": "connectSerialScanner",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "readSerialScannerLoop",
+    "file": "js/pages/scansheet.js",
+    "detail": "(port)"
+  },
+  {
+    "type": "function",
+    "label": "handleSerialScannerText",
+    "file": "js/pages/scansheet.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "wire",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "wireList",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "wireManualCreate",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "wireDataEntry",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "pad",
+    "file": "js/pages/scansheet.js",
+    "detail": "(n)"
+  },
+  {
+    "type": "function",
+    "label": "csvEscape",
+    "file": "js/pages/scansheet.js",
+    "detail": "(v)"
+  },
+  {
+    "type": "function",
+    "label": "run",
+    "file": "js/pages/scansheet.js",
+    "detail": "(e)"
+  },
+  {
+    "type": "function",
+    "label": "finish",
+    "file": "js/pages/scansheet.js",
+    "detail": "()"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/stockassign.js",
+    "file": "js/pages/stockassign.js",
+    "detail": "Defines 24 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "setAssignRegOpen",
+    "file": "js/pages/stockassign.js",
+    "detail": "(open)"
+  },
+  {
+    "type": "function",
+    "label": "fillSelect",
+    "file": "js/pages/stockassign.js",
+    "detail": "(selectEl, items, placeholder)"
+  },
+  {
+    "type": "function",
+    "label": "renderLineList",
+    "file": "js/pages/stockassign.js",
+    "detail": "(container, lines, emptyText)"
+  },
+  {
+    "type": "function",
+    "label": "wireLineSelection",
+    "file": "js/pages/stockassign.js",
+    "detail": "(container)"
+  },
+  {
+    "type": "function",
+    "label": "selectedLineIndex",
+    "file": "js/pages/stockassign.js",
+    "detail": "(container)"
+  },
+  {
+    "type": "function",
+    "label": "wireProofButtons",
+    "file": "js/pages/stockassign.js",
+    "detail": "(fileInputId, attachBtnId, clearBtnId, labelId, state)"
+  },
+  {
+    "type": "function",
+    "label": "renderFileList",
+    "file": "js/pages/stockassign.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "loadCategoryWattRules",
+    "file": "js/pages/stockassign.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "isWattMandatory",
+    "file": "js/pages/stockassign.js",
+    "detail": "(cat)"
+  },
+  {
+    "type": "function",
+    "label": "loadAssignCategories",
+    "file": "js/pages/stockassign.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshAssignBrandsAndWatt",
+    "file": "js/pages/stockassign.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshAssignWattage",
+    "file": "js/pages/stockassign.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshAssignType",
+    "file": "js/pages/stockassign.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "searchPersonLedgers",
+    "file": "js/pages/stockassign.js",
+    "detail": "(q)"
+  },
+  {
+    "type": "function",
+    "label": "searchPersonShortCodes",
+    "file": "js/pages/stockassign.js",
+    "detail": "(q)"
+  },
+  {
+    "type": "function",
+    "label": "fillPersonDatalist",
+    "file": "js/pages/stockassign.js",
+    "detail": "(listEl, ledgers, key)"
+  },
+  {
+    "type": "function",
+    "label": "applyLedgerToPersonFields",
+    "file": "js/pages/stockassign.js",
+    "detail": "(l)"
+  },
+  {
+    "type": "function",
+    "label": "wirePersonAutocomplete",
+    "file": "js/pages/stockassign.js",
+    "detail": "(inputEl, listEl, matchKey, searchFn)"
+  },
+  {
+    "type": "function",
+    "label": "refreshAvailableHint",
+    "file": "js/pages/stockassign.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "clearAssignForm",
+    "file": "js/pages/stockassign.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "renderRegisterTable",
+    "file": "js/pages/stockassign.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "loadAssignedRegister",
+    "file": "js/pages/stockassign.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "clearReleasePanel",
+    "file": "js/pages/stockassign.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "$",
+    "file": "js/pages/stockassign.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "file",
+    "label": "js/data/api.js",
+    "file": "js/data/api.js",
+    "detail": "Defines 3 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "parseApiResponse",
+    "file": "js/data/api.js",
+    "detail": "(res, path)"
+  },
+  {
+    "type": "function",
+    "label": "readFileAsBase64",
+    "file": "js/data/api.js",
+    "detail": "(file)"
+  },
+  {
+    "type": "function",
+    "label": "uploadAttachments",
+    "file": "js/data/api.js",
+    "detail": "(refType, refNo, fileList)"
+  },
+  {
+    "type": "file",
+    "label": "js/data/purchase-data.js",
+    "file": "js/data/purchase-data.js",
+    "detail": "Defines 4 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "parseDMY",
+    "file": "js/data/purchase-data.js",
+    "detail": "(str)"
+  },
+  {
+    "type": "function",
+    "label": "dmyFromISO",
+    "file": "js/data/purchase-data.js",
+    "detail": "(iso)"
+  },
+  {
+    "type": "function",
+    "label": "isoFromDMY",
+    "file": "js/data/purchase-data.js",
+    "detail": "(dmy)"
+  },
+  {
+    "type": "function",
+    "label": "splitSerials",
+    "file": "js/data/purchase-data.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "file",
+    "label": "js/data/sales-data.js",
+    "file": "js/data/sales-data.js",
+    "detail": "Supporting source file."
+  },
+  {
+    "type": "file",
+    "label": "js/data/sheets-store.js",
+    "file": "js/data/sheets-store.js",
+    "detail": "Defines 14 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "uid",
+    "file": "js/data/sheets-store.js",
+    "detail": "(prefix)"
+  },
+  {
+    "type": "function",
+    "label": "persistLocalCache",
+    "file": "js/data/sheets-store.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "loadLocalCache",
+    "file": "js/data/sheets-store.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "warnSaveFailed",
+    "file": "js/data/sheets-store.js",
+    "detail": "(action, err)"
+  },
+  {
+    "type": "function",
+    "label": "hydrate",
+    "file": "js/data/sheets-store.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "getSheets",
+    "file": "js/data/sheets-store.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "getSheet",
+    "file": "js/data/sheets-store.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "function",
+    "label": "createSheet",
+    "file": "js/data/sheets-store.js",
+    "detail": "({ name, columns })"
+  },
+  {
+    "type": "function",
+    "label": "updateSheet",
+    "file": "js/data/sheets-store.js",
+    "detail": "(id, patch)"
+  },
+  {
+    "type": "function",
+    "label": "deleteSheet",
+    "file": "js/data/sheets-store.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "function",
+    "label": "getEntries",
+    "file": "js/data/sheets-store.js",
+    "detail": "(sheetId)"
+  },
+  {
+    "type": "function",
+    "label": "addEntry",
+    "file": "js/data/sheets-store.js",
+    "detail": "(sheetId, values)"
+  },
+  {
+    "type": "function",
+    "label": "deleteEntry",
+    "file": "js/data/sheets-store.js",
+    "detail": "(sheetId, entryId)"
+  },
+  {
+    "type": "function",
+    "label": "clearEntries",
+    "file": "js/data/sheets-store.js",
+    "detail": "(sheetId)"
+  },
+  {
+    "type": "file",
+    "label": "api/api.js",
+    "file": "api/api.js",
+    "detail": "Defines 5 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "parseApiResponse",
+    "file": "api/api.js",
+    "detail": "(res, path)"
+  },
+  {
+    "type": "function",
+    "label": "getFileExtension",
+    "file": "api/api.js",
+    "detail": "(fileName)"
+  },
+  {
+    "type": "function",
+    "label": "validateAttachmentFile",
+    "file": "api/api.js",
+    "detail": "(file)"
+  },
+  {
+    "type": "function",
+    "label": "readFileAsBase64",
+    "file": "api/api.js",
+    "detail": "(file)"
+  },
+  {
+    "type": "function",
+    "label": "uploadAttachments",
+    "file": "api/api.js",
+    "detail": "(refType, refNo, fileList)"
+  },
+  {
+    "type": "file",
+    "label": "api/package.json",
+    "file": "api/package.json",
+    "detail": "Supporting source file."
+  },
+  {
+    "type": "file",
+    "label": "api/server.js",
+    "file": "api/server.js",
+    "detail": "Application entry point / bootstrap file."
+  },
+  {
+    "type": "file",
+    "label": "api/utils/route.js",
+    "file": "api/utils/route.js",
+    "detail": "Provides shared utility/helper functions."
+  },
+  {
+    "type": "function",
+    "label": "route",
+    "file": "api/utils/route.js",
+    "detail": "(handler)"
+  },
+  {
+    "type": "file",
+    "label": "api/utils/time.js",
+    "file": "api/utils/time.js",
+    "detail": "Provides shared utility/helper functions."
+  },
+  {
+    "type": "function",
+    "label": "getISTParts",
+    "file": "api/utils/time.js",
+    "detail": "(d)"
+  },
+  {
+    "type": "function",
+    "label": "ledgerTimestamp",
+    "file": "api/utils/time.js",
+    "detail": "()"
+  },
+  {
+    "type": "file",
+    "label": "api/services/email.js",
+    "file": "api/services/email.js",
+    "detail": "Implements business logic as a service layer."
+  },
+  {
+    "type": "function",
+    "label": "generateOtp",
+    "file": "api/services/email.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "sendOtpEmail",
+    "file": "api/services/email.js",
+    "detail": "(toEmail, otp)"
+  },
+  {
+    "type": "function",
+    "label": "maskEmail",
+    "file": "api/services/email.js",
+    "detail": "(email)"
+  },
+  {
+    "type": "file",
+    "label": "api/services/passwords.js",
+    "file": "api/services/passwords.js",
+    "detail": "Implements business logic as a service layer."
+  },
+  {
+    "type": "function",
+    "label": "hashPassword",
+    "file": "api/services/passwords.js",
+    "detail": "(plain)"
+  },
+  {
+    "type": "function",
+    "label": "looksLikeBcryptHash",
+    "file": "api/services/passwords.js",
+    "detail": "(stored)"
+  },
+  {
+    "type": "function",
+    "label": "verifyPassword",
+    "file": "api/services/passwords.js",
+    "detail": "(plain, stored)"
+  },
+  {
+    "type": "file",
+    "label": "api/services/stockHelpers.js",
+    "file": "api/services/stockHelpers.js",
+    "detail": "Implements business logic as a service layer."
+  },
+  {
+    "type": "function",
+    "label": "itemNameSlug",
+    "file": "api/services/stockHelpers.js",
+    "detail": "(brand, watt, solarType)"
+  },
+  {
+    "type": "function",
+    "label": "getItemId",
+    "file": "api/services/stockHelpers.js",
+    "detail": "(runner, category, brand, watt, solarType)"
+  },
+  {
+    "type": "function",
+    "label": "validateSalesLineSerials",
+    "file": "api/services/stockHelpers.js",
+    "detail": "(runner, serials, line)"
+  },
+  {
+    "type": "function",
+    "label": "getOrCreateItem",
+    "file": "api/services/stockHelpers.js",
+    "detail": "(conn, category, brand, watt, solarType)"
+  },
+  {
+    "type": "file",
+    "label": "api/routes/attachments.js",
+    "file": "api/routes/attachments.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerAttachmentsRoutes",
+    "file": "api/routes/attachments.js",
+    "detail": "(app, deps)"
+  },
+  {
+    "type": "function",
+    "label": "getFileExtension",
+    "file": "api/routes/attachments.js",
+    "detail": "(fileName)"
+  },
+  {
+    "type": "function",
+    "label": "base64ByteSize",
+    "file": "api/routes/attachments.js",
+    "detail": "(base64)"
+  },
+  {
+    "type": "file",
+    "label": "api/routes/auth.js",
+    "file": "api/routes/auth.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerAuthRoutes",
+    "file": "api/routes/auth.js",
+    "detail": "(app, deps)"
+  },
+  {
+    "type": "function",
+    "label": "completeLoginSession",
+    "file": "api/routes/auth.js",
+    "detail": "(uname, role, res)"
+  },
+  {
+    "type": "file",
+    "label": "api/routes/backup.js",
+    "file": "api/routes/backup.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerBackupRoutes",
+    "file": "api/routes/backup.js",
+    "detail": "(app, deps)"
+  },
+  {
+    "type": "function",
+    "label": "ensureBackupLogTable",
+    "file": "api/routes/backup.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "resolveBackupDir",
+    "file": "api/routes/backup.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "exportAllTablesToExcel",
+    "file": "api/routes/backup.js",
+    "detail": "(destPath)"
+  },
+  {
+    "type": "function",
+    "label": "backupTimestampStamp",
+    "file": "api/routes/backup.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "runBackup",
+    "file": "api/routes/backup.js",
+    "detail": "(backupType)"
+  },
+  {
+    "type": "function",
+    "label": "checkAutoBackup",
+    "file": "api/routes/backup.js",
+    "detail": "()"
+  },
+  {
+    "type": "file",
+    "label": "api/routes/health.js",
+    "file": "api/routes/health.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerHealthRoutes",
+    "file": "api/routes/health.js",
+    "detail": "(app, deps)"
+  },
+  {
+    "type": "file",
+    "label": "api/routes/ledgers.js",
+    "file": "api/routes/ledgers.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerLedgersRoutes",
+    "file": "api/routes/ledgers.js",
+    "detail": "(app, deps)"
+  },
+  {
+    "type": "function",
+    "label": "ledgerExists",
+    "file": "api/routes/ledgers.js",
+    "detail": "(name, short, excludeId)"
+  },
+  {
+    "type": "file",
+    "label": "api/routes/masters.js",
+    "file": "api/routes/masters.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerMastersRoutes",
+    "file": "api/routes/masters.js",
+    "detail": "(app, deps)"
+  },
+  {
+    "type": "file",
+    "label": "api/routes/purchase.js",
+    "file": "api/routes/purchase.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerPurchaseRoutes",
+    "file": "api/routes/purchase.js",
+    "detail": "(app, deps)"
+  },
+  {
+    "type": "file",
+    "label": "api/routes/reports.js",
+    "file": "api/routes/reports.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerReportsRoutes",
+    "file": "api/routes/reports.js",
+    "detail": "(app, deps)"
+  },
+  {
+    "type": "function",
+    "label": "dash",
+    "file": "api/routes/reports.js",
+    "detail": "(v)"
+  },
+  {
+    "type": "file",
+    "label": "api/routes/sales.js",
+    "file": "api/routes/sales.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerSalesRoutes",
+    "file": "api/routes/sales.js",
+    "detail": "(app, deps)"
+  },
+  {
+    "type": "file",
+    "label": "api/routes/scansheet.routes.js",
+    "file": "api/routes/scansheet.routes.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerScanSheetRoutes",
+    "file": "api/routes/scansheet.routes.js",
+    "detail": "(app, deps)"
+  },
+  {
+    "type": "function",
+    "label": "mapSheet",
+    "file": "api/routes/scansheet.routes.js",
+    "detail": "(row)"
+  },
+  {
+    "type": "function",
+    "label": "mapEntry",
+    "file": "api/routes/scansheet.routes.js",
+    "detail": "(row)"
+  },
+  {
+    "type": "function",
+    "label": "findOwnedSheet",
+    "file": "api/routes/scansheet.routes.js",
+    "detail": "(id, username)"
+  },
+  {
+    "type": "file",
+    "label": "api/routes/stockassign.js",
+    "file": "api/routes/stockassign.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerStockassignRoutes",
+    "file": "api/routes/stockassign.js",
+    "detail": "(app, deps)"
+  },
+  {
+    "type": "function",
+    "label": "releaseAssignedSerials",
+    "file": "api/routes/stockassign.js",
+    "detail": "(conn, reference)"
+  },
+  {
+    "type": "file",
+    "label": "api/middleware/auth.js",
+    "file": "api/middleware/auth.js",
+    "detail": "Implements Express/Koa middleware."
+  },
+  {
+    "type": "function",
+    "label": "issueToken",
+    "file": "api/middleware/auth.js",
+    "detail": "(username, role)"
+  },
+  {
+    "type": "function",
+    "label": "authenticateToken",
+    "file": "api/middleware/auth.js",
+    "detail": "(req, res, next)"
+  },
+  {
+    "type": "function",
+    "label": "requireRole",
+    "file": "api/middleware/auth.js",
+    "detail": "(...roles)"
+  },
+  {
+    "type": "file",
+    "label": "api/middleware/rateLimiters.js",
+    "file": "api/middleware/rateLimiters.js",
+    "detail": "Implements Express/Koa middleware."
+  },
+  {
+    "type": "function",
+    "label": "rateLimitHandler",
+    "file": "api/middleware/rateLimiters.js",
+    "detail": "(_req, res)"
+  },
+  {
+    "type": "file",
+    "label": "api/db/pool.js",
+    "file": "api/db/pool.js",
+    "detail": "Supporting source file."
+  },
+  {
+    "type": "file",
+    "label": "api/db/schema.js",
+    "file": "api/db/schema.js",
+    "detail": "Defines 8 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "ensureStartupSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureSessionSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureSerialRuleSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureLedgerTypeSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureAuthOtpSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureEmailRoleUniqueSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureAttachmentsSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureScanSheetSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "file",
+    "label": "api/config/cors.js",
+    "file": "api/config/cors.js",
+    "detail": "Defines 1 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "corsMiddleware",
+    "file": "api/config/cors.js",
+    "detail": "()"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/attachments",
+    "file": "api/routes/attachments.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/attachments",
+    "file": "api/routes/attachments.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "DELETE /api/attachments/:id",
+    "file": "api/routes/attachments.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/attachments/:id/file",
+    "file": "api/routes/attachments.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/auth/forgot-password",
+    "file": "api/routes/auth.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/auth/heartbeat",
+    "file": "api/routes/auth.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/auth/login",
+    "file": "api/routes/auth.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/auth/logout",
+    "file": "api/routes/auth.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/auth/register",
+    "file": "api/routes/auth.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/auth/resend-otp",
+    "file": "api/routes/auth.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/auth/reset-password",
+    "file": "api/routes/auth.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/auth/verify-otp",
+    "file": "api/routes/auth.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/auth/verify-register-otp",
+    "file": "api/routes/auth.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/backup/download/:fileName",
+    "file": "api/routes/backup.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/backup/run",
+    "file": "api/routes/backup.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/backup/status",
+    "file": "api/routes/backup.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/dashboard/summary",
+    "file": "api/routes/health.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/health",
+    "file": "api/routes/health.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/ledgers",
+    "file": "api/routes/ledgers.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/ledgers",
+    "file": "api/routes/ledgers.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "DELETE /api/ledgers/:id",
+    "file": "api/routes/ledgers.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/ledgers/:id",
+    "file": "api/routes/ledgers.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/ledgers/directory",
+    "file": "api/routes/ledgers.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/ledgers/shortcodes",
+    "file": "api/routes/ledgers.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/ledgers/statement",
+    "file": "api/routes/ledgers.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/lowstock",
+    "file": "api/routes/health.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/masters/brands",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/masters/categories",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/masters/categories",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "DELETE /api/masters/categories/:name",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/masters/categories/:name/serial-rule",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/masters/categories/:name/watt-rule",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/masters/items",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/masters/items",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/masters/items/:id",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "DELETE /api/masters/subtypes",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/masters/subtypes",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/masters/subtypes",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/masters/subtypes/:category",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "DELETE /api/masters/units",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/masters/units",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/masters/units",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/masters/units",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/masters/users",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/masters/users",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/masters/users/email",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/masters/users/password",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "DELETE /api/masters/warehouses",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/masters/warehouses",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/masters/warehouses",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/masters/warehouses",
+    "file": "api/routes/masters.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/purchase",
+    "file": "api/routes/purchase.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "DELETE /api/purchase/:invoiceNo",
+    "file": "api/routes/purchase.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/purchase/:invoiceNo",
+    "file": "api/routes/purchase.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/purchase/brands/:category",
+    "file": "api/routes/purchase.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/purchase/check-serials",
+    "file": "api/routes/purchase.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/purchase/find",
+    "file": "api/routes/purchase.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/purchase/register",
+    "file": "api/routes/purchase.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/purchase/wattages",
+    "file": "api/routes/purchase.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/reports/master",
+    "file": "api/routes/reports.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/returns",
+    "file": "api/routes/sales.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/sales/check-line",
+    "file": "api/routes/sales.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "DELETE /api/sales/delete/:orderNo",
+    "file": "api/routes/sales.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/sales/dispatch",
+    "file": "api/routes/sales.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/sales/find/:term",
+    "file": "api/routes/sales.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/sales/modify/:orderNo",
+    "file": "api/routes/sales.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/sales/register",
+    "file": "api/routes/sales.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/sales/types",
+    "file": "api/routes/sales.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/scansheet/sheets",
+    "file": "api/routes/scansheet.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/scansheet/sheets",
+    "file": "api/routes/scansheet.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "DELETE /api/scansheet/sheets/:id",
+    "file": "api/routes/scansheet.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/scansheet/sheets/:id",
+    "file": "api/routes/scansheet.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "DELETE /api/scansheet/sheets/:id/entries",
+    "file": "api/routes/scansheet.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/scansheet/sheets/:id/entries",
+    "file": "api/routes/scansheet.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/scansheet/sheets/:id/entries",
+    "file": "api/routes/scansheet.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "DELETE /api/scansheet/sheets/:id/entries/:entryId",
+    "file": "api/routes/scansheet.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/scansheet/sheets/:id/entries/renumber",
+    "file": "api/routes/scansheet.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/sessions/live",
+    "file": "api/routes/auth.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/stockassign",
+    "file": "api/routes/stockassign.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/stockassign/available",
+    "file": "api/routes/stockassign.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/stockassign/lines/:reference",
+    "file": "api/routes/stockassign.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/stockassign/register",
+    "file": "api/routes/stockassign.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/stockassign/release-customer",
+    "file": "api/routes/stockassign.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/stockassign/release-firm",
+    "file": "api/routes/stockassign.js",
+    "detail": "public"
+  },
+  {
+    "type": "table",
+    "label": "backup_log",
+    "file": "api/routes/backup.js",
+    "detail": "SQL table"
+  },
+  {
+    "type": "table",
+    "label": "otp_codes",
+    "file": "api/db/schema.js",
+    "detail": "SQL table"
+  },
+  {
+    "type": "table",
+    "label": "attachments",
+    "file": "api/db/schema.js",
+    "detail": "SQL table"
+  },
+  {
+    "type": "table",
+    "label": "scan_sheets",
+    "file": "api/db/schema.js",
+    "detail": "SQL table"
+  },
+  {
+    "type": "table",
+    "label": "scan_sheet_entries",
+    "file": "api/db/schema.js",
+    "detail": "SQL table"
+  }
+]
