@@ -407,34 +407,77 @@ function bomRenderPrintSheetHtml(kit, header) {
   `;
 }
 
+// ---------- "Convert into Challan" — fixed 13-line item template ----------
+// The Excel Challan sheet does NOT list the full BOM kit (~53 rows) — it
+// has its own short, fixed summary list, independent of whichever kit is
+// selected. Sr/Item Name/Model/Unit are fixed here; Qty is left blank for
+// hand entry per challan, same as the source Excel template ships blank.
+// GI Pipe (Sr 3 & 4) each carry 4 size sub-rows (20/15/10/5 Feet), each
+// with its own Qty, mirroring the merged-cell layout in the workbook.
+// This template is completely separate from currentKitState/BOM_KITS —
+// do not confuse the two: the on-screen "Kit Items" table
+// (bomRenderScreenItemsHtml) keeps listing the full BOM kit exactly as
+// before; this fixed list is only for the Challan modal below.
+const BOM_CHALLAN_TEMPLATE = [
+  { sr: 1, name: 'Solar Panel', model: '', unit: 'Nos' },
+  { sr: 2, name: 'GI Structure', model: '', unit: 'Set' },
+  { sr: 3, name: 'GI Pipe', model: '1.5 X 1.5', unit: 'Nos', sizes: ['20 Feet', '15 Feet', '10 Feet', '5 Feet'] },
+  { sr: 4, name: 'GI Pipe', model: '2.5 X 1.5', unit: 'Nos', sizes: ['20 Feet', '15 Feet', '10 Feet', '5 Feet'] },
+  { sr: 5, name: 'Bom Box', model: '', unit: 'Box' },
+  { sr: 6, name: 'Inverter', model: '', unit: 'Nos' },
+  { sr: 7, name: 'Earthing & LA Kit', model: '', unit: 'Nos' },
+  { sr: 8, name: 'Earthing Bag', model: '', unit: 'Nos' },
+  { sr: 9, name: 'PVC Pipe', model: '', unit: 'Nos' },
+  { sr: 10, name: 'Ferma', model: '', unit: 'Nos' },
+  { sr: 11, name: 'Reti Bag', model: '', unit: 'Bori' },
+  { sr: 12, name: 'Kapchi Bag', model: '', unit: 'Bori' },
+  { sr: 13, name: 'Cement Bag', model: '', unit: 'Bori' },
+];
+
 // ---------- "Convert into Challan" — ENTRY MODAL (software-style, NOT the Excel look) ----------
 // This is the on-screen counterpart to the main BOM entry form (#1 in the
 // file-level split described at the top): same .form-grid/.field pattern,
-// same dark theme, plain <input>s — no white sheet, no purple bars. Reads
-// currentKitState for the item list (never re-typed by hand) and shows it
-// in the same visual style as the existing on-screen "Kit Items" table
-// (.table-wrap/.bom-items-form-table/.bom-screen-cat), just read-only here
-// since this view is only for reviewing + setting Challan No./Date/City
-// before printing. The Excel-exact look lives ONLY in
-// bomRenderChallanPrintSheetHtml() below (print-only, part B).
-function bomRenderChallanItemsPreviewHtml(sections) {
-  const rows = sections.map((sec) => {
-    const catRow = `<tr class="bom-screen-cat"><td colspan="5">${bomEsc(sec.title)}</td></tr>`;
-    const itemRows = sec.items.map((it) => `
+// same dark theme, plain <input>s — no white sheet, no purple bars. Items
+// render in the same visual style as the existing on-screen "Kit Items"
+// table (.table-wrap/.bom-items-form-table), from BOM_CHALLAN_TEMPLATE
+// above (Sr/Name/Model/Unit fixed, Qty a blank editable number per
+// line/sub-row) — NOT from currentKitState. The Excel-exact look lives
+// ONLY in bomRenderChallanPrintSheetHtml() below (print-only, part B).
+function bomRenderChallanTemplateItemsHtml(template) {
+  const rows = template.map((it) => {
+    const qtyInputHtml = (sizeLabel) => {
+      const sizeAttr = sizeLabel ? ` data-challan-tpl-size="${bomEscAttr(sizeLabel)}"` : '';
+      return `<input type="number" min="0" class="bom-field-input" data-challan-tpl-sr="${it.sr}"${sizeAttr} style="width:70px; display:inline-block;">`;
+    };
+    if (it.sizes && it.sizes.length) {
+      return it.sizes.map((size, i) => {
+        const leadCells = i === 0
+          ? `<td rowspan="${it.sizes.length}">${it.sr}</td>
+             <td rowspan="${it.sizes.length}">${bomEsc(it.name)}</td>
+             <td rowspan="${it.sizes.length}">${bomEsc(it.model || '')}</td>`
+          : '';
+        return `
+      <tr>
+        ${leadCells}
+        <td>${bomEsc(size)}: ${qtyInputHtml(size)}</td>
+        <td>${bomEsc(it.unit)}</td>
+      </tr>`;
+      }).join('');
+    }
+    return `
       <tr>
         <td>${it.sr}</td>
         <td>${bomEsc(it.name)}</td>
         <td>${bomEsc(it.model || '')}</td>
-        <td>${bomEsc(it.qty)}</td>
-        <td>${bomEsc(it.remarks || '')}</td>
-      </tr>`).join('');
-    return catRow + itemRows;
+        <td>${qtyInputHtml()}</td>
+        <td>${bomEsc(it.unit)}</td>
+      </tr>`;
   }).join('');
 
   return `
     <div class="table-wrap">
       <table class="bom-items-form-table">
-        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Qty.</th><th>Description</th></tr></thead>
+        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Qty.</th><th>Unit</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
@@ -443,18 +486,21 @@ function bomRenderChallanItemsPreviewHtml(sections) {
 
 function bomRenderChallanEntryModalHtml(header, kit) {
   return `
-    <div class="form-grid cols-2">
-      <div class="field"><label>Challan No.</label><input type="text" id="bomChallanModalNo" placeholder="Challan no."></div>
-      <div class="field"><label>Challan Date</label><input type="date" id="bomChallanModalDate"></div>
-      <div class="field"><label>Order No.</label><input type="text" id="bomChallanModalOrderNo" value="${bomEscAttr(header.orderNo)}" placeholder="Order no."></div>
-      <div class="field"><label>Capacity (kW)</label><input type="text" id="bomChallanModalCapacity" value="${bomEscAttr(kit.kw)}"></div>
-      <div class="field"><label>Name</label><input type="text" id="bomChallanModalName" value="${bomEscAttr(header.customerName)}" placeholder="Customer / Party"></div>
-      <div class="field"><label>City</label><input type="text" id="bomChallanModalCity" placeholder="City"></div>
-    </div>
-    <h4 style="margin:16px 0 8px;"><i class="fa-solid fa-list"></i> Items <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(from the selected BOM kit)</span></h4>
-    ${bomRenderChallanItemsPreviewHtml(kit.sections)}
-    <div class="actions-row" style="margin-top:14px;">
-      <button type="button" class="btn btn-blue" id="bomChallanPrintBtn"><i class="fa-solid fa-print"></i> Print Challan</button>
+    <div id="bomChallanEntryModalRoot">
+      <div class="form-grid cols-2">
+        <div class="field"><label>Challan No.</label><input type="text" id="bomChallanModalNo" placeholder="Challan no."></div>
+        <div class="field"><label>Challan Date</label><input type="date" id="bomChallanModalDate"></div>
+        <div class="field"><label>Order No.</label><input type="text" id="bomChallanModalOrderNo" value="${bomEscAttr(header.orderNo)}" placeholder="Order no."></div>
+        <div class="field"><label>Capacity (kW)</label><input type="text" id="bomChallanModalCapacity" value="${bomEscAttr(kit.kw)}"></div>
+        <div class="field"><label>Name</label><input type="text" id="bomChallanModalName" value="${bomEscAttr(header.customerName)}" placeholder="Customer / Party"></div>
+        <div class="field"><label>City</label><input type="text" id="bomChallanModalCity" placeholder="City"></div>
+        <div class="field"><label>Vehicle No.</label><input type="text" id="bomChallanModalVehicleNo" placeholder="e.g. GJ-03-BZ-7562"></div>
+      </div>
+      <h4 style="margin:16px 0 8px;"><i class="fa-solid fa-list"></i> Items <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(fixed Challan template)</span></h4>
+      ${bomRenderChallanTemplateItemsHtml(BOM_CHALLAN_TEMPLATE)}
+      <div class="actions-row" style="margin-top:14px;">
+        <button type="button" class="btn btn-blue" id="bomChallanPrintBtn"><i class="fa-solid fa-print"></i> Print Challan</button>
+      </div>
     </div>
   `;
 }
