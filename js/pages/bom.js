@@ -407,6 +407,93 @@ function bomRenderPrintSheetHtml(kit, header) {
   `;
 }
 
+// "Convert into Challan" modal — recreates the Excel Challan sheet's
+// mirrored two-copy layout (Customer Copy / Company Copy, same data on
+// both, exactly like columns A–H mirrored into J–P in the workbook).
+// Item rows come straight from currentKitState (the same array already
+// driving the on-screen Kit Items table and the BOM print sheet) so the
+// item list is never re-typed by hand here. Challan No./Date are left
+// blank, editable inputs — everything else on the sheet is static text
+// pulled from the live form fields (or the kit's kW for Capacity). This
+// is STAGE 1: layout only — no Print/Finalize button yet, and these
+// inputs aren't wired back to bomChallanNo/bomChallanDate on the main
+// form (that linking is a later step). Reuses the existing print-sheet
+// classes (bom-table/bom-info-cell/bom-spacer/bom-head-row/bom-cat-row)
+// from css/modules/bom.css rather than inventing new styling.
+function bomRenderChallanHalfHtml(kit, header, copyLabel, side) {
+  const rows = kit.sections.map((sec) => {
+    const catRow = `<tr class="bom-cat-row"><td colspan="5">${bomEsc(sec.title)}</td></tr>`;
+    const itemRows = sec.items.map((it) => `
+      <tr>
+        <td class="bom-c-sr">${it.sr}</td>
+        <td class="bom-c-name">${bomEsc(it.name)}</td>
+        <td class="bom-c-model">${bomEsc(it.model || '')}</td>
+        <td class="bom-c-qty">${bomEsc(it.qty)}</td>
+        <td class="bom-c-remarks">${bomEsc(it.remarks || '')}</td>
+      </tr>`).join('');
+    return catRow + itemRows;
+  }).join('');
+
+  const noId = `bomChallanNo_${side}`;
+  const dateId = `bomChallanDate_${side}`;
+  const inputStyle = 'width:64%; border:1px solid #999; background:#fff; color:#000; font-size:10pt; padding:1px 4px; font-family:inherit;';
+
+  return `
+    <div style="width:480px; max-width:100%; flex:0 0 auto;">
+      <table class="bom-table" style="table-layout:fixed;">
+        <colgroup>
+          <col style="width:9%;"><col style="width:30%;"><col style="width:18%;">
+          <col style="width:14%;"><col style="width:29%;">
+        </colgroup>
+        <tr class="bom-head-row"><th colspan="5">${bomEsc(copyLabel)}</th></tr>
+        <tr><td colspan="5" class="bom-info-cell">GST NO. 24AAHFG9142N1Z1</td></tr>
+        <tr>
+          <td colspan="5" class="bom-info-cell" style="font-weight:400; font-size:9pt; line-height:1.3; white-space:normal;">
+            Green Energy, Plot No – 4,5,6, Gajanand Ind. Area, Rev. S. No.: 183<br>
+            Nr R K Exotica, To.: Chhapra–360021 Ta. Metoda (Rajkot)
+          </td>
+        </tr>
+        <tr>
+          <td colspan="3" class="bom-info-cell">Challan No.: <input type="text" id="${noId}" data-bom-challan-side="${side}" data-bom-challan-field="no" style="${inputStyle}"></td>
+          <td colspan="2" class="bom-info-cell">Ch. Date: <input type="date" id="${dateId}" data-bom-challan-side="${side}" data-bom-challan-field="date" style="${inputStyle}"></td>
+        </tr>
+        <tr>
+          <td colspan="3" class="bom-info-cell">Order No.: ${bomEsc(header.orderNo)}</td>
+          <td colspan="2" class="bom-info-cell">Capacity: ${bomEsc(kit.kw)} kW</td>
+        </tr>
+        <tr>
+          <td colspan="3" class="bom-info-cell">Name: ${bomEsc(header.customerName)}</td>
+          <td colspan="2" class="bom-info-cell">City:</td>
+        </tr>
+        <tr><td colspan="5" class="bom-spacer"></td></tr>
+        <tr class="bom-head-row">
+          <th class="bom-c-sr">Sr. No.</th>
+          <th class="bom-c-name">Item Name</th>
+          <th class="bom-c-model">Model</th>
+          <th class="bom-c-qty">Qty.</th>
+          <th class="bom-c-remarks">Description</th>
+        </tr>
+        ${rows}
+        <tr><td colspan="5" class="bom-spacer"></td></tr>
+        <tr>
+          <td colspan="2" class="bom-info-cell">Issued by</td>
+          <td class="bom-info-cell" style="text-align:center;">Vehicle No.:</td>
+          <td colspan="2" class="bom-info-cell">Received by</td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
+function bomRenderChallanHtml(kit, header) {
+  return `
+    <div style="display:flex; gap:16px; overflow-x:auto; padding:2px 0;">
+      ${bomRenderChallanHalfHtml(kit, header, 'Customer Copy', 'cust')}
+      ${bomRenderChallanHalfHtml(kit, header, 'Company Copy', 'comp')}
+    </div>
+  `;
+}
+
 window.PAGES.bom = {
   name: 'BOM',
   icon: 'fa-list-check',
@@ -1216,7 +1303,27 @@ window.PAGES.bom = {
     if (btnChallan) {
       btnChallan.addEventListener('click', () => {
         if (!bomVerified) return; // belt-and-braces — button is disabled until verified anyway
-        window.openModal('Convert into Challan', '<p>Coming soon.</p>');
+        if (!currentKitState) {
+          window.openModal('Select a Kit', '<p>Please select a BOM Kit before converting to a challan.</p>');
+          return;
+        }
+        const kw = bomGetAllKits()[kitSelect.value] ? bomGetAllKits()[kitSelect.value].kw : '';
+        window.openModal(
+          'Convert into Challan',
+          bomRenderChallanHtml({ kw, sections: currentKitState }, getHeaderValues()),
+        );
+
+        // Customer Copy / Company Copy show the "same data on both", so
+        // typing a Challan No./Date on one side mirrors it onto the other
+        // — purely a display convenience in this modal; nothing here is
+        // linked back to bomChallanNo/bomChallanDate on the main form yet.
+        ['no', 'date'].forEach((field) => {
+          const custEl = document.getElementById(`bomChallan${field === 'no' ? 'No' : 'Date'}_cust`);
+          const compEl = document.getElementById(`bomChallan${field === 'no' ? 'No' : 'Date'}_comp`);
+          if (!custEl || !compEl) return;
+          custEl.addEventListener('input', () => { compEl.value = custEl.value; });
+          compEl.addEventListener('input', () => { custEl.value = compEl.value; });
+        });
       });
     }
 
