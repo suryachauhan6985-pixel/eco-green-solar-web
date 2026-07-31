@@ -409,6 +409,42 @@
   },
   {
     "type": "function",
+    "label": "bomRenderChallanTemplateItemsHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(template)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderChallanEntryModalHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(header, kit)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderChallanPrintSheetHalfHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(header, kit, copyLabel, side)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderChallanPrintSheetHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(header, kit)"
+  },
+  {
+    "type": "function",
+    "label": "openChallanModal",
+    "file": "js/pages/bom.js",
+    "detail": "(bodyHtml)"
+  },
+  {
+    "type": "function",
+    "label": "closeChallanModal",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "bomLoadSerialMandatoryInfo",
     "file": "js/pages/bom.js",
     "detail": "()"
@@ -541,6 +577,12 @@
   },
   {
     "type": "function",
+    "label": "computeAndApplyChallanFitZoom",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "bomEsc",
     "file": "js/pages/bom.js",
     "detail": "(s)"
@@ -550,6 +592,18 @@
     "label": "bomEscAttr",
     "file": "js/pages/bom.js",
     "detail": "(s)"
+  },
+  {
+    "type": "function",
+    "label": "qtyInput",
+    "file": "js/pages/bom.js",
+    "detail": "(sr, sizeLabel)"
+  },
+  {
+    "type": "function",
+    "label": "descInput",
+    "file": "js/pages/bom.js",
+    "detail": "(sr)"
   },
   {
     "type": "function",

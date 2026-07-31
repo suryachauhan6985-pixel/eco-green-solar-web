@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-30T13:14:10.908Z",
+  "generatedAt": "2026-07-31T06:39:21.714Z",
   "files": {
     "index.html": {
       "hash": "4fab371f7fe74c0d6a4a048ea2516e112c66fe1c",
@@ -32,9 +32,9 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/bom.js": {
-      "hash": "3e75790019561b3d7e25ebef2dbe3e1f606f6969",
-      "size": 70598,
-      "mtimeMs": 1785128942265.716
+      "hash": "a46442eaec8cd6119f859b5377db7e31f98381f7",
+      "size": 88655,
+      "mtimeMs": 1785479357968.1025
     },
     "js/pages/dashboard.js": {
       "hash": "44cc77fecac36b223d21b6e973819b7c606edba1",

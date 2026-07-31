@@ -539,72 +539,135 @@ function bomRenderChallanEntryModalHtml(header, kit) {
 // bom-table/bom-info-cell/bom-spacer/bom-head-row/bom-cat-row classes
 // #bomPrintRoot's sheet uses, so this is the ONLY place that Excel look
 // belongs to.
-function bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, side) {
-  const rows = kit.sections.map((sec) => {
-    const catRow = `<tr class="bom-cat-row"><td colspan="5">${bomEsc(sec.title)}</td></tr>`;
-    const itemRows = sec.items.map((it) => `
-      <tr>
+// Collects the actually-entered Qty./Description values from the entry
+// modal's item table (BOM_CHALLAN_TEMPLATE inputs — data-challan-tpl-sr/
+// -size/-desc, set up in bomRenderChallanTemplateItemsHtml above) right
+// before printing. Keyed by `${sr}|${size||''}` so GI Pipe's 4 size
+// sub-rows (Sr 3 & 4) each keep their own Qty while sharing one
+// Description per item (entered once, same key with an empty size).
+function bomCollectChallanTemplateValues() {
+  const values = {};
+  const setVal = (key, patch) => { values[key] = Object.assign({}, values[key], patch); };
+  document.querySelectorAll('.bom-challan-qty-input').forEach((inp) => {
+    const sr = inp.getAttribute('data-challan-tpl-sr');
+    const size = inp.getAttribute('data-challan-tpl-size') || '';
+    setVal(`${sr}|${size}`, { qty: inp.value });
+  });
+  document.querySelectorAll('[data-challan-tpl-desc]').forEach((inp) => {
+    const sr = inp.getAttribute('data-challan-tpl-desc');
+    setVal(`${sr}|`, { desc: inp.value });
+  });
+  return values;
+}
+
+// Renders the Challan print sheet's item rows from BOM_CHALLAN_TEMPLATE —
+// the SAME 13-line/7-column data set (Sr No./Item Name/Model/Size/Qty./
+// Unit/Description) the entry table already renders — populated with the
+// actual Qty./Description values the user typed into that entry table,
+// instead of the unrelated BOM-kit sections. GI Pipe's 4 size sub-rows
+// merge Sr/Name/Model/Description via rowspan exactly like the entry
+// table does, so the print sheet is a true Excel-exact mirror of what's
+// on screen, not a different item list.
+function bomRenderChallanPrintTemplateRowsHtml(template, values) {
+  const getQty = (sr, size) => (values[`${sr}|${size || ''}`] && values[`${sr}|${size || ''}`].qty) || '';
+  const getDesc = (sr) => (values[`${sr}|`] && values[`${sr}|`].desc) || '';
+
+  return template.map((it) => {
+    const desc = getDesc(it.sr);
+    if (it.sizes && it.sizes.length) {
+      return it.sizes.map((size, i) => {
+        const leadCells = i === 0
+          ? `<td class="bom-c-sr" rowspan="${it.sizes.length}">${it.sr}</td>
+             <td class="bom-c-name" rowspan="${it.sizes.length}">${bomEsc(it.name)}</td>
+             <td class="bom-c-model" rowspan="${it.sizes.length}">${bomEsc(it.model || '')}</td>`
+          : '';
+        const descCell = i === 0
+          ? `<td class="bom-c-remarks" rowspan="${it.sizes.length}">${bomEsc(desc)}</td>`
+          : '';
+        return `
+      <tr class="bom-challan-item-row">
+        ${leadCells}
+        <td class="bom-c-size">${bomEsc(size)}</td>
+        <td class="bom-c-qty">${bomEsc(getQty(it.sr, size))}</td>
+        <td class="bom-c-unit">${bomEsc(it.unit)}</td>
+        ${descCell}
+      </tr>`;
+      }).join('');
+    }
+    return `
+      <tr class="bom-challan-item-row">
         <td class="bom-c-sr">${it.sr}</td>
         <td class="bom-c-name">${bomEsc(it.name)}</td>
         <td class="bom-c-model">${bomEsc(it.model || '')}</td>
-        <td class="bom-c-qty">${bomEsc(it.qty)}</td>
-        <td class="bom-c-remarks">${bomEsc(it.remarks || '')}</td>
-      </tr>`).join('');
-    return catRow + itemRows;
+        <td class="bom-c-size">&mdash;</td>
+        <td class="bom-c-qty">${bomEsc(getQty(it.sr))}</td>
+        <td class="bom-c-unit">${bomEsc(it.unit)}</td>
+        <td class="bom-c-remarks">${bomEsc(desc)}</td>
+      </tr>`;
   }).join('');
+}
+
+function bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues) {
+  const itemRows = bomRenderChallanPrintTemplateRowsHtml(BOM_CHALLAN_TEMPLATE, templateValues);
 
   return `
     <div style="width:480px; max-width:100%; flex:0 0 auto;">
       <table class="bom-table" style="table-layout:fixed;">
         <colgroup>
-          <col style="width:9%;"><col style="width:30%;"><col style="width:18%;">
-          <col style="width:14%;"><col style="width:29%;">
+          <col class="bom-challan-col-sr"><col class="bom-challan-col-name"><col class="bom-challan-col-model">
+          <col class="bom-challan-col-size"><col class="bom-challan-col-qty"><col class="bom-challan-col-unit">
+          <col class="bom-challan-col-remarks">
         </colgroup>
-        <tr class="bom-head-row"><th colspan="5">${bomEsc(copyLabel)}</th></tr>
-        <tr><td colspan="5" class="bom-info-cell">GST NO. 24AAHFG9142N1Z1</td></tr>
+        <tr><td colspan="7" style="border:none; background:#ffffff; text-align:left;">
+          <img class="bom-challan-logo" src="assets/logo.png" alt="Eco Green Solar">
+        </td></tr>
+        <tr class="bom-head-row"><th colspan="7">${bomEsc(copyLabel)}</th></tr>
+        <tr><td colspan="7" class="bom-info-cell">GST NO. 24AAHFG9142N1Z1</td></tr>
         <tr>
-          <td colspan="5" class="bom-info-cell" style="font-weight:400; font-size:9pt; line-height:1.3; white-space:normal;">
+          <td colspan="7" class="bom-info-cell" style="font-weight:400; font-size:9pt; line-height:1.3; white-space:normal;">
             Green Energy, Plot No – 4,5,6, Gajanand Ind. Area, Rev. S. No.: 183<br>
             Nr R K Exotica, To.: Chhapra–360021 Ta. Metoda (Rajkot)
           </td>
         </tr>
         <tr>
-          <td colspan="3" class="bom-info-cell">Challan No.: ${bomEsc(header.challanNo)}</td>
-          <td colspan="2" class="bom-info-cell">Ch. Date: ${bomEsc(header.challanDate)}</td>
+          <td colspan="4" class="bom-info-cell">Challan No.: ${bomEsc(header.challanNo)}</td>
+          <td colspan="3" class="bom-info-cell">Ch. Date: ${bomEsc(header.challanDate)}</td>
         </tr>
         <tr>
-          <td colspan="3" class="bom-info-cell">Order No.: ${bomEsc(header.orderNo)}</td>
-          <td colspan="2" class="bom-info-cell">Capacity: ${bomEsc(kit.kw)} kW</td>
+          <td colspan="4" class="bom-info-cell">Order No.: ${bomEsc(header.orderNo)}</td>
+          <td colspan="3" class="bom-info-cell">Capacity: ${bomEsc(kit.kw)} kW</td>
         </tr>
         <tr>
-          <td colspan="3" class="bom-info-cell">Name: ${bomEsc(header.customerName)}</td>
-          <td colspan="2" class="bom-info-cell">City: ${bomEsc(header.city)}</td>
+          <td colspan="4" class="bom-info-cell">Name: ${bomEsc(header.customerName)}</td>
+          <td colspan="3" class="bom-info-cell">City: ${bomEsc(header.city)}</td>
         </tr>
-        <tr><td colspan="5" class="bom-spacer"></td></tr>
+        <tr><td colspan="7" class="bom-spacer"></td></tr>
         <tr class="bom-head-row">
           <th class="bom-c-sr">Sr. No.</th>
           <th class="bom-c-name">Item Name</th>
           <th class="bom-c-model">Model</th>
+          <th class="bom-c-size">Size</th>
           <th class="bom-c-qty">Qty.</th>
+          <th class="bom-c-unit">Unit</th>
           <th class="bom-c-remarks">Description</th>
         </tr>
-        ${rows}
-        <tr><td colspan="5" class="bom-spacer"></td></tr>
-        <tr>
-          <td colspan="2" class="bom-info-cell">Issued by</td>
+        ${itemRows}
+        <tr><td colspan="7" class="bom-spacer"></td></tr>
+        <tr class="bom-challan-footer-row">
+          <td colspan="3" class="bom-info-cell">Issued by</td>
           <td class="bom-info-cell" style="text-align:center;">Vehicle No.:</td>
-          <td colspan="2" class="bom-info-cell">Received by</td>
+          <td colspan="3" class="bom-info-cell">Received by</td>
         </tr>
       </table>
     </div>
   `;
 }
 
-function bomRenderChallanPrintSheetHtml(header, kit) {
+function bomRenderChallanPrintSheetHtml(header, kit, templateValues) {
   return `
     <div class="bom-sheet" id="bomChallanSheet" style="width:1000px; display:flex; gap:16px;">
-      ${bomRenderChallanPrintSheetHalfHtml(header, kit, 'Customer Copy', 'cust')}
-      ${bomRenderChallanPrintSheetHalfHtml(header, kit, 'Company Copy', 'comp')}
+      ${bomRenderChallanPrintSheetHalfHtml(header, kit, 'Customer Copy', templateValues)}
+      ${bomRenderChallanPrintSheetHalfHtml(header, kit, 'Company Copy', templateValues)}
     </div>
   `;
 }
@@ -1500,8 +1563,9 @@ window.PAGES.bom = {
               customerName: modalName ? modalName.value : '',
               city: modalCity ? modalCity.value : '',
             };
-            const challanKit = { kw: modalCapacity ? modalCapacity.value : kw, sections: currentKitState };
-            challanPrintRoot.innerHTML = bomRenderChallanPrintSheetHtml(challanHeader, challanKit);
+            const challanKit = { kw: modalCapacity ? modalCapacity.value : kw };
+            const templateValues = bomCollectChallanTemplateValues();
+            challanPrintRoot.innerHTML = bomRenderChallanPrintSheetHtml(challanHeader, challanKit, templateValues);
             computeAndApplyChallanFitZoom();
             window.print();
           });
@@ -1675,18 +1739,27 @@ window.PAGES.bom = {
       if (!naturalHeightPx) return; // nothing rendered yet — nothing to scale
 
       const PX_PER_MM = 96 / 25.4;
-      // Same @page rule as the BOM sheet: size:A4 portrait; margin:19.05mm 6.35mm.
-      const A4_HEIGHT_MM = 297;
-      const MARGIN_TB_MM = 19.05;
-      const A4_WIDTH_MM = 210;
-      const MARGIN_LR_MM = 6.35;
+      // Own @page rule (named `bomChallanPage` in bom.css), deliberately
+      // NOT the same as the BOM sheet's: the source Challan sheet is
+      // landscape A4 with near-zero margins (left ~0.2in/5mm, top/right/
+      // bottom ~0), not the BOM sheet's portrait/0.25in-0.75in margins.
+      const A4_HEIGHT_MM = 210; // landscape: the A4 "height" is the short 210mm edge
+      const MARGIN_TOP_MM = 0;
+      const MARGIN_BOTTOM_MM = 0;
+      const A4_WIDTH_MM = 297; // landscape: the A4 "width" is the long 297mm edge
+      const MARGIN_LEFT_MM = 5;
+      const MARGIN_RIGHT_MM = 0;
 
+      // SAFETY_MARGIN_H doubles as the flat 96% print scale the source
+      // sheet uses (Page Setup → Scale: 96%, not "fit to page") — same
+      // flat-scale approach as the BOM sheet's computeAndApplyFitZoom,
+      // just against this sheet's own landscape page dimensions.
       const SAFETY_MARGIN_H = 0.96;
-      const usableHeightPx = (A4_HEIGHT_MM - MARGIN_TB_MM * 2) * PX_PER_MM * SAFETY_MARGIN_H;
+      const usableHeightPx = (A4_HEIGHT_MM - MARGIN_TOP_MM - MARGIN_BOTTOM_MM) * PX_PER_MM * SAFETY_MARGIN_H;
       const vScale = Math.min(1, usableHeightPx / naturalHeightPx);
 
       const SAFETY_MARGIN_W = 0.99;
-      const usableWidthPx = (A4_WIDTH_MM - MARGIN_LR_MM * 2) * PX_PER_MM * SAFETY_MARGIN_W;
+      const usableWidthPx = (A4_WIDTH_MM - MARGIN_LEFT_MM - MARGIN_RIGHT_MM) * PX_PER_MM * SAFETY_MARGIN_W;
       const baseWidthPx = usableWidthPx / vScale;
 
       const supportsZoom = window.CSS && CSS.supports && CSS.supports('zoom', '1');

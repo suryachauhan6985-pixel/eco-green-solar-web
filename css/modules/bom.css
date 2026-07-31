@@ -71,6 +71,26 @@
 .bom-table .bom-c-qty{text-align:center;}
 .bom-table .bom-c-checked{text-align:center;}
 .bom-table .bom-c-remarks{text-align:center;}
+/* Challan print sheet only (bomRenderChallanPrintSheetHalfHtml) needs 2
+   extra columns the main BOM sheet doesn't have — Size and Unit — plus
+   its own <colgroup> widths, since it mirrors the entry table's 7-column
+   set (Sr/Name/Model/Size/Qty/Unit/Description) rather than the BOM
+   sheet's 6. Kept as separate classes so nothing here touches the
+   #bomPrintRoot BOM sheet's own .bom-col-*/.bom-c-* rules above. */
+.bom-table .bom-c-size{text-align:center;}
+.bom-table .bom-c-unit{text-align:center;}
+/* Column-width proportions measured from the source workbook's Challan
+   sheet (column-width units → % of the 7 data columns' combined width):
+   Sr.No. 7.71 → 10.7%, Item Name 14.71 → 20.4%, Model 9.71 → 13.5%,
+   Size 8.71 → 12.1%, Qty. 7.71 → 10.7%, Unit 5.71 → 7.9%,
+   Description 17.71 → 24.6%. */
+.bom-challan-col-sr{width:10.7%;}
+.bom-challan-col-name{width:20.4%;}
+.bom-challan-col-model{width:13.5%;}
+.bom-challan-col-size{width:12.1%;}
+.bom-challan-col-qty{width:10.7%;}
+.bom-challan-col-unit{width:7.9%;}
+.bom-challan-col-remarks{width:24.6%;}
 .bom-info-cell{border:1px solid #000; font-size:10pt; font-weight:700; color:#000; background:#ffffff; padding:1px 4px; line-height:1.25;}
 .bom-spacer{border:1px solid #000; height:4pt; padding:0; background:#ffffff;}
 .bom-kw-cell{
@@ -87,6 +107,43 @@
   font-family:'Arial Rounded MT Bold','Segoe UI',Arial,sans-serif; font-size:12pt;
 }
 .bom-table tr{page-break-inside:avoid;}
+
+/* ---------- Challan print sheet — row heights ----------
+   Source workbook: header block rows (copy label, GST No., address,
+   Challan No./Date, Order No./Capacity, Name/City) run 20-23pt tall;
+   the 26 item rows are a uniform, dense 15pt; the footer row (Issued
+   by/Vehicle No./Received by) is 21.2pt. Right now every row shares the
+   same tight padding as the BOM sheet's item rows, so the header/footer
+   read just as cramped as the item list instead of visibly taller.
+   Scoped to #bomChallanPrintRoot only — .bom-info-cell/.bom-head-row/
+   .bom-spacer are SHARED with #bomPrintRoot's BOM sheet (see the file
+   comment in bom.js), so their base rules above must stay untouched for
+   that sheet; this only adds extra padding when those same classes
+   appear inside the Challan print root. */
+#bomChallanPrintRoot .bom-info-cell,
+#bomChallanPrintRoot .bom-head-row th{
+  padding:4px 4px;
+  line-height:1.4;
+}
+#bomChallanPrintRoot .bom-challan-footer-row .bom-info-cell{
+  padding:5px 4px;
+  line-height:1.4;
+}
+/* Item rows stay dense/uniform (15pt-equivalent) — tighter than the
+   header/footer rows above. */
+#bomChallanPrintRoot .bom-challan-item-row td{
+  padding:1px 4px;
+  line-height:1.15;
+}
+
+/* Company logo, top-left of each copy's header block, ~257x51px in the
+   source workbook (kept proportional, never stretched). */
+.bom-challan-logo{
+  display:block;
+  width:257px;
+  max-width:100%;
+  height:auto;
+}
 
 /* Dark-theme category divider row used in the ON-SCREEN "Kit Items" preview table */
 .bom-screen-cat td{
@@ -150,6 +207,49 @@
 .bom-check-cell{text-align:center; white-space:nowrap;}
 .bom-field-check{width:18px; height:18px; cursor:pointer; accent-color:var(--blue);}
 
+/* ---------- "Convert into Challan" — entry modal header fields ----------
+   Root cause of the "fields bunched on the left" bug: the header grid is
+   rendered as `<div class="form-grid cols-2">` (see
+   bomRenderChallanEntryModalHtml in bom.js) — it carries the SAME
+   `.form-grid.cols-2` modifier-class pattern the rest of the app uses to
+   force a fixed 2-column layout. A previous attempt only overrode the
+   plain `.form-grid` selector; it never targeted the `.cols-2` modifier
+   that's actually setting the fixed 2-column `grid-template-columns` on
+   this exact element, so that fixed value kept winning and the grid
+   never had a chance to use the modal's full width — hence 2 narrow
+   columns hugging the left edge with a big empty gap to the right, no
+   matter how wide `.modal-box`/`.modal-body` already are (they're
+   already correctly full-width via the shared `.modal-fullscreen`
+   pattern reused from Party Ledger — that part was never the problem).
+   Fix: target the compound `.form-grid.cols-2` selector specifically,
+   scoped to ONLY this modal (so `.cols-2` keeps behaving normally
+   everywhere else in the app, incl. the BOM page's own "New BOM Entry" /
+   "Create New Kit" panels above which intentionally keep a fixed
+   2-column layout), and let it size itself responsively with
+   `auto-fit`/`minmax` instead of a hardcoded column count. `!important`
+   is used deliberately (not as a first resort) because `.cols-2` is a
+   single-purpose modifier class elsewhere in this codebase and is the
+   actual rule that has to be beaten, not merely out-specificity'd;
+   scoping it to `#bomChallanOverlay` keeps the blast radius to just this
+   one modal. auto-fit naturally collapses to fewer columns / a single
+   column as the viewport narrows, matching how every other form in this
+   app already behaves on mobile — no extra breakpoints needed. */
+#bomChallanOverlay .modal-box .form-grid.cols-2{
+  max-width:none !important;
+  grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)) !important;
+}
+/* Belt-and-braces: make sure no ancestor between the grid and the
+   fullscreen modal box is quietly capping the available width either
+   (covers investigation candidate #1, in case any of these ever gains a
+   max-width elsewhere in the app). Harmless no-ops if already full-width. */
+#bomChallanOverlay .modal-box,
+#bomChallanOverlay .modal-body,
+#bomChallanOverlay #bomChallanEntryModalRoot{
+  max-width:none;
+  width:100%;
+  box-sizing:border-box;
+}
+
 @media print{
   /* The `body *{visibility:hidden}` rule below only hides body's
      DESCENDANTS — it never touches `body` itself, so body's own dark
@@ -199,4 +299,30 @@
      measure it any time — only the print-time visibility swap and the
      page setup stay here. */
   @page{size:A4 portrait; margin:19.05mm 6.35mm;}
+
+  /* ---------- Challan print root — same visibility/color-adjust
+     treatment as #bomPrintRoot above, kept as its own separate rule set
+     (never merged into the #bomPrintRoot selectors) so the BOM sheet's
+     rules above are never touched by anything Challan-specific. */
+  #bomChallanPrintRoot, #bomChallanPrintRoot *{visibility:visible;}
+  #bomChallanPrintRoot{position:absolute; left:0; top:0; width:100%;}
+  #bomChallanPrintRoot, #bomChallanPrintRoot *{
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;
+  }
+
+  /* The Challan sheet's page setup is genuinely different from the BOM
+     sheet's (landscape vs portrait, near-zero margins vs the workbook's
+     wide 0.25in/0.75in BOM margins) — it can't reuse the single
+     unnamed `@page` rule above without silently overriding it for BOM
+     prints too (unnamed `@page` rules apply to the whole print job, last
+     one wins). CSS named pages solve this: `page:bomChallanPage` on the
+     Challan root binds ONLY that content to the `@page bomChallanPage`
+     rule below, leaving the unnamed `@page` rule above exactly as BOM
+     printing already relies on. Margins match Page Setup on the source
+     Challan sheet: left ≈0.2in/5mm, right/top/bottom ≈0. Scale is the
+     flat 96% already targeted by computeAndApplyChallanFitZoom's
+     SAFETY_MARGIN_H (same flat-scale approach as the BOM sheet's
+     computeFitZoom, not "fit to page"). */
+  #bomChallanPrintRoot{page:bomChallanPage;}
+  @page bomChallanPage{size:A4 landscape; margin:0mm 0mm 0mm 5mm;}
 }
