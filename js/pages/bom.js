@@ -24,6 +24,25 @@
 // Dispatch" will be wired to it.
 window.PAGES = window.PAGES || {};
 
+// Rewrites the printed page's @page{size/margin} right before
+// window.print() is called. Needed because Chrome's print preview does
+// not reliably honor CSS named pages (`page:bomChallanPage` bound to a
+// named `@page bomChallanPage{}` rule) — the Challan sheet kept printing
+// portrait even with a landscape named page defined for it. Writing a
+// plain (unnamed) @page rule into its own <style> tag, fresh, right
+// before each print, sidesteps that entirely: whichever sheet is about
+// to print gets its exact size/margin set at that exact moment, with no
+// dependency on named-page support at all.
+function bomSetPrintPageSize(cssSizeAndMargin) {
+  let styleEl = document.getElementById('bomDynamicPageStyle');
+  if (!styleEl) {
+    styleEl = document.createElement('style');
+    styleEl.id = 'bomDynamicPageStyle';
+    document.head.appendChild(styleEl);
+  }
+  styleEl.textContent = `@media print { @page { ${cssSizeAndMargin} } }`;
+}
+
 // Standard kit catalogue — keyed by kW so the dropdown is a SINGLE select
 // and everything else (items, models, quantities) auto-fills from here.
 // Only one kit for now (copied 1:1 from the uploaded Excel sample); more
@@ -1605,6 +1624,7 @@ window.PAGES.bom = {
             const challanKit = { kw: modalCapacity ? modalCapacity.value : kw };
             const templateValues = bomCollectChallanTemplateValues();
             challanPrintRoot.innerHTML = bomRenderChallanPrintSheetHtml(challanHeader, challanKit, templateValues);
+            bomSetPrintPageSize('size:A4 landscape; margin:0mm 0mm 0mm 5mm;');
             computeAndApplyChallanFitZoom();
             window.print();
           });
@@ -1752,6 +1772,7 @@ window.PAGES.bom = {
         }
         const kw = bomGetAllKits()[kitSelect.value].kw;
         printRoot.innerHTML = bomRenderPrintSheetHtml({ kw, sections: currentKitState }, getHeaderValues());
+        bomSetPrintPageSize('size:A4 portrait; margin:19.05mm 6.35mm;');
         // Measure and apply the fit-to-one-page zoom BEFORE window.print()
         // is called — this is the actual fix (see the long comment above):
         // don't wait for 'beforeprint', do it right here, synchronously.

@@ -317,7 +317,11 @@
      side margins. The look/sizing of .bom-sheet/.bom-table itself now
      lives outside this @media print block (see above) so bom.js can
      measure it any time — only the print-time visibility swap and the
-     page setup stay here. */
+     page setup stay here. This is only the DEFAULT/fallback page size
+     (used for the BOM sheet) — bom.js overwrites it with a fresh @page
+     rule right before every window.print() call (see bomSetPrintPageSize),
+     so the Challan sheet's landscape page setup below always wins for its
+     own print job regardless of this default. */
   @page{size:A4 portrait; margin:19.05mm 6.35mm;}
 
   /* ---------- Challan print root — same visibility/color-adjust
@@ -332,17 +336,16 @@
 
   /* The Challan sheet's page setup is genuinely different from the BOM
      sheet's (landscape vs portrait, near-zero margins vs the workbook's
-     wide 0.25in/0.75in BOM margins) — it can't reuse the single
-     unnamed `@page` rule above without silently overriding it for BOM
-     prints too (unnamed `@page` rules apply to the whole print job, last
-     one wins). CSS named pages solve this: `page:bomChallanPage` on the
-     Challan root binds ONLY that content to the `@page bomChallanPage`
-     rule below, leaving the unnamed `@page` rule above exactly as BOM
-     printing already relies on. Margins match Page Setup on the source
-     Challan sheet: left ≈0.2in/5mm, right/top/bottom ≈0. Scale is the
+     wide 0.25in/0.75in BOM margins). CSS named pages (`page:` + a named
+     `@page` rule) exist for exactly this, but Chrome's print preview does
+     not reliably honor them — the page kept coming out portrait even
+     though a landscape named page was bound to #bomChallanPrintRoot.
+     Fixed instead in bom.js: right before each window.print() call, a
+     <style> tag's @page rule is rewritten in JS to the correct
+     size/margin for whichever sheet is about to print (portrait for BOM,
+     landscape for Challan — margins match Page Setup on the source
+     Challan sheet: left ≈0.2in/5mm, right/top/bottom ≈0). Scale is the
      flat 96% already targeted by computeAndApplyChallanFitZoom's
      SAFETY_MARGIN_H (same flat-scale approach as the BOM sheet's
      computeFitZoom, not "fit to page"). */
-  #bomChallanPrintRoot{page:bomChallanPage;}
-  @page bomChallanPage{size:A4 landscape; margin:0mm 0mm 0mm 5mm;}
 }
