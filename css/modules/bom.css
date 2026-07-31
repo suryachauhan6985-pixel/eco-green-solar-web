@@ -124,6 +124,8 @@
 #bomChallanPrintRoot .bom-head-row th{
   padding:4px 4px;
   line-height:1.4;
+  white-space:normal;
+  overflow:visible;
 }
 /* Overrides the shared .bom-head-row th purple-bar styling (meant for the
    BOM kit sheet) back to the Challan sheet's real look: white background,
@@ -136,9 +138,6 @@
 }
 /* Customer Copy / Company Copy label row: same white-bg/bold-black look,
    just larger (14pt in the workbook vs. 11pt for the column headers). */
-#bomChallanPrintRoot .bom-challan-copylabel th{
-  font-size:14pt;
-}
 #bomChallanPrintRoot .bom-challan-footer-row .bom-info-cell{
   padding:5px 4px;
   line-height:1.4;
@@ -156,13 +155,85 @@
   border:2px solid #000;
 }
 
-/* Company logo, top-left of each copy's header block, ~257x51px in the
-   source workbook (kept proportional, never stretched). */
+/* ---------- Challan header block (logo + GST/company/address left,
+   Customer Copy/Company Copy + field pairs right) ----------
+   Previously the logo, "Customer Copy"/"Company Copy" label, GST No. and
+   address each printed as their own separate FULL-WIDTH row stacked one
+   under another — nothing like the source workbook, where the logo/GST/
+   company name/address sit together as ONE block on the left (a single
+   merged cell) while the copy label and the Challan No./Date etc. pairs
+   sit to its right, row by row. bomRenderChallanPrintSheetHalfHtml now
+   renders that same rowspan'd left block — these rules style it. */
+.bom-challan-brand-cell{
+  vertical-align:top; text-align:center; padding:4px 6px;
+}
+.bom-challan-gst{
+  font-weight:700; font-size:9.5pt; margin-top:2px; text-align:left;
+}
+.bom-challan-company-name{
+  font-weight:800; font-size:14pt; margin:2px 0; text-align:center;
+}
+.bom-challan-address{
+  font-weight:400; font-size:8.5pt; line-height:1.3; text-align:left;
+}
+/* "Customer Copy"/"Company Copy" — right of the logo block, same row,
+   bold + larger like the workbook (14pt vs. 11pt column headers). */
+.bom-challan-copylabel-cell{
+  font-size:14pt; font-weight:800; text-align:right; vertical-align:middle;
+}
+/* Vehicle No. footer cell now shows the actual value (previously the
+   entered Vehicle No. was never read from the form at all, so this cell
+   only ever showed the bare "Vehicle No.:" label with no value, cramped
+   into a single narrow column). Widened via colspan in the markup and
+   allowed to wrap here instead of the default nowrap+hidden-overflow
+   every other .bom-info-cell uses, so a full vehicle number always
+   prints in full instead of getting clipped. */
+#bomChallanPrintRoot .bom-challan-vehicle-cell{
+  text-align:center; white-space:normal; overflow:visible;
+}
+
+/* Company logo inside the brand cell — sized to fit the left block's
+   ~3-column width (Sr No./Item Name/Model), centered, never stretched. */
 .bom-challan-logo{
   display:block;
-  width:257px;
+  width:170px;
   max-width:100%;
   height:auto;
+  margin:0 auto;
+}
+
+/* Description column was clipping silently: the shared .bom-table td
+   rule below sets white-space:nowrap + overflow:hidden on every cell,
+   which is fine for short label/value header cells but means any
+   Description text longer than the column's fixed width just vanishes
+   instead of wrapping — this is the "description ek chhip raha hai"
+   (one copy's description text disappears) bug. Scoped to the Challan
+   sheet only so the separate BOM print sheet is untouched. */
+#bomChallanPrintRoot .bom-c-remarks{
+  white-space:normal; overflow:visible; word-break:break-word;
+}
+
+/* ---------- Customer Copy / Company Copy side-by-side layout ----------
+   Two fixes together: (1) a real dashed tear-line between the two
+   copies — previously just a plain 16px CSS `gap` with nothing to mark
+   it, so there was no visible perforation guide; (2) equal padding on
+   BOTH sides of that line, so the gap reads as centered/symmetric
+   instead of one copy sitting flush against the divider while the other
+   has visible breathing room (the "margin ek side hai ek side nahi"
+   complaint). */
+.bom-challan-sheet{
+  width:1000px; margin:0 auto; background:#ffffff;
+  display:flex; justify-content:center; align-items:flex-start;
+}
+.bom-challan-half{
+  width:480px; max-width:100%; flex:0 0 auto;
+}
+.bom-challan-half:first-child{
+  padding-right:20px;
+  border-right:1.5px dashed #000;
+}
+.bom-challan-half:last-child{
+  padding-left:20px;
 }
 
 /* Dark-theme category divider row used in the ON-SCREEN "Kit Items" preview table */

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-31T07:00:14.754Z",
+  "generatedAt": "2026-07-31T07:33:05.040Z",
   "files": {
     "index.html": {
       "hash": "4fab371f7fe74c0d6a4a048ea2516e112c66fe1c",
@@ -32,9 +32,9 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/bom.js": {
-      "hash": "092f7bdc69bf939bd12049234e32fa1831e3a1be",
-      "size": 92653,
-      "mtimeMs": 1785480508501.3274
+      "hash": "31364883b967422a07816ad1178b20ad8869ed7b",
+      "size": 95764,
+      "mtimeMs": 1785482998085.5415
     },
     "js/pages/dashboard.js": {
       "hash": "44cc77fecac36b223d21b6e973819b7c606edba1",
@@ -132,9 +132,9 @@
       "mtimeMs": 1785235534621.1167
     },
     "css/modules/bom.css": {
-      "hash": "77ebdca11af20243621be9f31a241042f76469aa",
-      "size": 18200,
-      "mtimeMs": 1785480510868.191
+      "hash": "c889fc7c4039132afb8f2e478009137410957a96",
+      "size": 19501,
+      "mtimeMs": 1785483000207.896
     },
     "css/modules/components.css": {
       "hash": "f28a2816be537a1efb80fe34738941a6dd2f72fd",

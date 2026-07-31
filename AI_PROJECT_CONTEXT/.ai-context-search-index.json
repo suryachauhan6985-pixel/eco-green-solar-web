@@ -325,6 +325,12 @@
   },
   {
     "type": "function",
+    "label": "bomSetPrintPageSize",
+    "file": "js/pages/bom.js",
+    "detail": "(cssSizeAndMargin)"
+  },
+  {
+    "type": "function",
     "label": "bomLoadCustomKits",
     "file": "js/pages/bom.js",
     "detail": "()"
