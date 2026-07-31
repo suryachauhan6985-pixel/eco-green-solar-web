@@ -443,12 +443,24 @@ const BOM_CHALLAN_TEMPLATE = [
 // above (Sr/Name/Model/Unit fixed, Qty a blank editable number per
 // line/sub-row) — NOT from currentKitState. The Excel-exact look lives
 // ONLY in bomRenderChallanPrintSheetHtml() below (print-only, part B).
+// This layout mirrors the Excel Challan sheet's real column order: Sr No.
+// | Item Name | Model | Size (only used by GI Pipe's 4 sub-rows) | Qty. |
+// Unit | Description — as a fixed <colgroup> so the Qty. INPUT BOX itself
+// sits in the same column/x-position on every row (regular items and GI
+// Pipe size sub-rows alike), instead of the size label pushing that row's
+// box sideways out of line with the others. Description is a separate,
+// per-item free-text input (one per item, spanning the item's sub-rows
+// via rowspan) — the Excel sheet's "Description" column is blank for the
+// user to fill by hand, same as Qty.
 function bomRenderChallanTemplateItemsHtml(template) {
+  const qtyInput = (sr, sizeLabel) => {
+    const sizeAttr = sizeLabel ? ` data-challan-tpl-size="${bomEscAttr(sizeLabel)}"` : '';
+    return `<input type="number" min="0" class="bom-field-input bom-challan-qty-input" data-challan-tpl-sr="${sr}"${sizeAttr}>`;
+  };
+  const descInput = (sr) =>
+    `<input type="text" class="bom-field-input" data-challan-tpl-desc="${sr}" placeholder="Description">`;
+
   const rows = template.map((it) => {
-    const qtyInputHtml = (sizeLabel) => {
-      const sizeAttr = sizeLabel ? ` data-challan-tpl-size="${bomEscAttr(sizeLabel)}"` : '';
-      return `<input type="number" min="0" class="bom-field-input" data-challan-tpl-sr="${it.sr}"${sizeAttr} style="width:70px; display:inline-block;">`;
-    };
     if (it.sizes && it.sizes.length) {
       return it.sizes.map((size, i) => {
         const leadCells = i === 0
@@ -456,11 +468,14 @@ function bomRenderChallanTemplateItemsHtml(template) {
              <td rowspan="${it.sizes.length}">${bomEsc(it.name)}</td>
              <td rowspan="${it.sizes.length}">${bomEsc(it.model || '')}</td>`
           : '';
+        const descCell = i === 0 ? `<td rowspan="${it.sizes.length}">${descInput(it.sr)}</td>` : '';
         return `
       <tr>
         ${leadCells}
-        <td>${bomEsc(size)}: ${qtyInputHtml(size)}</td>
+        <td class="bom-challan-size-cell">${bomEsc(size)}</td>
+        <td>${qtyInput(it.sr, size)}</td>
         <td>${bomEsc(it.unit)}</td>
+        ${descCell}
       </tr>`;
       }).join('');
     }
@@ -469,15 +484,21 @@ function bomRenderChallanTemplateItemsHtml(template) {
         <td>${it.sr}</td>
         <td>${bomEsc(it.name)}</td>
         <td>${bomEsc(it.model || '')}</td>
-        <td>${qtyInputHtml()}</td>
+        <td class="bom-challan-size-cell">&mdash;</td>
+        <td>${qtyInput(it.sr)}</td>
         <td>${bomEsc(it.unit)}</td>
+        <td>${descInput(it.sr)}</td>
       </tr>`;
   }).join('');
 
   return `
     <div class="table-wrap">
-      <table class="bom-items-form-table">
-        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Qty.</th><th>Unit</th></tr></thead>
+      <table class="bom-items-form-table bom-challan-table">
+        <colgroup>
+          <col style="width:6%;"><col style="width:20%;"><col style="width:14%;">
+          <col style="width:12%;"><col style="width:12%;"><col style="width:8%;"><col style="width:28%;">
+        </colgroup>
+        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Size</th><th>Qty.</th><th>Unit</th><th>Description</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
