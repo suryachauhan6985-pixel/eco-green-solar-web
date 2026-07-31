@@ -656,6 +656,24 @@ window.PAGES.bom = {
       deduct karne wala workflow, tumhara pura process samjhaane ke baad wire kiya jayega.
     </p>
 
+    <!-- "Convert into Challan" — its OWN fullscreen modal (NOT the shared
+         window.openModal/#modalOverlay small dialog, which is capped at
+         max-width:480px in css/modules/components.css — far too narrow
+         for this form + item table). Reuses the exact same
+         .modal-overlay.modal-fullscreen pattern already used by Party
+         Ledger's "Create/Edit Ledger" and "Ledger Account Statement"
+         dialogs (css/modules/party-ledger.css) — genuinely maximized on
+         desktop, fully responsive on mobile, no new CSS needed at all. -->
+    <div class="modal-overlay modal-fullscreen" id="bomChallanOverlay">
+      <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-head">
+          <h3><i class="fa-solid fa-file-invoice"></i> Convert into Challan</h3>
+          <button class="modal-close" id="bomChallanCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" id="bomChallanModalBody"></div>
+      </div>
+    </div>
+
     <!-- PRINT-ONLY: exact Excel replica. Hidden on screen (see .bom-print-only
          in style.css); (re)built from the form fields above right before
          printing, then never shown on-screen at all — this is what fixes
@@ -681,6 +699,31 @@ window.PAGES.bom = {
     const btnPrint = $('bomBtnPrint');
     const printRoot = $('bomPrintRoot');
     const challanPrintRoot = $('bomChallanPrintRoot');
+    const challanOverlay = $('bomChallanOverlay');
+    const challanModalBody = $('bomChallanModalBody');
+    const challanCloseBtn = $('bomChallanCloseBtn');
+
+    // Open/close for the dedicated Challan modal — mirrors the
+    // lockPageScroll/unlockPageScroll + .show/.no-scroll pattern Party
+    // Ledger's own modal-fullscreen dialogs already use, so this behaves
+    // identically to those (background locked while open, unlocked on close).
+    function openChallanModal(bodyHtml) {
+      if (!challanOverlay || !challanModalBody) return;
+      challanModalBody.innerHTML = bodyHtml;
+      challanOverlay.classList.add('show');
+      document.body.classList.add('no-scroll');
+    }
+    function closeChallanModal() {
+      if (!challanOverlay) return;
+      challanOverlay.classList.remove('show');
+      document.body.classList.remove('no-scroll');
+    }
+    if (challanCloseBtn) challanCloseBtn.addEventListener('click', closeChallanModal);
+    if (challanOverlay) {
+      challanOverlay.addEventListener('click', (e) => {
+        if (e.target === challanOverlay) closeChallanModal(); // backdrop click only
+      });
+    }
 
     // Row/section add-delete (Add Item, Remove Item, Add Section, Remove
     // Section) is an Admin/SuperAdmin-only action — a plain User can still
@@ -1414,7 +1457,7 @@ window.PAGES.bom = {
         const kit = { kw, sections: currentKitState };
         const header = getHeaderValues();
 
-        window.openModal('Convert into Challan', bomRenderChallanEntryModalHtml(header, kit));
+        openChallanModal(bomRenderChallanEntryModalHtml(header, kit));
 
         const modalNo = document.getElementById('bomChallanModalNo');
         const modalDate = document.getElementById('bomChallanModalDate');
