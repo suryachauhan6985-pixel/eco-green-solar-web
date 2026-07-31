@@ -439,6 +439,7 @@ window.PAGES.bom = {
       <div class="actions-row">
         <button class="btn btn-ghost" type="button" id="bomBtnPrint"><i class="fa-solid fa-print"></i> Print BOM (Excel format, 1 page)</button>
         <button class="btn btn-blue" type="button" id="bomBtnVerify" disabled><i class="fa-solid fa-check-double"></i> Verify BOM</button>
+        <button class="btn btn-green" type="button" id="bomBtnChallan" disabled><i class="fa-solid fa-file-invoice"></i> Convert into Challan</button>
         <button class="btn btn-green" type="button" id="bomBtnDispatch" disabled><i class="fa-solid fa-truck"></i> Create Dispatch</button>
         <button type="button" class="btn btn-ghost" id="bomBtnNewKit" title="Create a new BOM Kit / Template"><i class="fa-solid fa-plus"></i> New Kit</button>
       </div>
@@ -633,11 +634,13 @@ window.PAGES.bom = {
     // what's on screen.
     const btnVerify = $('bomBtnVerify');
     const btnDispatch = $('bomBtnDispatch');
+    const btnChallan = $('bomBtnChallan');
     const verifyStatus = $('bomVerifyStatus');
     let bomVerified = false;
     function setVerified(isVerified) {
       bomVerified = isVerified;
       if (btnDispatch) btnDispatch.disabled = !isVerified;
+      if (btnChallan) btnChallan.disabled = !isVerified;
       if (verifyStatus) {
         verifyStatus.innerHTML = isVerified
           ? '<i class="fa-solid fa-circle-check" style="color:var(--green);"></i> Verified — ready for dispatch.'
@@ -1207,6 +1210,13 @@ window.PAGES.bom = {
           setVerified(true);
           if (window.showToast) window.showToast('BOM verified — Create Dispatch is now unlocked.');
         }
+      });
+    }
+
+    if (btnChallan) {
+      btnChallan.addEventListener('click', () => {
+        if (!bomVerified) return; // belt-and-braces — button is disabled until verified anyway
+        window.openModal('Convert into Challan', '<p>Coming soon.</p>');
       });
     }
 
