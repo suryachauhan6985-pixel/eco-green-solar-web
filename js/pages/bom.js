@@ -407,20 +407,72 @@ function bomRenderPrintSheetHtml(kit, header) {
   `;
 }
 
-// "Convert into Challan" modal — recreates the Excel Challan sheet's
-// mirrored two-copy layout (Customer Copy / Company Copy, same data on
-// both, exactly like columns A–H mirrored into J–P in the workbook).
-// Item rows come straight from currentKitState (the same array already
-// driving the on-screen Kit Items table and the BOM print sheet) so the
-// item list is never re-typed by hand here. Challan No./Date are left
-// blank, editable inputs — everything else on the sheet is static text
-// pulled from the live form fields (or the kit's kW for Capacity). This
-// is STAGE 1: layout only — no Print/Finalize button yet, and these
-// inputs aren't wired back to bomChallanNo/bomChallanDate on the main
-// form (that linking is a later step). Reuses the existing print-sheet
-// classes (bom-table/bom-info-cell/bom-spacer/bom-head-row/bom-cat-row)
-// from css/modules/bom.css rather than inventing new styling.
-function bomRenderChallanHalfHtml(kit, header, copyLabel, side) {
+// ---------- "Convert into Challan" — ENTRY MODAL (software-style, NOT the Excel look) ----------
+// This is the on-screen counterpart to the main BOM entry form (#1 in the
+// file-level split described at the top): same .form-grid/.field pattern,
+// same dark theme, plain <input>s — no white sheet, no purple bars. Reads
+// currentKitState for the item list (never re-typed by hand) and shows it
+// in the same visual style as the existing on-screen "Kit Items" table
+// (.table-wrap/.bom-items-form-table/.bom-screen-cat), just read-only here
+// since this view is only for reviewing + setting Challan No./Date/City
+// before printing. The Excel-exact look lives ONLY in
+// bomRenderChallanPrintSheetHtml() below (print-only, part B).
+function bomRenderChallanItemsPreviewHtml(sections) {
+  const rows = sections.map((sec) => {
+    const catRow = `<tr class="bom-screen-cat"><td colspan="5">${bomEsc(sec.title)}</td></tr>`;
+    const itemRows = sec.items.map((it) => `
+      <tr>
+        <td>${it.sr}</td>
+        <td>${bomEsc(it.name)}</td>
+        <td>${bomEsc(it.model || '')}</td>
+        <td>${bomEsc(it.qty)}</td>
+        <td>${bomEsc(it.remarks || '')}</td>
+      </tr>`).join('');
+    return catRow + itemRows;
+  }).join('');
+
+  return `
+    <div class="table-wrap">
+      <table class="bom-items-form-table">
+        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Qty.</th><th>Description</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function bomRenderChallanEntryModalHtml(header, kit) {
+  return `
+    <div class="form-grid cols-2">
+      <div class="field"><label>Challan No.</label><input type="text" id="bomChallanModalNo" placeholder="Challan no."></div>
+      <div class="field"><label>Challan Date</label><input type="date" id="bomChallanModalDate"></div>
+      <div class="field"><label>Order No.</label><input type="text" id="bomChallanModalOrderNo" value="${bomEscAttr(header.orderNo)}" placeholder="Order no."></div>
+      <div class="field"><label>Capacity (kW)</label><input type="text" id="bomChallanModalCapacity" value="${bomEscAttr(kit.kw)}"></div>
+      <div class="field"><label>Name</label><input type="text" id="bomChallanModalName" value="${bomEscAttr(header.customerName)}" placeholder="Customer / Party"></div>
+      <div class="field"><label>City</label><input type="text" id="bomChallanModalCity" placeholder="City"></div>
+    </div>
+    <h4 style="margin:16px 0 8px;"><i class="fa-solid fa-list"></i> Items <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(from the selected BOM kit)</span></h4>
+    ${bomRenderChallanItemsPreviewHtml(kit.sections)}
+    <div class="actions-row" style="margin-top:14px;">
+      <button type="button" class="btn btn-blue" id="bomChallanPrintBtn"><i class="fa-solid fa-print"></i> Print Challan</button>
+    </div>
+  `;
+}
+
+// ---------- "Convert into Challan" — PRINT-ONLY sheet (exact Excel replica) ----------
+// Counterpart #2 in the file-level split: built + dropped into
+// #bomChallanPrintRoot ONLY at the moment "Print Challan" is clicked (see
+// bomChallanPrintBtn's handler in init()), exactly mirroring how
+// bomRenderPrintSheetHtml() is only built into #bomPrintRoot when "Print
+// BOM" is clicked. Never rendered inside the entry modal above. Recreates
+// the workbook's Challan sheet: Customer Copy / Company Copy mirrored side
+// by side (columns A–H mirrored into J–P in the original), same GST/address/
+// header fields, Sr No./Item Name/Model/Qty./Description columns, and the
+// Issued by / Vehicle No. / Received by footer — reusing the same
+// bom-table/bom-info-cell/bom-spacer/bom-head-row/bom-cat-row classes
+// #bomPrintRoot's sheet uses, so this is the ONLY place that Excel look
+// belongs to.
+function bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, side) {
   const rows = kit.sections.map((sec) => {
     const catRow = `<tr class="bom-cat-row"><td colspan="5">${bomEsc(sec.title)}</td></tr>`;
     const itemRows = sec.items.map((it) => `
@@ -433,10 +485,6 @@ function bomRenderChallanHalfHtml(kit, header, copyLabel, side) {
       </tr>`).join('');
     return catRow + itemRows;
   }).join('');
-
-  const noId = `bomChallanNo_${side}`;
-  const dateId = `bomChallanDate_${side}`;
-  const inputStyle = 'width:64%; border:1px solid #999; background:#fff; color:#000; font-size:10pt; padding:1px 4px; font-family:inherit;';
 
   return `
     <div style="width:480px; max-width:100%; flex:0 0 auto;">
@@ -454,8 +502,8 @@ function bomRenderChallanHalfHtml(kit, header, copyLabel, side) {
           </td>
         </tr>
         <tr>
-          <td colspan="3" class="bom-info-cell">Challan No.: <input type="text" id="${noId}" data-bom-challan-side="${side}" data-bom-challan-field="no" style="${inputStyle}"></td>
-          <td colspan="2" class="bom-info-cell">Ch. Date: <input type="date" id="${dateId}" data-bom-challan-side="${side}" data-bom-challan-field="date" style="${inputStyle}"></td>
+          <td colspan="3" class="bom-info-cell">Challan No.: ${bomEsc(header.challanNo)}</td>
+          <td colspan="2" class="bom-info-cell">Ch. Date: ${bomEsc(header.challanDate)}</td>
         </tr>
         <tr>
           <td colspan="3" class="bom-info-cell">Order No.: ${bomEsc(header.orderNo)}</td>
@@ -463,7 +511,7 @@ function bomRenderChallanHalfHtml(kit, header, copyLabel, side) {
         </tr>
         <tr>
           <td colspan="3" class="bom-info-cell">Name: ${bomEsc(header.customerName)}</td>
-          <td colspan="2" class="bom-info-cell">City:</td>
+          <td colspan="2" class="bom-info-cell">City: ${bomEsc(header.city)}</td>
         </tr>
         <tr><td colspan="5" class="bom-spacer"></td></tr>
         <tr class="bom-head-row">
@@ -485,11 +533,11 @@ function bomRenderChallanHalfHtml(kit, header, copyLabel, side) {
   `;
 }
 
-function bomRenderChallanHtml(kit, header) {
+function bomRenderChallanPrintSheetHtml(header, kit) {
   return `
-    <div style="display:flex; gap:16px; overflow-x:auto; padding:2px 0;">
-      ${bomRenderChallanHalfHtml(kit, header, 'Customer Copy', 'cust')}
-      ${bomRenderChallanHalfHtml(kit, header, 'Company Copy', 'comp')}
+    <div class="bom-sheet" id="bomChallanSheet" style="width:1000px; display:flex; gap:16px;">
+      ${bomRenderChallanPrintSheetHalfHtml(header, kit, 'Customer Copy', 'cust')}
+      ${bomRenderChallanPrintSheetHalfHtml(header, kit, 'Company Copy', 'comp')}
     </div>
   `;
 }
@@ -569,6 +617,14 @@ window.PAGES.bom = {
          layout breaking, since this Excel-shaped markup no longer renders
          on screen or on phones at all. -->
     <div class="bom-print-only" id="bomPrintRoot"></div>
+
+    <!-- PRINT-ONLY: exact Excel replica of the CHALLAN sheet (Customer Copy /
+         Company Copy mirrored side by side). Same hidden-on-screen mechanism
+         as #bomPrintRoot above (.bom-print-only) — only (re)built + shown for
+         the instant "Print Challan" (inside the Convert into Challan modal)
+         runs window.print(). Kept completely separate from #bomPrintRoot so
+         the existing BOM print is never touched by this. -->
+    <div class="bom-print-only" id="bomChallanPrintRoot"></div>
   `,
 
   async init() {
@@ -578,6 +634,7 @@ window.PAGES.bom = {
     const kitItemsPanel = $('bomKitItemsPanel');
     const btnPrint = $('bomBtnPrint');
     const printRoot = $('bomPrintRoot');
+    const challanPrintRoot = $('bomChallanPrintRoot');
 
     // Row/section add-delete (Add Item, Remove Item, Add Section, Remove
     // Section) is an Admin/SuperAdmin-only action — a plain User can still
@@ -1308,22 +1365,37 @@ window.PAGES.bom = {
           return;
         }
         const kw = bomGetAllKits()[kitSelect.value] ? bomGetAllKits()[kitSelect.value].kw : '';
-        window.openModal(
-          'Convert into Challan',
-          bomRenderChallanHtml({ kw, sections: currentKitState }, getHeaderValues()),
-        );
+        const kit = { kw, sections: currentKitState };
+        const header = getHeaderValues();
 
-        // Customer Copy / Company Copy show the "same data on both", so
-        // typing a Challan No./Date on one side mirrors it onto the other
-        // — purely a display convenience in this modal; nothing here is
-        // linked back to bomChallanNo/bomChallanDate on the main form yet.
-        ['no', 'date'].forEach((field) => {
-          const custEl = document.getElementById(`bomChallan${field === 'no' ? 'No' : 'Date'}_cust`);
-          const compEl = document.getElementById(`bomChallan${field === 'no' ? 'No' : 'Date'}_comp`);
-          if (!custEl || !compEl) return;
-          custEl.addEventListener('input', () => { compEl.value = custEl.value; });
-          compEl.addEventListener('input', () => { custEl.value = compEl.value; });
-        });
+        window.openModal('Convert into Challan', bomRenderChallanEntryModalHtml(header, kit));
+
+        const modalNo = document.getElementById('bomChallanModalNo');
+        const modalDate = document.getElementById('bomChallanModalDate');
+        const modalOrderNo = document.getElementById('bomChallanModalOrderNo');
+        const modalCapacity = document.getElementById('bomChallanModalCapacity');
+        const modalName = document.getElementById('bomChallanModalName');
+        const modalCity = document.getElementById('bomChallanModalCity');
+        const printBtn = document.getElementById('bomChallanPrintBtn');
+
+        if (printBtn) {
+          printBtn.addEventListener('click', () => {
+            // Build the print-only Excel-replica sheet from THIS modal's
+            // fields (not the main BOM form) — this is where Challan
+            // No./Date/City actually get used, right before printing.
+            const challanHeader = {
+              challanNo: modalNo ? modalNo.value : '',
+              challanDate: modalDate ? modalDate.value : '',
+              orderNo: modalOrderNo ? modalOrderNo.value : '',
+              customerName: modalName ? modalName.value : '',
+              city: modalCity ? modalCity.value : '',
+            };
+            const challanKit = { kw: modalCapacity ? modalCapacity.value : kw, sections: currentKitState };
+            challanPrintRoot.innerHTML = bomRenderChallanPrintSheetHtml(challanHeader, challanKit);
+            computeAndApplyChallanFitZoom();
+            window.print();
+          });
+        }
       });
     }
 
@@ -1474,5 +1546,55 @@ window.PAGES.bom = {
         window.print();
       });
     }
+
+    // ---------- Challan print: same fit-to-one-page zoom approach, kept
+    // completely separate from computeAndApplyFitZoom/#bomPrintRoot above so
+    // the existing BOM print is never touched by this. Measures
+    // #bomChallanSheet (both mirrored copies together) exactly the way
+    // computeAndApplyFitZoom measures #bomSheet, then scales it to fit one
+    // A4 page the same way.
+    function computeAndApplyChallanFitZoom() {
+      const sheet = $('bomChallanSheet');
+      if (!sheet || !challanPrintRoot) return;
+      sheet.style.transform = '';
+      sheet.style.width = '1000px'; // arbitrary baseline just to measure natural height
+      sheet.style.zoom = 1; // measure the sheet's true, un-scaled height first
+      challanPrintRoot.classList.add('bom-measuring');
+      const naturalHeightPx = sheet.getBoundingClientRect().height;
+      challanPrintRoot.classList.remove('bom-measuring');
+      if (!naturalHeightPx) return; // nothing rendered yet — nothing to scale
+
+      const PX_PER_MM = 96 / 25.4;
+      // Same @page rule as the BOM sheet: size:A4 portrait; margin:19.05mm 6.35mm.
+      const A4_HEIGHT_MM = 297;
+      const MARGIN_TB_MM = 19.05;
+      const A4_WIDTH_MM = 210;
+      const MARGIN_LR_MM = 6.35;
+
+      const SAFETY_MARGIN_H = 0.96;
+      const usableHeightPx = (A4_HEIGHT_MM - MARGIN_TB_MM * 2) * PX_PER_MM * SAFETY_MARGIN_H;
+      const vScale = Math.min(1, usableHeightPx / naturalHeightPx);
+
+      const SAFETY_MARGIN_W = 0.99;
+      const usableWidthPx = (A4_WIDTH_MM - MARGIN_LR_MM * 2) * PX_PER_MM * SAFETY_MARGIN_W;
+      const baseWidthPx = usableWidthPx / vScale;
+
+      const supportsZoom = window.CSS && CSS.supports && CSS.supports('zoom', '1');
+      if (supportsZoom) {
+        sheet.style.width = baseWidthPx + 'px';
+        sheet.style.zoom = vScale;
+      } else {
+        sheet.style.zoom = '';
+        sheet.style.width = '1000px';
+        sheet.style.transform = `scale(${usableWidthPx / 1000}, ${vScale})`;
+      }
+    }
+
+    // Defensive backup mirroring the one above, for the Challan sheet.
+    if (window.__bomChallanBeforePrintHandler) {
+      window.removeEventListener('beforeprint', window.__bomChallanBeforePrintHandler);
+    }
+    window.__bomChallanBeforePrintHandler = computeAndApplyChallanFitZoom;
+    window.addEventListener('beforeprint', computeAndApplyChallanFitZoom);
   },
 };
