@@ -741,7 +741,7 @@ function bomRenderChallanFooterRowsHtml(header) {
   return `
     <tr class="bom-challan-footer-row1">
       <td class="bom-challan-issuedby-cell" colspan="2" rowspan="2">Issued by</td>
-      <td class="bom-challan-vehicle-cell" colspan="4">Vehicle No.: ${bomEsc(header.vehicleNo)}</td>
+      <td class="bom-challan-vehicle-cell" colspan="4">${bomEsc(header.vehicleNo)}</td>
       <td class="bom-challan-receivedby-cell" rowspan="2">Received by</td>
     </tr>
     <tr class="bom-challan-footer-row2">
@@ -1735,7 +1735,17 @@ window.PAGES.bom = {
             // no runtime measuring/zoom (§15): the 96% scale and every
             // column/row size are static CSS values (bom.css), since this
             // layout is fixed-height by design (always exactly 28 body rows).
-            bomSetPrintPageSize('size:A4 landscape; margin:0 0 0 5mm;');
+            // NOTE: intentionally NOT 'size:A4 landscape' — several printer
+            // drivers (this project's Canon MF240 included) only read the
+            // page's raw width/height and ignore the 'landscape' orientation
+            // keyword entirely; Chrome's own print PREVIEW pane still
+            // renders it correctly either way (which is why it looked fine
+            // in-browser), but the physical print job comes out fed as a
+            // portrait sheet with the landscape content rotated 90° on it.
+            // Swapping the numbers directly (297mm wide x 210mm tall) makes
+            // the page itself physically landscape-shaped, which every
+            // driver rotates correctly regardless of keyword support.
+            bomSetPrintPageSize('size:297mm 210mm; margin:0 0 0 5mm;');
             window.print();
           });
         }
