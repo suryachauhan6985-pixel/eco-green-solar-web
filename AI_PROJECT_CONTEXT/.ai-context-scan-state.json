@@ -1,10 +1,15 @@
 {
-  "generatedAt": "2026-08-02T08:52:02.754Z",
+  "generatedAt": "2026-08-02T10:44:30.056Z",
   "files": {
     ".env": {
-      "hash": "8f04665bad5ebf4a555591da22341b0cfb073436",
-      "size": 1255,
-      "mtimeMs": 1785652504089.4954
+      "hash": "fbf93500e5313e2f01018668de228b174a039bbf",
+      "size": 1336,
+      "mtimeMs": 1785664327496.5693
+    },
+    "Dockerfile": {
+      "hash": "e50113c8b16577deabf444504a3cf123254b9d49",
+      "size": 916,
+      "mtimeMs": 1785663554093.7988
     },
     "index.html": {
       "hash": "4fab371f7fe74c0d6a4a048ea2516e112c66fe1c",
@@ -37,9 +42,9 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/bom.js": {
-      "hash": "d13d0b61059b047b08a521f2e9ab7fdc30f9552e",
-      "size": 99923,
-      "mtimeMs": 1785654778722.3582
+      "hash": "d4c4b2072ee74638d85cdf71dfefe89d6b4f21ab",
+      "size": 99932,
+      "mtimeMs": 1785663551241.254
     },
     "js/pages/dashboard.js": {
       "hash": "44cc77fecac36b223d21b6e973819b7c606edba1",
@@ -137,9 +142,9 @@
       "mtimeMs": 1785235534621.1167
     },
     "css/modules/bom.css": {
-      "hash": "aa7a78cfd6fdc2c69f46c03511f1e3258f2405f1",
-      "size": 24332,
-      "mtimeMs": 1785654776348.609
+      "hash": "9095714ae64509588c7ccca9b8735735e7363fc3",
+      "size": 25122,
+      "mtimeMs": 1785661270810.3467
     },
     "css/modules/components.css": {
       "hash": "f28a2816be537a1efb80fe34738941a6dd2f72fd",
@@ -177,9 +182,9 @@
       "mtimeMs": 1784981514487.0725
     },
     "api/server.js": {
-      "hash": "fa88f7afe80d5cefee6a91958c465d646030441e",
-      "size": 3297,
-      "mtimeMs": 1785651528860.438
+      "hash": "76910409ca3c0e2f82dde59e80e54fd20ce716ce",
+      "size": 3390,
+      "mtimeMs": 1785663549244.9304
     },
     "api/utils/route.js": {
       "hash": "a3aa995b6d3f373aac34725907b963ada59eb150",
@@ -190,6 +195,11 @@
       "hash": "ca34cde5bc638166c142a6b58d766419fd70112a",
       "size": 529,
       "mtimeMs": 1785235534567.7344
+    },
+    "api/services/challanPdf.js": {
+      "hash": "ec8844db7cd459056e01672f0e7d991324164384",
+      "size": 5942,
+      "mtimeMs": 1785663540295.2422
     },
     "api/services/email.js": {
       "hash": "b019522dfe72d319f6dffb7c9115576eca5cae59",
@@ -220,6 +230,11 @@
       "hash": "3905a9bcf09f5bde292cf5b0adb6774af7389a3a",
       "size": 6895,
       "mtimeMs": 1785235629252.7383
+    },
+    "api/routes/challan.js": {
+      "hash": "7f61dc01c5f0734754e85722cddf81925a3658f8",
+      "size": 2949,
+      "mtimeMs": 1785663537392.1147
     },
     "api/routes/health.js": {
       "hash": "7463337414b429c191095dfd1b8cbea450c9ba46",
@@ -277,9 +292,9 @@
       "mtimeMs": 1785235534568.3574
     },
     "api/db/schema.js": {
-      "hash": "2d72d60f07a3685a741bb1d4e73253a156a53a8b",
-      "size": 3872,
-      "mtimeMs": 1785241289950.9956
+      "hash": "216855ab10a6ba544cc22852aed08e23fe222e00",
+      "size": 4673,
+      "mtimeMs": 1785663679111.4148
     },
     "api/config/cors.js": {
       "hash": "cdaa33c1bcc263ca91547bb202a000fc912f12ee",

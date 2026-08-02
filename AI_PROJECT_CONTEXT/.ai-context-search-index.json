@@ -1,6 +1,12 @@
 [
   {
     "type": "file",
+    "label": "Dockerfile",
+    "file": "Dockerfile",
+    "detail": "Supporting source file."
+  },
+  {
+    "type": "file",
     "label": "package.json",
     "file": "package.json",
     "detail": "Supporting source file."
@@ -2755,6 +2761,30 @@
   },
   {
     "type": "file",
+    "label": "api/services/challanPdf.js",
+    "file": "api/services/challanPdf.js",
+    "detail": "Implements business logic as a service layer."
+  },
+  {
+    "type": "function",
+    "label": "runSoffice",
+    "file": "api/services/challanPdf.js",
+    "detail": "(xlsxPath, outDir)"
+  },
+  {
+    "type": "function",
+    "label": "fillTemplateAndConvertToPdf",
+    "file": "api/services/challanPdf.js",
+    "detail": "(record)"
+  },
+  {
+    "type": "function",
+    "label": "cleanup",
+    "file": "api/services/challanPdf.js",
+    "detail": "()"
+  },
+  {
+    "type": "file",
     "label": "api/services/email.js",
     "file": "api/services/email.js",
     "detail": "Implements business logic as a service layer."
@@ -2920,6 +2950,18 @@
     "label": "checkAutoBackup",
     "file": "api/routes/backup.js",
     "detail": "()"
+  },
+  {
+    "type": "file",
+    "label": "api/routes/challan.js",
+    "file": "api/routes/challan.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerChallanRoutes",
+    "file": "api/routes/challan.js",
+    "detail": "(app, deps)"
   },
   {
     "type": "file",
@@ -3099,7 +3141,7 @@
     "type": "file",
     "label": "api/db/schema.js",
     "file": "api/db/schema.js",
-    "detail": "Defines 8 function(s) implementing supporting logic."
+    "detail": "Defines 9 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -3146,6 +3188,12 @@
   {
     "type": "function",
     "label": "ensureScanSheetSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureBomChallanSchema",
     "file": "api/db/schema.js",
     "detail": "(pool)"
   },
@@ -3255,6 +3303,30 @@
     "type": "route",
     "label": "GET /api/backup/status",
     "file": "api/routes/backup.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/challan",
+    "file": "api/routes/challan.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/challan",
+    "file": "api/routes/challan.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/challan/:id",
+    "file": "api/routes/challan.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/challan/:id/pdf",
+    "file": "api/routes/challan.js",
     "detail": "public"
   },
   {
@@ -3692,6 +3764,12 @@
   {
     "type": "table",
     "label": "scan_sheet_entries",
+    "file": "api/db/schema.js",
+    "detail": "SQL table"
+  },
+  {
+    "type": "table",
+    "label": "bom_challans",
     "file": "api/db/schema.js",
     "detail": "SQL table"
   }

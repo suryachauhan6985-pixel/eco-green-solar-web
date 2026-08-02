@@ -1,11 +1,12 @@
 # Changelog (Since Last Scan)
 
-Scan performed: 2026-08-02T08:52:02.748Z
+Scan performed: 2026-08-02T10:44:30.050Z
 First scan for this project: Yes
 
-## Added Files (57)
+## Added Files (60)
 
 - .env
+- Dockerfile
 - index.html
 - manifest.webmanifest
 - package.json
@@ -43,12 +44,14 @@ First scan for this project: Yes
 - api/server.js
 - api/utils/route.js
 - api/utils/time.js
+- api/services/challanPdf.js
 - api/services/email.js
 - api/services/passwords.js
 - api/services/stockHelpers.js
 - api/routes/attachments.js
 - api/routes/auth.js
 - api/routes/backup.js
+- api/routes/challan.js
 - api/routes/health.js
 - api/routes/ledgers.js
 - api/routes/masters.js

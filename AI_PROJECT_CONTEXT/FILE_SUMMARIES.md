@@ -2,6 +2,24 @@
 
 Deep analysis of every important source file.
 
+## `Dockerfile`
+
+- **Purpose:** Supporting source file.
+- **Lines of code:** 30
+- **Complexity:** Low (heuristic score: 2)
+- **Imports:** None
+- **Exports:** None
+- **Functions:** None
+- **Classes:** None
+- **API endpoints:** None
+- **Database usage:** Raw SQL detected (1 statement keyword: UPDATE)
+- **Environment variables used:** None
+- **Potential improvements:**
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+  - No functions or classes detected — file may be mostly configuration or could benefit from clearer structure.
+
+---
+
 ## `package.json`
 
 - **Purpose:** Supporting source file.
@@ -73,8 +91,8 @@ Deep analysis of every important source file.
 ## `js/pages/bom.js`
 
 - **Purpose:** Defines 1 class(es) implementing core logic.
-- **Lines of code:** 1921
-- **Complexity:** High (heuristic score: 275)
+- **Lines of code:** 1931
+- **Complexity:** High (heuristic score: 281)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** bomSetPrintPageSize(cssSizeAndMargin), bomLoadCustomKits(), bomSaveCustomKits(obj), bomGetAllKits(), bomIsCustomKitKey(key), bomSlugify(label), bomRenumberAll(sections), bomDefaultSectionsTemplate(), bomParseQtyNumber(qtyStr), bomSplitSerials(text), bomCollectKitItemNames(), bomLoadItemMasterNames(), bomBuildItemOptionsHtml(selectedName), bomRenderScreenItemsHtml(state, opts), bomRenderPrintSheetHtml(kit, header), bomRenderChallanTemplateItemsHtml(template), bomRenderChallanEntryModalHtml(header, kit), bomCollectChallanTemplateValues(), bomChallanBuildRowGroups(template), bomRenderChallanBodyRowsHtml(groups, values), bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy), bomRenderChallanTableHeadRowHtml(), bomRenderChallanFooterRowsHtml(header), bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy), bomRenderChallanPrintSheetHtml(header, kit, templateValues), openChallanModal(bodyHtml), closeChallanModal(), bomLoadSerialMandatoryInfo(), bomItemNeedsSerial(name), searchBomCustomerLedgers(q), searchBomCustomerShortCodes(q), fillBomCustomerDatalist(listEl, ledgers, key), wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), wireBomPartyTypeAutocomplete(inputEl, listEl, ledgerType), search(q), fillList(ledgers), setVerified(isVerified), allItemsChecked(), updateVerifyButtonState(), populateKitDropdown(selectKey), refreshItemsPreview(), renderKitBuilderSections(), handleBuilderFieldEdit(e), handleItemFieldEdit(e), rerenderItemsPreview(), openBomSerialModal(si, ii), updateCountNote(), getHeaderValues(), computeAndApplyFitZoom(), bomEsc(s), bomEscAttr(s), qtyInput(sr, sizeLabel), descInput(sr), setVal(key, patch), getQty(sr, size), getDesc(sr), $(id), blankItem()
@@ -403,9 +421,9 @@ Deep analysis of every important source file.
 ## `api/server.js`
 
 - **Purpose:** Application entry point / bootstrap file.
-- **Lines of code:** 67
+- **Lines of code:** 69
 - **Complexity:** Low (heuristic score: 1)
-- **Imports:** dotenv, express, path, ./config/cors, ./db/pool, ./db/schema, ./middleware/auth, ./middleware/rateLimiters, ./services/passwords, ./services/email, ./services/stockHelpers, ./utils/route, ./utils/time, ./routes/attachments, ./routes/health, ./routes/auth, ./routes/masters, ./routes/purchase, ./routes/ledgers, ./routes/sales, ./routes/stockassign, ./routes/scansheet.routes, ./routes/reports, ./routes/backup
+- **Imports:** dotenv, express, path, ./config/cors, ./db/pool, ./db/schema, ./middleware/auth, ./middleware/rateLimiters, ./services/passwords, ./services/email, ./services/stockHelpers, ./utils/route, ./utils/time, ./routes/attachments, ./routes/health, ./routes/auth, ./routes/masters, ./routes/purchase, ./routes/ledgers, ./routes/sales, ./routes/stockassign, ./routes/scansheet.routes, ./routes/reports, ./routes/backup, ./routes/challan
 - **Exports:** None
 - **Functions:** None
 - **Classes:** None
@@ -445,6 +463,24 @@ Deep analysis of every important source file.
 - **API endpoints:** None
 - **Database usage:** None
 - **Environment variables used:** None
+
+---
+
+## `api/services/challanPdf.js`
+
+- **Purpose:** Implements business logic as a service layer.
+- **Lines of code:** 144
+- **Complexity:** Low (heuristic score: 13)
+- **Imports:** fs, os, path, crypto, child_process, exceljs
+- **Exports:** module.exports
+- **Functions:** runSoffice(xlsxPath, outDir), fillTemplateAndConvertToPdf(record), cleanup()
+- **Classes:** None
+- **API endpoints:** None
+- **Database usage:** Raw SQL detected (4 statement keywords: JOIN)
+- **Environment variables used:** SOFFICE_PATH
+- **Potential improvements:**
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+  - process.env is used directly — confirm environment variables are validated/typed at startup.
 
 ---
 
@@ -548,6 +584,23 @@ Deep analysis of every important source file.
 - **Potential improvements:**
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
   - process.env is used directly — confirm environment variables are validated/typed at startup.
+
+---
+
+## `api/routes/challan.js`
+
+- **Purpose:** Defines HTTP route handlers (controller/router layer).
+- **Lines of code:** 63
+- **Complexity:** Low (heuristic score: 6)
+- **Imports:** ../services/challanPdf
+- **Exports:** module.exports
+- **Functions:** registerChallanRoutes(app, deps)
+- **Classes:** None
+- **API endpoints:** POST /api/challan, GET /api/challan, GET /api/challan/:id, GET /api/challan/:id/pdf
+- **Database usage:** Raw SQL detected (4 statement keywords: INSERT INTO, SELECT)
+- **Environment variables used:** None
+- **Potential improvements:**
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 
 ---
 
@@ -741,15 +794,15 @@ Deep analysis of every important source file.
 
 ## `api/db/schema.js`
 
-- **Purpose:** Defines 8 function(s) implementing supporting logic.
-- **Lines of code:** 54
-- **Complexity:** Medium (heuristic score: 24)
+- **Purpose:** Defines 9 function(s) implementing supporting logic.
+- **Lines of code:** 76
+- **Complexity:** Medium (heuristic score: 27)
 - **Imports:** None
 - **Exports:** module.exports
-- **Functions:** ensureStartupSchema(pool), ensureSessionSchema(pool), ensureSerialRuleSchema(pool), ensureLedgerTypeSchema(pool), ensureAuthOtpSchema(pool), ensureEmailRoleUniqueSchema(pool), ensureAttachmentsSchema(pool), ensureScanSheetSchema(pool)
+- **Functions:** ensureStartupSchema(pool), ensureSessionSchema(pool), ensureSerialRuleSchema(pool), ensureLedgerTypeSchema(pool), ensureAuthOtpSchema(pool), ensureEmailRoleUniqueSchema(pool), ensureAttachmentsSchema(pool), ensureScanSheetSchema(pool), ensureBomChallanSchema(pool)
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (12 statement keywords: ALTER TABLE, CREATE TABLE, SELECT, UPDATE)
+- **Database usage:** Raw SQL detected (13 statement keywords: ALTER TABLE, CREATE TABLE, SELECT, UPDATE)
 - **Environment variables used:** None
 - **Potential improvements:**
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.

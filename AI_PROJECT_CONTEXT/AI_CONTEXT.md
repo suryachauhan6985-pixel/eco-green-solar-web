@@ -10,13 +10,13 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-02T08:52:02.748Z
+- **Generated:** 2026-08-02T10:44:30.049Z
 
 ## 2. Architecture Overview
 
 - **Detected technologies:** Node.js (runtime), Express (backend framework), MySQL (database), JWT Authentication (auth), HTML (markup), JavaScript (language), CSS (styling), PWA (platform)
-- **Total files (post-ignore):** 57
-- **Deeply analyzed files:** 45
+- **Total files (post-ignore):** 60
+- **Deeply analyzed files:** 48
 - **Typical request flow (heuristic):** Browser → Routes → Controller → Service → Database
 
 ## 3. Folder Structure
@@ -35,6 +35,7 @@ api/
         attachments.js
         auth.js
         backup.js
+        challan.js
         health.js
         ledgers.js
         masters.js
@@ -44,6 +45,7 @@ api/
         scansheet.routes.js
         stockassign.js
     services/
+        challanPdf.js
         email.js
         passwords.js
         stockHelpers.js
@@ -87,6 +89,7 @@ js/
         stockassign.js
     app.js
 .env
+Dockerfile
 index.html
 manifest.webmanifest
 package.json
@@ -95,6 +98,7 @@ sw.js
 
 ## 4. Key Modules
 
+- `Dockerfile` — Supporting source file.
 - `js/app.js` — Application entry point / bootstrap file.
 - `js/pages/backup.js` — Defines 3 function(s) implementing supporting logic.
 - `js/pages/bom.js` — Defines 1 class(es) implementing core logic.
@@ -112,11 +116,13 @@ sw.js
 - `js/pages/stockassign.js` — Defines 24 function(s) implementing supporting logic.
 - `js/data/sheets-store.js` — Defines 14 function(s) implementing supporting logic.
 - `api/server.js` — Application entry point / bootstrap file.
+- `api/services/challanPdf.js` — Implements business logic as a service layer.
 - `api/services/email.js` — Implements business logic as a service layer.
 - `api/services/stockHelpers.js` — Implements business logic as a service layer.
 - `api/routes/attachments.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/auth.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/backup.js` — Defines HTTP route handlers (controller/router layer).
+- `api/routes/challan.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/health.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/ledgers.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/masters.js` — Defines HTTP route handlers (controller/router layer).
@@ -126,7 +132,7 @@ sw.js
 - `api/routes/scansheet.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/stockassign.js` — Defines HTTP route handlers (controller/router layer).
 - `api/db/pool.js` — Supporting source file.
-- `api/db/schema.js` — Defines 8 function(s) implementing supporting logic.
+- `api/db/schema.js` — Defines 9 function(s) implementing supporting logic.
 
 ## 5. Data Flow / Business Logic Entry Points
 
@@ -138,32 +144,34 @@ No route-level authentication middleware detected (verify manually if auth is ex
 
 ## 7. Database
 
-5 SQL table(s): backup_log, otp_codes, attachments, scan_sheets, scan_sheet_entries
+6 SQL table(s): backup_log, otp_codes, attachments, scan_sheets, scan_sheet_entries, bom_challans
 
 ## 8. API
 
-84 HTTP endpoint(s) detected. Method breakdown: GET=34, POST=26, DELETE=11, PUT=13.
+88 HTTP endpoint(s) detected. Method breakdown: GET=37, POST=27, DELETE=11, PUT=13.
 
 ## 9. Services & Utilities
 
-Service files: 3
+Service files: 4
 Utility/helper files: 2
 
 ## 10. Coding Conventions (inferred)
 
 - Project appears to be plain JavaScript (no TypeScript detected).
 - File naming leans camelCase.
-- 39 of 45 analyzed files define at least one function.
+- 41 of 48 analyzed files define at least one function.
 
 ## 11. Known Issues / Risk Areas
 
 - 10 file(s) flagged as High complexity: js/app.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, js/pages/stockassign.js, api/routes/auth.js
-- Raw SQL string usage found in 32 file(s) — verify parameterization to avoid SQL injection.
+- Raw SQL string usage found in 35 file(s) — verify parameterization to avoid SQL injection.
 - No routes appear to use recognizable auth middleware — verify whether this API is intentionally public.
 - A real `.env` file exists in the project (.env) — ensure it is excluded from version control.
 
 ## 12. Suggested Future Improvements
 
+- Dockerfile: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+- Dockerfile: No functions or classes detected — file may be mostly configuration or could benefit from clearer structure.
 - sw.js: No functions or classes detected — file may be mostly configuration or could benefit from clearer structure.
 - js/app.js: File defines a large number of functions — consider splitting into smaller modules.
 - js/app.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
@@ -187,8 +195,6 @@ Utility/helper files: 2
 - js/pages/purchaseregister.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 - js/pages/reports.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 - js/pages/returns.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
-- js/pages/saleregister.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
-- js/pages/sales.js: File defines a large number of functions — consider splitting into smaller modules.
 
 ---
 

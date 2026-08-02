@@ -1749,14 +1749,33 @@ window.PAGES.bom = {
             try {
               const saved = await window.Api.post('/challan', payload);
               const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
-              // Open in a new tab so the browser's native PDF viewer handles
-              // print/download — no client-side HTML replica needed anymore.
-              const pdfWindow = window.open(pdfUrl, '_blank');
+              // NOTE: window.open(pdfUrl, '_blank') was used previously, but
+              // that's a plain browser navigation — it never goes through the
+              // window.fetch wrapper in js/app.js that auto-attaches the
+              // "Authorization: Bearer <token>" header, so the server always
+              // rejected it with "Please log in to continue" even for a
+              // logged-in user. Fetching the PDF as a blob (via fetch(), which
+              // IS wrapped and gets the header) and opening an object URL for
+              // that blob keeps the request authenticated while still landing
+              // the PDF in a new tab for the browser's native viewer/print UI.
+              const pdfRes = await fetch(pdfUrl);
+              if (!pdfRes.ok) {
+                let msg = 'Could not generate the Challan PDF.';
+                try { const j = await pdfRes.json(); if (j && j.error) msg = j.error; } catch (e) { /* ignore */ }
+                throw new Error(msg);
+              }
+              const pdfBlob = await pdfRes.blob();
+              const blobUrl = URL.createObjectURL(pdfBlob);
+              const pdfWindow = window.open(blobUrl, '_blank');
               if (pdfWindow) {
                 pdfWindow.addEventListener('load', () => {
                   try { pdfWindow.print(); } catch (e) { /* let user use the PDF viewer's own print button */ }
                 });
               }
+              // Object URLs are per-tab memory references — revoke it after a
+              // delay so the new tab has time to actually load/render the PDF
+              // before the underlying blob is freed.
+              setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
               if (window.showToast) window.showToast('Challan saved — opening PDF for print.');
             } catch (err) {
               window.openModal('Print Failed', `<p>${(err && err.message) || 'Could not generate the Challan PDF.'}</p>`);

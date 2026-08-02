@@ -1,13 +1,13 @@
 # API Documentation
 
-Total endpoints detected: **84**
+Total endpoints detected: **88**
 
 ## Endpoints by Method
 
 | Method | Count |
 | --- | --- |
-| GET | 34 |
-| POST | 26 |
+| GET | 37 |
+| POST | 27 |
 | DELETE | 11 |
 | PUT | 13 |
 
@@ -32,6 +32,10 @@ Total endpoints detected: **84**
 | GET | /api/backup/download/:fileName | api/routes/backup.js | No |
 | POST | /api/backup/run | api/routes/backup.js | No |
 | GET | /api/backup/status | api/routes/backup.js | No |
+| GET | /api/challan | api/routes/challan.js | No |
+| POST | /api/challan | api/routes/challan.js | No |
+| GET | /api/challan/:id | api/routes/challan.js | No |
+| GET | /api/challan/:id/pdf | api/routes/challan.js | No |
 | GET | /api/dashboard/summary | api/routes/health.js | No |
 | GET | /api/health | api/routes/health.js | No |
 | GET | /api/ledgers | api/routes/ledgers.js | No |

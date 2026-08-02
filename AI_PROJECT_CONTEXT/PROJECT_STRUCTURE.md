@@ -17,6 +17,7 @@ api/
         attachments.js
         auth.js
         backup.js
+        challan.js
         health.js
         ledgers.js
         masters.js
@@ -26,6 +27,7 @@ api/
         scansheet.routes.js
         stockassign.js
     services/
+        challanPdf.js
         email.js
         passwords.js
         stockHelpers.js
@@ -69,6 +71,7 @@ js/
         stockassign.js
     app.js
 .env
+Dockerfile
 index.html
 manifest.webmanifest
 package.json

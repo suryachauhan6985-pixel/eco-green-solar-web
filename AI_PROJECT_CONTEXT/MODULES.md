@@ -21,6 +21,7 @@ Database
 
 | File | Purpose |
 | --- | --- |
+| Dockerfile | Supporting source file. |
 | package.json | Supporting source file. |
 | sw.js | Supporting source file. |
 
@@ -43,7 +44,7 @@ Database
 | File | Purpose |
 | --- | --- |
 | api/db/pool.js | Supporting source file. |
-| api/db/schema.js | Defines 8 function(s) implementing supporting logic. |
+| api/db/schema.js | Defines 9 function(s) implementing supporting logic. |
 
 ### `api/middleware`
 
@@ -59,6 +60,7 @@ Database
 | api/routes/attachments.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/auth.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/backup.js | Defines HTTP route handlers (controller/router layer). |
+| api/routes/challan.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/health.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/ledgers.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/masters.js | Defines HTTP route handlers (controller/router layer). |
@@ -72,6 +74,7 @@ Database
 
 | File | Purpose |
 | --- | --- |
+| api/services/challanPdf.js | Implements business logic as a service layer. |
 | api/services/email.js | Implements business logic as a service layer. |
 | api/services/passwords.js | Implements business logic as a service layer. |
 | api/services/stockHelpers.js | Implements business logic as a service layer. |
