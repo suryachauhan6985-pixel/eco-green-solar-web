@@ -91,6 +91,55 @@ const ITEM_ROWS = [
   { sr: 13, size: '', row: 27, firstOfItem: true }, // Cement Bag
 ];
 
+// Paper sizes in points (1" = 72pt), PORTRAIT width x height. ExcelJS stores
+// whatever numeric Excel "paperSize" code the template was saved with (9 = A4,
+// 1 = Letter, etc). We only need the couple that are realistic for this
+// template; anything unrecognised falls back to A4, which is what this
+// template uses.
+const PAPER_SIZES_PT = {
+  1: { width: 612,    height: 792 },   // Letter
+  5: { width: 612,    height: 1008 },  // Legal
+  9: { width: 595.32, height: 841.89 }, // A4
+};
+
+function getPageHeightPt(pageSetup) {
+  const paper = PAPER_SIZES_PT[pageSetup.paperSize] || PAPER_SIZES_PT[9];
+  const isLandscape = (pageSetup.orientation || 'landscape') === 'landscape';
+  return isLandscape ? paper.width : paper.height;
+}
+
+// The template's row heights were authored without regard to how much
+// vertical space is actually available at print time — at the "fit to 1
+// page wide" scale, the 13-line item table + header only fills part of the
+// page, leaving a big blank band under row 38 (see screenshot from user).
+// Rather than leaving a gap OR letting one single row balloon, scale EVERY
+// row in the print range by the same factor so the whole table grows (or
+// shrinks) evenly and lands exactly at the bottom margin — same logic as
+// "distribute rows evenly", just computed once instead of dragged by hand.
+function stretchRowsToFillPage(sheet, firstRow, lastRow) {
+  const pageHeightPt = getPageHeightPt(sheet.pageSetup);
+  const m = sheet.pageSetup.margins || {};
+  const marginsPt = ((m.top || 0) + (m.bottom || 0) + (m.header || 0) + (m.footer || 0)) * 72;
+  const availableHeightPt = pageHeightPt - marginsPt;
+
+  const defaultRowHeight = sheet.properties.defaultRowHeight || 15;
+  let currentTotalPt = 0;
+  for (let r = firstRow; r <= lastRow; r++) {
+    currentTotalPt += sheet.getRow(r).height || defaultRowHeight;
+  }
+  if (currentTotalPt <= 0) return;
+
+  // Guard against a corrupt/unexpected template blowing rows up or down to
+  // something silly — only ever grow/shrink within a sane range.
+  let scale = availableHeightPt / currentTotalPt;
+  scale = Math.min(Math.max(scale, 0.5), 4);
+
+  for (let r = firstRow; r <= lastRow; r++) {
+    const row = sheet.getRow(r);
+    row.height = (row.height || defaultRowHeight) * scale;
+  }
+}
+
 function runSoffice(xlsxPath, outDir) {
   return new Promise((resolve, reject) => {
     const bin = process.env.SOFFICE_PATH || 'soffice';
@@ -162,42 +211,31 @@ async function fillTemplateAndConvertToPdf(record) {
       }
     }
 
-    // The template's own page setup uses a fixed 92% "scale" (not "fit to
-    // page"). That magic number was tuned on whatever machine/font-set the
-    // template was authored on — on a different OS/LibreOffice/font combo
-    // (e.g. Windows vs Linux) text metrics differ slightly and the sheet can
-    // spill onto a second page (this is exactly what caused the Company Copy
-    // to get cut in half across pages). Force an explicit "fit to 1 page
-    // wide x 1 page tall" instead, which is robust regardless of fonts/OS.
-    // The template's own page setup uses a fixed 92% "scale" (not "fit to
-    // page"). That magic number was tuned on whatever machine/font-set the
-    // template was authored on — on a different OS/LibreOffice/font combo
-    // (e.g. Windows vs Linux) text metrics differ slightly and the sheet can
-    // spill onto a second page (this is exactly what caused the Company Copy
-    // to get cut in half across pages). Force fit-to-width instead, which is
-    // robust regardless of fonts/OS.
-    //   IMPORTANT: do NOT also force fitToHeight=1 + verticalCentered=true —
-    //   that was tried and caused a *huge* equal blank band at both the top
-    //   AND bottom, because the width-driven scale shrinks the content well
-    //   below a full page's height, and centering then splits that large
-    //   leftover evenly top/bottom. Leaving fitToHeight unconstrained keeps
-    //   the content anchored near the top with only a small margin, and any
-    //   leftover space collects at the bottom only (normal print behaviour).
-    sheet.pageSetup.fitToPage = true;
-    sheet.pageSetup.fitToWidth = 1;
-    sheet.pageSetup.fitToHeight = 0;
-    sheet.pageSetup.scale = undefined;
-
     // The template's original margins were wildly uneven — left 0.19",
     // right 0", top 0", bottom 0", PLUS a 0.51" header/footer reserve that
     // was never actually used for a header/footer. Set equal small margins
-    // on all 4 sides and drop the unused header/footer reserve. Only center
-    // horizontally (left/right) — see note above about vertical centering.
-    sheet.pageSetup.horizontalCentered = true;
-    sheet.pageSetup.verticalCentered = false;
+    // on all 4 sides and drop the unused header/footer reserve.
     sheet.pageSetup.margins = {
       left: 0.2, right: 0.2, top: 0.2, bottom: 0.2, header: 0, footer: 0,
     };
+
+    // Previously this only forced "fit to 1 page wide" (fitToHeight left
+    // unconstrained), which is what caused the big blank band under row 38
+    // in the printed PDF — the table simply didn't have enough row-height to
+    // reach the bottom margin at that width-driven scale. Fix: stretch every
+    // row in the print area (2-38) by the SAME factor first, so the table's
+    // real height already matches the printable area — no single row grows
+    // more than another, they all grow together. With that done, fit-to-1-
+    // page (both width AND height) below just becomes a safety net for
+    // font/OS rendering differences, not the thing doing the resizing.
+    stretchRowsToFillPage(sheet, 2, 38);
+
+    sheet.pageSetup.fitToPage = true;
+    sheet.pageSetup.fitToWidth = 1;
+    sheet.pageSetup.fitToHeight = 1;
+    sheet.pageSetup.scale = undefined;
+    sheet.pageSetup.horizontalCentered = true;
+    sheet.pageSetup.verticalCentered = false;
 
     await workbook.xlsx.writeFile(tempXlsx);
 
