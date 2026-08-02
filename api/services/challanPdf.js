@@ -169,21 +169,32 @@ async function fillTemplateAndConvertToPdf(record) {
     // spill onto a second page (this is exactly what caused the Company Copy
     // to get cut in half across pages). Force an explicit "fit to 1 page
     // wide x 1 page tall" instead, which is robust regardless of fonts/OS.
+    // The template's own page setup uses a fixed 92% "scale" (not "fit to
+    // page"). That magic number was tuned on whatever machine/font-set the
+    // template was authored on — on a different OS/LibreOffice/font combo
+    // (e.g. Windows vs Linux) text metrics differ slightly and the sheet can
+    // spill onto a second page (this is exactly what caused the Company Copy
+    // to get cut in half across pages). Force fit-to-width instead, which is
+    // robust regardless of fonts/OS.
+    //   IMPORTANT: do NOT also force fitToHeight=1 + verticalCentered=true —
+    //   that was tried and caused a *huge* equal blank band at both the top
+    //   AND bottom, because the width-driven scale shrinks the content well
+    //   below a full page's height, and centering then splits that large
+    //   leftover evenly top/bottom. Leaving fitToHeight unconstrained keeps
+    //   the content anchored near the top with only a small margin, and any
+    //   leftover space collects at the bottom only (normal print behaviour).
     sheet.pageSetup.fitToPage = true;
     sheet.pageSetup.fitToWidth = 1;
-    sheet.pageSetup.fitToHeight = 1;
+    sheet.pageSetup.fitToHeight = 0;
     sheet.pageSetup.scale = undefined;
 
     // The template's original margins were wildly uneven — left 0.19",
     // right 0", top 0", bottom 0", PLUS a 0.51" header/footer reserve that
-    // was never actually used for a header/footer. That's what caused the
-    // uneven blank space on different sides when printed. Set equal margins
-    // on all 4 sides and drop the unused header/footer reserve, and center
-    // the content on the page — this makes printing consistent without the
-    // user having to tweak paper size / scale / margins in the print dialog
-    // every single time.
+    // was never actually used for a header/footer. Set equal small margins
+    // on all 4 sides and drop the unused header/footer reserve. Only center
+    // horizontally (left/right) — see note above about vertical centering.
     sheet.pageSetup.horizontalCentered = true;
-    sheet.pageSetup.verticalCentered = true;
+    sheet.pageSetup.verticalCentered = false;
     sheet.pageSetup.margins = {
       left: 0.2, right: 0.2, top: 0.2, bottom: 0.2, header: 0, footer: 0,
     };
