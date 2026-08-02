@@ -91,163 +91,6 @@ const ITEM_ROWS = [
   { sr: 13, size: '', row: 27, firstOfItem: true }, // Cement Bag
 ];
 
-// Print range for the whole sheet (both copies live side by side in this range).
-const PRINT_FIRST_ROW = 2;
-const PRINT_LAST_ROW = 38;
-const PRINT_FIRST_COL = 2;  // column B
-const PRINT_LAST_COL = 17;  // column Q
-
-// Paper sizes in points (1" = 72pt), PORTRAIT width x height. ExcelJS stores
-// whatever numeric Excel "paperSize" code the template was saved with (9 = A4,
-// 1 = Letter, etc). We only need the couple that are realistic for this
-// template; anything unrecognised falls back to A4, which is what this
-// template uses (confirmed: real template is A4, landscape, 841.89 x 595.32pt).
-const PAPER_SIZES_PT = {
-  1: { width: 612,    height: 792 },   // Letter
-  5: { width: 612,    height: 1008 },  // Legal
-  9: { width: 595.32, height: 841.89 }, // A4
-};
-
-function getPaper(pageSetup) {
-  return PAPER_SIZES_PT[pageSetup.paperSize] || PAPER_SIZES_PT[9];
-}
-function getPageHeightPt(pageSetup) {
-  const paper = getPaper(pageSetup);
-  const isLandscape = (pageSetup.orientation || 'landscape') === 'landscape';
-  return isLandscape ? paper.width : paper.height;
-}
-function getPageWidthPt(pageSetup) {
-  const paper = getPaper(pageSetup);
-  const isLandscape = (pageSetup.orientation || 'landscape') === 'landscape';
-  return isLandscape ? paper.height : paper.width;
-}
-
-// -----------------------------------------------------------------------------
-// WHY both rows AND columns are resized here (this replaces an earlier,
-// incomplete fix that only touched row heights):
-//
-// The earlier version stretched row heights to fill the page, then also set
-// pageSetup.fitToWidth = 1 / fitToHeight = 1 as a "safety net". That combination
-// is what actually caused the leftover blank band at the bottom of the page.
-// Excel/LibreOffice's "fit to page" is a single print ZOOM: whatever percentage
-// is needed to make the columns fit the page width gets applied to the WHOLE
-// page — rows included — it cannot scale width and height independently. This
-// template's columns (B:Q, two copies side by side) are wider than one landscape
-// A4 page at 100%, so fitToWidth=1 forces a ~89% zoom. That same ~89% zoom then
-// re-shrinks the row heights we had already carefully stretched to 100% of the
-// page, so the table ends up shorter than the page again — same bug, one layer
-// removed. This was confirmed by actually filling the real template, converting
-// it with LibreOffice, and pixel-measuring the output (not guessed): the
-// zoom-based approach left ~72pt of dead space at the bottom.
-//
-// The fix: don't use Excel's print zoom at all. Resize the actual COLUMN WIDTHS
-// (not just row heights) so the table already fits the page at a flat 100%
-// scale, then turn print zoom OFF (fitToPage = false, scale = 100). Width and
-// height are now controlled independently by us, computed from the template's
-// real dimensions each time (so this keeps working if the template changes),
-// with no opaque auto-fit algorithm left to undo it. Re-verified the same way
-// after this change: leftover space dropped to ~15pt (i.e. just the intended
-// 0.2" margin), evenly distributed, no clipped or overlapping text.
-// -----------------------------------------------------------------------------
-
-function stretchRowsToFillPage(sheet, firstRow, lastRow, availableHeightPt) {
-  const defaultRowHeight = sheet.properties.defaultRowHeight || 15;
-  let currentTotalPt = 0;
-  for (let r = firstRow; r <= lastRow; r++) {
-    currentTotalPt += sheet.getRow(r).height || defaultRowHeight;
-  }
-  if (currentTotalPt <= 0) return;
-
-  // Guard against a corrupt/unexpected template blowing rows up or down to
-  // something silly — only ever grow/shrink within a sane range.
-  let scale = availableHeightPt / currentTotalPt;
-  scale = Math.min(Math.max(scale, 0.5), 4);
-
-  for (let r = firstRow; r <= lastRow; r++) {
-    const row = sheet.getRow(r);
-    row.height = (row.height || defaultRowHeight) * scale;
-  }
-}
-
-// Excel stores column width as "number of characters of the Normal style
-// font" (Calibri 11 in this template), not points. The standard OOXML
-// conversion (Maximum Digit Width = 7px for Calibri 11 @ 96dpi) is:
-//   pixels = round(widthChars * 7 + 5)
-//   points = pixels * 0.75
-// This is the same formula Excel/LibreOffice themselves use, so shrinking
-// columns by an exact points-based target keeps the ratio between columns
-// intact — only the overall size changes.
-const MDW = 7; // Maximum Digit Width in px, Calibri 11 @ 96dpi
-function widthCharsToPt(widthChars) {
-  const px = widthChars > 0 ? Math.round(widthChars * MDW + 5) : 5;
-  return px * 0.75;
-}
-function ptToWidthChars(pt) {
-  const px = pt / 0.75;
-  return Math.max((px - 5) / MDW, 0);
-}
-
-function stretchColumnsToFillPage(sheet, firstCol, lastCol, availableWidthPt) {
-  const defaultColWidth = sheet.properties.defaultColWidth || 8.43;
-  let currentTotalPt = 0;
-  const currentWidthsChars = [];
-  for (let c = firstCol; c <= lastCol; c++) {
-    const wc = sheet.getColumn(c).width || defaultColWidth;
-    currentWidthsChars.push(wc);
-    currentTotalPt += widthCharsToPt(wc);
-  }
-  if (currentTotalPt <= 0) return;
-
-  let scale = availableWidthPt / currentTotalPt;
-  scale = Math.min(Math.max(scale, 0.5), 2);
-
-  for (let c = firstCol; c <= lastCol; c++) {
-    const wc = currentWidthsChars[c - firstCol];
-    const targetPt = widthCharsToPt(wc) * scale;
-    sheet.getColumn(c).width = ptToWidthChars(targetPt);
-  }
-}
-
-// -----------------------------------------------------------------------------
-// MANUAL COLUMN WIDTHS — edit these numbers directly to control column width,
-// exactly like dragging a column border in Excel. These are in Excel's
-// "character width" units — the same unit ExcelJS's `column.width` uses and
-// the same number you'd see in Excel's tooltip while dragging a column
-// border. Change a number here, save, regenerate the PDF — no math, no
-// scaling, the value goes in as-is.
-//
-// Columns B through Q = the full print range (Customer Copy is B-H, a small
-// gap is I-J, Company Copy is K-Q). Edit whichever column needs to change.
-// Set this to null to fall back to the old automatic stretch-to-fit behavior
-// (stretchColumnsToFillPage) instead of manual widths.
-// -----------------------------------------------------------------------------
-const MANUAL_COLUMN_WIDTHS = {
-  B: 4,
-  C: 9,
-  D: 8,
-  E: 7,
-  F: 9,
-  G: 8,
-  H: 12,
-
-  I: 1,
-  J: 1,
-
-  K: 4,
-  L: 9,
-  M: 8,
-  N: 7,
-  O: 9,
-  P: 8,
-  Q: 12,
-};
-
-function applyManualColumnWidths(sheet, widths) {
-  for (const [colLetter, width] of Object.entries(widths)) {
-    sheet.getColumn(colLetter).width = width;
-  }
-}
-
 function runSoffice(xlsxPath, outDir) {
   return new Promise((resolve, reject) => {
     const bin = process.env.SOFFICE_PATH || 'soffice';
@@ -261,6 +104,315 @@ function runSoffice(xlsxPath, outDir) {
       }
     );
   });
+}
+
+// #############################################################################
+// ██████████████████████████████████████████████████████████████████████████
+// ✏️  EDIT-ME SECTION — SHEET_CONFIG  ✏️
+// ██████████████████████████████████████████████████████████████████████████
+//
+// This is the ONLY section you need to touch to change how the printed PDF
+// looks. Everything about the sheet — page margins, which columns/rows are
+// how wide/tall, and every individual cell's font, wrap, background, border,
+// alignment, and merge — is controlled from this one object. Think of it as
+// writing the Excel file by hand, in code, cell by cell.
+//
+// After the ENGINE section below (do not edit that part unless you're adding
+// a brand-new capability), this config is read and applied automatically
+// every time a challan PDF is generated. No other part of the file needs to
+// change for day-to-day formatting tweaks.
+//
+// -----------------------------------------------------------------------------
+// 1) page  — page-level setup: margins, orientation, paper, print scaling.
+// -----------------------------------------------------------------------------
+//   marginsIn: { top, bottom, left, right, header, footer } — ALL IN INCHES,
+//     same as Excel's Page Setup > Margins dialog. This controls exactly
+//     where the printed content starts from each edge of the paper.
+//   orientation: 'landscape' | 'portrait'
+//   paperSize: Excel's numeric paper code — 9 = A4, 1 = Letter, 5 = Legal.
+//     Leave as-is unless you know the template's paper needs to change.
+//   fitToPage: true = let Excel/LibreOffice scale everything to fit the
+//     page (a single zoom % applied to the whole sheet — width AND height
+//     together, cannot be independent). false = use column widths / row
+//     heights below EXACTLY as given, no auto-scaling at all. Default false
+//     because this whole config is about manual, cell-by-cell control.
+//   scale: only used when fitToPage is false — print zoom percentage
+//     (100 = normal size).
+//   horizontalCentered / verticalCentered: true/false — centers the printed
+//     content on the page horizontally/vertically within the margins.
+//   printArea: optional, e.g. 'B2:Q38' — the exact range that gets printed.
+//     Leave null to keep the template's existing print area untouched.
+//
+// -----------------------------------------------------------------------------
+// 2) columns — per-column width and visibility, keyed by column letter.
+// -----------------------------------------------------------------------------
+//   width:  Excel's "characters" unit — same number shown in Excel's tooltip
+//           while dragging a column border. Omit to leave that column's
+//           width exactly as it is in the template.
+//   hidden: true = column disappears completely (like right-click > Hide
+//           Columns in Excel) — nothing in that column shows or prints.
+//
+// -----------------------------------------------------------------------------
+// 3) rows — per-row height and visibility, keyed by row number.
+// -----------------------------------------------------------------------------
+//   height: in POINTS — same number Excel shows while dragging a row's
+//           bottom border. Omit to leave that row's height exactly as it is
+//           in the template.
+//   hidden: true = row disappears completely (like right-click > Hide Rows
+//           in Excel) — nothing in that row shows or prints.
+//
+// -----------------------------------------------------------------------------
+// 4) merges / unmerges — join or split cells, exactly like Excel's
+//    "Merge & Center" / "Unmerge Cells".
+// -----------------------------------------------------------------------------
+//   unmerges: list of ranges to split apart FIRST, e.g. ['C7:E7'].
+//   merges:   list of ranges to join together AFTER unmerging, e.g.
+//             ['F7:G7']. Only the top-left cell of a merged range keeps its
+//             value — write your value there.
+//   Both are applied before any header/item values are written further
+//   down in this file, so a merge/unmerge here changes which single cell
+//   address holds the value for that box.
+//
+// -----------------------------------------------------------------------------
+// 5) cells — every visual property of one individual cell, keyed by its
+//    address (e.g. "B7", "H3", "C9"). ALL properties are optional — set
+//    only what you want to change; anything you leave out keeps the
+//    template's existing look for that property.
+// -----------------------------------------------------------------------------
+//   font:     { size, bold, italic, color }
+//               size  -> font size in points (9, 10, 11, 12...)
+//               bold  -> true / false
+//               italic-> true / false
+//               color -> 6-digit hex WITHOUT "#", e.g. "000000" (black),
+//                        "C00000" (dark red)
+//   wrap:     true = wrap long text onto multiple lines instead of
+//               overflowing into the next cell. Only shows extra lines if
+//               the row is tall enough — set that row's height above too.
+//   align:    horizontal text position: "left" | "center" | "right"
+//   valign:   vertical text position: "top" | "middle" | "bottom"
+//   bg:       background fill color, 6-digit hex WITHOUT "#", e.g.
+//               "FFF2CC" (light yellow), "D9E1F2" (light blue). Omit for
+//               no fill / transparent.
+//   border:   { top, bottom, left, right } — each side is EITHER a plain
+//               string style ("thin", "medium", "thick", "double", "dotted",
+//               "dashed", "hair", "none") using the default black color, OR
+//               an object { style, color } for a specific line color, e.g.
+//               { style: 'medium', color: 'C00000' }. Omit a side to leave
+//               that side's border exactly as it is in the template.
+//   hidden:   true = makes the cell's text invisible on the printed PDF
+//               (done by painting the text the same color as its
+//               background) WITHOUT touching the underlying value. Use
+//               this to visually blank out a cell without breaking any
+//               code elsewhere that reads/writes that cell's value. Note:
+//               this is a visual trick, not a true "empty cell" — for a
+//               real always-empty/removed cell, use `rows`/`columns`
+//               `hidden` above instead if the whole row/column can go, or
+//               simply don't write a value to that cell.
+//
+// EXAMPLE — style the "Name:" label bold, and make its value box wrap with
+// a light-yellow background and a thin black border all around:
+//   cells: {
+//     B7: { font: { bold: true, size: 10 } },
+//     C7: { wrap: true, valign: 'middle', bg: 'FFF2CC',
+//           border: { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin' } },
+//   }
+//
+// TO FIND A CELL'S ADDRESS: open challan_template.xlsx in Excel, click the
+// cell, read its address from the Name Box (top-left corner, e.g. "F3").
+// #############################################################################
+
+const SHEET_CONFIG = {
+  page: {
+    marginsIn: { top: 0.2, bottom: 0.2, left: 0.2, right: 0.2, header: 0, footer: 0 },
+    orientation: 'landscape',
+    paperSize: 9, // A4
+    fitToPage: false,
+    scale: 100,
+    horizontalCentered: true,
+    verticalCentered: false,
+    printArea: null,
+  },
+
+  columns: {
+    B: { width: 4 },
+    C: { width: 10 },
+    D: { width: 8 },
+    E: { width: 8 },
+    F: { width: 10 },
+    G: { width: 8 },
+    H: { width: 14 },
+    I: { width: 2 },
+    J: { width: 2 },
+    K: { width: 4 },
+    L: { width: 10 },
+    M: { width: 8 },
+    N: { width: 8 },
+    O: { width: 10 },
+    P: { width: 8 },
+    Q: { width: 14 },
+  },
+
+  rows: {
+    // Add a row number here to control its height, e.g. 7: { height: 22 }.
+    // Any row left out keeps the template's original height untouched.
+  },
+
+  unmerges: [
+    // 'C7:E7',
+  ],
+
+  merges: [
+    // 'F7:G7',
+  ],
+
+  cells: {
+    // Add cell addresses here to style them, e.g.:
+    // B7: { font: { bold: true, size: 10 } },
+    // C7: { wrap: true, valign: 'middle' },
+  },
+};
+
+// ██████████████████████████████████████████████████████████████████████████
+// 🛑 ENGINE — reads SHEET_CONFIG above and applies it. Don't edit below this
+// line unless you're adding a brand-new capability (a new property type).
+// ██████████████████████████████████████████████████████████████████████████
+
+const BORDER_STYLE_KEYS = ['top', 'bottom', 'left', 'right'];
+
+function normalizeBorderSide(side) {
+  if (!side) return undefined;
+  if (typeof side === 'string') {
+    return { style: side, color: { argb: 'FF000000' } };
+  }
+  return {
+    style: side.style || 'thin',
+    color: { argb: `FF${(side.color || '000000').replace('#', '')}` },
+  };
+}
+
+// Applies structural changes that must happen BEFORE any values are written:
+// unmerging, then merging. This runs right after the template is opened.
+function applySheetStructure(sheet, config) {
+  const unmerges = config.unmerges || [];
+  const merges = config.merges || [];
+
+  for (const range of unmerges) {
+    try {
+      sheet.unMergeCells(range);
+    } catch (e) {
+      // Not currently merged, or invalid range — skip so one bad entry
+      // doesn't break the whole PDF generation.
+    }
+  }
+
+  for (const range of merges) {
+    try {
+      sheet.mergeCells(range);
+    } catch (e) {
+      // Already merged, overlapping an existing merge, or invalid range —
+      // skip so one bad entry doesn't break the whole PDF generation.
+    }
+  }
+}
+
+// Applies every visual/layout property. This runs AFTER header/item values
+// are written, so cell styling always lands on top of the final content.
+function applySheetFormatting(sheet, config) {
+  const page = config.page || {};
+  const columns = config.columns || {};
+  const rows = config.rows || {};
+  const cells = config.cells || {};
+
+  // --- Page setup -----------------------------------------------------------
+  if (page.marginsIn) {
+    sheet.pageSetup.margins = { ...sheet.pageSetup.margins, ...page.marginsIn };
+  }
+  if (page.orientation) sheet.pageSetup.orientation = page.orientation;
+  if (page.paperSize !== undefined) sheet.pageSetup.paperSize = page.paperSize;
+  if (page.fitToPage) {
+    sheet.pageSetup.fitToPage = true;
+    sheet.pageSetup.fitToWidth = 1;
+    sheet.pageSetup.fitToHeight = 1;
+  } else {
+    sheet.pageSetup.fitToPage = false;
+    sheet.pageSetup.fitToWidth = undefined;
+    sheet.pageSetup.fitToHeight = undefined;
+    sheet.pageSetup.scale = page.scale !== undefined ? page.scale : 100;
+  }
+  if (page.horizontalCentered !== undefined) sheet.pageSetup.horizontalCentered = page.horizontalCentered;
+  if (page.verticalCentered !== undefined) sheet.pageSetup.verticalCentered = page.verticalCentered;
+  if (page.printArea) sheet.pageSetup.printArea = page.printArea;
+
+  // --- Column widths / visibility --------------------------------------------
+  for (const [colLetter, colConfig] of Object.entries(columns)) {
+    const column = sheet.getColumn(colLetter);
+    if (colConfig.width !== undefined) column.width = colConfig.width;
+    if (colConfig.hidden !== undefined) column.hidden = colConfig.hidden;
+  }
+
+  // --- Row heights / visibility -----------------------------------------------
+  for (const [rowNum, rowConfig] of Object.entries(rows)) {
+    const row = sheet.getRow(Number(rowNum));
+    if (rowConfig.height !== undefined) row.height = rowConfig.height;
+    if (rowConfig.hidden !== undefined) row.hidden = rowConfig.hidden;
+  }
+
+  // --- Per-cell styling --------------------------------------------------------
+  for (const [address, style] of Object.entries(cells)) {
+    const cell = sheet.getCell(address);
+    const existingFont = cell.font || {};
+    const existingAlignment = cell.alignment || {};
+
+    if (style.font) {
+      let fontColor = existingFont.color;
+      if (style.font.color !== undefined) {
+        fontColor = { argb: `FF${style.font.color.replace('#', '')}` };
+      }
+      cell.font = {
+        ...existingFont,
+        size: style.font.size !== undefined ? style.font.size : existingFont.size,
+        bold: style.font.bold !== undefined ? style.font.bold : existingFont.bold,
+        italic: style.font.italic !== undefined ? style.font.italic : existingFont.italic,
+        color: fontColor,
+      };
+    }
+
+    if (style.wrap !== undefined || style.align !== undefined || style.valign !== undefined) {
+      cell.alignment = {
+        ...existingAlignment,
+        wrapText: style.wrap !== undefined ? style.wrap : existingAlignment.wrapText,
+        horizontal: style.align !== undefined ? style.align : existingAlignment.horizontal,
+        vertical: style.valign !== undefined ? style.valign : existingAlignment.vertical,
+      };
+    }
+
+    if (style.bg !== undefined) {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: `FF${style.bg.replace('#', '')}` },
+      };
+    }
+
+    if (style.border) {
+      const existingBorder = cell.border || {};
+      const newBorder = { ...existingBorder };
+      for (const side of BORDER_STYLE_KEYS) {
+        if (style.border[side] !== undefined) {
+          newBorder[side] = normalizeBorderSide(style.border[side]);
+        }
+      }
+      cell.border = newBorder;
+    }
+
+    // "hidden" = visually blank without touching the real value: paint the
+    // font the same color as the cell's current background (default white
+    // if no fill is set) so nothing is legible on the printed PDF.
+    if (style.hidden) {
+      const bgColor = (cell.fill && cell.fill.fgColor && cell.fill.fgColor.argb) || 'FFFFFFFF';
+      cell.font = { ...(cell.font || {}), color: { argb: bgColor } };
+    }
+  }
 }
 
 async function fillTemplateAndConvertToPdf(record) {
@@ -281,6 +433,11 @@ async function fillTemplateAndConvertToPdf(record) {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(tempXlsx);
     const sheet = workbook.worksheets[0];
+
+    // Apply merges/unmerges FIRST, before writing values below, so dynamic
+    // values land on the correct (possibly new) top-left cell of any
+    // merged/split range — see SHEET_CONFIG.merges / .unmerges above.
+    applySheetStructure(sheet, SHEET_CONFIG);
 
     const headerValues = {
       challanNo: record.challan_no || '',
@@ -313,39 +470,10 @@ async function fillTemplateAndConvertToPdf(record) {
       }
     }
 
-    // The template's original margins were wildly uneven — left 0.19",
-    // right 0", top 0", bottom 0", PLUS a 0.51" header/footer reserve that
-    // was never actually used for a header/footer. Set equal small margins
-    // on all 4 sides and drop the unused header/footer reserve.
-    sheet.pageSetup.margins = {
-      left: 0.2, right: 0.2, top: 0.2, bottom: 0.2, header: 0, footer: 0,
-    };
-
-    const pageHeightPt = getPageHeightPt(sheet.pageSetup);
-    const pageWidthPt = getPageWidthPt(sheet.pageSetup);
-    const m = sheet.pageSetup.margins;
-    const availableHeightPt = pageHeightPt - ((m.top || 0) + (m.bottom || 0) + (m.header || 0) + (m.footer || 0)) * 72;
-    const availableWidthPt = pageWidthPt - ((m.left || 0) + (m.right || 0)) * 72;
-
-    // Column widths: use the manual widths table above if set, otherwise
-    // fall back to the automatic stretch-to-fit-page behavior.
-    // Row heights: still resized automatically to fill the page height —
-    // see the long comment above for why this replaces the old
-    // "stretch rows + let fit-to-page handle width" approach.
-    if (MANUAL_COLUMN_WIDTHS) {
-      applyManualColumnWidths(sheet, MANUAL_COLUMN_WIDTHS);
-    } else {
-      stretchColumnsToFillPage(sheet, PRINT_FIRST_COL, PRINT_LAST_COL, availableWidthPt);
-    }
-    stretchRowsToFillPage(sheet, PRINT_FIRST_ROW, PRINT_LAST_ROW, availableHeightPt);
-
-    // No print zoom — width and height are already sized to fit exactly.
-    sheet.pageSetup.fitToPage = false;
-    sheet.pageSetup.fitToWidth = undefined;
-    sheet.pageSetup.fitToHeight = undefined;
-    sheet.pageSetup.scale = 100;
-    sheet.pageSetup.horizontalCentered = true;
-    sheet.pageSetup.verticalCentered = false;
+    // Apply every layout/visual property from SHEET_CONFIG — page margins,
+    // column widths, row heights, and per-cell styling — now that all the
+    // dynamic values above are already in place.
+    applySheetFormatting(sheet, SHEET_CONFIG);
 
     await workbook.xlsx.writeFile(tempXlsx);
 
