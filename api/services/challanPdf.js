@@ -286,22 +286,22 @@ function stretchColumnsToFillPage(sheet, firstCol, lastCol, availableWidthPt) {
 // -----------------------------------------------------------------------------
 const MANUAL_COLUMN_WIDTHS = {
   B: 4,
-  C: 9,
+  C: 10,
   D: 8,
   E: 8,
-  F: 8,
-  G: 8,
+  F: 6,
+  G: 7,
   H: 12,
 
   I: 2,
   J: 2,
-  
+
   K: 4,
-  L: 9,
+  L: 10,
   M: 8,
   N: 8,
-  O: 8,
-  P: 8,
+  O: 6,
+  P: 7,
   Q: 12,
 };
 
@@ -342,9 +342,9 @@ function applyManualColumnWidths(sheet, widths) {
 const MANUAL_CELL_STYLES = {
   // Row 7 — "Name:" label and the customer-name value box. This is the pair
   // that was overlapping / getting cut off in the printed PDF.
-  B7: { bold: true, size: 10, wrap: false },
-  C7: { size: 10, wrap: true, valign: 'middle' },
-  L7: { size: 10, wrap: true, valign: 'middle' },
+  B7: { bold: true, size: 8, wrap: TURE },
+  C7: { size: 8, wrap: true, valign: 'middle' },
+  L7: { size: 8, wrap: true, valign: 'middle' },
 
   // Header value cells (Challan No. / Date / Order No. / Capacity)
   H3: { size: 10, wrap: false }, Q3: { size: 10, wrap: false },
@@ -407,6 +407,61 @@ function applyManualCellStyles(sheet, styles) {
   }
 }
 
+// -----------------------------------------------------------------------------
+// MANUAL CELL MERGE / UNMERGE — join cells into one box, or split an existing
+// merged box back into individual cells, exactly like selecting cells in
+// Excel and clicking "Merge & Center" / "Unmerge Cells".
+//
+// MANUAL_CELL_UNMERGES: a plain list of ranges to SPLIT APART. Only the
+// top-left cell of a merged range keeps its value/style after unmerging —
+// the rest become blank, separately-addressable cells again. Do this BEFORE
+// you try to write different values into cells that are currently merged
+// together.
+//   Example: '"C7:E7"' -> splits the Name value box back into C7, D7, E7.
+//
+// MANUAL_CELL_MERGES: a plain list of ranges to JOIN TOGETHER into one box
+// (same format as Excel's own range notation, "TOPLEFT:BOTTOMRIGHT"). Only
+// the top-left cell's value/style is kept; write your value there. Applied
+// AFTER unmerges, so you can also re-merge a different combination of cells
+// in the same range.
+//   Example: '"F7:G7"' -> joins F7 and G7 into a single box (value goes in F7).
+//
+// IMPORTANT ORDER: both lists are applied BEFORE any values/styles are
+// written further down in this function — so if you add a new merge/unmerge
+// here, make sure you're writing values to the correct (new) top-left cell
+// afterwards (check HEADER_CELLS / QTY_COL / DESC_COL above if it's one of
+// the cells those maps point to).
+// -----------------------------------------------------------------------------
+const MANUAL_CELL_UNMERGES = [
+  // 'C7:E7',
+];
+
+const MANUAL_CELL_MERGES = [
+  // 'F7:G7',
+];
+
+function applyManualCellUnmerges(sheet, ranges) {
+  for (const range of ranges) {
+    try {
+      sheet.unMergeCells(range);
+    } catch (e) {
+      // Not currently merged, or invalid range — safe to ignore so one bad
+      // entry doesn't break the whole PDF generation.
+    }
+  }
+}
+
+function applyManualCellMerges(sheet, ranges) {
+  for (const range of ranges) {
+    try {
+      sheet.mergeCells(range);
+    } catch (e) {
+      // Already merged, overlapping an existing merge, or invalid range —
+      // safe to ignore so one bad entry doesn't break the whole PDF generation.
+    }
+  }
+}
+
 function runSoffice(xlsxPath, outDir) {
   return new Promise((resolve, reject) => {
     const bin = process.env.SOFFICE_PATH || 'soffice';
@@ -440,6 +495,11 @@ async function fillTemplateAndConvertToPdf(record) {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(tempXlsx);
     const sheet = workbook.worksheets[0];
+
+    // Apply any manual cell splits/joins FIRST, before writing values below —
+    // see the long comment above MANUAL_CELL_UNMERGES / MANUAL_CELL_MERGES.
+    applyManualCellUnmerges(sheet, MANUAL_CELL_UNMERGES);
+    applyManualCellMerges(sheet, MANUAL_CELL_MERGES);
 
     const headerValues = {
       challanNo: record.challan_no || '',
@@ -493,17 +553,16 @@ async function fillTemplateAndConvertToPdf(record) {
 
     // Column widths: use the manual widths table above if set, otherwise
     // fall back to the automatic stretch-to-fit-page behavior.
-    // Row heights: same — manual table if set, otherwise automatic stretch.
     if (MANUAL_COLUMN_WIDTHS) {
       applyManualColumnWidths(sheet, MANUAL_COLUMN_WIDTHS);
     } else {
       stretchColumnsToFillPage(sheet, PRINT_FIRST_COL, PRINT_LAST_COL, availableWidthPt);
     }
-    if (MANUAL_ROW_HEIGHTS) {
-      applyManualRowHeights(sheet, MANUAL_ROW_HEIGHTS);
-    } else {
-      stretchRowsToFillPage(sheet, PRINT_FIRST_ROW, PRINT_LAST_ROW, availableHeightPt);
-    }
+    // Row heights: INTENTIONALLY left as-is — no manual heights, no
+    // auto-stretch. The template's original row heights are kept exactly as
+    // they are. To bring back height adjustment later, uncomment one of:
+    //   applyManualRowHeights(sheet, MANUAL_ROW_HEIGHTS);
+    //   stretchRowsToFillPage(sheet, PRINT_FIRST_ROW, PRINT_LAST_ROW, availableHeightPt);
 
     // No print zoom — width and height are already sized to fit exactly.
     sheet.pageSetup.fitToPage = false;
