@@ -91,8 +91,8 @@ Deep analysis of every important source file.
 ## `js/pages/bom.js`
 
 - **Purpose:** Defines 1 class(es) implementing core logic.
-- **Lines of code:** 1931
-- **Complexity:** High (heuristic score: 281)
+- **Lines of code:** 1973
+- **Complexity:** High (heuristic score: 290)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** bomSetPrintPageSize(cssSizeAndMargin), bomLoadCustomKits(), bomSaveCustomKits(obj), bomGetAllKits(), bomIsCustomKitKey(key), bomSlugify(label), bomRenumberAll(sections), bomDefaultSectionsTemplate(), bomParseQtyNumber(qtyStr), bomSplitSerials(text), bomCollectKitItemNames(), bomLoadItemMasterNames(), bomBuildItemOptionsHtml(selectedName), bomRenderScreenItemsHtml(state, opts), bomRenderPrintSheetHtml(kit, header), bomRenderChallanTemplateItemsHtml(template), bomRenderChallanEntryModalHtml(header, kit), bomCollectChallanTemplateValues(), bomChallanBuildRowGroups(template), bomRenderChallanBodyRowsHtml(groups, values), bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy), bomRenderChallanTableHeadRowHtml(), bomRenderChallanFooterRowsHtml(header), bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy), bomRenderChallanPrintSheetHtml(header, kit, templateValues), openChallanModal(bodyHtml), closeChallanModal(), bomLoadSerialMandatoryInfo(), bomItemNeedsSerial(name), searchBomCustomerLedgers(q), searchBomCustomerShortCodes(q), fillBomCustomerDatalist(listEl, ledgers, key), wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), wireBomPartyTypeAutocomplete(inputEl, listEl, ledgerType), search(q), fillList(ledgers), setVerified(isVerified), allItemsChecked(), updateVerifyButtonState(), populateKitDropdown(selectKey), refreshItemsPreview(), renderKitBuilderSections(), handleBuilderFieldEdit(e), handleItemFieldEdit(e), rerenderItemsPreview(), openBomSerialModal(si, ii), updateCountNote(), getHeaderValues(), computeAndApplyFitZoom(), bomEsc(s), bomEscAttr(s), qtyInput(sr, sizeLabel), descInput(sr), setVal(key, patch), getQty(sr, size), getDesc(sr), $(id), blankItem()
@@ -469,11 +469,11 @@ Deep analysis of every important source file.
 ## `api/services/challanPdf.js`
 
 - **Purpose:** Implements business logic as a service layer.
-- **Lines of code:** 144
-- **Complexity:** Low (heuristic score: 13)
+- **Lines of code:** 318
+- **Complexity:** Medium (heuristic score: 40)
 - **Imports:** fs, os, path, crypto, child_process, exceljs
 - **Exports:** module.exports
-- **Functions:** runSoffice(xlsxPath, outDir), fillTemplateAndConvertToPdf(record), cleanup()
+- **Functions:** getPaper(pageSetup), getPageHeightPt(pageSetup), getPageWidthPt(pageSetup), stretchRowsToFillPage(sheet, firstRow, lastRow, availableHeightPt), widthCharsToPt(widthChars), ptToWidthChars(pt), stretchColumnsToFillPage(sheet, firstCol, lastCol, availableWidthPt), runSoffice(xlsxPath, outDir), fillTemplateAndConvertToPdf(record), cleanup()
 - **Classes:** None
 - **API endpoints:** None
 - **Database usage:** Raw SQL detected (4 statement keywords: JOIN)

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-02T10:44:30.056Z",
+  "generatedAt": "2026-08-02T13:02:51.679Z",
   "files": {
     ".env": {
       "hash": "fbf93500e5313e2f01018668de228b174a039bbf",
@@ -42,9 +42,9 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/bom.js": {
-      "hash": "d4c4b2072ee74638d85cdf71dfefe89d6b4f21ab",
-      "size": 99932,
-      "mtimeMs": 1785663551241.254
+      "hash": "047fc8522a1c67d189b09dabc437f8db1f366b19",
+      "size": 102439,
+      "mtimeMs": 1785667967380.218
     },
     "js/pages/dashboard.js": {
       "hash": "44cc77fecac36b223d21b6e973819b7c606edba1",
@@ -197,9 +197,9 @@
       "mtimeMs": 1785235534567.7344
     },
     "api/services/challanPdf.js": {
-      "hash": "ec8844db7cd459056e01672f0e7d991324164384",
-      "size": 5942,
-      "mtimeMs": 1785663540295.2422
+      "hash": "5f574e31f2179196abc6c005fe3e8e8921ec5ad5",
+      "size": 15148,
+      "mtimeMs": 1785675516007.1538
     },
     "api/services/email.js": {
       "hash": "b019522dfe72d319f6dffb7c9115576eca5cae59",

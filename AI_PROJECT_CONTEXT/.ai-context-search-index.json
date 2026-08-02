@@ -2767,6 +2767,48 @@
   },
   {
     "type": "function",
+    "label": "getPaper",
+    "file": "api/services/challanPdf.js",
+    "detail": "(pageSetup)"
+  },
+  {
+    "type": "function",
+    "label": "getPageHeightPt",
+    "file": "api/services/challanPdf.js",
+    "detail": "(pageSetup)"
+  },
+  {
+    "type": "function",
+    "label": "getPageWidthPt",
+    "file": "api/services/challanPdf.js",
+    "detail": "(pageSetup)"
+  },
+  {
+    "type": "function",
+    "label": "stretchRowsToFillPage",
+    "file": "api/services/challanPdf.js",
+    "detail": "(sheet, firstRow, lastRow, availableHeightPt)"
+  },
+  {
+    "type": "function",
+    "label": "widthCharsToPt",
+    "file": "api/services/challanPdf.js",
+    "detail": "(widthChars)"
+  },
+  {
+    "type": "function",
+    "label": "ptToWidthChars",
+    "file": "api/services/challanPdf.js",
+    "detail": "(pt)"
+  },
+  {
+    "type": "function",
+    "label": "stretchColumnsToFillPage",
+    "file": "api/services/challanPdf.js",
+    "detail": "(sheet, firstCol, lastCol, availableWidthPt)"
+  },
+  {
+    "type": "function",
     "label": "runSoffice",
     "file": "api/services/challanPdf.js",
     "detail": "(xlsxPath, outDir)"
