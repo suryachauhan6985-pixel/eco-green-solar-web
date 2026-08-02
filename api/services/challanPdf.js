@@ -289,20 +289,18 @@ const MANUAL_COLUMN_WIDTHS = {
   C: 10,
   D: 8,
   E: 8,
-  F: 6,
-  G: 7,
-  H: 12,
-
+  F: 10,
+  G: 8,
+  H: 14,
   I: 2,
   J: 2,
-
   K: 4,
   L: 10,
   M: 8,
   N: 8,
-  O: 6,
-  P: 7,
-  Q: 12,
+  O: 10,
+  P: 8,
+  Q: 14,
 };
 
 function applyManualColumnWidths(sheet, widths) {
@@ -342,9 +340,9 @@ function applyManualColumnWidths(sheet, widths) {
 const MANUAL_CELL_STYLES = {
   // Row 7 — "Name:" label and the customer-name value box. This is the pair
   // that was overlapping / getting cut off in the printed PDF.
-  B7: { bold: true, size: 8, wrap: TURE },
-  C7: { size: 8, wrap: true, valign: 'middle' },
-  L7: { size: 8, wrap: true, valign: 'middle' },
+  B7: { bold: true, size: 10, wrap: false },
+  C7: { size: 10, wrap: true, valign: 'middle' },
+  L7: { size: 10, wrap: true, valign: 'middle' },
 
   // Header value cells (Challan No. / Date / Order No. / Capacity)
   H3: { size: 10, wrap: false }, Q3: { size: 10, wrap: false },
