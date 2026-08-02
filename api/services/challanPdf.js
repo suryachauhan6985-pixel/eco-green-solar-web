@@ -6,10 +6,30 @@
 // — never opened in write mode. Every temp file this creates is deleted by
 // the caller via the returned cleanup() (see api/routes/challan.js).
 //
-// Cell map below was read directly from the real workbook
-// (Sample_File_for_Residential_challan.xlsx, sheet "Challan") — NOT guessed.
-// The sheet has two mirrored copies side by side: "Customer Copy"
-// (columns A-H) and "Company Copy" (columns J-P). Both get the same data.
+// Cell map below was verified by directly opening the REAL template file
+// (api/templates/challan_template.xlsx) with openpyxl and inspecting every
+// merged-cell range and existing label/value on the "Challan" sheet — not
+// copied from a different sample file. Confirmed by test-filling + rendering
+// to PDF (single page, all fields land correctly, no titles get overwritten).
+//
+// Sheet layout (single sheet "Challan", used range B2:Q38):
+//   Customer Copy: columns B-H   |   Company Copy: columns K-Q
+//
+// Row 2:  F2:H2 = "Customer Copy" title (merged) | O2:Q2 = "Company Copy" title (merged)
+//         *** NEVER write to these — they hold the title text, not data ***
+// Row 3:  F3 = "Challan No.:" label            -> value goes in G3  / P3
+// Row 4:  F4:G4 = "Challan Date:" label         -> value goes in H4  / Q4
+// Row 5:  F5:G5 = "Order No.:" label            -> value goes in H5  / Q5
+// Row 6:  F6:G6 = "Capacity :" label            -> value goes in H6  / Q6
+// Row 7:  B7 = "Name:" label, C7:E7 = value box -> value goes in C7  / L7
+//         F7:G7 = "City:" label                 -> value goes in H7  / Q7
+// Row 8:  column headers (Sr.No / Item Name / Model / Qty. / Description)
+// Rows 9-27: the fixed 13-line item table (item name/model/size/unit are
+//         ALL STATIC in the template — only Qty and Description are blank):
+//           Qty column   = F (customer) / O (company)  [G/P hold static units]
+//           Desc column  = H (customer) / Q (company)  [these are single, unmerged]
+// Row 37: D37:G37 = Vehicle No. value box (merged)     -> M37:P37 (company)
+// Row 38: D38 = "Vehicle No." caption (static, under the box above)
 // -----------------------------------------------------------------------------
 const fs = require('fs');
 const fsp = fs.promises;
@@ -23,43 +43,45 @@ const TEMPLATE_PATH = path.join(__dirname, '..', 'templates', 'challan_template.
 
 // One header field -> { customer cell, company cell }
 const HEADER_CELLS = {
-  challanNo:    { customer: 'G2',  company: 'O2' },
-  challanDate:  { customer: 'G3',  company: 'O3' },
-  orderNo:      { customer: 'G4',  company: 'O4' },
-  capacityKw:   { customer: 'G5',  company: 'O5' },
-  customerName: { customer: 'B6',  company: 'K6' },
-  city:         { customer: 'G6',  company: 'O6' },
-  vehicleNo:    { customer: 'C36', company: 'L36' },
+  challanNo:    { customer: 'G3',  company: 'P3'  },
+  challanDate:  { customer: 'H4',  company: 'Q4'  },
+  orderNo:      { customer: 'H5',  company: 'Q5'  },
+  capacityKw:   { customer: 'H6',  company: 'Q6'  },
+  customerName: { customer: 'C7',  company: 'L7'  },
+  city:         { customer: 'H7',  company: 'Q7'  },
+  vehicleNo:    { customer: 'D37', company: 'M37' },
 };
 
 // Qty / Description columns per copy — combined with each row below.
-const QTY_COL = { customer: 'E', company: 'N' };
-const DESC_COL = { customer: 'G', company: 'P' };
+const QTY_COL = { customer: 'F', company: 'O' };
+const DESC_COL = { customer: 'H', company: 'Q' };
 
-// BOM_CHALLAN_TEMPLATE's fixed 13-line layout mapped to its exact sheet row.
+// BOM_CHALLAN_TEMPLATE's fixed 13-line layout mapped to its exact sheet row
+// (verified against the real template: item names/models/sizes/units below
+// are already static text in the sheet — only qty + description are blank).
 // `descKey` matches how js/pages/bom.js's bomCollectChallanTemplateValues()
 // keys description (always "${sr}|", regardless of size) — only the FIRST
 // row of a multi-size item (GI Pipe) carries the description write.
 const ITEM_ROWS = [
-  { sr: 1, size: '', row: 8, firstOfItem: true },
-  { sr: 2, size: '', row: 9, firstOfItem: true },
-  { sr: 3, size: '20 Feet', row: 10, firstOfItem: true },
-  { sr: 3, size: '15 Feet', row: 11, firstOfItem: false },
-  { sr: 3, size: '10 Feet', row: 12, firstOfItem: false },
-  { sr: 3, size: '5 Feet',  row: 13, firstOfItem: false },
-  { sr: 4, size: '20 Feet', row: 14, firstOfItem: true },
-  { sr: 4, size: '15 Feet', row: 15, firstOfItem: false },
-  { sr: 4, size: '10 Feet', row: 16, firstOfItem: false },
-  { sr: 4, size: '5 Feet',  row: 17, firstOfItem: false },
-  { sr: 5, size: '', row: 18, firstOfItem: true },
-  { sr: 6, size: '', row: 19, firstOfItem: true },
-  { sr: 7, size: '', row: 20, firstOfItem: true },
-  { sr: 8, size: '', row: 21, firstOfItem: true },
-  { sr: 9, size: '', row: 22, firstOfItem: true },
-  { sr: 10, size: '', row: 23, firstOfItem: true },
-  { sr: 11, size: '', row: 24, firstOfItem: true },
-  { sr: 12, size: '', row: 25, firstOfItem: true },
-  { sr: 13, size: '', row: 26, firstOfItem: true },
+  { sr: 1, size: '', row: 9,  firstOfItem: true  },  // Solar Panel
+  { sr: 2, size: '', row: 10, firstOfItem: true  },  // GI Structure
+  { sr: 3, size: '20 Feet', row: 11, firstOfItem: true  }, // GI Pipe 1.5 X 1.5
+  { sr: 3, size: '15 Feet', row: 12, firstOfItem: false },
+  { sr: 3, size: '10 Feet', row: 13, firstOfItem: false },
+  { sr: 3, size: '5 Feet',  row: 14, firstOfItem: false },
+  { sr: 4, size: '20 Feet', row: 15, firstOfItem: true  }, // GI Pipe 2.5 X 1.5
+  { sr: 4, size: '15 Feet', row: 16, firstOfItem: false },
+  { sr: 4, size: '10 Feet', row: 17, firstOfItem: false },
+  { sr: 4, size: '5 Feet',  row: 18, firstOfItem: false },
+  { sr: 5,  size: '', row: 19, firstOfItem: true }, // Bom Box
+  { sr: 6,  size: '', row: 20, firstOfItem: true }, // Inverter
+  { sr: 7,  size: '', row: 21, firstOfItem: true }, // Earthing & LA Kit
+  { sr: 8,  size: '', row: 22, firstOfItem: true }, // Earthing Bag
+  { sr: 9,  size: '', row: 23, firstOfItem: true }, // PVC Pipe
+  { sr: 10, size: '', row: 24, firstOfItem: true }, // Ferma
+  { sr: 11, size: '', row: 25, firstOfItem: true }, // Reti Bag
+  { sr: 12, size: '', row: 26, firstOfItem: true }, // Kapchi Bag
+  { sr: 13, size: '', row: 27, firstOfItem: true }, // Cement Bag
 ];
 
 function runSoffice(xlsxPath, outDir) {
