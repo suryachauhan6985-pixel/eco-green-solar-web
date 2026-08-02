@@ -208,6 +208,46 @@ function stretchColumnsToFillPage(sheet, firstCol, lastCol, availableWidthPt) {
   }
 }
 
+// -----------------------------------------------------------------------------
+// MANUAL COLUMN WIDTHS — edit these numbers directly to control column width,
+// exactly like dragging a column border in Excel. These are in Excel's
+// "character width" units — the same unit ExcelJS's `column.width` uses and
+// the same number you'd see in Excel's tooltip while dragging a column
+// border. Change a number here, save, regenerate the PDF — no math, no
+// scaling, the value goes in as-is.
+//
+// Columns B through Q = the full print range (Customer Copy is B-H, a small
+// gap is I-J, Company Copy is K-Q). Edit whichever column needs to change.
+// Set this to null to fall back to the old automatic stretch-to-fit behavior
+// (stretchColumnsToFillPage) instead of manual widths.
+// -----------------------------------------------------------------------------
+const MANUAL_COLUMN_WIDTHS = {
+  B: 4,
+  C: 9,
+  D: 8,
+  E: 7,
+  F: 9,
+  G: 8,
+  H: 12,
+
+  I: 1,
+  J: 1,
+
+  K: 4,
+  L: 9,
+  M: 8,
+  N: 7,
+  O: 9,
+  P: 8,
+  Q: 12,
+};
+
+function applyManualColumnWidths(sheet, widths) {
+  for (const [colLetter, width] of Object.entries(widths)) {
+    sheet.getColumn(colLetter).width = width;
+  }
+}
+
 function runSoffice(xlsxPath, outDir) {
   return new Promise((resolve, reject) => {
     const bin = process.env.SOFFICE_PATH || 'soffice';
@@ -287,10 +327,16 @@ async function fillTemplateAndConvertToPdf(record) {
     const availableHeightPt = pageHeightPt - ((m.top || 0) + (m.bottom || 0) + (m.header || 0) + (m.footer || 0)) * 72;
     const availableWidthPt = pageWidthPt - ((m.left || 0) + (m.right || 0)) * 72;
 
-    // Resize columns AND rows independently so the table fits the page at a
-    // flat 100% scale — see the long comment above for why this replaces the
-    // old "stretch rows + let fit-to-page handle width" approach.
-    stretchColumnsToFillPage(sheet, PRINT_FIRST_COL, PRINT_LAST_COL, availableWidthPt);
+    // Column widths: use the manual widths table above if set, otherwise
+    // fall back to the automatic stretch-to-fit-page behavior.
+    // Row heights: still resized automatically to fill the page height —
+    // see the long comment above for why this replaces the old
+    // "stretch rows + let fit-to-page handle width" approach.
+    if (MANUAL_COLUMN_WIDTHS) {
+      applyManualColumnWidths(sheet, MANUAL_COLUMN_WIDTHS);
+    } else {
+      stretchColumnsToFillPage(sheet, PRINT_FIRST_COL, PRINT_LAST_COL, availableWidthPt);
+    }
     stretchRowsToFillPage(sheet, PRINT_FIRST_ROW, PRINT_LAST_ROW, availableHeightPt);
 
     // No print zoom — width and height are already sized to fit exactly.
