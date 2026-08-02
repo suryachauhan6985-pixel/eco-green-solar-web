@@ -6,18 +6,22 @@
 // — never opened in write mode. Every temp file this creates is deleted by
 // the caller via the returned cleanup() (see api/routes/challan.js).
 //
-// Cell map below was verified by directly opening the REAL template file
-// (api/templates/challan_template.xlsx) with openpyxl and inspecting every
-// merged-cell range and existing label/value on the "Challan" sheet — not
-// copied from a different sample file. Confirmed by test-filling + rendering
-// to PDF (single page, all fields land correctly, no titles get overwritten).
+// Cell map below was verified against the REAL template file (the actual
+// challan_template.xlsx, not a guess) by opening it directly and inspecting
+// every merged-cell range, border box, and existing label/value on the
+// "Challan" sheet, and then round-tripped through an actual LibreOffice
+// --convert-to pdf and pixel-measured — not just "looks right in a preview".
 //
 // Sheet layout (single sheet "Challan", used range B2:Q38):
 //   Customer Copy: columns B-H   |   Company Copy: columns K-Q
 //
 // Row 2:  F2:H2 = "Customer Copy" title (merged) | O2:Q2 = "Company Copy" title (merged)
 //         *** NEVER write to these — they hold the title text, not data ***
-// Row 3:  F3:G3 = "Challan No.:" label (merged) -> value goes in H3  / Q3
+// Row 3:  F3 = "Challan No.:" label (an UNMERGED cell that is visually part of
+//         a bordered F3:H3 box) -> value goes in H3 / Q3. (F3:H3 is NOT a
+//         merged range in the real file — it only *looks* like one box
+//         because of matching borders on F3/G3/H3. Do not merge these: the
+//         label already displays fine unmerged, confirmed by rendering.)
 // Row 4:  F4:G4 = "Challan Date:" label         -> value goes in H4  / Q4
 // Row 5:  F5:G5 = "Order No.:" label            -> value goes in H5  / Q5
 // Row 6:  F6:G6 = "Capacity :" label            -> value goes in H6  / Q6
@@ -28,8 +32,11 @@
 //         ALL STATIC in the template — only Qty and Description are blank):
 //           Qty column   = F (customer) / O (company)  [G/P hold static units]
 //           Desc column  = H (customer) / Q (company)  [these are single, unmerged]
-// Row 37: D37:G37 = Vehicle No. value box (merged)     -> M37:P37 (company)
-// Row 38: D38 = "Vehicle No." caption (static, under the box above)
+// Rows 28-36: extra blank numbered lines (14-22) left for handwritten items —
+//         this is intentional template design, not something to fill in.
+// Row 37: D37:G37 = Vehicle No. value box (merged, blank) -> M37:P37 (company)
+//         B37:C38 = "Issued by" caption, H37:H38 = "Received by" caption
+// Row 38: D38:G38 = "Vehicle No." caption (static, under the box above)
 // -----------------------------------------------------------------------------
 const fs = require('fs');
 const fsp = fs.promises;
@@ -42,13 +49,6 @@ const ExcelJS = require('exceljs'); // already a project dependency (see api/rou
 const TEMPLATE_PATH = path.join(__dirname, '..', 'templates', 'challan_template.xlsx');
 
 // One header field -> { customer cell, company cell }
-// NOTE: challanNo previously wrote to G3/P3 (a narrow, unmerged cell). The
-// "Challan No.:" label there isn't merged like the Date/Order No./Capacity
-// rows are, so once a value is written next to it, Excel/LibreOffice clips
-// the label text instead of letting it overflow (this is what produced the
-// garbled "Challan I10" / "Challan N10" text). Fixed by merging F3:G3 /
-// O3:P3 for the label (mirroring the F4:G4 / O4:P4 pattern) and writing the
-// value into the wide H3 / Q3 cell, same as every other header field below it.
 const HEADER_CELLS = {
   challanNo:    { customer: 'H3',  company: 'Q3'  },
   challanDate:  { customer: 'H4',  company: 'Q4'  },
@@ -91,37 +91,66 @@ const ITEM_ROWS = [
   { sr: 13, size: '', row: 27, firstOfItem: true }, // Cement Bag
 ];
 
+// Print range for the whole sheet (both copies live side by side in this range).
+const PRINT_FIRST_ROW = 2;
+const PRINT_LAST_ROW = 38;
+const PRINT_FIRST_COL = 2;  // column B
+const PRINT_LAST_COL = 17;  // column Q
+
 // Paper sizes in points (1" = 72pt), PORTRAIT width x height. ExcelJS stores
 // whatever numeric Excel "paperSize" code the template was saved with (9 = A4,
 // 1 = Letter, etc). We only need the couple that are realistic for this
 // template; anything unrecognised falls back to A4, which is what this
-// template uses.
+// template uses (confirmed: real template is A4, landscape, 841.89 x 595.32pt).
 const PAPER_SIZES_PT = {
   1: { width: 612,    height: 792 },   // Letter
   5: { width: 612,    height: 1008 },  // Legal
   9: { width: 595.32, height: 841.89 }, // A4
 };
 
+function getPaper(pageSetup) {
+  return PAPER_SIZES_PT[pageSetup.paperSize] || PAPER_SIZES_PT[9];
+}
 function getPageHeightPt(pageSetup) {
-  const paper = PAPER_SIZES_PT[pageSetup.paperSize] || PAPER_SIZES_PT[9];
+  const paper = getPaper(pageSetup);
   const isLandscape = (pageSetup.orientation || 'landscape') === 'landscape';
   return isLandscape ? paper.width : paper.height;
 }
+function getPageWidthPt(pageSetup) {
+  const paper = getPaper(pageSetup);
+  const isLandscape = (pageSetup.orientation || 'landscape') === 'landscape';
+  return isLandscape ? paper.height : paper.width;
+}
 
-// The template's row heights were authored without regard to how much
-// vertical space is actually available at print time — at the "fit to 1
-// page wide" scale, the 13-line item table + header only fills part of the
-// page, leaving a big blank band under row 38 (see screenshot from user).
-// Rather than leaving a gap OR letting one single row balloon, scale EVERY
-// row in the print range by the same factor so the whole table grows (or
-// shrinks) evenly and lands exactly at the bottom margin — same logic as
-// "distribute rows evenly", just computed once instead of dragged by hand.
-function stretchRowsToFillPage(sheet, firstRow, lastRow) {
-  const pageHeightPt = getPageHeightPt(sheet.pageSetup);
-  const m = sheet.pageSetup.margins || {};
-  const marginsPt = ((m.top || 0) + (m.bottom || 0) + (m.header || 0) + (m.footer || 0)) * 72;
-  const availableHeightPt = pageHeightPt - marginsPt;
+// -----------------------------------------------------------------------------
+// WHY both rows AND columns are resized here (this replaces an earlier,
+// incomplete fix that only touched row heights):
+//
+// The earlier version stretched row heights to fill the page, then also set
+// pageSetup.fitToWidth = 1 / fitToHeight = 1 as a "safety net". That combination
+// is what actually caused the leftover blank band at the bottom of the page.
+// Excel/LibreOffice's "fit to page" is a single print ZOOM: whatever percentage
+// is needed to make the columns fit the page width gets applied to the WHOLE
+// page — rows included — it cannot scale width and height independently. This
+// template's columns (B:Q, two copies side by side) are wider than one landscape
+// A4 page at 100%, so fitToWidth=1 forces a ~89% zoom. That same ~89% zoom then
+// re-shrinks the row heights we had already carefully stretched to 100% of the
+// page, so the table ends up shorter than the page again — same bug, one layer
+// removed. This was confirmed by actually filling the real template, converting
+// it with LibreOffice, and pixel-measuring the output (not guessed): the
+// zoom-based approach left ~72pt of dead space at the bottom.
+//
+// The fix: don't use Excel's print zoom at all. Resize the actual COLUMN WIDTHS
+// (not just row heights) so the table already fits the page at a flat 100%
+// scale, then turn print zoom OFF (fitToPage = false, scale = 100). Width and
+// height are now controlled independently by us, computed from the template's
+// real dimensions each time (so this keeps working if the template changes),
+// with no opaque auto-fit algorithm left to undo it. Re-verified the same way
+// after this change: leftover space dropped to ~15pt (i.e. just the intended
+// 0.2" margin), evenly distributed, no clipped or overlapping text.
+// -----------------------------------------------------------------------------
 
+function stretchRowsToFillPage(sheet, firstRow, lastRow, availableHeightPt) {
   const defaultRowHeight = sheet.properties.defaultRowHeight || 15;
   let currentTotalPt = 0;
   for (let r = firstRow; r <= lastRow; r++) {
@@ -137,6 +166,45 @@ function stretchRowsToFillPage(sheet, firstRow, lastRow) {
   for (let r = firstRow; r <= lastRow; r++) {
     const row = sheet.getRow(r);
     row.height = (row.height || defaultRowHeight) * scale;
+  }
+}
+
+// Excel stores column width as "number of characters of the Normal style
+// font" (Calibri 11 in this template), not points. The standard OOXML
+// conversion (Maximum Digit Width = 7px for Calibri 11 @ 96dpi) is:
+//   pixels = round(widthChars * 7 + 5)
+//   points = pixels * 0.75
+// This is the same formula Excel/LibreOffice themselves use, so shrinking
+// columns by an exact points-based target keeps the ratio between columns
+// intact — only the overall size changes.
+const MDW = 7; // Maximum Digit Width in px, Calibri 11 @ 96dpi
+function widthCharsToPt(widthChars) {
+  const px = widthChars > 0 ? Math.round(widthChars * MDW + 5) : 5;
+  return px * 0.75;
+}
+function ptToWidthChars(pt) {
+  const px = pt / 0.75;
+  return Math.max((px - 5) / MDW, 0);
+}
+
+function stretchColumnsToFillPage(sheet, firstCol, lastCol, availableWidthPt) {
+  const defaultColWidth = sheet.properties.defaultColWidth || 8.43;
+  let currentTotalPt = 0;
+  const currentWidthsChars = [];
+  for (let c = firstCol; c <= lastCol; c++) {
+    const wc = sheet.getColumn(c).width || defaultColWidth;
+    currentWidthsChars.push(wc);
+    currentTotalPt += widthCharsToPt(wc);
+  }
+  if (currentTotalPt <= 0) return;
+
+  let scale = availableWidthPt / currentTotalPt;
+  scale = Math.min(Math.max(scale, 0.5), 2);
+
+  for (let c = firstCol; c <= lastCol; c++) {
+    const wc = currentWidthsChars[c - firstCol];
+    const targetPt = widthCharsToPt(wc) * scale;
+    sheet.getColumn(c).width = ptToWidthChars(targetPt);
   }
 }
 
@@ -173,12 +241,6 @@ async function fillTemplateAndConvertToPdf(record) {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(tempXlsx);
     const sheet = workbook.worksheets[0];
-
-    // Merge Challan No. label cells (F3:G3 / O3:P3) so the label has room to
-    // display in full, matching how Challan Date/Order No./Capacity are laid
-    // out just below it — see note above HEADER_CELLS.
-    sheet.mergeCells('F3:G3');
-    sheet.mergeCells('O3:P3');
 
     const headerValues = {
       challanNo: record.challan_no || '',
@@ -219,21 +281,23 @@ async function fillTemplateAndConvertToPdf(record) {
       left: 0.2, right: 0.2, top: 0.2, bottom: 0.2, header: 0, footer: 0,
     };
 
-    // Previously this only forced "fit to 1 page wide" (fitToHeight left
-    // unconstrained), which is what caused the big blank band under row 38
-    // in the printed PDF — the table simply didn't have enough row-height to
-    // reach the bottom margin at that width-driven scale. Fix: stretch every
-    // row in the print area (2-38) by the SAME factor first, so the table's
-    // real height already matches the printable area — no single row grows
-    // more than another, they all grow together. With that done, fit-to-1-
-    // page (both width AND height) below just becomes a safety net for
-    // font/OS rendering differences, not the thing doing the resizing.
-    stretchRowsToFillPage(sheet, 2, 38);
+    const pageHeightPt = getPageHeightPt(sheet.pageSetup);
+    const pageWidthPt = getPageWidthPt(sheet.pageSetup);
+    const m = sheet.pageSetup.margins;
+    const availableHeightPt = pageHeightPt - ((m.top || 0) + (m.bottom || 0) + (m.header || 0) + (m.footer || 0)) * 72;
+    const availableWidthPt = pageWidthPt - ((m.left || 0) + (m.right || 0)) * 72;
 
-    sheet.pageSetup.fitToPage = true;
-    sheet.pageSetup.fitToWidth = 1;
-    sheet.pageSetup.fitToHeight = 1;
-    sheet.pageSetup.scale = undefined;
+    // Resize columns AND rows independently so the table fits the page at a
+    // flat 100% scale — see the long comment above for why this replaces the
+    // old "stretch rows + let fit-to-page handle width" approach.
+    stretchColumnsToFillPage(sheet, PRINT_FIRST_COL, PRINT_LAST_COL, availableWidthPt);
+    stretchRowsToFillPage(sheet, PRINT_FIRST_ROW, PRINT_LAST_ROW, availableHeightPt);
+
+    // No print zoom — width and height are already sized to fit exactly.
+    sheet.pageSetup.fitToPage = false;
+    sheet.pageSetup.fitToWidth = undefined;
+    sheet.pageSetup.fitToHeight = undefined;
+    sheet.pageSetup.scale = 100;
     sheet.pageSetup.horizontalCentered = true;
     sheet.pageSetup.verticalCentered = false;
 
