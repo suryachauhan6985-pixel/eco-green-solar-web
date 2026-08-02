@@ -1747,17 +1747,29 @@ window.PAGES.bom = {
             const originalLabel = printBtn.innerHTML;
             printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving & Preparing PDF...';
             try {
+              // IMPORTANT: window.open() must be called SYNCHRONOUSLY, inside
+              // the click handler, with no `await` before it — otherwise
+              // browsers treat it as not directly tied to the user's click
+              // and silently block the popup (no error, nothing visible,
+              // which is exactly the "toast shows but nothing opens" bug).
+              // So we open a blank tab FIRST, then fill it in once the PDF
+              // is ready.
+              const pdfWindow = window.open('', '_blank');
+              if (pdfWindow) {
+                pdfWindow.document.write('Preparing Challan PDF…');
+              }
+
               const saved = await window.Api.post('/challan', payload);
               const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
-              // NOTE: window.open(pdfUrl, '_blank') was used previously, but
-              // that's a plain browser navigation — it never goes through the
-              // window.fetch wrapper in js/app.js that auto-attaches the
-              // "Authorization: Bearer <token>" header, so the server always
-              // rejected it with "Please log in to continue" even for a
-              // logged-in user. Fetching the PDF as a blob (via fetch(), which
-              // IS wrapped and gets the header) and opening an object URL for
-              // that blob keeps the request authenticated while still landing
-              // the PDF in a new tab for the browser's native viewer/print UI.
+              // NOTE: window.open(pdfUrl, '_blank') directly on the URL was
+              // used previously, but that's a plain browser navigation — it
+              // never goes through the window.fetch wrapper in js/app.js that
+              // auto-attaches the "Authorization: Bearer <token>" header, so
+              // the server always rejected it with "Please log in to
+              // continue" even for a logged-in user. Fetching the PDF as a
+              // blob (via fetch(), which IS wrapped and gets the header) and
+              // pointing the already-open tab at an object URL for that blob
+              // keeps the request authenticated.
               const pdfRes = await fetch(pdfUrl);
               if (!pdfRes.ok) {
                 let msg = 'Could not generate the Challan PDF.';
@@ -1766,11 +1778,22 @@ window.PAGES.bom = {
               }
               const pdfBlob = await pdfRes.blob();
               const blobUrl = URL.createObjectURL(pdfBlob);
-              const pdfWindow = window.open(blobUrl, '_blank');
               if (pdfWindow) {
+                pdfWindow.location.href = blobUrl;
                 pdfWindow.addEventListener('load', () => {
                   try { pdfWindow.print(); } catch (e) { /* let user use the PDF viewer's own print button */ }
                 });
+              } else {
+                // Popup was blocked even for the blank tab (e.g. very strict
+                // blocker settings) — fall back to a same-tab download link
+                // so the person can still get the PDF.
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = `challan-${saved.id}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                if (window.showToast) window.showToast('Popup blocked — PDF downloaded instead. Allow popups for this site to open it directly next time.');
               }
               // Object URLs are per-tab memory references — revoke it after a
               // delay so the new tab has time to actually load/render the PDF
