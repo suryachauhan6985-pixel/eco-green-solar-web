@@ -2,8 +2,11 @@
 
 ## Environment Files
 
-_None found._
+- .env
 
+### `.env`
+
+- (actual .env file — contents intentionally not read for security; showing filename only)
 
 
 ## Config Files

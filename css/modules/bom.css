@@ -100,7 +100,12 @@
    Page Setup scale, applied unconditionally, never computed. */
 #bomChallanPrintRoot .bom-challan-sheet{
   width:1006px; /* ≈966px content (§2) before the 96% shrink below */
-  margin:0; background:#ffffff;
+  margin:0 auto; /* was margin:0 (flush-left) — the sheet's fixed 966px
+    rendered width is narrower than the printable page area (297mm page
+    minus margins ≈1103px), so flush-left left a large blank gap on the
+    right. margin:0 auto centers the sheet in the available width instead,
+    matching the (roughly symmetric) look of the real Excel print. */
+  background:#ffffff;
   display:flex; align-items:stretch; justify-content:flex-start;
   zoom:0.96;
   font-family:Calibri, Carlito, Arial, sans-serif; color:#000;
@@ -108,7 +113,7 @@
 
 /* ---------- §3 Column map — one flat 7-column <table> per copy ---------- */
 .bom-challan-table{
-  width:469px; border-collapse:collapse; table-layout:fixed; background:#ffffff;
+  width:469px; border-collapse:collapse; table-layout:fixed; background:#3f3f3f;
   font-family:Calibri, Carlito, Arial, sans-serif; color:#000;
 }
 .bom-challan-col-sr{width:10.4%;}
@@ -146,6 +151,29 @@
 .bom-challan-logo{display:block; width:100%; height:auto; max-height:26pt; object-fit:contain; margin:0 auto;}
 .bom-challan-spacer-cell, .bom-challan-blank-cell{background:#ffffff;}
 .bom-challan-field-cell{text-align:left;}
+
+/* §5/§6: the logo + GST No. + company-name/address block (rows 1–5,
+   cols A–D) is entirely borderless in the real workbook — only the
+   sheet's outer perimeter border runs along its top/left edge, no
+   internal grid lines anywhere inside it (confirmed against the source
+   .xlsx: every cell in this block has border:none on all sides except
+   where it borders something OUTSIDE the block). The blanket
+   `.bom-challan-table th, td{border:1px solid #000}` rule above was
+   drawing full grid lines through here, which is wrong. Resetting these
+   5 cells to border:none fixes that; border-collapse still keeps the
+   real dividers intact automatically — the vertical line separating
+   this block from the Challan No./Date/Order No./Capacity/City field
+   column on the right still shows (because .bom-challan-field-cell and
+   .bom-challan-title-cell keep their normal border), and the horizontal
+   line above the Name:/City: row still shows (because
+   .bom-challan-name-cell keeps its normal border too) — collapsing
+   borders always keep a real border over a 'none' on the same shared
+   edge, so nothing needed to be added back by hand. */
+.bom-challan-table td.bom-challan-logo-cell, .bom-challan-table td.bom-challan-spacer-cell,
+.bom-challan-table td.bom-challan-blank-cell, .bom-challan-table td.bom-challan-gst-cell,
+.bom-challan-table td.bom-challan-address-cell{
+  border:none;
+}
 
 /* §6: "Customer Copy"/"Company Copy" title — 14pt bold, centered. Colors
    are asymmetric by design and must stay that way (do not "fix" to match):
@@ -255,6 +283,27 @@ td.bom-challan-gst-cell{font-size:10pt; font-weight:700; text-align:left;}
 .bom-items-form-table .bom-field-input:focus{border-color:var(--blue);}
 .bom-items-form-table .bom-field-sr{width:56px; text-align:center; padding-left:4px; padding-right:4px;}
 .bom-items-form-table select.bom-field-input{cursor:pointer;}
+
+/* "Convert into Challan" Qty input (type="number") — browsers render native
+   number-input chrome (spin buttons, autofill) using the page's default
+   color-scheme, which forces a WHITE box regardless of the background-color
+   set above. Force dark color-scheme + explicit colors here, and clean up
+   the spin-button arrows so the box matches every other dark field. */
+.bom-challan-qty-input{
+  color-scheme:dark;
+  background:var(--input-bg) !important;
+  color:var(--txt) !important;
+  border:1px solid var(--border-light) !important;
+  -moz-appearance:textfield;
+}
+.bom-challan-qty-input::-webkit-outer-spin-button,
+.bom-challan-qty-input::-webkit-inner-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+.bom-challan-qty-input:focus{
+  border-color:var(--blue) !important;
+}
 
 /* Serial No. column — only rendered as a button for items whose category
    has the Serial No. mandatory rule (see bomItemNeedsSerial in bom.js);

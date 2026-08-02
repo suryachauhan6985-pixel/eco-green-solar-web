@@ -1,6 +1,11 @@
 {
-  "generatedAt": "2026-07-31T07:33:05.040Z",
+  "generatedAt": "2026-08-02T08:52:02.754Z",
   "files": {
+    ".env": {
+      "hash": "8f04665bad5ebf4a555591da22341b0cfb073436",
+      "size": 1255,
+      "mtimeMs": 1785652504089.4954
+    },
     "index.html": {
       "hash": "4fab371f7fe74c0d6a4a048ea2516e112c66fe1c",
       "size": 6617,
@@ -12,9 +17,9 @@
       "mtimeMs": 1785237018433.584
     },
     "package.json": {
-      "hash": "6e52e7e0ba8fccdb9b5e223a551002fddf61f97f",
-      "size": 219,
-      "mtimeMs": 1784466417241.658
+      "hash": "d74a4b5688ebfe4643569549df12fa48065058e8",
+      "size": 396,
+      "mtimeMs": 1785652231023.2954
     },
     "sw.js": {
       "hash": "2e62eceaad219e91576d350a763a518b20ca8fcd",
@@ -32,9 +37,9 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/bom.js": {
-      "hash": "31364883b967422a07816ad1178b20ad8869ed7b",
-      "size": 95764,
-      "mtimeMs": 1785482998085.5415
+      "hash": "d13d0b61059b047b08a521f2e9ab7fdc30f9552e",
+      "size": 99923,
+      "mtimeMs": 1785654778722.3582
     },
     "js/pages/dashboard.js": {
       "hash": "44cc77fecac36b223d21b6e973819b7c606edba1",
@@ -132,9 +137,9 @@
       "mtimeMs": 1785235534621.1167
     },
     "css/modules/bom.css": {
-      "hash": "c889fc7c4039132afb8f2e478009137410957a96",
-      "size": 19501,
-      "mtimeMs": 1785483000207.896
+      "hash": "aa7a78cfd6fdc2c69f46c03511f1e3258f2405f1",
+      "size": 24332,
+      "mtimeMs": 1785654776348.609
     },
     "css/modules/components.css": {
       "hash": "f28a2816be537a1efb80fe34738941a6dd2f72fd",
@@ -172,9 +177,9 @@
       "mtimeMs": 1784981514487.0725
     },
     "api/server.js": {
-      "hash": "6949b501c69faab5cd626b4fda49a598fd3f2530",
-      "size": 2794,
-      "mtimeMs": 1785241673148.7388
+      "hash": "fa88f7afe80d5cefee6a91958c465d646030441e",
+      "size": 3297,
+      "mtimeMs": 1785651528860.438
     },
     "api/utils/route.js": {
       "hash": "a3aa995b6d3f373aac34725907b963ada59eb150",

@@ -1745,7 +1745,14 @@ window.PAGES.bom = {
             // Swapping the numbers directly (297mm wide x 210mm tall) makes
             // the page itself physically landscape-shaped, which every
             // driver rotates correctly regardless of keyword support.
-            bomSetPrintPageSize('size:297mm 210mm; margin:0 0 0 5mm;');
+            // Margins verified directly against the real workbook's Page
+            // Setup: left≈5mm, right=0, top=0, bottom=0. A small top/bottom
+            // cushion (3mm) is kept — real printers clip a few mm at the
+            // physical paper edge that @page:0 can't account for — but the
+            // right margin must stay 0: adding one here previously ate into
+            // the printable width and pushed the Company Copy's widest
+            // column (Description) past the printable area, cutting it off.
+            bomSetPrintPageSize('size:297mm 210mm; margin:3mm 0 3mm 5mm;');
             window.print();
           });
         }

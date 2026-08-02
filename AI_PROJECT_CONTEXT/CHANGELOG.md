@@ -1,10 +1,11 @@
 # Changelog (Since Last Scan)
 
-Scan performed: 2026-07-31T07:33:05.034Z
+Scan performed: 2026-08-02T08:52:02.748Z
 First scan for this project: Yes
 
-## Added Files (56)
+## Added Files (57)
 
+- .env
 - index.html
 - manifest.webmanifest
 - package.json

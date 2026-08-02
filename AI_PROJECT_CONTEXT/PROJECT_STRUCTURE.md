@@ -68,6 +68,7 @@ js/
         scansheet.js
         stockassign.js
     app.js
+.env
 index.html
 manifest.webmanifest
 package.json

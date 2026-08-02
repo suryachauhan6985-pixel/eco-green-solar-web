@@ -433,15 +433,39 @@
   },
   {
     "type": "function",
-    "label": "bomRenderChallanPrintTemplateRowsHtml",
+    "label": "bomChallanBuildRowGroups",
     "file": "js/pages/bom.js",
-    "detail": "(template, values)"
+    "detail": "(template)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderChallanBodyRowsHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(groups, values)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderChallanHeaderRowsHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(header, kit, copyLabel, isCompanyCopy)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderChallanTableHeadRowHtml",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderChallanFooterRowsHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(header)"
   },
   {
     "type": "function",
     "label": "bomRenderChallanPrintSheetHalfHtml",
     "file": "js/pages/bom.js",
-    "detail": "(header, kit, copyLabel, templateValues)"
+    "detail": "(header, kit, copyLabel, templateValues, isCompanyCopy)"
   },
   {
     "type": "function",
@@ -590,12 +614,6 @@
   {
     "type": "function",
     "label": "computeAndApplyFitZoom",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "computeAndApplyChallanFitZoom",
     "file": "js/pages/bom.js",
     "detail": "()"
   },

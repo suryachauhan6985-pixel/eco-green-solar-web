@@ -10,12 +10,12 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-07-31T07:33:05.033Z
+- **Generated:** 2026-08-02T08:52:02.748Z
 
 ## 2. Architecture Overview
 
-- **Detected technologies:** Node.js (runtime), Express (backend framework), MySQL (database), HTML (markup), JavaScript (language), CSS (styling), PWA (platform)
-- **Total files (post-ignore):** 56
+- **Detected technologies:** Node.js (runtime), Express (backend framework), MySQL (database), JWT Authentication (auth), HTML (markup), JavaScript (language), CSS (styling), PWA (platform)
+- **Total files (post-ignore):** 57
 - **Deeply analyzed files:** 45
 - **Typical request flow (heuristic):** Browser → Routes → Controller → Service → Database
 
@@ -86,6 +86,7 @@ js/
         scansheet.js
         stockassign.js
     app.js
+.env
 index.html
 manifest.webmanifest
 package.json
@@ -159,6 +160,7 @@ Utility/helper files: 2
 - 10 file(s) flagged as High complexity: js/app.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, js/pages/stockassign.js, api/routes/auth.js
 - Raw SQL string usage found in 32 file(s) — verify parameterization to avoid SQL injection.
 - No routes appear to use recognizable auth middleware — verify whether this API is intentionally public.
+- A real `.env` file exists in the project (.env) — ensure it is excluded from version control.
 
 ## 12. Suggested Future Improvements
 

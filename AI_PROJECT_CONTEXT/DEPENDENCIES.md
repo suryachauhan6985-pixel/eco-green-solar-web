@@ -7,6 +7,12 @@
 | express | ^4.19.2 |
 | cors | ^2.8.5 |
 | mysql2 | ^3.10.0 |
+| dotenv | ^16.4.5 |
+| jsonwebtoken | ^9.0.2 |
+| express-rate-limit | ^7.4.0 |
+| nodemailer | ^6.9.14 |
+| bcryptjs | ^2.4.3 |
+| exceljs | ^4.4.0 |
 
 
 ## Dev Dependencies
