@@ -17,7 +17,7 @@
 //
 // Row 2:  F2:H2 = "Customer Copy" title (merged) | O2:Q2 = "Company Copy" title (merged)
 //         *** NEVER write to these — they hold the title text, not data ***
-// Row 3:  F3 = "Challan No.:" label            -> value goes in G3  / P3
+// Row 3:  F3:G3 = "Challan No.:" label (merged) -> value goes in H3  / Q3
 // Row 4:  F4:G4 = "Challan Date:" label         -> value goes in H4  / Q4
 // Row 5:  F5:G5 = "Order No.:" label            -> value goes in H5  / Q5
 // Row 6:  F6:G6 = "Capacity :" label            -> value goes in H6  / Q6
@@ -42,8 +42,15 @@ const ExcelJS = require('exceljs'); // already a project dependency (see api/rou
 const TEMPLATE_PATH = path.join(__dirname, '..', 'templates', 'challan_template.xlsx');
 
 // One header field -> { customer cell, company cell }
+// NOTE: challanNo previously wrote to G3/P3 (a narrow, unmerged cell). The
+// "Challan No.:" label there isn't merged like the Date/Order No./Capacity
+// rows are, so once a value is written next to it, Excel/LibreOffice clips
+// the label text instead of letting it overflow (this is what produced the
+// garbled "Challan I10" / "Challan N10" text). Fixed by merging F3:G3 /
+// O3:P3 for the label (mirroring the F4:G4 / O4:P4 pattern) and writing the
+// value into the wide H3 / Q3 cell, same as every other header field below it.
 const HEADER_CELLS = {
-  challanNo:    { customer: 'G3',  company: 'P3'  },
+  challanNo:    { customer: 'H3',  company: 'Q3'  },
   challanDate:  { customer: 'H4',  company: 'Q4'  },
   orderNo:      { customer: 'H5',  company: 'Q5'  },
   capacityKw:   { customer: 'H6',  company: 'Q6'  },
@@ -118,6 +125,12 @@ async function fillTemplateAndConvertToPdf(record) {
     await workbook.xlsx.readFile(tempXlsx);
     const sheet = workbook.worksheets[0];
 
+    // Merge Challan No. label cells (F3:G3 / O3:P3) so the label has room to
+    // display in full, matching how Challan Date/Order No./Capacity are laid
+    // out just below it — see note above HEADER_CELLS.
+    sheet.mergeCells('F3:G3');
+    sheet.mergeCells('O3:P3');
+
     const headerValues = {
       challanNo: record.challan_no || '',
       challanDate: record.challan_date || '',
@@ -160,6 +173,20 @@ async function fillTemplateAndConvertToPdf(record) {
     sheet.pageSetup.fitToWidth = 1;
     sheet.pageSetup.fitToHeight = 1;
     sheet.pageSetup.scale = undefined;
+
+    // The template's original margins were wildly uneven — left 0.19",
+    // right 0", top 0", bottom 0", PLUS a 0.51" header/footer reserve that
+    // was never actually used for a header/footer. That's what caused the
+    // uneven blank space on different sides when printed. Set equal margins
+    // on all 4 sides and drop the unused header/footer reserve, and center
+    // the content on the page — this makes printing consistent without the
+    // user having to tweak paper size / scale / margins in the print dialog
+    // every single time.
+    sheet.pageSetup.horizontalCentered = true;
+    sheet.pageSetup.verticalCentered = true;
+    sheet.pageSetup.margins = {
+      left: 0.2, right: 0.2, top: 0.2, bottom: 0.2, header: 0, footer: 0,
+    };
 
     await workbook.xlsx.writeFile(tempXlsx);
 
