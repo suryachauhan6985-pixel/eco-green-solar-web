@@ -512,7 +512,7 @@ function bomRenderChallanTemplateItemsHtml(template) {
 
   return `
     <div class="table-wrap">
-      <table class="bom-items-form-table bom-challan-entry-table">
+      <table class="bom-items-form-table bom-challan-table">
         <colgroup>
           <col style="width:6%;"><col style="width:20%;"><col style="width:14%;">
           <col style="width:12%;"><col style="width:12%;"><col style="width:8%;"><col style="width:28%;">
@@ -1716,44 +1716,54 @@ window.PAGES.bom = {
         const printBtn = document.getElementById('bomChallanPrintBtn');
 
         if (printBtn) {
-          printBtn.addEventListener('click', () => {
-            // Build the print-only Excel-replica sheet from THIS modal's
-            // fields (not the main BOM form) — this is where Challan
-            // No./Date/City actually get used, right before printing.
-            const challanHeader = {
-              challanNo: modalNo ? modalNo.value : '',
+          printBtn.addEventListener('click', async () => {
+            // NEW FLOW: Save Data -> backend fills the REAL Excel template ->
+            // converts to PDF via LibreOffice -> browser opens/prints the
+            // PDF. Replaces the old HTML-replica sheet (bomRenderChallanPrintSheetHtml)
+            // entirely — that function + #bomChallanPrintRoot HTML sheet are
+            // no longer used by this button (left in place, unused, in case
+            // of rollback; safe to delete once this is verified in production).
+            const challanNo = modalNo ? modalNo.value.trim() : '';
+            if (!challanNo) {
+              window.openModal('Challan No. Required', '<p>Please enter a Challan No. before printing.</p>');
+              return;
+            }
+
+            const payload = {
+              challanNo,
               challanDate: modalDate ? modalDate.value : '',
               orderNo: modalOrderNo ? modalOrderNo.value : '',
+              capacityKw: modalCapacity ? modalCapacity.value : kw,
               customerName: modalName ? modalName.value : '',
               city: modalCity ? modalCity.value : '',
               vehicleNo: modalVehicleNo ? modalVehicleNo.value : '',
+              installerName: header.installerName || '',
+              fabricatorName: header.fabricatorName || '',
+              dealerName: header.dealerName || '',
+              items: bomCollectChallanTemplateValues(),
             };
-            const challanKit = { kw: modalCapacity ? modalCapacity.value : kw };
-            const templateValues = bomCollectChallanTemplateValues();
-            challanPrintRoot.innerHTML = bomRenderChallanPrintSheetHtml(challanHeader, challanKit, templateValues);
-            // §1: A4 landscape, ~0.5cm left margin, 0 on every other side —
-            // no runtime measuring/zoom (§15): the 96% scale and every
-            // column/row size are static CSS values (bom.css), since this
-            // layout is fixed-height by design (always exactly 28 body rows).
-            // NOTE: intentionally NOT 'size:A4 landscape' — several printer
-            // drivers (this project's Canon MF240 included) only read the
-            // page's raw width/height and ignore the 'landscape' orientation
-            // keyword entirely; Chrome's own print PREVIEW pane still
-            // renders it correctly either way (which is why it looked fine
-            // in-browser), but the physical print job comes out fed as a
-            // portrait sheet with the landscape content rotated 90° on it.
-            // Swapping the numbers directly (297mm wide x 210mm tall) makes
-            // the page itself physically landscape-shaped, which every
-            // driver rotates correctly regardless of keyword support.
-            // Margins verified directly against the real workbook's Page
-            // Setup: left≈5mm, right=0, top=0, bottom=0. A small top/bottom
-            // cushion (3mm) is kept — real printers clip a few mm at the
-            // physical paper edge that @page:0 can't account for — but the
-            // right margin must stay 0: adding one here previously ate into
-            // the printable width and pushed the Company Copy's widest
-            // column (Description) past the printable area, cutting it off.
-            bomSetPrintPageSize('size:297mm 210mm; margin:3mm 0 3mm 5mm;');
-            window.print();
+
+            printBtn.disabled = true;
+            const originalLabel = printBtn.innerHTML;
+            printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving & Preparing PDF...';
+            try {
+              const saved = await window.Api.post('/challan', payload);
+              const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
+              // Open in a new tab so the browser's native PDF viewer handles
+              // print/download — no client-side HTML replica needed anymore.
+              const pdfWindow = window.open(pdfUrl, '_blank');
+              if (pdfWindow) {
+                pdfWindow.addEventListener('load', () => {
+                  try { pdfWindow.print(); } catch (e) { /* let user use the PDF viewer's own print button */ }
+                });
+              }
+              if (window.showToast) window.showToast('Challan saved — opening PDF for print.');
+            } catch (err) {
+              window.openModal('Print Failed', `<p>${(err && err.message) || 'Could not generate the Challan PDF.'}</p>`);
+            } finally {
+              printBtn.disabled = false;
+              printBtn.innerHTML = originalLabel;
+            }
           });
         }
       });

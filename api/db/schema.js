@@ -6,6 +6,7 @@ async function ensureStartupSchema(pool) {
   await ensureEmailRoleUniqueSchema(pool);
   await ensureAttachmentsSchema(pool);
   await ensureScanSheetSchema(pool);
+  await ensureBomChallanSchema(pool);
 }
 async function ensureSessionSchema(pool) { try { await pool.query(`ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS last_seen DATETIME NULL`); } catch (e) { console.warn('[Session schema] Could not ensure last_seen column (will retry lazily on first use):', e.message); } }
 async function ensureSerialRuleSchema(pool) { try { await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS serial_mandatory TINYINT(1) NOT NULL DEFAULT 0`); } catch (e) { console.warn('[Serial rule schema] Could not ensure serial_mandatory column (will retry lazily on first use):', e.message); } }
@@ -49,5 +50,26 @@ async function ensureScanSheetSchema(pool) {
       CONSTRAINT fk_scan_entries_sheet FOREIGN KEY (sheet_id) REFERENCES scan_sheets(id) ON DELETE CASCADE
     )`);
   } catch (e) { console.warn('[Scan sheet schema] Could not ensure scan_sheets / scan_sheet_entries tables:', e.message); }
+}
+async function ensureBomChallanSchema(pool) {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS bom_challans (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      challan_no VARCHAR(50) NOT NULL,
+      challan_date VARCHAR(20),
+      order_no VARCHAR(100),
+      customer_name VARCHAR(255),
+      installer_name VARCHAR(255),
+      fabricator_name VARCHAR(255),
+      dealer_name VARCHAR(255),
+      capacity_kw VARCHAR(20),
+      city VARCHAR(100),
+      vehicle_no VARCHAR(50),
+      items_json LONGTEXT NOT NULL,
+      created_by VARCHAR(100),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_bom_challans_no (challan_no)
+    )`);
+  } catch (e) { console.warn('[BOM Challan schema] Could not ensure bom_challans table:', e.message); }
 }
 module.exports = { ensureStartupSchema };
