@@ -1,3 +1,12 @@
+// Loads .env for LOCAL development only. On Render this is a harmless
+// no-op: there is no .env file in the deployed environment, and dotenv
+// never overrides a variable that's already set in process.env — so
+// Render's dashboard-configured env vars always win in production.
+// Must be the very first thing that runs, before any of the requires
+// below (cors.js, db/pool.js, middleware/auth.js, routes/backup.js all
+// read process.env the moment they're required).
+require('dotenv').config();
+
 // Eco Green Solar ERP - Web Backend API
 
 const express = require('express');
