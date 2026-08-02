@@ -169,6 +169,69 @@ function stretchRowsToFillPage(sheet, firstRow, lastRow, availableHeightPt) {
   }
 }
 
+// -----------------------------------------------------------------------------
+// MANUAL ROW HEIGHTS — same idea as MANUAL_COLUMN_WIDTHS below, but for rows.
+// Units are POINTS — the same unit ExcelJS's `row.height` uses, and the same
+// number Excel shows in its tooltip while dragging a row's bottom border.
+// Edit a number here, save, regenerate the PDF — no math, no scaling, the
+// value goes in as-is. A row not listed here keeps the template's original
+// height.
+//
+// Rows 2-38 = the full print range (see the sheet layout comment at the top
+// of this file for what each row holds). Set this to null to fall back to
+// the old automatic stretch-to-fit-page behavior (stretchRowsToFillPage)
+// instead of manual heights.
+//
+// NOTE: if you turn on `wrap: true` for a cell in MANUAL_CELL_STYLES below
+// and the wrapped text still looks cut off, it's because the ROW isn't tall
+// enough to show the extra line(s) — increase that row's number here too.
+// -----------------------------------------------------------------------------
+const MANUAL_ROW_HEIGHTS = {
+  2: 22,
+  3: 18,
+  4: 18,
+  5: 18,
+  6: 18,
+  7: 22,
+  8: 26,
+  9: 18,
+  10: 18,
+  11: 18,
+  12: 18,
+  13: 18,
+  14: 18,
+  15: 18,
+  16: 18,
+  17: 18,
+  18: 18,
+  19: 18,
+  20: 18,
+  21: 18,
+  22: 18,
+  23: 18,
+  24: 18,
+  25: 18,
+  26: 18,
+  27: 18,
+  28: 16,
+  29: 16,
+  30: 16,
+  31: 16,
+  32: 16,
+  33: 16,
+  34: 16,
+  35: 16,
+  36: 16,
+  37: 24,
+  38: 16,
+};
+
+function applyManualRowHeights(sheet, heights) {
+  for (const [rowNum, height] of Object.entries(heights)) {
+    sheet.getRow(Number(rowNum)).height = height;
+  }
+}
+
 // Excel stores column width as "number of characters of the Normal style
 // font" (Calibri 11 in this template), not points. The standard OOXML
 // conversion (Maximum Digit Width = 7px for Calibri 11 @ 96dpi) is:
@@ -223,26 +286,124 @@ function stretchColumnsToFillPage(sheet, firstCol, lastCol, availableWidthPt) {
 // -----------------------------------------------------------------------------
 const MANUAL_COLUMN_WIDTHS = {
   B: 4,
-  C: 6,
-  D: 6,
+  C: 9,
+  D: 8,
   E: 8,
-  F: 10,
-  G: 7,
-  H: 10,
+  F: 8,
+  G: 8,
+  H: 12,
+
   I: 2,
   J: 2,
+  
   K: 4,
-  L: 6,
-  M: 6,
+  L: 9,
+  M: 8,
   N: 8,
-  O: 10,
-  P: 7,
-  Q: 10,
+  O: 8,
+  P: 8,
+  Q: 12,
 };
 
 function applyManualColumnWidths(sheet, widths) {
   for (const [colLetter, width] of Object.entries(widths)) {
     sheet.getColumn(colLetter).width = width;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// MANUAL CELL STYLES — control font size, bold, text wrap, background color,
+// and alignment for any individual cell, exactly like selecting a cell in
+// Excel and using the Font / Fill toolbar. Add or edit an entry below to
+// change how that one cell looks; every property is optional, so set only
+// what you want to change.
+//
+//   size    -> font size in points, e.g. 9, 10, 11, 12
+//   bold    -> true / false
+//   wrap    -> true = wrap long text onto multiple lines inside the cell
+//              instead of overflowing into the next cell. IMPORTANT: wrap
+//              only shows extra lines if the row is tall enough — bump that
+//              row's number in MANUAL_ROW_HEIGHTS above too.
+//   bg      -> background fill color, 6-digit hex WITHOUT "#", e.g. "FFF2CC"
+//              (light yellow) or "D9E1F2" (light blue). Omit for no fill.
+//   align   -> horizontal text alignment: "left" | "center" | "right"
+//   valign  -> vertical text alignment: "top" | "middle" | "bottom"
+//
+// Cell addresses match the sheet layout comment at the very top of this
+// file. Customer Copy lives in columns B-H, Company Copy in columns K-Q —
+// they are two separate physical cells on the sheet, so style each side
+// separately (e.g. C7 for the customer name box, L7 for the company one).
+//
+// TO STYLE A CELL THAT ISN'T LISTED YET: open challan_template.xlsx in
+// Excel, click the cell you want to change, note its address (shown top-left,
+// e.g. "F3"), then add a line here like:
+//     F3: { bold: true, size: 10 },
+// -----------------------------------------------------------------------------
+const MANUAL_CELL_STYLES = {
+  // Row 7 — "Name:" label and the customer-name value box. This is the pair
+  // that was overlapping / getting cut off in the printed PDF.
+  B7: { bold: true, size: 10, wrap: false },
+  C7: { size: 10, wrap: true, valign: 'middle' },
+  L7: { size: 10, wrap: true, valign: 'middle' },
+
+  // Header value cells (Challan No. / Date / Order No. / Capacity)
+  H3: { size: 10, wrap: false }, Q3: { size: 10, wrap: false },
+  H4: { size: 10, wrap: false }, Q4: { size: 10, wrap: false },
+  H5: { size: 10, wrap: false }, Q5: { size: 10, wrap: false },
+  H6: { size: 10, wrap: false }, Q6: { size: 10, wrap: false },
+  H7: { size: 10, wrap: false }, Q7: { size: 10, wrap: false },
+
+  // Description column, every item row — long handwritten-style notes wrap
+  // instead of spilling out of the box.
+  H9:  { wrap: true, size: 9 }, Q9:  { wrap: true, size: 9 },
+  H10: { wrap: true, size: 9 }, Q10: { wrap: true, size: 9 },
+  H11: { wrap: true, size: 9 }, Q11: { wrap: true, size: 9 },
+  H12: { wrap: true, size: 9 }, Q12: { wrap: true, size: 9 },
+  H13: { wrap: true, size: 9 }, Q13: { wrap: true, size: 9 },
+  H14: { wrap: true, size: 9 }, Q14: { wrap: true, size: 9 },
+  H15: { wrap: true, size: 9 }, Q15: { wrap: true, size: 9 },
+  H16: { wrap: true, size: 9 }, Q16: { wrap: true, size: 9 },
+  H17: { wrap: true, size: 9 }, Q17: { wrap: true, size: 9 },
+  H18: { wrap: true, size: 9 }, Q18: { wrap: true, size: 9 },
+  H19: { wrap: true, size: 9 }, Q19: { wrap: true, size: 9 },
+  H20: { wrap: true, size: 9 }, Q20: { wrap: true, size: 9 },
+  H21: { wrap: true, size: 9 }, Q21: { wrap: true, size: 9 },
+  H22: { wrap: true, size: 9 }, Q22: { wrap: true, size: 9 },
+  H23: { wrap: true, size: 9 }, Q23: { wrap: true, size: 9 },
+  H24: { wrap: true, size: 9 }, Q24: { wrap: true, size: 9 },
+  H25: { wrap: true, size: 9 }, Q25: { wrap: true, size: 9 },
+  H26: { wrap: true, size: 9 }, Q26: { wrap: true, size: 9 },
+  H27: { wrap: true, size: 9 }, Q27: { wrap: true, size: 9 },
+};
+
+function applyManualCellStyles(sheet, styles) {
+  for (const [address, style] of Object.entries(styles)) {
+    const cell = sheet.getCell(address);
+    const existingFont = cell.font || {};
+    const existingAlignment = cell.alignment || {};
+
+    if (style.bold !== undefined || style.size !== undefined) {
+      cell.font = {
+        ...existingFont,
+        bold: style.bold !== undefined ? style.bold : existingFont.bold,
+        size: style.size !== undefined ? style.size : existingFont.size,
+      };
+    }
+    if (style.wrap !== undefined || style.align !== undefined || style.valign !== undefined) {
+      cell.alignment = {
+        ...existingAlignment,
+        wrapText: style.wrap !== undefined ? style.wrap : existingAlignment.wrapText,
+        horizontal: style.align !== undefined ? style.align : existingAlignment.horizontal,
+        vertical: style.valign !== undefined ? style.valign : existingAlignment.vertical,
+      };
+    }
+    if (style.bg !== undefined) {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: `FF${style.bg}` },
+      };
+    }
   }
 }
 
@@ -311,6 +472,11 @@ async function fillTemplateAndConvertToPdf(record) {
       }
     }
 
+    // Manual cell styles — font size, bold, wrap, background, alignment —
+    // applied on top of the values just written. Edit MANUAL_CELL_STYLES
+    // above to change how any specific cell looks.
+    applyManualCellStyles(sheet, MANUAL_CELL_STYLES);
+
     // The template's original margins were wildly uneven — left 0.19",
     // right 0", top 0", bottom 0", PLUS a 0.51" header/footer reserve that
     // was never actually used for a header/footer. Set equal small margins
@@ -327,15 +493,17 @@ async function fillTemplateAndConvertToPdf(record) {
 
     // Column widths: use the manual widths table above if set, otherwise
     // fall back to the automatic stretch-to-fit-page behavior.
-    // Row heights: still resized automatically to fill the page height —
-    // see the long comment above for why this replaces the old
-    // "stretch rows + let fit-to-page handle width" approach.
+    // Row heights: same — manual table if set, otherwise automatic stretch.
     if (MANUAL_COLUMN_WIDTHS) {
       applyManualColumnWidths(sheet, MANUAL_COLUMN_WIDTHS);
     } else {
       stretchColumnsToFillPage(sheet, PRINT_FIRST_COL, PRINT_LAST_COL, availableWidthPt);
     }
-    stretchRowsToFillPage(sheet, PRINT_FIRST_ROW, PRINT_LAST_ROW, availableHeightPt);
+    if (MANUAL_ROW_HEIGHTS) {
+      applyManualRowHeights(sheet, MANUAL_ROW_HEIGHTS);
+    } else {
+      stretchRowsToFillPage(sheet, PRINT_FIRST_ROW, PRINT_LAST_ROW, availableHeightPt);
+    }
 
     // No print zoom — width and height are already sized to fit exactly.
     sheet.pageSetup.fitToPage = false;
