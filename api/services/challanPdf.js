@@ -149,6 +149,18 @@ async function fillTemplateAndConvertToPdf(record) {
       }
     }
 
+    // The template's own page setup uses a fixed 92% "scale" (not "fit to
+    // page"). That magic number was tuned on whatever machine/font-set the
+    // template was authored on — on a different OS/LibreOffice/font combo
+    // (e.g. Windows vs Linux) text metrics differ slightly and the sheet can
+    // spill onto a second page (this is exactly what caused the Company Copy
+    // to get cut in half across pages). Force an explicit "fit to 1 page
+    // wide x 1 page tall" instead, which is robust regardless of fonts/OS.
+    sheet.pageSetup.fitToPage = true;
+    sheet.pageSetup.fitToWidth = 1;
+    sheet.pageSetup.fitToHeight = 1;
+    sheet.pageSetup.scale = undefined;
+
     await workbook.xlsx.writeFile(tempXlsx);
 
     // 3) Convert to PDF via LibreOffice headless
