@@ -512,7 +512,7 @@ function bomRenderChallanTemplateItemsHtml(template) {
 
   return `
     <div class="table-wrap">
-      <table class="bom-items-form-table bom-challan-table">
+      <table class="bom-items-form-table bom-challan-entry-table">
         <colgroup>
           <col style="width:6%;"><col style="width:20%;"><col style="width:14%;">
           <col style="width:12%;"><col style="width:12%;"><col style="width:8%;"><col style="width:28%;">
