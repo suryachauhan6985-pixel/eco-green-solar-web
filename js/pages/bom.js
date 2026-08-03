@@ -1726,7 +1726,7 @@ window.PAGES.bom = {
             // PDF blob once the server finishes generating it below.
             const pdfWindow = window.open('', '_blank');
             if (pdfWindow) {
-              pdfWindow.document.write('<title>Preparing Challan…</title><body style="font-family:sans-serif;background:#1a1a1a;color:#ccc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">Preparing your Challan PDF…</body>');
+              pdfWindow.document.write('<title>Preparing Challan…</title><body style="font-family:sans-serif;background:#1a1a1a;color:#ccc;display:flex;flex-direction:column;gap:16px;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="width:40px;height:40px;border:4px solid #444;border-top-color:#ffb020;border-radius:50%;animation:egsSpin 0.8s linear infinite;"></div><div>Preparing your Challan PDF…</div><style>@keyframes egsSpin{to{transform:rotate(360deg)}}</style></body>');
             }
             // NEW FLOW: Save Data -> backend fills the REAL Excel template ->
             // converts to PDF via LibreOffice -> browser opens/prints the
