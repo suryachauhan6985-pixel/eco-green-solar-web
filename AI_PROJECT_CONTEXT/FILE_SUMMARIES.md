@@ -146,8 +146,8 @@ Deep analysis of every important source file.
 ## `js/pages/masters.js`
 
 - **Purpose:** Defines 8 function(s) implementing supporting logic.
-- **Lines of code:** 889
-- **Complexity:** High (heuristic score: 100)
+- **Lines of code:** 897
+- **Complexity:** High (heuristic score: 102)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** loadMastersSystemEngine(), syncWattMandatoryUI(), resetItemFormState(), loadSubtypesForCategory(cat), resetSubForm(), resetUomForm(), resetWhForm(), $(id)
@@ -182,12 +182,31 @@ Deep analysis of every important source file.
 
 ## `js/pages/purchase.js`
 
-- **Purpose:** Defines 23 function(s) implementing supporting logic.
-- **Lines of code:** 894
-- **Complexity:** High (heuristic score: 121)
+- **Purpose:** Defines 24 function(s) implementing supporting logic.
+- **Lines of code:** 957
+- **Complexity:** High (heuristic score: 130)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** splitSerials(text), setPurEditOpen(open), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), fillSelect(selectEl, items, placeholder), loadPurCategories(), refreshPurBrandsAndType(), refreshPurWattages(), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadPurWarehouses(injectEditValue), searchSupplierLedgers(q), searchSupplierShortCodes(q), fillSupplierDatalist(listEl, ledgers, key), applyLedgerToSupplierFields(l), wireSupplierAutocomplete(inputEl, listEl, matchKey, searchFn), clearPurchaseForm(), refreshPurEditBrandsAndType(injectBrand, injectType), refreshPurEditWattages(injectWatt), loadEditCascadeForLine(line), $(id)
+- **Functions:** splitSerials(text), setPurEditOpen(open), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), fillSelect(selectEl, items, placeholder), purCategoryNeedsSerial(cat), loadPurCategories(), refreshPurBrandsAndType(), refreshPurWattages(), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadPurWarehouses(injectEditValue), searchSupplierLedgers(q), searchSupplierShortCodes(q), fillSupplierDatalist(listEl, ledgers, key), applyLedgerToSupplierFields(l), wireSupplierAutocomplete(inputEl, listEl, matchKey, searchFn), clearPurchaseForm(), refreshPurEditBrandsAndType(injectBrand, injectType), refreshPurEditWattages(injectWatt), loadEditCascadeForLine(line), $(id)
+- **Classes:** None
+- **API endpoints:** None
+- **Database usage:** Raw SQL detected (46 statement keywords: SELECT, JOIN, UPDATE)
+- **Environment variables used:** None
+- **Potential improvements:**
+  - File defines a large number of functions — consider splitting into smaller modules.
+  - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+
+---
+
+## `js/pages/purchase.page.js`
+
+- **Purpose:** Defines 24 function(s) implementing supporting logic.
+- **Lines of code:** 957
+- **Complexity:** High (heuristic score: 130)
+- **Imports:** None
+- **Exports:** None
+- **Functions:** splitSerials(text), setPurEditOpen(open), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), fillSelect(selectEl, items, placeholder), purCategoryNeedsSerial(cat), loadPurCategories(), refreshPurBrandsAndType(), refreshPurWattages(), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadPurWarehouses(injectEditValue), searchSupplierLedgers(q), searchSupplierShortCodes(q), fillSupplierDatalist(listEl, ledgers, key), applyLedgerToSupplierFields(l), wireSupplierAutocomplete(inputEl, listEl, matchKey, searchFn), clearPurchaseForm(), refreshPurEditBrandsAndType(injectBrand, injectType), refreshPurEditWattages(injectWatt), loadEditCascadeForLine(line), $(id)
 - **Classes:** None
 - **API endpoints:** None
 - **Database usage:** Raw SQL detected (46 statement keywords: SELECT, JOIN, UPDATE)
@@ -269,15 +288,15 @@ Deep analysis of every important source file.
 
 ## `js/pages/sales.js`
 
-- **Purpose:** Defines 29 function(s) implementing supporting logic.
-- **Lines of code:** 873
-- **Complexity:** High (heuristic score: 142)
+- **Purpose:** Defines 31 function(s) implementing supporting logic.
+- **Lines of code:** 924
+- **Complexity:** High (heuristic score: 150)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** fillSelect(selectEl, items, placeholder), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadCategoryWattRules(), isWattMandatory(cat), splitSerials(text), wireSerialBox(el), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), loadSaleCategories(), refreshSaleBrandsAndWatt(), refreshSaleWattage(), refreshSaleType(), searchCustomerLedgers(q), searchCustomerShortCodes(q), fillCustomerDatalist(listEl, ledgers, key), applyLedgerToCustomerFields(l), wireCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), clearSalesForm(), refreshSaleEditBrandsAndWatt(injectBrand, injectWatt), refreshSaleEditWattage(injectWatt), refreshSaleEditType(injectType), loadEditCascadeForLine(line), clearEditPanel(), findSalesOrderForEditing(term), prefillFromAssign(customerName, orderNo, mobile, address, lines), $(id)
+- **Functions:** fillSelect(selectEl, items, placeholder), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadCategoryWattRules(), isWattMandatory(cat), isSerialMandatory(cat), splitSerials(text), wireSerialBox(el), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), loadSaleCategories(), refreshSaleBrandsAndWatt(), refreshSaleWattage(), refreshSaleType(), updateSaleSerialFieldVisibility(), searchCustomerLedgers(q), searchCustomerShortCodes(q), fillCustomerDatalist(listEl, ledgers, key), applyLedgerToCustomerFields(l), wireCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), clearSalesForm(), refreshSaleEditBrandsAndWatt(injectBrand, injectWatt), refreshSaleEditWattage(injectWatt), refreshSaleEditType(injectType), loadEditCascadeForLine(line), clearEditPanel(), findSalesOrderForEditing(term), prefillFromAssign(customerName, orderNo, mobile, address, lines), $(id)
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (41 statement keywords: SELECT, JOIN)
+- **Database usage:** Raw SQL detected (42 statement keywords: SELECT, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - File defines a large number of functions — consider splitting into smaller modules.
@@ -660,14 +679,31 @@ Deep analysis of every important source file.
 ## `api/routes/purchase.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 335
-- **Complexity:** Medium (heuristic score: 42)
+- **Lines of code:** 451
+- **Complexity:** Medium (heuristic score: 59)
 - **Imports:** None
 - **Exports:** module.exports
 - **Functions:** registerPurchaseRoutes(app, deps)
 - **Classes:** None
 - **API endpoints:** GET /api/purchase/brands/:category, GET /api/purchase/wattages, GET /api/purchase/check-serials, POST /api/purchase, GET /api/purchase/find, PUT /api/purchase/:invoiceNo, DELETE /api/purchase/:invoiceNo, GET /api/purchase/register
-- **Database usage:** Raw SQL detected (28 statement keywords: SELECT, JOIN, INSERT INTO, UPDATE, DELETE FROM)
+- **Database usage:** Raw SQL detected (35 statement keywords: SELECT, JOIN, INSERT INTO, UPDATE, DELETE FROM)
+- **Environment variables used:** None
+- **Potential improvements:**
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+
+---
+
+## `api/routes/purchase.route.js`
+
+- **Purpose:** Defines HTTP route handlers (controller/router layer).
+- **Lines of code:** 451
+- **Complexity:** Medium (heuristic score: 59)
+- **Imports:** None
+- **Exports:** module.exports
+- **Functions:** registerPurchaseRoutes(app, deps)
+- **Classes:** None
+- **API endpoints:** GET /api/purchase/brands/:category, GET /api/purchase/wattages, GET /api/purchase/check-serials, POST /api/purchase, GET /api/purchase/find, PUT /api/purchase/:invoiceNo, DELETE /api/purchase/:invoiceNo, GET /api/purchase/register
+- **Database usage:** Raw SQL detected (35 statement keywords: SELECT, JOIN, INSERT INTO, UPDATE, DELETE FROM)
 - **Environment variables used:** None
 - **Potential improvements:**
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
@@ -694,16 +730,17 @@ Deep analysis of every important source file.
 ## `api/routes/sales.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 443
-- **Complexity:** Medium (heuristic score: 60)
+- **Lines of code:** 535
+- **Complexity:** High (heuristic score: 76)
 - **Imports:** None
 - **Exports:** module.exports
-- **Functions:** registerSalesRoutes(app, deps)
+- **Functions:** registerSalesRoutes(app, deps), isQtyLine(line)
 - **Classes:** None
 - **API endpoints:** GET /api/sales/types, GET /api/sales/check-line, POST /api/sales/dispatch, POST /api/returns, GET /api/sales/find/:term, PUT /api/sales/modify/:orderNo, DELETE /api/sales/delete/:orderNo, GET /api/sales/register
-- **Database usage:** Raw SQL detected (26 statement keywords: SELECT, JOIN, UPDATE, INSERT INTO)
+- **Database usage:** Raw SQL detected (35 statement keywords: SELECT, JOIN, UPDATE, INSERT INTO)
 - **Environment variables used:** None
 - **Potential improvements:**
+  - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 
 ---
@@ -795,15 +832,15 @@ Deep analysis of every important source file.
 
 ## `api/db/schema.js`
 
-- **Purpose:** Defines 9 function(s) implementing supporting logic.
-- **Lines of code:** 76
-- **Complexity:** Medium (heuristic score: 27)
+- **Purpose:** Defines 10 function(s) implementing supporting logic.
+- **Lines of code:** 89
+- **Complexity:** Medium (heuristic score: 30)
 - **Imports:** None
 - **Exports:** module.exports
-- **Functions:** ensureStartupSchema(pool), ensureSessionSchema(pool), ensureSerialRuleSchema(pool), ensureLedgerTypeSchema(pool), ensureAuthOtpSchema(pool), ensureEmailRoleUniqueSchema(pool), ensureAttachmentsSchema(pool), ensureScanSheetSchema(pool), ensureBomChallanSchema(pool)
+- **Functions:** ensureStartupSchema(pool), ensureSessionSchema(pool), ensureSerialRuleSchema(pool), ensureLedgerTypeSchema(pool), ensureAuthOtpSchema(pool), ensureEmailRoleUniqueSchema(pool), ensureAttachmentsSchema(pool), ensureScanSheetSchema(pool), ensureBomChallanSchema(pool), ensureStockQuantitySchema(pool)
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (13 statement keywords: ALTER TABLE, CREATE TABLE, SELECT, UPDATE)
+- **Database usage:** Raw SQL detected (14 statement keywords: ALTER TABLE, CREATE TABLE, SELECT, UPDATE)
 - **Environment variables used:** None
 - **Potential improvements:**
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.

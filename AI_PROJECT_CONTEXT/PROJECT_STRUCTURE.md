@@ -22,6 +22,7 @@ api/
         ledgers.js
         masters.js
         purchase.js
+        purchase.route.js
         reports.js
         sales.js
         scansheet.routes.js
@@ -62,6 +63,7 @@ js/
         masters.js
         partyledger.js
         purchase.js
+        purchase.page.js
         purchaseregister.js
         reports.js
         returns.js

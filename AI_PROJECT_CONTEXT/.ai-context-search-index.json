@@ -1185,7 +1185,7 @@
     "type": "file",
     "label": "js/pages/purchase.js",
     "file": "js/pages/purchase.js",
-    "detail": "Defines 23 function(s) implementing supporting logic."
+    "detail": "Defines 24 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -1234,6 +1234,12 @@
     "label": "fillSelect",
     "file": "js/pages/purchase.js",
     "detail": "(selectEl, items, placeholder)"
+  },
+  {
+    "type": "function",
+    "label": "purCategoryNeedsSerial",
+    "file": "js/pages/purchase.js",
+    "detail": "(cat)"
   },
   {
     "type": "function",
@@ -1323,6 +1329,156 @@
     "type": "function",
     "label": "$",
     "file": "js/pages/purchase.js",
+    "detail": "(id)"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/purchase.page.js",
+    "file": "js/pages/purchase.page.js",
+    "detail": "Defines 24 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "splitSerials",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "setPurEditOpen",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(open)"
+  },
+  {
+    "type": "function",
+    "label": "renderLineList",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(container, lines, emptyText)"
+  },
+  {
+    "type": "function",
+    "label": "wireLineSelection",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(container)"
+  },
+  {
+    "type": "function",
+    "label": "selectedLineIndex",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(container)"
+  },
+  {
+    "type": "function",
+    "label": "wireProofButtons",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(fileInputId, attachBtnId, clearBtnId, labelId, state)"
+  },
+  {
+    "type": "function",
+    "label": "renderFileList",
+    "file": "js/pages/purchase.page.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "fillSelect",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(selectEl, items, placeholder)"
+  },
+  {
+    "type": "function",
+    "label": "purCategoryNeedsSerial",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(cat)"
+  },
+  {
+    "type": "function",
+    "label": "loadPurCategories",
+    "file": "js/pages/purchase.page.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshPurBrandsAndType",
+    "file": "js/pages/purchase.page.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshPurWattages",
+    "file": "js/pages/purchase.page.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "fillSelectFromApi",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(selectEl, apiPath, emptyLabel, injectValue)"
+  },
+  {
+    "type": "function",
+    "label": "loadPurWarehouses",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(injectEditValue)"
+  },
+  {
+    "type": "function",
+    "label": "searchSupplierLedgers",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(q)"
+  },
+  {
+    "type": "function",
+    "label": "searchSupplierShortCodes",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(q)"
+  },
+  {
+    "type": "function",
+    "label": "fillSupplierDatalist",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(listEl, ledgers, key)"
+  },
+  {
+    "type": "function",
+    "label": "applyLedgerToSupplierFields",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(l)"
+  },
+  {
+    "type": "function",
+    "label": "wireSupplierAutocomplete",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(inputEl, listEl, matchKey, searchFn)"
+  },
+  {
+    "type": "function",
+    "label": "clearPurchaseForm",
+    "file": "js/pages/purchase.page.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshPurEditBrandsAndType",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(injectBrand, injectType)"
+  },
+  {
+    "type": "function",
+    "label": "refreshPurEditWattages",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(injectWatt)"
+  },
+  {
+    "type": "function",
+    "label": "loadEditCascadeForLine",
+    "file": "js/pages/purchase.page.js",
+    "detail": "(line)"
+  },
+  {
+    "type": "function",
+    "label": "$",
+    "file": "js/pages/purchase.page.js",
     "detail": "(id)"
   },
   {
@@ -1641,7 +1797,7 @@
     "type": "file",
     "label": "js/pages/sales.js",
     "file": "js/pages/sales.js",
-    "detail": "Defines 29 function(s) implementing supporting logic."
+    "detail": "Defines 31 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -1664,6 +1820,12 @@
   {
     "type": "function",
     "label": "isWattMandatory",
+    "file": "js/pages/sales.js",
+    "detail": "(cat)"
+  },
+  {
+    "type": "function",
+    "label": "isSerialMandatory",
     "file": "js/pages/sales.js",
     "detail": "(cat)"
   },
@@ -1730,6 +1892,12 @@
   {
     "type": "function",
     "label": "refreshSaleType",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "updateSaleSerialFieldVisibility",
     "file": "js/pages/sales.js",
     "detail": "()"
   },
@@ -3055,6 +3223,18 @@
   },
   {
     "type": "file",
+    "label": "api/routes/purchase.route.js",
+    "file": "api/routes/purchase.route.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerPurchaseRoutes",
+    "file": "api/routes/purchase.route.js",
+    "detail": "(app, deps)"
+  },
+  {
+    "type": "file",
     "label": "api/routes/reports.js",
     "file": "api/routes/reports.js",
     "detail": "Defines HTTP route handlers (controller/router layer)."
@@ -3082,6 +3262,12 @@
     "label": "registerSalesRoutes",
     "file": "api/routes/sales.js",
     "detail": "(app, deps)"
+  },
+  {
+    "type": "function",
+    "label": "isQtyLine",
+    "file": "api/routes/sales.js",
+    "detail": "(line)"
   },
   {
     "type": "file",
@@ -3177,7 +3363,7 @@
     "type": "file",
     "label": "api/db/schema.js",
     "file": "api/db/schema.js",
-    "detail": "Defines 9 function(s) implementing supporting logic."
+    "detail": "Defines 10 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -3230,6 +3416,12 @@
   {
     "type": "function",
     "label": "ensureBomChallanSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureStockQuantitySchema",
     "file": "api/db/schema.js",
     "detail": "(pool)"
   },
@@ -3583,8 +3775,20 @@
   },
   {
     "type": "route",
+    "label": "POST /api/purchase",
+    "file": "api/routes/purchase.route.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
     "label": "DELETE /api/purchase/:invoiceNo",
     "file": "api/routes/purchase.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "DELETE /api/purchase/:invoiceNo",
+    "file": "api/routes/purchase.route.js",
     "detail": "public"
   },
   {
@@ -3595,8 +3799,20 @@
   },
   {
     "type": "route",
+    "label": "PUT /api/purchase/:invoiceNo",
+    "file": "api/routes/purchase.route.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
     "label": "GET /api/purchase/brands/:category",
     "file": "api/routes/purchase.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/purchase/brands/:category",
+    "file": "api/routes/purchase.route.js",
     "detail": "public"
   },
   {
@@ -3607,8 +3823,20 @@
   },
   {
     "type": "route",
+    "label": "GET /api/purchase/check-serials",
+    "file": "api/routes/purchase.route.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
     "label": "GET /api/purchase/find",
     "file": "api/routes/purchase.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/purchase/find",
+    "file": "api/routes/purchase.route.js",
     "detail": "public"
   },
   {
@@ -3619,8 +3847,20 @@
   },
   {
     "type": "route",
+    "label": "GET /api/purchase/register",
+    "file": "api/routes/purchase.route.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
     "label": "GET /api/purchase/wattages",
     "file": "api/routes/purchase.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/purchase/wattages",
+    "file": "api/routes/purchase.route.js",
     "detail": "public"
   },
   {

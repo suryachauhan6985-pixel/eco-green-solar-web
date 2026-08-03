@@ -59,8 +59,11 @@ window.PAGES.sales = {
               </div>
             </div>
 
-            <div class="field span-full"><label>Scan Serial Numbers <span class="req">*</span></label>
+            <div class="field span-full" id="saleSerialsField"><label>Scan Serial Numbers <span class="req">*</span></label>
               <textarea id="saleSerials" placeholder="One serial per line, it auto-splits"></textarea>
+            </div>
+            <div class="field span-full" id="saleQtyOnlyNote" style="display:none;">
+              <p style="color:var(--txt-muted); font-style:italic; margin:0;">This category is quantity-tracked (no serial numbers) — just set the Expected Qty above and click "Add Product Line".</p>
             </div>
 
             <div class="field span-full">
@@ -207,14 +210,27 @@ window.PAGES.sales = {
     // category" is enforced the same way is_watt_mandatory() enforces it on
     // the desktop app, instead of guessing from a hardcoded Panel/Inverter list.
     let categoryWattRules = {};
+    // Category -> serial_mandatory lookup (same source Purchase Inward's
+    // create flow already reads categories.serial_mandatory from). When a
+    // category is NOT serial-mandatory, the New Sales form skips the serial
+    // scan box entirely and dispatches purely on quantity.
+    let categorySerialRules = {};
     async function loadCategoryWattRules() {
       try {
         const cats = await window.Api.get('/masters/categories');
         categoryWattRules = {};
-        (cats || []).forEach((c) => { categoryWattRules[c.name] = !!c.watt_mandatory; });
-      } catch (e) { categoryWattRules = {}; }
+        categorySerialRules = {};
+        (cats || []).forEach((c) => {
+          categoryWattRules[c.name] = !!c.watt_mandatory;
+          categorySerialRules[c.name] = !!c.serial_mandatory;
+        });
+      } catch (e) { categoryWattRules = {}; categorySerialRules = {}; }
     }
     function isWattMandatory(cat) { return !!categoryWattRules[cat]; }
+    // Default true (serial required) if the category hasn't loaded yet or
+    // isn't found — matches the existing behaviour so nothing changes until
+    // the categories master explicitly says serial_mandatory=0.
+    function isSerialMandatory(cat) { return categorySerialRules[cat] !== false; }
 
     // Serial box: auto-newline on delimiter, and paste normalization —
     // mirrors ui/serial_widgets.py's SerialTextEdit exactly (same behaviour
@@ -408,11 +424,22 @@ window.PAGES.sales = {
       fillSelect(saleTypeEl, types, 'Others');
     }
 
-    saleCatEl.addEventListener('change', refreshSaleBrandsAndWatt);
+    saleCatEl.addEventListener('change', () => { refreshSaleBrandsAndWatt(); updateSaleSerialFieldVisibility(); });
     saleBrandEl.addEventListener('change', refreshSaleWattage);
     saleWattEl.addEventListener('change', refreshSaleType);
     loadSaleCategories();
-    loadCategoryWattRules();
+    loadCategoryWattRules().then(updateSaleSerialFieldVisibility);
+
+    // Shows/hides the serial-scan textarea depending on whether the
+    // currently-selected category needs serial numbers at all (mirrors the
+    // same serial_mandatory-driven show/hide already used on Purchase
+    // Inward's create panel).
+    function updateSaleSerialFieldVisibility() {
+      const cat = saleCatEl.value;
+      const needsSerial = isSerialMandatory(cat);
+      $('saleSerialsField').style.display = needsSerial ? '' : 'none';
+      $('saleQtyOnlyNote').style.display = needsSerial ? 'none' : '';
+    }
 
     // ---------------- Customer ledger live autocomplete + autofill ---------
     // Mirrors attach_ledger_autocomplete() / attach_ledger_shortname_lookup()
@@ -481,7 +508,6 @@ window.PAGES.sales = {
       const cat = saleCatEl.value, brand = saleBrandEl.value, wattVal = saleWattEl.value.trim();
       const type = saleTypeEl.value, qtyStr = $('saleQty').value.trim();
       const watt = (wattVal && wattVal !== 'N/A' && !isNaN(Number(wattVal))) ? Number(wattVal) : 0;
-      const serials = splitSerials($('saleSerials').value);
 
       if (!cat || !brand || !type || !qtyStr) {
         window.openModal('Validation Error', '<p>Category, Brand, Type and Qty are required for the product line.</p>');
@@ -495,7 +521,31 @@ window.PAGES.sales = {
         window.openModal('Validation Error', '<p>Expected Dispatch Quantity must be a valid positive number.</p>');
         return;
       }
-      if (serials.length !== Number(qtyStr)) {
+      const qtyNum = Number(qtyStr);
+
+      // ---- Quantity-based category (no serial numbers at all) ----
+      if (!isSerialMandatory(cat)) {
+        let errors = [];
+        try {
+          const resp = await window.Api.get(`/sales/check-line?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}&watt=${watt}&type=${encodeURIComponent(type)}&qty=${qtyNum}`);
+          errors = resp.errors || [];
+        } catch (e) {
+          window.openModal('Server Error', '<p>Could not verify stock availability against the database. Please try again.</p>');
+          return;
+        }
+        if (errors.length) {
+          window.openModal('Stock Validation Error', `<p><strong>DISPATCH BLOCKED:</strong></p><p>${errors.join('<br>')}</p>`);
+          return;
+        }
+        saleLines.push({ cat, brand, watt, type, qty: qtyNum });
+        renderLineList(saleLineList, saleLines, '');
+        $('saleQty').value = '';
+        return;
+      }
+
+      // ---- Serial-based category (existing flow, unchanged) ----
+      const serials = splitSerials($('saleSerials').value);
+      if (serials.length !== qtyNum) {
         window.openModal('Quantity Mismatch', `<p>Quantity mismatch: Qty is ${qtyStr}, but ${serials.length} serial number(s) found.</p>`);
         return;
       }
@@ -503,7 +553,7 @@ window.PAGES.sales = {
         window.openModal('Duplicate Serial Error', '<p>Duplicate serial numbers found inside this product line.</p>');
         return;
       }
-      const existingSerials = new Set(saleLines.flatMap((l) => l.serials));
+      const existingSerials = new Set(saleLines.flatMap((l) => l.serials || []));
       const overlap = serials.filter((sn) => existingSerials.has(sn));
       if (overlap.length) {
         window.openModal('Duplicate Line Serials', `<p>These serials are already in another line:<br><br>${overlap.join(', ')}</p>`);
@@ -541,6 +591,7 @@ window.PAGES.sales = {
     function clearSalesForm() {
       saleCatEl.selectedIndex = 0;
       refreshSaleBrandsAndWatt();
+      updateSaleSerialFieldVisibility();
       ['saleCustShort', 'saleCust', 'saleCustMobile', 'saleCustAddr', 'saleOrder', 'saleChalanNo', 'saleInvNo', 'saleQty'].forEach((id) => { $(id).value = ''; });
       $('saleChalanDate').value = '';
       $('saleInvDate').value = '';
@@ -587,7 +638,7 @@ window.PAGES.sales = {
         const result = await window.Api.post('/sales/dispatch', {
           customer, orderNo, chalanNo, chalanDate, invoiceNo, invoiceDate,
           proofName: saleProof.files.length ? (saleProof.files.length === 1 ? saleProof.files[0].name : `${saleProof.files.length} files`) : '-',
-          lines: saleLines.map((l) => ({ cat: l.cat, brand: l.brand, watt: l.watt, type: l.type, serials: l.serials })),
+          lines: saleLines.map((l) => ({ cat: l.cat, brand: l.brand, watt: l.watt, type: l.type, serials: l.serials, qty: l.qty })),
         });
         if (window.showToast) window.showToast('Sales Dispatch Executed successfully!');
         // Uploaded against chalanNo — Party Ledger groups OUT vouchers by

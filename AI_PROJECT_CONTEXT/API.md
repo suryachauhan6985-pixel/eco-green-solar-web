@@ -1,15 +1,15 @@
 # API Documentation
 
-Total endpoints detected: **88**
+Total endpoints detected: **96**
 
 ## Endpoints by Method
 
 | Method | Count |
 | --- | --- |
-| GET | 37 |
-| POST | 27 |
-| DELETE | 11 |
-| PUT | 13 |
+| GET | 42 |
+| POST | 28 |
+| DELETE | 12 |
+| PUT | 14 |
 
 
 ## All Endpoints
@@ -72,13 +72,21 @@ Total endpoints detected: **88**
 | POST | /api/masters/warehouses | api/routes/masters.js | No |
 | PUT | /api/masters/warehouses | api/routes/masters.js | No |
 | POST | /api/purchase | api/routes/purchase.js | No |
+| POST | /api/purchase | api/routes/purchase.route.js | No |
 | DELETE | /api/purchase/:invoiceNo | api/routes/purchase.js | No |
+| DELETE | /api/purchase/:invoiceNo | api/routes/purchase.route.js | No |
 | PUT | /api/purchase/:invoiceNo | api/routes/purchase.js | No |
+| PUT | /api/purchase/:invoiceNo | api/routes/purchase.route.js | No |
 | GET | /api/purchase/brands/:category | api/routes/purchase.js | No |
+| GET | /api/purchase/brands/:category | api/routes/purchase.route.js | No |
 | GET | /api/purchase/check-serials | api/routes/purchase.js | No |
+| GET | /api/purchase/check-serials | api/routes/purchase.route.js | No |
 | GET | /api/purchase/find | api/routes/purchase.js | No |
+| GET | /api/purchase/find | api/routes/purchase.route.js | No |
 | GET | /api/purchase/register | api/routes/purchase.js | No |
+| GET | /api/purchase/register | api/routes/purchase.route.js | No |
 | GET | /api/purchase/wattages | api/routes/purchase.js | No |
+| GET | /api/purchase/wattages | api/routes/purchase.route.js | No |
 | GET | /api/reports/master | api/routes/reports.js | No |
 | POST | /api/returns | api/routes/sales.js | No |
 | GET | /api/sales/check-line | api/routes/sales.js | No |

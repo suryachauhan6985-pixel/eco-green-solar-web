@@ -44,7 +44,26 @@ module.exports = function registerSalesRoutes(app, deps) {
     const { category, brand, type } = req.query;
     const watt = Number(req.query.watt) || 0;
     const serials = String(req.query.serials || '').split(',').map((s) => s.trim()).filter(Boolean);
-    if (!category || !brand || !type || !serials.length) return res.json({ errors: [] });
+    const qty = Number(req.query.qty) || 0;
+
+    if (!category || !brand || !type) return res.json({ errors: [] });
+
+    // Quantity-based line (no serials scanned — category is not
+    // serial-mandatory): just confirm enough Available quantity-tracked
+    // stock exists for this exact Category+Brand+Wattage+Type combo.
+    if (!serials.length) {
+      if (!qty) return res.json({ errors: [] });
+      const [[{ totalAvail }]] = await pool.query(
+        `SELECT COALESCE(SUM(quantity), 0) AS totalAvail FROM stock_ledger
+         WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND status='Available' AND serial_no IS NULL`,
+        [category, brand, watt, type]
+      );
+      if (totalAvail < qty) {
+        return res.json({ errors: [`Insufficient stock: only ${totalAvail} available, ${qty} requested for ${brand} ${watt ? watt + 'W ' : ''}${type}.`] });
+      }
+      return res.json({ errors: [] });
+    }
+
     const errors = await validateSalesLineSerials(pool, serials, { cat: category, brand, watt, type });
     res.json({ errors });
   }));
@@ -94,6 +113,14 @@ module.exports = function registerSalesRoutes(app, deps) {
 
       // Product master + serial validation for every line, exactly like
       // build_current_sales_line() + validate_sales_line_serials().
+      // Lines are split into two kinds: serial-based (line.serials is a
+      // non-empty array — existing flow, unchanged) and quantity-based
+      // (no serials, a line.qty instead — for categories where
+      // serial_mandatory=0). Quantity-based stock has serial_no=NULL rows
+      // in stock_ledger, one or more rows per Category+Brand+Watt+Type,
+      // each carrying its own `quantity`.
+      const isQtyLine = (line) => !(Array.isArray(line.serials) && line.serials.length) && Number(line.qty) > 0;
+
       const validationErrors = [];
       for (const line of lines) {
         if (!line.cat || !line.brand || !line.type) {
@@ -105,7 +132,23 @@ module.exports = function registerSalesRoutes(app, deps) {
           validationErrors.push(`Selected product master (${line.brand} ${line.watt ? line.watt + 'W ' : ''}${line.type}) was not found. Please create/check the master item first.`);
           continue;
         }
-        validationErrors.push(...(await validateSalesLineSerials(conn, line.serials || [], line)));
+        if (isQtyLine(line)) {
+          const qty = Number(line.qty) || 0;
+          // FOR UPDATE locks every matching Available row now, so a
+          // concurrent dispatch can't double-spend the same stock before
+          // this transaction commits.
+          const [[{ totalAvail }]] = await conn.query(
+            `SELECT COALESCE(SUM(quantity), 0) AS totalAvail FROM stock_ledger
+             WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND status='Available' AND serial_no IS NULL
+             FOR UPDATE`,
+            [line.cat, line.brand, Number(line.watt) || 0, line.type]
+          );
+          if (totalAvail < qty) {
+            validationErrors.push(`Insufficient stock for ${line.brand} ${line.watt ? line.watt + 'W ' : ''}${line.type}: ${totalAvail} available, ${qty} requested.`);
+          }
+        } else {
+          validationErrors.push(...(await validateSalesLineSerials(conn, line.serials || [], line)));
+        }
       }
       if (validationErrors.length) {
         await conn.rollback();
@@ -120,8 +163,58 @@ module.exports = function registerSalesRoutes(app, deps) {
         );
       }
 
+      // FIFO consume for every quantity-based line — oldest Available row
+      // (lowest id = purchased first) gets used up first.
+      let qtyDispatchedTotal = 0;
+      for (const line of lines.filter(isQtyLine)) {
+        let remaining = Number(line.qty) || 0;
+        const [rows] = await conn.query(
+          `SELECT id, quantity, item_id, item_name, category, brand_name, watt, solar_type, warehouse,
+                  supplier_name, purchase_invoice, purchase_date, purchase_attachment
+           FROM stock_ledger
+           WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND status='Available' AND serial_no IS NULL
+           ORDER BY id ASC
+           FOR UPDATE`,
+          [line.cat, line.brand, Number(line.watt) || 0, line.type]
+        );
+        for (const row of rows) {
+          if (remaining <= 0) break;
+          if (row.quantity <= remaining) {
+            // Whole row consumed — just flip it to Sold, quantity stays as-is.
+            await conn.query(
+              `UPDATE stock_ledger SET status='Sold', customer_name=?, order_no=?, sales_invoice=?, invoice_date=?, sales_date=?, chalan_no=?, chalan_date=?, sales_attachment=?
+               WHERE id=?`,
+              [customer, orderNo, invoiceNo || '-', invoiceDate, chalanDate, chalanNo, chalanDate, proofName, row.id]
+            );
+            remaining -= row.quantity;
+            qtyDispatchedTotal += row.quantity;
+          } else {
+            // Split: only part of this row is needed. Insert a NEW row
+            // carrying the same item/purchase provenance, quantity=remaining,
+            // serial_no=NULL, marked Sold with this dispatch's details — then
+            // shrink the original row's quantity by the same amount (it
+            // stays 'Available' with what's left over).
+            await conn.query(
+              `INSERT INTO stock_ledger
+                 (item_id, item_name, category, brand_name, watt, solar_type, warehouse, status,
+                  supplier_name, purchase_invoice, purchase_date, purchase_attachment,
+                  customer_name, order_no, sales_invoice, invoice_date, sales_date, chalan_no, chalan_date, sales_attachment,
+                  quantity, serial_no, edited_flag)
+               VALUES (?, ?, ?, ?, ?, ?, ?, 'Sold', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 0)`,
+              [row.item_id, row.item_name, row.category, row.brand_name, row.watt, row.solar_type, row.warehouse,
+               row.supplier_name, row.purchase_invoice, row.purchase_date, row.purchase_attachment,
+               customer, orderNo, invoiceNo || '-', invoiceDate, chalanDate, chalanNo, chalanDate, proofName,
+               remaining]
+            );
+            await conn.query(`UPDATE stock_ledger SET quantity = quantity - ? WHERE id=?`, [remaining, row.id]);
+            qtyDispatchedTotal += remaining;
+            remaining = 0;
+          }
+        }
+      }
+
       await conn.commit();
-      res.json({ success: true, orderNo, chalanNo, lineCount: lines.length, serialCount: allSerials.length });
+      res.json({ success: true, orderNo, chalanNo, lineCount: lines.length, serialCount: allSerials.length, qtyDispatched: qtyDispatchedTotal });
     } catch (err) {
       await conn.rollback();
       throw err;

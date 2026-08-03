@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-03T07:05:46.526Z",
+  "generatedAt": "2026-08-03T10:07:00.996Z",
   "files": {
     ".env": {
       "hash": "fbf93500e5313e2f01018668de228b174a039bbf",
@@ -57,9 +57,9 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/masters.js": {
-      "hash": "df97f1f45b8c2e01969fa623a6909669c0ee9dd5",
-      "size": 41089,
-      "mtimeMs": 1785156375121.9175
+      "hash": "265a2f4c7588b038a8749d5649e7ce717007b23c",
+      "size": 41584,
+      "mtimeMs": 1785745516754.9731
     },
     "js/pages/partyledger.js": {
       "hash": "1648db6f2544ae217d146320ecfd348698448507",
@@ -67,9 +67,14 @@
       "mtimeMs": 1785070246476.3562
     },
     "js/pages/purchase.js": {
-      "hash": "a27d22cd8caaba22eda6bcda6f0daaaaad238ca1",
-      "size": 48357,
-      "mtimeMs": 1784964844000
+      "hash": "0495933bf805aeb56847785d80951ebe3eb2dda2",
+      "size": 52335,
+      "mtimeMs": 1785744929555.1223
+    },
+    "js/pages/purchase.page.js": {
+      "hash": "0495933bf805aeb56847785d80951ebe3eb2dda2",
+      "size": 52335,
+      "mtimeMs": 1785744929555.1223
     },
     "js/pages/purchaseregister.js": {
       "hash": "e155cf368a8b35e8dd7b493aa7f7e1e0c3c335a4",
@@ -92,9 +97,9 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/sales.js": {
-      "hash": "33f0e93147225956cd4994a6344c962113c0e590",
-      "size": 46302,
-      "mtimeMs": 1784964844000
+      "hash": "4f90311ca2bd2a1c7cecb277ea2385cd9f58155d",
+      "size": 49086,
+      "mtimeMs": 1785751216077.9917
     },
     "js/pages/scansheet.js": {
       "hash": "8fa99e1e75299b9422d10b0dbd83d9b52de8b598",
@@ -252,9 +257,14 @@
       "mtimeMs": 1785235629234.0254
     },
     "api/routes/purchase.js": {
-      "hash": "b7558920f9fb3629ede91d3e0976aaa4f5dc3ea8",
-      "size": 16940,
-      "mtimeMs": 1785235629234.0254
+      "hash": "ef765a170875852ac1fefb010edeb27e9da5f95d",
+      "size": 24276,
+      "mtimeMs": 1785744939525.5215
+    },
+    "api/routes/purchase.route.js": {
+      "hash": "ef765a170875852ac1fefb010edeb27e9da5f95d",
+      "size": 24276,
+      "mtimeMs": 1785744939525.5215
     },
     "api/routes/reports.js": {
       "hash": "fd5cb651ec5846e7d1c1d2b70cf307eefd6c0283",
@@ -262,9 +272,9 @@
       "mtimeMs": 1785235629234.0254
     },
     "api/routes/sales.js": {
-      "hash": "ca587dfae57c5e97284fe3f1ea7af1cf9ed4f73a",
-      "size": 22676,
-      "mtimeMs": 1785235629234.0254
+      "hash": "c7996b58e8b95411f7ac61414bdb70b9bb36ffb7",
+      "size": 27860,
+      "mtimeMs": 1785751206007.7036
     },
     "api/routes/scansheet.routes.js": {
       "hash": "a583c622cb0e3b76257b10d27af47923ca702bda",
@@ -292,9 +302,9 @@
       "mtimeMs": 1785235534568.3574
     },
     "api/db/schema.js": {
-      "hash": "216855ab10a6ba544cc22852aed08e23fe222e00",
-      "size": 4673,
-      "mtimeMs": 1785663679111.4148
+      "hash": "93bc835f4a41bd9810d9132c6758fc0f4c71c570",
+      "size": 5591,
+      "mtimeMs": 1785743399066.3384
     },
     "api/config/cors.js": {
       "hash": "65b40658d9f742b7feb8efed1002f8c4c25d68d8",
