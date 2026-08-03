@@ -3,24 +3,13 @@ module.exports = function registerAuthRoutes(app, deps) {
   const SESSION_STALE_SECONDS = 40;
 
   async function completeLoginSession(uname, role, res) {
-    // ---------- One session at a time per user ----------
-    // First self-heal: if this username's last session went stale (crashed
-    // tab, lost network, power cut — same STALE_SECONDS window
-    // /api/sessions/live uses) it doesn't count as "still logged in" any
-    // more, so it won't block a fresh login.
-    await pool.query(
-      `UPDATE user_sessions
-       SET is_logged_in=0
-       WHERE username=? AND is_logged_in=1 AND (last_seen IS NULL OR last_seen < (NOW() - INTERVAL ? SECOND))`,
-      [uname, SESSION_STALE_SECONDS]
-    );
-    const [[existing]] = await pool.query(
-      `SELECT is_logged_in FROM user_sessions WHERE username=?`,
-      [uname]
-    );
-    if (existing && existing.is_logged_in) {
-      return res.status(409).json({ error: 'This user is already logged in on another device/browser. Please logout there first.' });
-    }
+    // ---------- Multiple devices/browsers allowed per user ----------
+    // Previously this blocked a second login with a 409 ("already logged in
+    // on another device") by checking user_sessions.is_logged_in first.
+    // That restriction has been removed on request — the same account can
+    // now be signed in from as many devices/browsers/tabs at once as
+    // needed. user_sessions is still updated below purely for the "Live
+    // Network Users" online/offline display; it no longer gates login.
 
     // Mark this user ONLINE right away — same row the desktop app's
     // "Live Network Users" tracker reads, so a login from either app shows

@@ -986,11 +986,16 @@ window.PAGES.bom = {
     let bomCustSearchTimer = null;
 
     async function searchBomCustomerLedgers(q) {
-      try { return await window.Api.get(`/ledgers?type=Customer&q=${encodeURIComponent(q)}`); }
+      // silent: true — this fires on every keystroke (debounced) for
+      // autocomplete; flashing the full-screen loader on each one made the
+      // BOM page feel like it was constantly "loading". The initial focus
+      // load (empty query) also goes through here and stays silent for the
+      // same reason — it's a background suggestion fetch, not a page load.
+      try { return await window.Api.get(`/ledgers?type=Customer&q=${encodeURIComponent(q)}`, { silent: true }); }
       catch (e) { return []; }
     }
     async function searchBomCustomerShortCodes(q) {
-      try { return await window.Api.get(`/ledgers/shortcodes?type=Customer&q=${encodeURIComponent(q)}`); }
+      try { return await window.Api.get(`/ledgers/shortcodes?type=Customer&q=${encodeURIComponent(q)}`, { silent: true }); }
       catch (e) { return []; }
     }
     function fillBomCustomerDatalist(listEl, ledgers, key) {
@@ -1030,7 +1035,11 @@ window.PAGES.bom = {
       if (!inputEl || !listEl) return;
       let timer = null;
       async function search(q) {
-        try { return await window.Api.get(`/ledgers?type=${encodeURIComponent(ledgerType)}&q=${encodeURIComponent(q)}`); }
+        // silent: true — same reasoning as searchBomCustomerLedgers above:
+        // this is a debounced keystroke-driven autocomplete call, not a
+        // user-initiated page load, so it shouldn't flash the full-screen
+        // loader every time someone types a letter.
+        try { return await window.Api.get(`/ledgers?type=${encodeURIComponent(ledgerType)}&q=${encodeURIComponent(q)}`, { silent: true }); }
         catch (e) { return []; }
       }
       function fillList(ledgers) {
