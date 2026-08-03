@@ -54,6 +54,10 @@ module.exports = function registerChallanRoutes(app, deps) {
     try {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="Challan_${row.challan_no}.pdf"`);
+      // Without this, browsers (esp. installed PWAs) may heuristically cache
+      // this GET response and keep re-serving an old/blank PDF for the same
+      // challan id even after the record's data changes.
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
       res.send(pdfBuffer);
     } finally {
       await cleanup();

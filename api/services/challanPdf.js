@@ -242,7 +242,7 @@ const SHEET_CONFIG = {
     marginsIn: { top: 0, bottom: 0, left: 0, right: 0, header: 0, footer: 0 },
     orientation: 'landscape',
     paperSize: 9, // A4
-    fitToPage: true,
+    fitToPage: false,
     scale: 95,
     horizontalCentered: true,
     verticalCentered: false,
@@ -274,11 +274,11 @@ const SHEET_CONFIG = {
 
   rows: {
     1:  { height: 20 },
-    39: { height: 3 },
+    39: { height: 20 },
     6: { height: 17 },
     7: { height: 15 },
     8: { height: 15 },
-    38: { height: 18 },
+    38: { height: 16 },
     // Add a row number here to control its height, e.g. 7: { height: 22 }.
     // Any row left out keeps the template's original height untouched.
   },

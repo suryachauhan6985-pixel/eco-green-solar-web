@@ -64,7 +64,13 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(fetch(request));
+    // `cache: 'no-store'` bypasses the browser's own HTTP cache too — not
+    // just the service worker's Cache Storage. Plain fetch(request) still
+    // respects the browser's heuristic HTTP caching for GET responses that
+    // don't send explicit Cache-Control headers (e.g. the challan PDF
+    // route), which is why the installed PWA could serve a stale response
+    // even though this handler never touches caches.* itself.
+    event.respondWith(fetch(request, { cache: 'no-store' }));
     return;
   }
 
