@@ -10,7 +10,7 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-03T04:42:24.027Z
+- **Generated:** 2026-08-03T07:05:46.519Z
 
 ## 2. Architecture Overview
 
@@ -163,7 +163,7 @@ Utility/helper files: 2
 
 ## 11. Known Issues / Risk Areas
 
-- 10 file(s) flagged as High complexity: js/app.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, js/pages/stockassign.js, api/routes/auth.js
+- 11 file(s) flagged as High complexity: js/app.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, js/pages/stockassign.js, api/services/challanPdf.js, ...
 - Raw SQL string usage found in 35 file(s) — verify parameterization to avoid SQL injection.
 - No routes appear to use recognizable auth middleware — verify whether this API is intentionally public.
 - A real `.env` file exists in the project (.env) — ensure it is excluded from version control.

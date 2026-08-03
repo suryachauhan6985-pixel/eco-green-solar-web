@@ -23,6 +23,14 @@
 </head>
 <body>
 
+<!-- Global full-screen loading overlay — shown automatically by js/app.js
+     while any /api/... request is in flight (see the window.fetch wrapper
+     near the top of app.js). Sits above everything else, including the
+     sidebar overlay and modals. -->
+<div class="loader-overlay" id="loaderOverlay">
+  <div class="loader-spinner"></div>
+</div>
+
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
 <div class="shell">

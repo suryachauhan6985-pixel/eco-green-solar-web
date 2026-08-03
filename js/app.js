@@ -27,6 +27,29 @@
 //   attached (hadToken below) — a 401 with no token just means "not logged
 //   in yet", which is normal and not an error to react to.
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// GLOBAL LOADING OVERLAY — window.showLoader() / window.hideLoader().
+// Uses a counter (not a simple on/off flag) so that if two API calls happen
+// to overlap (e.g. a page loads two datasets at once), the overlay only
+// hides once ALL of them have finished — not the moment the first one
+// returns. Wired automatically into every /api/... call by the window.fetch
+// wrapper right below; pages/modules can also call these manually if they
+// ever need to show the overlay around non-fetch work.
+// ---------------------------------------------------------------------------
+let __egsLoaderCount = 0;
+window.showLoader = function showLoader() {
+  __egsLoaderCount++;
+  const el = document.getElementById('loaderOverlay');
+  if (el) el.classList.add('active');
+};
+window.hideLoader = function hideLoader() {
+  __egsLoaderCount = Math.max(0, __egsLoaderCount - 1);
+  if (__egsLoaderCount === 0) {
+    const el = document.getElementById('loaderOverlay');
+    if (el) el.classList.remove('active');
+  }
+};
+
 (function () {
   const originalFetch = window.fetch.bind(window);
   window.fetch = function (input, init) {
@@ -46,6 +69,11 @@
       if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${tokenUsedForThisCall}`);
       init.headers = headers;
     }
+    // Show the full-screen overlay for the duration of every /api/... call —
+    // covers Api.get/post/put/delete (js/data/api.js) and any direct fetch()
+    // to our own backend, from every page, automatically. Non-API fetches
+    // (CDN scripts etc.) are left alone.
+    if (isApiCall) window.showLoader();
     return originalFetch(input, init).then((res) => {
       // Only raise a real "your session died" event if the token that just
       // failed is STILL the active one. If it isn't (person logged out, or
@@ -57,6 +85,8 @@
         window.dispatchEvent(new CustomEvent('egs:session-expired'));
       }
       return res;
+    }).finally(() => {
+      if (isApiCall) window.hideLoader();
     });
   };
 })();

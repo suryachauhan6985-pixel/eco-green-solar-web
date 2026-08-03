@@ -21,3 +21,33 @@ button{font-family:inherit;cursor:pointer;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--input-bg);border-radius:5px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--blue);}
+
+/* ---------------------------------------------------------------------
+   Global full-screen loading overlay (js/app.js shows/hides this via
+   window.showLoader() / window.hideLoader() around every /api/... call).
+   --------------------------------------------------------------------- */
+.loader-overlay{
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(17,17,17,0.72);
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
+}
+.loader-overlay.active{
+  display:flex;
+}
+.loader-spinner{
+  width:54px;
+  height:54px;
+  border:4px solid var(--input-bg);
+  border-top:4px solid var(--gold);
+  border-radius:50%;
+  animation:loader-spin 0.75s linear infinite;
+}
+@keyframes loader-spin{
+  to{ transform:rotate(360deg); }
+}

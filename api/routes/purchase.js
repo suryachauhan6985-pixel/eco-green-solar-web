@@ -70,9 +70,14 @@ module.exports = function registerPurchaseRoutes(app, deps) {
       return res.status(400).json({ error: 'Add at least one Invoice Product Line before saving.' });
     }
 
+    // Every line is EITHER serial-tracked (line.serials has entries — for
+    // serial-mandatory categories like Panel/Inverter) OR quantity-tracked
+    // (line.serials empty, line.qty > 0 — every other category). At least
+    // one line must actually carry something to save.
     const allSerials = lines.flatMap((l) => l.serials || []);
-    if (!allSerials.length) {
-      return res.status(400).json({ error: 'Serial Numbers are required.' });
+    const hasQuantityLine = lines.some((l) => (!l.serials || !l.serials.length) && Number(l.qty) > 0);
+    if (!allSerials.length && !hasQuantityLine) {
+      return res.status(400).json({ error: 'Each product line needs either Serial Numbers or a Quantity.' });
     }
 
     // Same-invoice duplicate check — mirrors "Same serial number is present
@@ -100,12 +105,28 @@ module.exports = function registerPurchaseRoutes(app, deps) {
       for (const line of lines) {
         const itemId = await getOrCreateItem(conn, line.cat, line.brand, line.watt, line.type);
         const itemName = itemNameSlug(line.brand, line.watt, line.type);
-        for (const sn of (line.serials || [])) {
-          await conn.query(
-            `INSERT INTO stock_ledger (item_id, item_name, category, brand_name, watt, solar_type, serial_no, pallet_no, warehouse, status, supplier_name, purchase_invoice, purchase_date, purchase_attachment)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Available', ?, ?, ?, ?)`,
-            [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', sn, line.pallet || pallet, line.warehouse, supplier, invoiceNo, date, proofName]
-          );
+        const serials = line.serials || [];
+        if (serials.length) {
+          // Serial-tracked category (e.g. Panel/Inverter) — unchanged:
+          // one row per serial, quantity is implicitly 1 per row.
+          for (const sn of serials) {
+            await conn.query(
+              `INSERT INTO stock_ledger (item_id, item_name, category, brand_name, watt, solar_type, serial_no, quantity, pallet_no, warehouse, status, supplier_name, purchase_invoice, purchase_date, purchase_attachment)
+               VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, 'Available', ?, ?, ?, ?)`,
+              [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', sn, line.pallet || pallet, line.warehouse, supplier, invoiceNo, date, proofName]
+            );
+          }
+        } else {
+          // Quantity-tracked category (everything else) — ONE row, no
+          // serial number, the whole quantity stored in `quantity`.
+          const qty = Number(line.qty) || 0;
+          if (qty > 0) {
+            await conn.query(
+              `INSERT INTO stock_ledger (item_id, item_name, category, brand_name, watt, solar_type, serial_no, quantity, pallet_no, warehouse, status, supplier_name, purchase_invoice, purchase_date, purchase_attachment)
+               VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, 'Available', ?, ?, ?, ?)`,
+              [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', qty, line.pallet || pallet, line.warehouse, supplier, invoiceNo, date, proofName]
+            );
+          }
         }
       }
 
@@ -133,7 +154,7 @@ module.exports = function registerPurchaseRoutes(app, deps) {
     );
     const resolvedName = shortMatch.length ? shortMatch[0].ledger_name : null;
 
-    let sql = `SELECT category, brand_name, watt, solar_type, supplier_name, purchase_invoice, pallet_no, warehouse, purchase_date, serial_no, purchase_attachment
+    let sql = `SELECT id, category, brand_name, watt, solar_type, supplier_name, purchase_invoice, pallet_no, warehouse, purchase_date, serial_no, purchase_attachment, quantity
                FROM stock_ledger WHERE purchase_invoice = ? OR supplier_name LIKE ?`;
     const params = [term, `%${term}%`];
     if (resolvedName) { sql += ` OR supplier_name = ?`; params.push(resolvedName); }
@@ -150,16 +171,28 @@ module.exports = function registerPurchaseRoutes(app, deps) {
     const records = allMatches.filter((r) => r.purchase_invoice === targetInv);
     const head = records[0];
 
+    // Each row is EITHER serial-tracked (serial_no set, quantity implicitly 1)
+    // OR quantity-tracked (serial_no NULL, real count lives in `quantity`).
+    // Group into the same "line" the way the Create form does, but keep the
+    // two kinds separate inside a line: `serials` for the serial-tracked
+    // rows, `qtyRows` (with each row's real db id) for the quantity-tracked
+    // ones — the ids are what PUT below needs to know which exact rows to
+    // update/delete instead of re-inserting everything from scratch.
     const grouped = new Map();
     records.forEach((r) => {
       const key = [r.category, r.brand_name, r.watt || 0, r.solar_type, r.pallet_no || '', r.warehouse || ''].join('|');
       if (!grouped.has(key)) {
         grouped.set(key, {
           cat: r.category, brand: r.brand_name, watt: r.watt || 0, type: r.solar_type,
-          pallet: r.pallet_no || '', warehouse: r.warehouse || '', serials: [],
+          pallet: r.pallet_no || '', warehouse: r.warehouse || '', serials: [], qtyRows: [],
         });
       }
-      grouped.get(key).serials.push(r.serial_no);
+      const g = grouped.get(key);
+      if (r.serial_no) {
+        g.serials.push(r.serial_no);
+      } else {
+        g.qtyRows.push({ id: r.id, qty: Number(r.quantity) || 0 });
+      }
     });
 
     res.json({
@@ -168,8 +201,18 @@ module.exports = function registerPurchaseRoutes(app, deps) {
       pallet: head.pallet_no,
       date: head.purchase_date,
       proofName: head.purchase_attachment,
-      allSerials: records.map((r) => r.serial_no),
-      lines: Array.from(grouped.values()).map((l) => ({ ...l, qty: l.serials.length })),
+      // Only real serial numbers now (quantity-tracked rows carry NULL and
+      // must not pollute the serial-diffing logic in PUT).
+      allSerials: records.filter((r) => r.serial_no).map((r) => r.serial_no),
+      // Flat list of every quantity-tracked row's db id belonging to this
+      // invoice today — PUT uses this to know what got removed during edit.
+      originalQtyRowIds: records.filter((r) => !r.serial_no).map((r) => r.id),
+      lines: Array.from(grouped.values()).map((l) => ({
+        cat: l.cat, brand: l.brand, watt: l.watt, type: l.type, pallet: l.pallet, warehouse: l.warehouse,
+        serials: l.serials,
+        qtyRowIds: l.qtyRows.map((r) => r.id),
+        qty: l.serials.length ? l.serials.length : l.qtyRows.reduce((sum, r) => sum + r.qty, 0),
+      })),
     });
   }));
 
@@ -187,10 +230,16 @@ module.exports = function registerPurchaseRoutes(app, deps) {
     const proofName = req.body.proofName ? String(req.body.proofName).trim() : null;
     const lines = Array.isArray(req.body.lines) ? req.body.lines : [];
     const originalSerials = Array.isArray(req.body.originalSerials) ? req.body.originalSerials : [];
+    // Db ids of every quantity-tracked (serial_no NULL) row this invoice had
+    // BEFORE the edit — comes straight from GET /find's originalQtyRowIds.
+    const originalQtyRowIds = Array.isArray(req.body.originalQtyRowIds) ? req.body.originalQtyRowIds.map(Number) : [];
 
     const newSerials = lines.flatMap((l) => l.serials || []);
-    if (!newSupp || !newInv || !newSerials.length) {
-      return res.status(400).json({ error: 'Supplier, Invoice No, and Serials are required for modification.' });
+    // A line counts as valid if it has serials (Panel/Inverter) OR a qty > 0
+    // (every other category) — mirrors the same either/or check in POST.
+    const hasQuantityLine = lines.some((l) => (!l.serials || !l.serials.length) && Number(l.qty) > 0);
+    if (!newSupp || !newInv || (!newSerials.length && !hasQuantityLine)) {
+      return res.status(400).json({ error: 'Supplier, Invoice No, and at least one Serial Number or Quantity are required for modification.' });
     }
 
     const seen = new Set(), innerDupes = new Set();
@@ -228,12 +277,34 @@ module.exports = function registerPurchaseRoutes(app, deps) {
         }
       }
 
+      // Same rule for quantity-tracked rows: if any of them has already been
+      // (partially) sold, block the whole edit rather than silently losing
+      // sold stock history.
+      if (originalQtyRowIds.length) {
+        const [soldQtyRows] = await conn.query(
+          `SELECT id FROM stock_ledger WHERE id IN (?) AND status='Sold'`,
+          [originalQtyRowIds]
+        );
+        if (soldQtyRows.length) {
+          await conn.rollback();
+          return res.status(400).json({
+            error: `Modification Restricted! Some quantity-tracked item(s) on this purchase invoice have already been sold out and cannot be modified.`,
+          });
+        }
+      }
+
       const [metaRows] = await conn.query(
         `SELECT purchase_attachment FROM stock_ledger WHERE purchase_invoice=? LIMIT 1`,
         [originalInvoiceNo]
       );
       const existingAttachment = metaRows.length ? metaRows[0].purchase_attachment : '-';
       const finalProof = proofName || existingAttachment;
+
+      // Db ids of quantity-tracked rows that survive this edit (either
+      // updated in place, or newly inserted has no "original" id to track).
+      // Anything in originalQtyRowIds NOT in this list at the end got
+      // removed during the edit and must be deleted.
+      const survivingQtyRowIds = [];
 
       for (const line of lines) {
         if (!line.cat || !line.brand) {
@@ -242,20 +313,55 @@ module.exports = function registerPurchaseRoutes(app, deps) {
         }
         const itemId = await getOrCreateItem(conn, line.cat, line.brand, line.watt, line.type);
         const itemName = itemNameSlug(line.brand, line.watt, line.type);
-        for (const sn of (line.serials || [])) {
-          if (originalSerials.includes(sn)) {
-            await conn.query(
-              `UPDATE stock_ledger SET item_id=?, item_name=?, category=?, brand_name=?, watt=?, solar_type=?,
-               pallet_no=?, warehouse=?, supplier_name=?, purchase_invoice=?, purchase_date=?, purchase_attachment=?, edited_flag=1
-               WHERE serial_no=?`,
-              [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', line.pallet || pallet, line.warehouse, newSupp, newInv, newDate, finalProof, sn]
-            );
-          } else {
-            await conn.query(
-              `INSERT INTO stock_ledger (item_id, item_name, category, brand_name, watt, solar_type, serial_no, pallet_no, warehouse, status, supplier_name, purchase_invoice, purchase_date, purchase_attachment, edited_flag)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Available', ?, ?, ?, ?, 1)`,
-              [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', sn, line.pallet || pallet, line.warehouse, newSupp, newInv, newDate, finalProof]
-            );
+        const serials = line.serials || [];
+
+        if (serials.length) {
+          // Serial-tracked line (e.g. Panel/Inverter) — unchanged.
+          for (const sn of serials) {
+            if (originalSerials.includes(sn)) {
+              await conn.query(
+                `UPDATE stock_ledger SET item_id=?, item_name=?, category=?, brand_name=?, watt=?, solar_type=?,
+                 pallet_no=?, warehouse=?, supplier_name=?, purchase_invoice=?, purchase_date=?, purchase_attachment=?, edited_flag=1
+                 WHERE serial_no=?`,
+                [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', line.pallet || pallet, line.warehouse, newSupp, newInv, newDate, finalProof, sn]
+              );
+            } else {
+              await conn.query(
+                `INSERT INTO stock_ledger (item_id, item_name, category, brand_name, watt, solar_type, serial_no, pallet_no, warehouse, status, supplier_name, purchase_invoice, purchase_date, purchase_attachment, edited_flag)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Available', ?, ?, ?, ?, 1)`,
+                [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', sn, line.pallet || pallet, line.warehouse, newSupp, newInv, newDate, finalProof]
+              );
+            }
+          }
+        } else {
+          // Quantity-tracked line (every other category) — no serials at all.
+          const qty = Number(line.qty) || 0;
+          if (qty > 0) {
+            const qtyRowIds = Array.isArray(line.qtyRowIds) ? line.qtyRowIds.map(Number) : [];
+            if (qtyRowIds.length) {
+              // This line already existed — update the first backing row in
+              // place with the new total qty + any field changes. If the
+              // line originally spanned more than one db row (e.g. leftover
+              // from an earlier partial state), the extras are simply left
+              // out of survivingQtyRowIds below and get cleaned up by the
+              // same "removed" pass as everything else — consolidating them
+              // into this one row.
+              const primaryId = qtyRowIds[0];
+              await conn.query(
+                `UPDATE stock_ledger SET item_id=?, item_name=?, category=?, brand_name=?, watt=?, solar_type=?,
+                 pallet_no=?, warehouse=?, supplier_name=?, purchase_invoice=?, purchase_date=?, purchase_attachment=?, quantity=?, edited_flag=1
+                 WHERE id=?`,
+                [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', line.pallet || pallet, line.warehouse, newSupp, newInv, newDate, finalProof, qty, primaryId]
+              );
+              survivingQtyRowIds.push(primaryId);
+            } else {
+              // Brand-new quantity line added during this edit.
+              await conn.query(
+                `INSERT INTO stock_ledger (item_id, item_name, category, brand_name, watt, solar_type, serial_no, quantity, pallet_no, warehouse, status, supplier_name, purchase_invoice, purchase_date, purchase_attachment, edited_flag)
+                 VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, 'Available', ?, ?, ?, ?, 1)`,
+                [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', qty, line.pallet || pallet, line.warehouse, newSupp, newInv, newDate, finalProof]
+              );
+            }
           }
         }
       }
@@ -264,6 +370,13 @@ module.exports = function registerPurchaseRoutes(app, deps) {
       const removed = originalSerials.filter((sn) => !newSerials.includes(sn));
       if (removed.length) {
         await conn.query(`DELETE FROM stock_ledger WHERE serial_no IN (?)`, [removed]);
+      }
+
+      // Any original quantity-tracked row not carried forward (line deleted,
+      // or its extra/duplicate rows consolidated above) is removed too.
+      const removedQtyRowIds = originalQtyRowIds.filter((id) => !survivingQtyRowIds.includes(id));
+      if (removedQtyRowIds.length) {
+        await conn.query(`DELETE FROM stock_ledger WHERE id IN (?)`, [removedQtyRowIds]);
       }
 
       await conn.commit();
@@ -309,8 +422,12 @@ module.exports = function registerPurchaseRoutes(app, deps) {
   // the group was ever edited.
   app.get('/api/purchase/register', route(async (req, res) => {
     const category = req.query.category;
+    // SUM(quantity) instead of COUNT(*): a serial-tracked row is always
+    // quantity=1 (so this matches the old COUNT(*) behaviour exactly for
+    // those), while a quantity-tracked row (serial_no NULL) can represent
+    // many units in a single row — COUNT(*) would have under-reported it.
     let sql = `SELECT purchase_invoice, purchase_date, supplier_name, category, brand_name, warehouse,
-                      MIN(serial_no) AS first_serial, COUNT(*) AS qty, MAX(edited_flag) AS edited
+                      MIN(serial_no) AS first_serial, SUM(quantity) AS qty, MAX(edited_flag) AS edited
                FROM stock_ledger WHERE purchase_invoice IS NOT NULL AND purchase_invoice != '-'`;
     const params = [];
     if (category && category !== 'All Categories') { sql += ` AND category = ?`; params.push(category); }

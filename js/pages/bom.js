@@ -1748,18 +1748,11 @@ window.PAGES.bom = {
             const originalLabel = printBtn.innerHTML;
             printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving & Preparing PDF...';
             try {
-              // IMPORTANT: window.open() must be called SYNCHRONOUSLY, inside
-              // the click handler, with no `await` before it — otherwise
-              // browsers treat it as not directly tied to the user's click
-              // and silently block the popup (no error, nothing visible,
-              // which is exactly the "toast shows but nothing opens" bug).
-              // So we open a blank tab FIRST, then fill it in once the PDF
-              // is ready.
-              const pdfWindow = window.open('', '_blank');
-              if (pdfWindow) {
-                pdfWindow.document.write('Preparing Challan PDF…');
-              }
-
+              // No blank tab up front anymore — the global loading overlay
+              // (js/app.js, auto-triggered around every /api/... call below)
+              // covers the whole "Saving -> generating PDF on the server"
+              // wait right here on this page. The new tab only opens once
+              // the finished PDF is actually in hand.
               const saved = await window.Api.post('/challan', payload);
               const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
               // NOTE: window.open(pdfUrl, '_blank') directly on the URL was
@@ -1779,14 +1772,20 @@ window.PAGES.bom = {
               }
               const pdfBlob = await pdfRes.blob();
               const blobUrl = URL.createObjectURL(pdfBlob);
+              // Open the tab now, with the PDF already attached — the loader
+              // overlay was covering the screen up to this point, so this is
+              // the first the person sees of a new tab, and it opens with
+              // the finished PDF already loaded, not a blank "Preparing..."
+              // page. Some browsers may still flag this as a popup since it
+              // isn't the very first synchronous statement in the click
+              // handler; the existing download fallback below handles that.
+              const pdfWindow = window.open(blobUrl, '_blank');
               if (pdfWindow) {
-                pdfWindow.location.href = blobUrl;
                 pdfWindow.addEventListener('load', () => {
                   try { pdfWindow.print(); } catch (e) { /* let user use the PDF viewer's own print button */ }
                 });
               } else {
-                // Popup was blocked even for the blank tab (e.g. very strict
-                // blocker settings) — fall back to a same-tab download link
+                // Popup was blocked — fall back to a same-tab download link
                 // so the person can still get the PDF.
                 const a = document.createElement('a');
                 a.href = blobUrl;

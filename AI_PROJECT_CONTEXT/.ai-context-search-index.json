@@ -25,6 +25,18 @@
   },
   {
     "type": "function",
+    "label": "showLoader",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "hideLoader",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "applyGlobalTableSearch",
     "file": "js/app.js",
     "detail": "(query)"
@@ -2780,6 +2792,12 @@
   {
     "type": "function",
     "label": "applySheetStructure",
+    "file": "api/services/challanPdf.js",
+    "detail": "(sheet, config)"
+  },
+  {
+    "type": "function",
+    "label": "applySheetValues",
     "file": "api/services/challanPdf.js",
     "detail": "(sheet, config)"
   },

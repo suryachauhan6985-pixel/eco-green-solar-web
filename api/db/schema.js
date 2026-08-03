@@ -7,6 +7,7 @@ async function ensureStartupSchema(pool) {
   await ensureAttachmentsSchema(pool);
   await ensureScanSheetSchema(pool);
   await ensureBomChallanSchema(pool);
+  await ensureStockQuantitySchema(pool);
 }
 async function ensureSessionSchema(pool) { try { await pool.query(`ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS last_seen DATETIME NULL`); } catch (e) { console.warn('[Session schema] Could not ensure last_seen column (will retry lazily on first use):', e.message); } }
 async function ensureSerialRuleSchema(pool) { try { await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS serial_mandatory TINYINT(1) NOT NULL DEFAULT 0`); } catch (e) { console.warn('[Serial rule schema] Could not ensure serial_mandatory column (will retry lazily on first use):', e.message); } }
@@ -71,5 +72,18 @@ async function ensureBomChallanSchema(pool) {
       INDEX idx_bom_challans_no (challan_no)
     )`);
   } catch (e) { console.warn('[BOM Challan schema] Could not ensure bom_challans table:', e.message); }
+}
+// Adds quantity-based stock tracking alongside the existing serial-based
+// model. `serial_no` in stock_ledger is already nullable (DEFAULT NULL) with
+// a UNIQUE index that permits multiple NULLs, so no change is needed there.
+// Every existing (serial-based) row implicitly represents exactly 1 unit,
+// so DEFAULT 1 backfills all of them correctly with zero data risk.
+// Non-serial-mandatory categories (per categories.serial_mandatory = 0)
+// will instead insert ONE row per purchase/dispatch line with
+// serial_no = NULL and quantity = <entered qty>.
+async function ensureStockQuantitySchema(pool) {
+  try {
+    await pool.query(`ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS quantity INT NOT NULL DEFAULT 1`);
+  } catch (e) { console.warn('[Stock quantity schema] Could not ensure quantity column on stock_ledger (will retry lazily on first use):', e.message); }
 }
 module.exports = { ensureStartupSchema };

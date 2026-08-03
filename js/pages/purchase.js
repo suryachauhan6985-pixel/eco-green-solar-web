@@ -110,6 +110,7 @@ window.PAGES.purchase = {
               <select id="purEditWatt"><option value="">-- Select Brand First --</option></select></div>
             <div class="field"><label>Type <span class="req">*</span></label>
               <select id="purEditType"><option value="">-- Select Category First --</option></select></div>
+            <div class="field"><label>Qty <span class="req">*</span></label><input id="purEditQty" type="number" placeholder="0"></div>
 
             <div class="field span-full"><label>Date <span class="req">*</span></label><input id="purEditDate" type="date"></div>
 
@@ -215,7 +216,7 @@ window.PAGES.purchase = {
       container.innerHTML = lines.map((ln, idx) => `
         <div class="line-item" data-idx="${idx}">
           <span>${ln.cat} • ${ln.brand} ${ln.watt ? '• ' + ln.watt + 'W' : ''} • ${ln.type} • ${ln.warehouse}</span>
-          <span class="qty-badge">Qty ${ln.qty}</span>
+          <span class="qty-badge">Qty ${ln.qty}${ln.needsSerial === false ? ' <small>(Quantity-based, no serial)</small>' : ''}</span>
         </div>
       `).join('');
     }
@@ -309,10 +310,21 @@ window.PAGES.purchase = {
 
     const purCatEl = $('purCat'), purBrandEl = $('purBrand'), purWattEl = $('purWatt'), purTypeEl = $('purType');
 
+    // Category -> serial_mandatory lookup — only Panel/Inverter-type
+    // categories (flagged in Masters > Category) need actual Serial
+    // Numbers. Every other category is quantity-tracked: the Qty field
+    // entered on the line IS the final quantity, no serial scanning needed.
+    let purCategorySerialMandatory = {};
+    function purCategoryNeedsSerial(cat) {
+      return !!purCategorySerialMandatory[cat];
+    }
+
     async function loadPurCategories() {
       try {
         const cats = await window.Api.get('/masters/categories');
         fillSelect(purCatEl, cats.map((c) => c.name), 'No categories found');
+        purCategorySerialMandatory = {};
+        (cats || []).forEach((c) => { purCategorySerialMandatory[c.name] = !!c.serial_mandatory; });
       } catch (e) {
         fillSelect(purCatEl, [], 'Failed to load categories');
       }
@@ -515,7 +527,8 @@ window.PAGES.purchase = {
         window.openModal('Validation Error', '<p>Enter a valid Qty before adding a product line.</p>');
         return;
       }
-      purLines.push({ cat, brand, watt, type, warehouse: wh, qty });
+      const needsSerial = purCategoryNeedsSerial(cat);
+      purLines.push({ cat, brand, watt, type, warehouse: wh, qty, needsSerial });
       renderLineList(purLineList, purLines, '');
       $('purQty').value = '';
     });
@@ -540,10 +553,14 @@ window.PAGES.purchase = {
     $('purBtnClearForm').addEventListener('click', clearPurchaseForm);
 
     $('purBtnSave').addEventListener('click', async () => {
+      const serialLines = purLines.filter((ln) => ln.needsSerial);
       const missing = [];
       if (!$('purSupp').value.trim()) missing.push('Supplier Name');
       if (!$('purInv').value.trim()) missing.push('Invoice No');
-      if (!$('purSerials').value.trim()) missing.push('Serial Numbers');
+      // Serial Numbers are only required if at least one added line belongs
+      // to a serial-mandatory category (Panel/Inverter). Pure quantity-based
+      // invoices never touch this field at all.
+      if (serialLines.length && !$('purSerials').value.trim()) missing.push('Serial Numbers');
       if (missing.length) {
         window.openModal('Validation Error', `<p>Please fill: ${missing.join(', ')}.</p>`);
         return;
@@ -552,18 +569,20 @@ window.PAGES.purchase = {
         window.openModal('Validation Error', '<p>Add at least one Invoice Product Line before saving.</p>');
         return;
       }
-      // Split pasted serials across the product lines in order, same qty
-      // grouping the desktop app does (line 1 takes its qty worth, then
-      // line 2, and so on).
+      // Split pasted serials across the SERIAL-MANDATORY product lines only,
+      // in order (line 1 takes its qty worth, then line 2, and so on).
+      // Quantity-based lines never participate in this split — their Qty
+      // is already final as entered.
       const allSerials = splitSerials($('purSerials').value);
 
       // ---- Check 1: Qty match — mirrors build_current_purchase_line()'s
-      // "Quantity mismatch" rule: total Qty across all product lines must
-      // equal exactly how many serials were entered — not less, not more.
-      const totalQty = purLines.reduce((sum, ln) => sum + (Number(ln.qty) || 0), 0);
-      if (allSerials.length !== totalQty) {
+      // "Quantity mismatch" rule, but now scoped to serial-mandatory lines
+      // only: their total Qty must equal exactly how many serials were
+      // entered — not less, not more.
+      const totalSerialQty = serialLines.reduce((sum, ln) => sum + (Number(ln.qty) || 0), 0);
+      if (allSerials.length !== totalSerialQty) {
         window.openModal('Quantity Mismatch',
-          `<p>Total Qty across product lines is <strong>${totalQty}</strong>, but <strong>${allSerials.length}</strong> serial number(s) were entered. These must match exactly.</p>`);
+          `<p>Total Qty across serial-tracked product lines is <strong>${totalSerialQty}</strong>, but <strong>${allSerials.length}</strong> serial number(s) were entered. These must match exactly.</p>`);
         return;
       }
 
@@ -597,6 +616,10 @@ window.PAGES.purchase = {
       let cursor = 0;
       const lines = purLines.map((ln) => {
         const qty = Number(ln.qty) || 0;
+        if (!ln.needsSerial) {
+          // Quantity-based line — Qty is final, no serials attached.
+          return { cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse, qty, serials: [] };
+        }
         const serials = allSerials.slice(cursor, cursor + qty);
         cursor += qty;
         return { cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse, qty, serials };
@@ -640,6 +663,7 @@ window.PAGES.purchase = {
     const purEditLineList = $('purEditLineList');
     let loadedInvoiceNo = null; // invoice currently loaded in the edit panel, null until Find succeeds
     let loadedOriginalSerials = []; // every serial this invoice had at load time (for diffing on Apply)
+    let loadedOriginalQtyRowIds = []; // every quantity-tracked (non-serial) row's db id this invoice had at load time
     let clearEditPanel = () => {};
     let findPurchaseInvoiceForEditing = () => false;
 
@@ -720,11 +744,12 @@ window.PAGES.purchase = {
       });
 
       clearEditPanel = function () {
-        ['purEditSupp', 'purEditInv', 'purEditPallet', 'purEditWatt', 'purEditSerials'].forEach((id) => { $(id).value = ''; });
+        ['purEditSupp', 'purEditInv', 'purEditPallet', 'purEditWatt', 'purEditQty', 'purEditSerials'].forEach((id) => { $(id).value = ''; });
         $('purEditDate').value = '';
         purEditLines.length = 0;
         loadedInvoiceNo = null;
         loadedOriginalSerials = [];
+        loadedOriginalQtyRowIds = [];
         renderLineList(purEditLineList, purEditLines, 'Find an invoice above to load its lines.');
         purEditProof.files = [];
         $('purEditProofFile').value = '';
@@ -733,11 +758,18 @@ window.PAGES.purchase = {
       $('purBtnClearEdit').addEventListener('click', clearEditPanel);
 
       $('purBtnEditAddLine').addEventListener('click', () => {
-        purEditLines.push({
-          cat: $('purEditCat').value, brand: $('purEditBrand').value, watt: $('purEditWatt').value.trim(),
-          type: $('purEditType').value, warehouse: $('purEditWh').value, qty: '1',
-        });
+        const cat = $('purEditCat').value, brand = $('purEditBrand').value, watt = $('purEditWatt').value.trim();
+        const type = $('purEditType').value, wh = $('purEditWh').value, qty = $('purEditQty').value.trim();
+        if (!qty || Number(qty) <= 0) {
+          window.openModal('Validation Error', '<p>Enter a valid Qty before adding a product line.</p>');
+          return;
+        }
+        const needsSerial = purCategoryNeedsSerial(cat);
+        // Brand-new line added during this edit — no existing db row(s)
+        // behind it yet, so qtyRowIds starts empty (PUT will INSERT it).
+        purEditLines.push({ cat, brand, watt, type, warehouse: wh, qty, needsSerial, qtyRowIds: [] });
         renderLineList(purEditLineList, purEditLines, '');
+        $('purEditQty').value = '';
       });
       $('purBtnEditRemoveLine').addEventListener('click', () => {
         const idx = selectedLineIndex(purEditLineList);
@@ -765,6 +797,7 @@ window.PAGES.purchase = {
         }
         loadedInvoiceNo = inv.invoiceNo;
         loadedOriginalSerials = inv.allSerials || [];
+        loadedOriginalQtyRowIds = inv.originalQtyRowIds || [];
         $('purEditSupp').value = inv.supplier;
         $('purEditInv').value = inv.invoiceNo;
         $('purEditPallet').value = inv.pallet || '';
@@ -773,7 +806,11 @@ window.PAGES.purchase = {
         purEditProof.files = [];
 
         purEditLines.length = 0;
-        inv.lines.forEach((ln) => purEditLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse, qty: ln.qty, serials: ln.serials }));
+        inv.lines.forEach((ln) => purEditLines.push({
+          cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse,
+          qty: ln.qty, serials: ln.serials, qtyRowIds: ln.qtyRowIds || [],
+          needsSerial: purCategoryNeedsSerial(ln.cat),
+        }));
         renderLineList(purEditLineList, purEditLines, 'Find an invoice above to load its lines.');
         // Category/Brand/Wattage/Type/Warehouse dropdowns all reload live
         // from the database here, pre-selecting whatever this invoice's
@@ -801,13 +838,34 @@ window.PAGES.purchase = {
           window.openModal('Not Found', '<p>Find an invoice first before applying modifications.</p>');
           return;
         }
-        const allSerials = PD.splitSerials($('purEditSerials').value);
+        if (!purEditLines.length) {
+          window.openModal('Validation Error', '<p>Add at least one Invoice Product Line before applying modifications.</p>');
+          return;
+        }
+
+        // Pasted serials are split ONLY across serial-mandatory lines, in
+        // order — exactly like the Create form's Save handler. Quantity-
+        // tracked lines never touch the serial textarea at all; their Qty
+        // field is already final as entered/loaded.
+        const serialEditLines = purEditLines.filter((ln) => ln.needsSerial);
+        const allSerials = splitSerials($('purEditSerials').value);
+
+        const totalSerialQty = serialEditLines.reduce((sum, ln) => sum + (Number(ln.qty) || 0), 0);
+        if (serialEditLines.length && allSerials.length !== totalSerialQty) {
+          window.openModal('Quantity Mismatch',
+            `<p>Total Qty across serial-tracked product lines is <strong>${totalSerialQty}</strong>, but <strong>${allSerials.length}</strong> serial number(s) were entered. These must match exactly.</p>`);
+          return;
+        }
+
         let cursor = 0;
-        const lines = (purEditLines.length ? purEditLines : [{
-          cat: $('purEditCat').value, brand: $('purEditBrand').value, watt: $('purEditWatt').value.trim(),
-          type: $('purEditType').value, warehouse: $('purEditWh').value, qty: allSerials.length,
-        }]).map((ln) => {
+        const lines = purEditLines.map((ln) => {
           const qty = Number(ln.qty) || 0;
+          if (!ln.needsSerial) {
+            // Quantity-tracked line — Qty is final, no serials. qtyRowIds
+            // carries forward whichever db row(s) it came from (empty
+            // means it's brand-new, added during this edit).
+            return { cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse, qty, serials: [], qtyRowIds: ln.qtyRowIds || [] };
+          }
           const serials = allSerials.slice(cursor, cursor + qty);
           cursor += qty;
           return { cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse, qty, serials };
@@ -829,9 +887,14 @@ window.PAGES.purchase = {
               : null,
             lines,
             originalSerials: loadedOriginalSerials,
+            originalQtyRowIds: loadedOriginalQtyRowIds,
           });
           loadedInvoiceNo = result.invoiceNo;
           loadedOriginalSerials = allSerials;
+          // qtyRowIds for any brand-new quantity line aren't known until the
+          // next Find (PUT doesn't echo back fresh ids) — close enough as
+          // an in-memory baseline; a re-Find always gets the exact truth.
+          loadedOriginalQtyRowIds = lines.filter((l) => !l.serials.length).flatMap((l) => l.qtyRowIds || []);
           const uploadResult = await window.uploadAttachments('purchase', loadedInvoiceNo, purEditProof.files);
           if (window.showToast) window.showToast('Purchase invoice updated.');
           const uploadWarning = !uploadResult.ok

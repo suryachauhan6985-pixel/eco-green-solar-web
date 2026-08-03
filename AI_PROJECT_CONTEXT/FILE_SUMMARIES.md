@@ -55,11 +55,11 @@ Deep analysis of every important source file.
 ## `js/app.js`
 
 - **Purpose:** Application entry point / bootstrap file.
-- **Lines of code:** 1361
-- **Complexity:** High (heuristic score: 237)
+- **Lines of code:** 1413
+- **Complexity:** High (heuristic score: 254)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** applyGlobalTableSearch(query), applyAllFilters(), closeMenu(), positionMenu(menu, btn), openMenuFor(btn), updateProfileDisplay(username, role), showApp(), saveSession(username, role, persist, token), loadSession(), clearSession(), startHeartbeat(), stopHeartbeat(), resetIdleTimer(), stopIdleTimer(), notifyServerLogout(), showLoginOverlay(message), buildLoginOverlay(), showCredsStep(), showOtpStep(maskedEmail), hideAllSteps(), showRegisterStep(), showRegisterOtpStep(maskedEmail), showForgotStep(), showResetStep(maskedEmail), finishLogin(data), attemptLogin(), attemptVerifyOtp(), attemptResendOtp(), attemptRegister(), attemptVerifyRegisterOtp(), attemptResendRegisterOtp(), attemptForgotPassword(), attemptResendForgotOtp(), attemptResetPassword(), closeProfileMenu(), endSessionAndShowLogin(), openProfileMenu(), go(id), closeConfirmDialog(result), guardField(el), guardAllFields(root), getRows(), cellValue(row, idx), uniqueValues(idx), itemCbs(), ping()
+- **Functions:** showLoader(), hideLoader(), applyGlobalTableSearch(query), applyAllFilters(), closeMenu(), positionMenu(menu, btn), openMenuFor(btn), updateProfileDisplay(username, role), showApp(), saveSession(username, role, persist, token), loadSession(), clearSession(), startHeartbeat(), stopHeartbeat(), resetIdleTimer(), stopIdleTimer(), notifyServerLogout(), showLoginOverlay(message), buildLoginOverlay(), showCredsStep(), showOtpStep(maskedEmail), hideAllSteps(), showRegisterStep(), showRegisterOtpStep(maskedEmail), showForgotStep(), showResetStep(maskedEmail), finishLogin(data), attemptLogin(), attemptVerifyOtp(), attemptResendOtp(), attemptRegister(), attemptVerifyRegisterOtp(), attemptResendRegisterOtp(), attemptForgotPassword(), attemptResendForgotOtp(), attemptResetPassword(), closeProfileMenu(), endSessionAndShowLogin(), openProfileMenu(), go(id), closeConfirmDialog(result), guardField(el), guardAllFields(root), getRows(), cellValue(row, idx), uniqueValues(idx), itemCbs(), ping()
 - **Classes:** None
 - **API endpoints:** None
 - **Database usage:** Raw SQL detected (3 statement keywords: SELECT, JOIN, UPDATE)
@@ -92,7 +92,7 @@ Deep analysis of every important source file.
 
 - **Purpose:** Defines 1 class(es) implementing core logic.
 - **Lines of code:** 1973
-- **Complexity:** High (heuristic score: 290)
+- **Complexity:** High (heuristic score: 289)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** bomSetPrintPageSize(cssSizeAndMargin), bomLoadCustomKits(), bomSaveCustomKits(obj), bomGetAllKits(), bomIsCustomKitKey(key), bomSlugify(label), bomRenumberAll(sections), bomDefaultSectionsTemplate(), bomParseQtyNumber(qtyStr), bomSplitSerials(text), bomCollectKitItemNames(), bomLoadItemMasterNames(), bomBuildItemOptionsHtml(selectedName), bomRenderScreenItemsHtml(state, opts), bomRenderPrintSheetHtml(kit, header), bomRenderChallanTemplateItemsHtml(template), bomRenderChallanEntryModalHtml(header, kit), bomCollectChallanTemplateValues(), bomChallanBuildRowGroups(template), bomRenderChallanBodyRowsHtml(groups, values), bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy), bomRenderChallanTableHeadRowHtml(), bomRenderChallanFooterRowsHtml(header), bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy), bomRenderChallanPrintSheetHtml(header, kit, templateValues), openChallanModal(bodyHtml), closeChallanModal(), bomLoadSerialMandatoryInfo(), bomItemNeedsSerial(name), searchBomCustomerLedgers(q), searchBomCustomerShortCodes(q), fillBomCustomerDatalist(listEl, ledgers, key), wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), wireBomPartyTypeAutocomplete(inputEl, listEl, ledgerType), search(q), fillList(ledgers), setVerified(isVerified), allItemsChecked(), updateVerifyButtonState(), populateKitDropdown(selectKey), refreshItemsPreview(), renderKitBuilderSections(), handleBuilderFieldEdit(e), handleItemFieldEdit(e), rerenderItemsPreview(), openBomSerialModal(si, ii), updateCountNote(), getHeaderValues(), computeAndApplyFitZoom(), bomEsc(s), bomEscAttr(s), qtyInput(sr, sizeLabel), descInput(sr), setVal(key, patch), getQty(sr, size), getDesc(sr), $(id), blankItem()
@@ -469,16 +469,17 @@ Deep analysis of every important source file.
 ## `api/services/challanPdf.js`
 
 - **Purpose:** Implements business logic as a service layer.
-- **Lines of code:** 491
-- **Complexity:** Medium (heuristic score: 59)
+- **Lines of code:** 553
+- **Complexity:** High (heuristic score: 67)
 - **Imports:** fs, os, path, crypto, child_process, exceljs
 - **Exports:** module.exports
-- **Functions:** runSoffice(xlsxPath, outDir), normalizeBorderSide(side), applySheetStructure(sheet, config), applySheetFormatting(sheet, config), fillTemplateAndConvertToPdf(record), cleanup()
+- **Functions:** runSoffice(xlsxPath, outDir), normalizeBorderSide(side), applySheetStructure(sheet, config), applySheetValues(sheet, config), applySheetFormatting(sheet, config), fillTemplateAndConvertToPdf(record), cleanup()
 - **Classes:** None
 - **API endpoints:** None
 - **Database usage:** Raw SQL detected (6 statement keywords: JOIN)
 - **Environment variables used:** SOFFICE_PATH
 - **Potential improvements:**
+  - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
   - process.env is used directly — confirm environment variables are validated/typed at startup.
 
