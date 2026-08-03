@@ -278,7 +278,7 @@ const SHEET_CONFIG = {
     6: { height: 17 },
     7: { height: 15 },
     8: { height: 15 },
-    38: { height: 12 },
+    38: { height: 18 },
     // Add a row number here to control its height, e.g. 7: { height: 22 }.
     // Any row left out keeps the template's original height untouched.
   },
