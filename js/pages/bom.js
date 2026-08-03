@@ -1717,6 +1717,17 @@ window.PAGES.bom = {
 
         if (printBtn) {
           printBtn.addEventListener('click', async () => {
+            // Open the tab SYNCHRONOUSLY, as the very first thing in this
+            // handler, before any `await`. This is what stops browsers'
+            // popup blocker from kicking in — a window.open() call is only
+            // treated as "a direct result of the user's click" if it runs
+            // before the call stack yields to any async work. It starts as
+            // a small "Preparing..." page and gets redirected to the real
+            // PDF blob once the server finishes generating it below.
+            const pdfWindow = window.open('', '_blank');
+            if (pdfWindow) {
+              pdfWindow.document.write('<title>Preparing Challan…</title><body style="font-family:sans-serif;background:#1a1a1a;color:#ccc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">Preparing your Challan PDF…</body>');
+            }
             // NEW FLOW: Save Data -> backend fills the REAL Excel template ->
             // converts to PDF via LibreOffice -> browser opens/prints the
             // PDF. Replaces the old HTML-replica sheet (bomRenderChallanPrintSheetHtml)
@@ -1748,11 +1759,10 @@ window.PAGES.bom = {
             const originalLabel = printBtn.innerHTML;
             printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving & Preparing PDF...';
             try {
-              // No blank tab up front anymore — the global loading overlay
-              // (js/app.js, auto-triggered around every /api/... call below)
-              // covers the whole "Saving -> generating PDF on the server"
-              // wait right here on this page. The new tab only opens once
-              // the finished PDF is actually in hand.
+              // pdfWindow (opened synchronously above) shows "Preparing..."
+              // while this runs; the global loading overlay (js/app.js)
+              // also covers the whole "Saving -> generating PDF on the
+              // server" wait on this page itself.
               const saved = await window.Api.post('/challan', payload);
               const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
               // NOTE: window.open(pdfUrl, '_blank') directly on the URL was
@@ -1772,21 +1782,18 @@ window.PAGES.bom = {
               }
               const pdfBlob = await pdfRes.blob();
               const blobUrl = URL.createObjectURL(pdfBlob);
-              // Open the tab now, with the PDF already attached — the loader
-              // overlay was covering the screen up to this point, so this is
-              // the first the person sees of a new tab, and it opens with
-              // the finished PDF already loaded, not a blank "Preparing..."
-              // page. Some browsers may still flag this as a popup since it
-              // isn't the very first synchronous statement in the click
-              // handler; the existing download fallback below handles that.
-              const pdfWindow = window.open(blobUrl, '_blank');
-              if (pdfWindow) {
+              // Redirect the tab we already opened synchronously on click —
+              // this is what actually avoids the popup blocker. Only if that
+              // tab somehow never opened (or the person closed it while
+              // waiting) do we fall back to a same-tab forced download.
+              if (pdfWindow && !pdfWindow.closed) {
+                pdfWindow.location = blobUrl;
                 pdfWindow.addEventListener('load', () => {
                   try { pdfWindow.print(); } catch (e) { /* let user use the PDF viewer's own print button */ }
                 });
               } else {
-                // Popup was blocked — fall back to a same-tab download link
-                // so the person can still get the PDF.
+                // Popup was blocked (or closed early) — fall back to a
+                // same-tab download link so the person can still get the PDF.
                 const a = document.createElement('a');
                 a.href = blobUrl;
                 a.download = `challan-${saved.id}.pdf`;
@@ -1801,6 +1808,7 @@ window.PAGES.bom = {
               setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
               if (window.showToast) window.showToast('Challan saved — opening PDF for print.');
             } catch (err) {
+              if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
               window.openModal('Print Failed', `<p>${(err && err.message) || 'Could not generate the Challan PDF.'}</p>`);
             } finally {
               printBtn.disabled = false;
