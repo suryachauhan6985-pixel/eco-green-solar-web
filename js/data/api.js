@@ -27,8 +27,14 @@ async function parseApiResponse(res, path) {
 }
 
 window.Api = {
-  async get(path) {
-    const res = await fetch(`${window.API_BASE}${path}`, { method: 'GET' });
+  async get(path, opts) {
+    // opts.silent = true → skip the global full-screen loader overlay for
+    // this call (see js/app.js's fetch wrapper). Use this for background
+    // polling (e.g. live session refresh) so it doesn't flash the loader
+    // every few seconds; leave it off for normal user-initiated loads.
+    const init = { method: 'GET' };
+    if (opts && opts.silent) init.egsSilent = true;
+    const res = await fetch(`${window.API_BASE}${path}`, init);
     return parseApiResponse(res, path);
   },
   async post(path, body) {
@@ -58,6 +64,34 @@ window.Api = {
 };
 
 // -----------------------------------------------------------------------------
+// ATTACHMENT VALIDATION — allowed file types and max size.
+// Kept in sync with the SAME whitelist enforced server-side in
+// api/server.js (POST /api/attachments) — this copy is just for fast,
+// friendly client-side feedback before spending time reading/uploading a
+// file that the server would reject anyway. The server-side check is the
+// real security boundary; never trust this one alone.
+// -----------------------------------------------------------------------------
+const ALLOWED_ATTACHMENT_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'xls', 'xlsx'];
+const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB per file
+
+function getFileExtension(fileName) {
+  const name = String(fileName || '');
+  const dot = name.lastIndexOf('.');
+  return dot === -1 ? '' : name.slice(dot + 1).toLowerCase();
+}
+
+function validateAttachmentFile(file) {
+  const ext = getFileExtension(file.name);
+  if (!ALLOWED_ATTACHMENT_EXTENSIONS.includes(ext)) {
+    return `"${file.name}" is not an allowed file type. Allowed: images (jpg/png/webp), PDF, Word (doc/docx), Excel (xls/xlsx).`;
+  }
+  if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
+    return `"${file.name}" is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Max allowed size is 5 MB.`;
+  }
+  return null;
+}
+
+// -----------------------------------------------------------------------------
 // window.uploadAttachments(refType, refNo, fileList) — used by
 // partyledger.js, sales.js and purchase.js to push proof files to
 // POST /api/attachments. The backend expects base64 (no data: prefix) in
@@ -82,6 +116,13 @@ window.uploadAttachments = async function uploadAttachments(refType, refNo, file
   try {
     const files = Array.from(fileList || []);
     if (!files.length) return { ok: false, error: 'No files selected.' };
+
+    // Reject the whole batch up front if ANY file fails validation — avoids
+    // partial uploads where some files silently made it in and others didn't.
+    for (const file of files) {
+      const validationError = validateAttachmentFile(file);
+      if (validationError) return { ok: false, error: validationError };
+    }
 
     const encoded = await Promise.all(files.map(async (file) => ({
       name: file.name,

@@ -73,10 +73,10 @@ window.hideLoader = function hideLoader() {
     // covers Api.get/post/put/delete (js/data/api.js) and any direct fetch()
     // to our own backend, from every page, automatically. Non-API fetches
     // (CDN scripts etc.) are left alone.
-    // Background/polling calls (e.g. dashboard's 5s live-session refresh)
-    // pass { egsSilent: true } via window.Api.get(path, { silent: true }) to
-    // opt out of the global overlay — it should only appear for real
-    // user-initiated loads, not silent background refreshes.
+    // Background/polling calls (e.g. dashboard's 5s live-session refresh,
+    // and the 20s session heartbeat below) pass egsSilent:true to opt out
+    // of the global overlay — it should only appear for real user-initiated
+    // loads, not silent background refreshes.
     const showGlobalLoader = isApiCall && !(init && init.egsSilent);
     if (showGlobalLoader) window.showLoader();
     return originalFetch(input, init).then((res) => {
@@ -368,6 +368,7 @@ window.attachColumnFilters = function (table) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: window.currentUsername }),
+        egsSilent: true, // runs every 20s in the background — must not flash the global loader
       }).catch(() => { /* offline momentarily — next tick retries */ });
     };
     ping(); // mark online immediately, don't wait for the first interval tick
