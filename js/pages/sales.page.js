@@ -105,12 +105,6 @@ window.PAGES.sales = {
             <div class="field"><label>Type <span class="req">*</span></label>
               <select id="saleEditType"><option value="">-- Select Category First --</option></select></div>
 
-            <div class="field" id="saleEditQtyField" style="display:none;"><label>Qty <span class="req">*</span></label>
-              <input id="saleEditQty" type="number" placeholder="0"></div>
-            <div class="field span-full" id="saleEditQtyOnlyNote" style="display:none;">
-              <p style="color:var(--txt-muted); font-style:italic; margin:0;">This category is quantity-tracked (no serial numbers) — set Qty and click "Add Line" for this line.</p>
-            </div>
-
             <div class="field span-full"><label>Proof File</label>
               <div class="proof-row">
                 <input type="file" id="saleEditProofFile" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx">
@@ -434,10 +428,7 @@ window.PAGES.sales = {
     saleBrandEl.addEventListener('change', refreshSaleWattage);
     saleWattEl.addEventListener('change', refreshSaleType);
     loadSaleCategories();
-    loadCategoryWattRules().then(() => {
-      updateSaleSerialFieldVisibility();
-      updateSaleEditQtyFieldVisibility();
-    });
+    loadCategoryWattRules().then(updateSaleSerialFieldVisibility);
 
     // Shows/hides the serial-scan textarea depending on whether the
     // currently-selected category needs serial numbers at all (mirrors the
@@ -448,17 +439,6 @@ window.PAGES.sales = {
       const needsSerial = isSerialMandatory(cat);
       $('saleSerialsField').style.display = needsSerial ? '' : 'none';
       $('saleQtyOnlyNote').style.display = needsSerial ? 'none' : '';
-    }
-
-    // Same idea for the Edit panel — the shared Serials textarea there only
-    // makes sense for serial-mandatory categories; quantity-tracked ones get
-    // their own per-line Qty input (a loaded order can mix both kinds of
-    // lines, this only affects what "Add Line" currently expects).
-    function updateSaleEditQtyFieldVisibility() {
-      const cat = saleEditCatEl.value;
-      const needsSerial = isSerialMandatory(cat);
-      $('saleEditQtyField').style.display = needsSerial ? 'none' : '';
-      $('saleEditQtyOnlyNote').style.display = needsSerial ? 'none' : '';
     }
 
     // ---------------- Customer ledger live autocomplete + autofill ---------
@@ -683,13 +663,6 @@ window.PAGES.sales = {
     const saleEditLines = [];
     let loadedOrderNo = null;
     let loadedOriginalSerials = [];
-    // Quantity-line combos this order owned when it was loaded (or after
-    // the last successful Apply) — {cat,brand,watt,type} only. Used at
-    // Apply time to detect a qty-line the user removed from saleEditLines
-    // entirely, so we can tell the backend to release it (qty:0) instead of
-    // silently leaving that stock stuck in 'Sold'.
-    let loadedQtyLines = [];
-    const qtyLineKey = (l) => [l.cat, l.brand, l.watt || 0, l.type].join('|');
 
     const saleEditProof = { files: [] };
 
@@ -743,7 +716,7 @@ window.PAGES.sales = {
         if (injectType) saleEditTypeEl.value = injectType;
       }
 
-      saleEditCatEl.addEventListener('change', () => { refreshSaleEditBrandsAndWatt(); updateSaleEditQtyFieldVisibility(); });
+      saleEditCatEl.addEventListener('change', () => refreshSaleEditBrandsAndWatt());
       saleEditBrandEl.addEventListener('change', () => refreshSaleEditWattage());
       saleEditWattEl.addEventListener('change', () => refreshSaleEditType());
       fillSelectFromApi(saleEditCatEl, '/masters/categories', 'No categories found');
@@ -754,12 +727,11 @@ window.PAGES.sales = {
         await fillSelectFromApi(saleEditBrandEl, `/purchase/brands/${encodeURIComponent(saleEditCatEl.value)}`, 'No brands under this category', line.brand);
         await fillSelectFromApi(saleEditWattEl, `/purchase/wattages?category=${encodeURIComponent(saleEditCatEl.value)}&brand=${encodeURIComponent(saleEditBrandEl.value)}`, 'N/A', line.watt);
         await refreshSaleEditType(line.type);
-        updateSaleEditQtyFieldVisibility();
       }
 
       function clearEditPanel() {
         $('saleSearchOrder').value = '';
-        ['saleEditCust', 'saleEditChalanNo', 'saleEditInvNo', 'saleEditQty'].forEach((id) => { $(id).value = ''; });
+        ['saleEditCust', 'saleEditChalanNo', 'saleEditInvNo'].forEach((id) => { $(id).value = ''; });
         $('saleEditChalanDate').value = '';
         $('saleEditInvDate').value = '';
         $('saleEditSerials').value = '';
@@ -767,14 +739,13 @@ window.PAGES.sales = {
         renderLineList(saleEditLineList, saleEditLines, 'Find an order above to load its lines.');
         loadedOrderNo = null;
         loadedOriginalSerials = [];
-        loadedQtyLines = [];
         saleEditProof.files = [];
         $('saleEditProofFile').value = '';
         $('saleEditProofName').textContent = 'No proof selected';
       }
       $('saleBtnClearEdit').addEventListener('click', clearEditPanel);
 
-      $('saleBtnEditAddLine').addEventListener('click', async () => {
+      $('saleBtnEditAddLine').addEventListener('click', () => {
         const cat = saleEditCatEl.value, brand = saleEditBrandEl.value, wattVal = saleEditWattEl.value.trim();
         const type = saleEditTypeEl.value;
         const watt = (wattVal && wattVal !== 'N/A' && !isNaN(Number(wattVal))) ? Number(wattVal) : 0;
@@ -782,37 +753,7 @@ window.PAGES.sales = {
           window.openModal('Line Error', '<p>Category, Brand and Type are required for this line.</p>');
           return;
         }
-
-        // ---- Quantity-tracked category (no serial numbers) ----
-        if (!isSerialMandatory(cat)) {
-          const qtyStr = $('saleEditQty').value.trim();
-          if (!/^\d+$/.test(qtyStr) || Number(qtyStr) <= 0) {
-            window.openModal('Validation Error', '<p>Enter a valid positive Qty for this line.</p>');
-            return;
-          }
-          const qtyNum = Number(qtyStr);
-          // Live check-line only guards against the general Available pool
-          // — it can't know this order already owns some of that stock, so
-          // a line that's mostly just "keep what we have" may still show as
-          // short here; Apply's own delta check (against what this order
-          // owns) is the real gate, this is just an early heads-up.
-          let errors = [];
-          try {
-            const resp = await window.Api.get(`/sales/check-line?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}&watt=${watt}&type=${encodeURIComponent(type)}&qty=${qtyNum}`);
-            errors = resp.errors || [];
-          } catch (e) { /* best-effort pre-check only */ }
-          if (errors.length) {
-            window.openModal('Stock Validation Error', `<p>${errors.join('<br>')}</p><p style="margin-top:8px;">If this quantity includes stock the order already owns, it may still be fine — Apply will do the real check.</p>`);
-            return;
-          }
-          saleEditLines.push({ cat, brand, watt, type, needsSerial: false, qty: qtyNum });
-          renderLineList(saleEditLineList, saleEditLines, '');
-          $('saleEditQty').value = '';
-          return;
-        }
-
-        // ---- Serial-based category (existing flow, unchanged) ----
-        saleEditLines.push({ cat, brand, watt, type, needsSerial: true, serials: [] });
+        saleEditLines.push({ cat, brand, watt, type, serials: [] });
         renderLineList(saleEditLineList, saleEditLines, '');
       });
       $('saleBtnEditRemoveLine').addEventListener('click', () => {
@@ -848,15 +789,7 @@ window.PAGES.sales = {
         saleEditProof.files = [];
 
         saleEditLines.length = 0;
-        loadedQtyLines = [];
-        (order.lines || []).forEach((ln) => {
-          if (Array.isArray(ln.serials)) {
-            saleEditLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, needsSerial: true, serials: ln.serials });
-          } else {
-            saleEditLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, needsSerial: false, qty: ln.qty });
-            loadedQtyLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type });
-          }
-        });
+        (order.lines || []).forEach((ln) => saleEditLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, serials: ln.serials }));
         renderLineList(saleEditLineList, saleEditLines, 'Find an order above to load its lines.');
         await loadEditCascadeForLine(saleEditLines[0]);
         $('saleEditSerials').value = (order.allSerials || []).join('\n');
@@ -881,42 +814,19 @@ window.PAGES.sales = {
           return;
         }
         const allSerials = PD.splitSerials($('saleEditSerials').value);
-        // Only serial-based lines participate in the shared textarea's
-        // distribution — quantity lines carry their own explicit qty and
-        // never touch this textarea.
-        const serialLinesIn = saleEditLines.filter((ln) => ln.needsSerial);
-        const qtyLinesIn = saleEditLines.filter((ln) => !ln.needsSerial);
-
         // Distribute the (possibly re-ordered/edited) serial list back
-        // across the loaded serial-based lines in order, same grouping rule
-        // the New Entry panel uses when splitting a single textarea across
-        // lines. Falls back to the currently-selected dropdowns only if
-        // there are no lines at all yet and this category needs serials.
+        // across the loaded product lines in order, same grouping rule the
+        // New Entry panel uses when splitting a single textarea across lines.
         let cursor = 0;
-        const serialSourceLines = serialLinesIn.length ? serialLinesIn
-          : (!saleEditLines.length && isSerialMandatory(saleEditCatEl.value)
-            ? [{ cat: saleEditCatEl.value, brand: saleEditBrandEl.value, watt: saleEditWattEl.value.trim(), type: saleEditTypeEl.value }]
-            : []);
-        const serialLines = serialSourceLines.map((ln, idx, arr) => {
+        const lines = (saleEditLines.length ? saleEditLines : [{
+          cat: saleEditCatEl.value, brand: saleEditBrandEl.value, watt: saleEditWattEl.value.trim(), type: saleEditTypeEl.value,
+        }]).map((ln, idx, arr) => {
           const remainingLines = arr.length - idx;
           const takeCount = idx === arr.length - 1 ? (allSerials.length - cursor) : Math.ceil((allSerials.length - cursor) / remainingLines);
           const serials = allSerials.slice(cursor, cursor + takeCount);
           cursor += takeCount;
           return { cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, serials };
         });
-
-        // Any qty-line combo this order owned at load time but that isn't
-        // in the current line list anymore (user removed it) gets sent as
-        // qty:0 — the backend releases everything it owns for that combo
-        // back to Available instead of leaving it stuck.
-        const currentQtyKeys = new Set(qtyLinesIn.map(qtyLineKey));
-        const removedQtyLines = loadedQtyLines.filter((ln) => !currentQtyKeys.has(qtyLineKey(ln)));
-        const qtyLines = [
-          ...qtyLinesIn.map((ln) => ({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, qty: ln.qty })),
-          ...removedQtyLines.map((ln) => ({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, qty: 0 })),
-        ];
-
-        const lines = [...serialLines, ...qtyLines];
 
         const applyBtn = $('saleBtnApply');
         applyBtn.disabled = true;
@@ -938,9 +848,6 @@ window.PAGES.sales = {
           });
           loadedOrderNo = result.orderNo;
           loadedOriginalSerials = allSerials;
-          // Reflect the now-current ownership so a further edit in this same
-          // session diffs against what actually exists post-Apply.
-          loadedQtyLines = qtyLinesIn.map((ln) => ({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type }));
           const uploadResult = await window.uploadAttachments('sales', newChalan, saleEditProof.files);
           if (window.showToast) window.showToast('Sales Modifications Saved.');
           const uploadWarning = !uploadResult.ok

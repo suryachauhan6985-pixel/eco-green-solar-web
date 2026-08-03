@@ -193,16 +193,8 @@ module.exports = function registerSalesRoutes(app, deps) {
     }
 
     const allSerials = lines.flatMap((l) => l.serials || []);
-    // A line is valid if it has serials (serial-mandatory category) OR a
-    // qty > 0 (quantity-tracked category) — mirrors the same either/or
-    // check already used by POST /api/purchase and PUT /api/sales/modify.
-    // BUGFIX: this previously only checked allSerials.length, which
-    // incorrectly blocked a brand-new order made entirely of quantity-based
-    // lines (no serial-mandatory items at all) with "Scan/enter Serial
-    // Numbers before saving." even though valid qty lines were present.
-    const hasQuantityLine = lines.some((l) => (!l.serials || !l.serials.length) && Number(l.qty) > 0);
-    if (!allSerials.length && !hasQuantityLine) {
-      return res.status(400).json({ error: 'Add Serial Numbers or a Quantity before saving.' });
+    if (!allSerials.length) {
+      return res.status(400).json({ error: 'Scan/enter Serial Numbers before saving.' });
     }
     const seen = new Set(), innerDupes = new Set();
     allSerials.forEach((sn) => { if (seen.has(sn)) innerDupes.add(sn); seen.add(sn); });
