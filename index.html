@@ -131,8 +131,24 @@
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((error) => {
+    // updateViaCache: 'none' — stops the BROWSER's own HTTP cache from ever
+    // serving a stale copy of sw.js itself. Without this, the browser can
+    // treat /sw.js like any other static resource and keep re-using an old
+    // cached copy of the service worker file even after a fresh deploy,
+    // which is why the PWA kept running old fetch-handling logic.
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch((error) => {
       console.warn('Service worker registration failed:', error);
+    });
+
+    // Once a NEW service worker takes control (after an update), reload
+    // the open PWA/tab automatically so it starts using the new logic
+    // immediately instead of waiting for the user to fully close and
+    // reopen the app.
+    let refreshedOnce = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshedOnce) return;
+      refreshedOnce = true;
+      window.location.reload();
     });
   });
 }
