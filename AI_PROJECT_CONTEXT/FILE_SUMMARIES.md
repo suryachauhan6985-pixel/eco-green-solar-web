@@ -199,25 +199,6 @@ Deep analysis of every important source file.
 
 ---
 
-## `js/pages/purchase.page.js`
-
-- **Purpose:** Defines 24 function(s) implementing supporting logic.
-- **Lines of code:** 957
-- **Complexity:** High (heuristic score: 130)
-- **Imports:** None
-- **Exports:** None
-- **Functions:** splitSerials(text), setPurEditOpen(open), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), fillSelect(selectEl, items, placeholder), purCategoryNeedsSerial(cat), loadPurCategories(), refreshPurBrandsAndType(), refreshPurWattages(), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadPurWarehouses(injectEditValue), searchSupplierLedgers(q), searchSupplierShortCodes(q), fillSupplierDatalist(listEl, ledgers, key), applyLedgerToSupplierFields(l), wireSupplierAutocomplete(inputEl, listEl, matchKey, searchFn), clearPurchaseForm(), refreshPurEditBrandsAndType(injectBrand, injectType), refreshPurEditWattages(injectWatt), loadEditCascadeForLine(line), $(id)
-- **Classes:** None
-- **API endpoints:** None
-- **Database usage:** Raw SQL detected (46 statement keywords: SELECT, JOIN, UPDATE)
-- **Environment variables used:** None
-- **Potential improvements:**
-  - File defines a large number of functions — consider splitting into smaller modules.
-  - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
-  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
-
----
-
 ## `js/pages/purchaseregister.js`
 
 - **Purpose:** Defines 15 function(s) implementing supporting logic.
@@ -288,15 +269,15 @@ Deep analysis of every important source file.
 
 ## `js/pages/sales.js`
 
-- **Purpose:** Defines 31 function(s) implementing supporting logic.
-- **Lines of code:** 924
-- **Complexity:** High (heuristic score: 150)
+- **Purpose:** Defines 33 function(s) implementing supporting logic.
+- **Lines of code:** 1017
+- **Complexity:** High (heuristic score: 164)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** fillSelect(selectEl, items, placeholder), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadCategoryWattRules(), isWattMandatory(cat), isSerialMandatory(cat), splitSerials(text), wireSerialBox(el), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), loadSaleCategories(), refreshSaleBrandsAndWatt(), refreshSaleWattage(), refreshSaleType(), updateSaleSerialFieldVisibility(), searchCustomerLedgers(q), searchCustomerShortCodes(q), fillCustomerDatalist(listEl, ledgers, key), applyLedgerToCustomerFields(l), wireCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), clearSalesForm(), refreshSaleEditBrandsAndWatt(injectBrand, injectWatt), refreshSaleEditWattage(injectWatt), refreshSaleEditType(injectType), loadEditCascadeForLine(line), clearEditPanel(), findSalesOrderForEditing(term), prefillFromAssign(customerName, orderNo, mobile, address, lines), $(id)
+- **Functions:** fillSelect(selectEl, items, placeholder), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadCategoryWattRules(), isWattMandatory(cat), isSerialMandatory(cat), splitSerials(text), wireSerialBox(el), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), loadSaleCategories(), refreshSaleBrandsAndWatt(), refreshSaleWattage(), refreshSaleType(), updateSaleSerialFieldVisibility(), updateSaleEditQtyFieldVisibility(), searchCustomerLedgers(q), searchCustomerShortCodes(q), fillCustomerDatalist(listEl, ledgers, key), applyLedgerToCustomerFields(l), wireCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), clearSalesForm(), refreshSaleEditBrandsAndWatt(injectBrand, injectWatt), refreshSaleEditWattage(injectWatt), refreshSaleEditType(injectType), loadEditCascadeForLine(line), clearEditPanel(), findSalesOrderForEditing(term), prefillFromAssign(customerName, orderNo, mobile, address, lines), $(id), qtyLineKey(l)
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (42 statement keywords: SELECT, JOIN)
+- **Database usage:** Raw SQL detected (44 statement keywords: SELECT, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - File defines a large number of functions — consider splitting into smaller modules.
@@ -693,7 +674,7 @@ Deep analysis of every important source file.
 
 ---
 
-## `api/routes/purchase.route.js`
+## `api/routes/purchase.rout.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
 - **Lines of code:** 451
@@ -730,14 +711,14 @@ Deep analysis of every important source file.
 ## `api/routes/sales.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 535
-- **Complexity:** High (heuristic score: 76)
+- **Lines of code:** 709
+- **Complexity:** High (heuristic score: 103)
 - **Imports:** None
 - **Exports:** module.exports
-- **Functions:** registerSalesRoutes(app, deps), isQtyLine(line)
+- **Functions:** registerSalesRoutes(app, deps), fifoConsumeQty(conn, itemKey, qtyNeeded, meta, editedFlag = 0), releaseQtyToAvailable(conn, itemKey, orderNo, qtyToRelease), isQtyLine(line)
 - **Classes:** None
 - **API endpoints:** GET /api/sales/types, GET /api/sales/check-line, POST /api/sales/dispatch, POST /api/returns, GET /api/sales/find/:term, PUT /api/sales/modify/:orderNo, DELETE /api/sales/delete/:orderNo, GET /api/sales/register
-- **Database usage:** Raw SQL detected (35 statement keywords: SELECT, JOIN, UPDATE, INSERT INTO)
+- **Database usage:** Raw SQL detected (49 statement keywords: SELECT, UPDATE, INSERT INTO, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
@@ -850,8 +831,8 @@ Deep analysis of every important source file.
 ## `api/config/cors.js`
 
 - **Purpose:** Defines 1 function(s) implementing supporting logic.
-- **Lines of code:** 19
-- **Complexity:** Low (heuristic score: 3)
+- **Lines of code:** 25
+- **Complexity:** Low (heuristic score: 4)
 - **Imports:** cors
 - **Exports:** module.exports
 - **Functions:** corsMiddleware()

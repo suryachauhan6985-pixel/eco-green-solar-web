@@ -65,7 +65,7 @@ Database
 | api/routes/ledgers.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/masters.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/purchase.js | Defines HTTP route handlers (controller/router layer). |
-| api/routes/purchase.route.js | Defines HTTP route handlers (controller/router layer). |
+| api/routes/purchase.rout.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/reports.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/sales.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/scansheet.routes.js | Defines HTTP route handlers (controller/router layer). |
@@ -113,12 +113,11 @@ Database
 | js/pages/masters.js | Defines 8 function(s) implementing supporting logic. |
 | js/pages/partyledger.js | Defines 39 function(s) implementing supporting logic. |
 | js/pages/purchase.js | Defines 24 function(s) implementing supporting logic. |
-| js/pages/purchase.page.js | Defines 24 function(s) implementing supporting logic. |
 | js/pages/purchaseregister.js | Defines 15 function(s) implementing supporting logic. |
 | js/pages/reports.js | Defines 14 function(s) implementing supporting logic. |
 | js/pages/returns.js | Defines 4 function(s) implementing supporting logic. |
 | js/pages/saleregister.js | Defines 15 function(s) implementing supporting logic. |
-| js/pages/sales.js | Defines 31 function(s) implementing supporting logic. |
+| js/pages/sales.js | Defines 33 function(s) implementing supporting logic. |
 | js/pages/scansheet.js | Defines 95 function(s) implementing supporting logic. |
 | js/pages/stockassign.js | Defines 24 function(s) implementing supporting logic. |
 

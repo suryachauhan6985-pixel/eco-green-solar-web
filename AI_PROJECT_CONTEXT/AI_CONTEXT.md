@@ -10,13 +10,13 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-03T10:07:00.990Z
+- **Generated:** 2026-08-03T10:58:19.955Z
 
 ## 2. Architecture Overview
 
 - **Detected technologies:** Node.js (runtime), Express (backend framework), MySQL (database), JWT Authentication (auth), HTML (markup), JavaScript (language), CSS (styling), PWA (platform)
-- **Total files (post-ignore):** 62
-- **Deeply analyzed files:** 50
+- **Total files (post-ignore):** 61
+- **Deeply analyzed files:** 49
 - **Typical request flow (heuristic):** Browser → Routes → Controller → Service → Database
 
 ## 3. Folder Structure
@@ -40,7 +40,7 @@ api/
         ledgers.js
         masters.js
         purchase.js
-        purchase.route.js
+        purchase.rout.js
         reports.js
         sales.js
         scansheet.routes.js
@@ -81,7 +81,6 @@ js/
         masters.js
         partyledger.js
         purchase.js
-        purchase.page.js
         purchaseregister.js
         reports.js
         returns.js
@@ -109,12 +108,11 @@ sw.js
 - `js/pages/masters.js` — Defines 8 function(s) implementing supporting logic.
 - `js/pages/partyledger.js` — Defines 39 function(s) implementing supporting logic.
 - `js/pages/purchase.js` — Defines 24 function(s) implementing supporting logic.
-- `js/pages/purchase.page.js` — Defines 24 function(s) implementing supporting logic.
 - `js/pages/purchaseregister.js` — Defines 15 function(s) implementing supporting logic.
 - `js/pages/reports.js` — Defines 14 function(s) implementing supporting logic.
 - `js/pages/returns.js` — Defines 4 function(s) implementing supporting logic.
 - `js/pages/saleregister.js` — Defines 15 function(s) implementing supporting logic.
-- `js/pages/sales.js` — Defines 31 function(s) implementing supporting logic.
+- `js/pages/sales.js` — Defines 33 function(s) implementing supporting logic.
 - `js/pages/scansheet.js` — Defines 95 function(s) implementing supporting logic.
 - `js/pages/stockassign.js` — Defines 24 function(s) implementing supporting logic.
 - `js/data/sheets-store.js` — Defines 14 function(s) implementing supporting logic.
@@ -130,7 +128,7 @@ sw.js
 - `api/routes/ledgers.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/masters.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/purchase.js` — Defines HTTP route handlers (controller/router layer).
-- `api/routes/purchase.route.js` — Defines HTTP route handlers (controller/router layer).
+- `api/routes/purchase.rout.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/reports.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/sales.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/scansheet.routes.js` — Defines HTTP route handlers (controller/router layer).
@@ -163,12 +161,12 @@ Utility/helper files: 2
 
 - Project appears to be plain JavaScript (no TypeScript detected).
 - File naming leans camelCase.
-- 43 of 50 analyzed files define at least one function.
+- 42 of 49 analyzed files define at least one function.
 
 ## 11. Known Issues / Risk Areas
 
-- 13 file(s) flagged as High complexity: js/app.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/purchase.page.js, js/pages/sales.js, js/pages/scansheet.js, js/pages/stockassign.js, ...
-- Raw SQL string usage found in 37 file(s) — verify parameterization to avoid SQL injection.
+- 12 file(s) flagged as High complexity: js/app.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, js/pages/stockassign.js, api/services/challanPdf.js, ...
+- Raw SQL string usage found in 36 file(s) — verify parameterization to avoid SQL injection.
 - No routes appear to use recognizable auth middleware — verify whether this API is intentionally public.
 - A real `.env` file exists in the project (.env) — ensure it is excluded from version control.
 
@@ -196,9 +194,9 @@ Utility/helper files: 2
 - js/pages/purchase.js: File defines a large number of functions — consider splitting into smaller modules.
 - js/pages/purchase.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
 - js/pages/purchase.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
-- js/pages/purchase.page.js: File defines a large number of functions — consider splitting into smaller modules.
-- js/pages/purchase.page.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
-- js/pages/purchase.page.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+- js/pages/purchaseregister.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+- js/pages/reports.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+- js/pages/returns.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 
 ---
 

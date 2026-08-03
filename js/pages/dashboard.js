@@ -261,7 +261,9 @@ window.PAGES.dashboard = {
 
     async function refreshLiveSessions() {
       try {
-        liveSessions = await window.Api.get('/sessions/live');
+        // silent: true — this runs every 5s in the background; it must not
+        // trigger the global full-screen loader overlay on every tick.
+        liveSessions = await window.Api.get('/sessions/live', { silent: true });
       } catch (e) {
         liveSessions = [];
       }

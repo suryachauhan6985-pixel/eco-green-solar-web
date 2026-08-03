@@ -27,8 +27,14 @@ async function parseApiResponse(res, path) {
 }
 
 window.Api = {
-  async get(path) {
-    const res = await fetch(`${window.API_BASE}${path}`, { method: 'GET' });
+  async get(path, opts) {
+    // opts.silent = true → skip the global full-screen loader overlay for
+    // this call (see js/app.js's fetch wrapper). Use this for background
+    // polling (e.g. live session refresh) so it doesn't flash the loader
+    // every few seconds; leave it off for normal user-initiated loads.
+    const init = { method: 'GET' };
+    if (opts && opts.silent) init.egsSilent = true;
+    const res = await fetch(`${window.API_BASE}${path}`, init);
     return parseApiResponse(res, path);
   },
   async post(path, body) {

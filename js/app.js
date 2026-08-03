@@ -73,7 +73,12 @@ window.hideLoader = function hideLoader() {
     // covers Api.get/post/put/delete (js/data/api.js) and any direct fetch()
     // to our own backend, from every page, automatically. Non-API fetches
     // (CDN scripts etc.) are left alone.
-    if (isApiCall) window.showLoader();
+    // Background/polling calls (e.g. dashboard's 5s live-session refresh)
+    // pass { egsSilent: true } via window.Api.get(path, { silent: true }) to
+    // opt out of the global overlay — it should only appear for real
+    // user-initiated loads, not silent background refreshes.
+    const showGlobalLoader = isApiCall && !(init && init.egsSilent);
+    if (showGlobalLoader) window.showLoader();
     return originalFetch(input, init).then((res) => {
       // Only raise a real "your session died" event if the token that just
       // failed is STILL the active one. If it isn't (person logged out, or
@@ -86,7 +91,7 @@ window.hideLoader = function hideLoader() {
       }
       return res;
     }).finally(() => {
-      if (isApiCall) window.hideLoader();
+      if (showGlobalLoader) window.hideLoader();
     });
   };
 })();
