@@ -390,10 +390,18 @@ window.PAGES.masters = {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        if (!res.ok)
-          throw new Error(
-            "Database transaction validation execution rejected.",
-          );
+        if (!res.ok) {
+          // Read the backend's real error reason instead of showing a
+          // generic message — previously this always said "Database
+          // transaction validation execution rejected." no matter what
+          // actually went wrong server-side.
+          let realMessage = "Could not save this item. Please try again.";
+          try {
+            const errBody = await res.json();
+            if (errBody && errBody.error) realMessage = errBody.error;
+          } catch (parseErr) { /* response wasn't JSON — keep the fallback */ }
+          throw new Error(realMessage);
+        }
 
         window.showToast(
           editingItemId
