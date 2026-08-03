@@ -12,9 +12,20 @@ FROM node:20-slim
 # some base images. The `which soffice` check at the end makes the BUILD
 # itself fail loudly if the binary isn't on PATH, instead of silently
 # deploying a broken image that only errors when someone clicks Print.
+# fonts-crosextra-carlito / -caladea are pixel-metric-compatible substitutes
+# for Calibri / Cambria (Excel's default fonts), and fonts-liberation covers
+# Arial/Times New Roman/Courier New. Without these, node:20-slim has no match
+# for the template's font, so LibreOffice falls back to a generic font with
+# different character widths than what's used locally — at a fixed manual
+# print scale (see challanPdf.js SHEET_CONFIG.page.scale), this is what was
+# causing content to overflow onto a second page only on Render, never
+# locally where a proper font (or its correct substitute) is already present.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libreoffice-calc \
     libreoffice-core \
+    fonts-crosextra-carlito \
+    fonts-crosextra-caladea \
+    fonts-liberation \
     && rm -rf /var/lib/apt/lists/* \
     && which soffice \
     && soffice --version
