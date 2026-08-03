@@ -242,7 +242,7 @@ const SHEET_CONFIG = {
     marginsIn: { top: 0, bottom: 0, left: 0, right: 0, header: 0, footer: 0 },
     orientation: 'landscape',
     paperSize: 9, // A4
-    fitToPage: false,
+    fitToPage: true,
     scale: 95,
     horizontalCentered: true,
     verticalCentered: false,
