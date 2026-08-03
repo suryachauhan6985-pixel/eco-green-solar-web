@@ -1724,10 +1724,11 @@ window.PAGES.bom = {
             // no longer used by this button (left in place, unused, in case
             // of rollback; safe to delete once this is verified in production).
             const challanNo = modalNo ? modalNo.value.trim() : '';
-            if (!challanNo) {
-              window.openModal('Challan No. Required', '<p>Please enter a Challan No. before printing.</p>');
-              return;
-            }
+            // TEMP: mandatory check disabled for testing — re-enable before going live
+            // if (!challanNo) {
+            //   window.openModal('Challan No. Required', '<p>Please enter a Challan No. before printing.</p>');
+            //   return;
+            // }
 
             const payload = {
               challanNo,

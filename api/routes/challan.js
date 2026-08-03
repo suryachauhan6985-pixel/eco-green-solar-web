@@ -16,7 +16,7 @@ module.exports = function registerChallanRoutes(app, deps) {
   app.post('/api/challan', route(async (req, res) => {
     const b = req.body || {};
     const challanNo = String(b.challanNo || '').trim();
-    if (!challanNo) return res.status(400).json({ error: 'Challan No. is required.' });
+    // if (!challanNo) return res.status(400).json({ error: 'Challan No. is required.' });
 
     const [result] = await pool.query(
       `INSERT INTO bom_challans

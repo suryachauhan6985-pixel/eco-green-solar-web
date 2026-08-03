@@ -219,40 +219,66 @@ function runSoffice(xlsxPath, outDir) {
 //
 // TO FIND A CELL'S ADDRESS: open challan_template.xlsx in Excel, click the
 // cell, read its address from the Name Box (top-left corner, e.g. "F3").
+//
+// -----------------------------------------------------------------------------
+// 6) values — set the literal text/number of ANY cell directly from code.
+// -----------------------------------------------------------------------------
+//   Keyed by cell address, e.g. { A1: 'Note:', R39: 'v2' }. Works for ANY
+//   address on the sheet — not limited to B2:Q38. This is for STATIC content
+//   you want baked into the template layout itself (titles, notes, fixed
+//   labels). It is separate from the dynamic per-record data (challan no.,
+//   customer name, item qty/desc) which is still written further down in
+//   fillTemplateAndConvertToPdf() via HEADER_CELLS / ITEM_ROWS — if the same
+//   address appears in both, the dynamic write wins (it runs after `values`).
+//
+// NOTE: `columns`, `rows`, and `cells` above are NOT limited to the
+// B2:Q38 area either — they accept any column letter, row number, or cell
+// address on the sheet (A1 through R39 and beyond). The template's current
+// used range is just B2:Q38 because that's the only area styled so far.
 // #############################################################################
 
 const SHEET_CONFIG = {
   page: {
-    marginsIn: { top: 0.2, bottom: 0.2, left: 0.2, right: 0.2, header: 0, footer: 0 },
+    marginsIn: { top: 0, bottom: 0, left: 0, right: 0, header: 0, footer: 0 },
     orientation: 'landscape',
     paperSize: 9, // A4
     fitToPage: false,
-    scale: 100,
+    scale: 95,
     horizontalCentered: true,
     verticalCentered: false,
-    printArea: null,
+    printArea: 'A1:R39',
   },
 
   columns: {
-    B: { width: 4 },
+    A: { width: 2 },
+    B: { width: 10 },
     C: { width: 10 },
     D: { width: 8 },
     E: { width: 8 },
-    F: { width: 10 },
-    G: { width: 8 },
-    H: { width: 14 },
+    F: { width: 5 },
+    G: { width: 7 },
+    H: { width: 23 },
+
     I: { width: 2 },
     J: { width: 2 },
-    K: { width: 4 },
+
+    K: { width: 10 },
     L: { width: 10 },
     M: { width: 8 },
     N: { width: 8 },
-    O: { width: 10 },
-    P: { width: 8 },
-    Q: { width: 14 },
+    O: { width: 5 },
+    P: { width: 7 },
+    Q: { width: 23 },
+    R: { width: 2 },
   },
 
   rows: {
+    1:  { height: 20 },
+    39: { height: 3 },
+    6: { height: 17 },
+    7: { height: 15 },
+    8: { height: 15 },
+    38: { height: 12 },
     // Add a row number here to control its height, e.g. 7: { height: 22 }.
     // Any row left out keeps the template's original height untouched.
   },
@@ -266,9 +292,29 @@ const SHEET_CONFIG = {
   ],
 
   cells: {
+  B7: { align: 'center', valign: 'middle' },   // "Name:" - customer copy
+    F7: { align: 'center', valign: 'middle' },   // "City:" - customer copy
+    K7: { align: 'center', valign: 'middle' },   // "Name:" - company copy
+    O7: { align: 'center', valign: 'middle' },   // "City:" - company copy
     // Add cell addresses here to style them, e.g.:
     // B7: { font: { bold: true, size: 10 } },
     // C7: { wrap: true, valign: 'middle' },
+    //
+    // Full-width border example — all 4 sides styled independently:
+    // A1: {
+    //   border: {
+    //     top:    { style: 'thick',  color: '000000' },
+    //     bottom: { style: 'thin',   color: '000000' },
+    //     left:   { style: 'dashed', color: 'C00000' },
+    //     right:  'none',
+    //   },
+    // },
+  },
+
+  values: {
+    // Add cell addresses here to set literal static text/numbers, e.g.:
+    // A1: 'Eco Green Solar',
+    // R39: 'v2',
   },
 };
 
@@ -312,6 +358,17 @@ function applySheetStructure(sheet, config) {
       // Already merged, overlapping an existing merge, or invalid range —
       // skip so one bad entry doesn't break the whole PDF generation.
     }
+  }
+}
+
+// Applies literal static values from SHEET_CONFIG.values to any cell
+// address. Runs AFTER structure (merges/unmerges) but BEFORE the dynamic
+// per-record header/item values below, so if the same address appears in
+// both places, the real record data always wins over a static placeholder.
+function applySheetValues(sheet, config) {
+  const values = config.values || {};
+  for (const [address, value] of Object.entries(values)) {
+    sheet.getCell(address).value = value;
   }
 }
 
@@ -438,6 +495,11 @@ async function fillTemplateAndConvertToPdf(record) {
     // values land on the correct (possibly new) top-left cell of any
     // merged/split range — see SHEET_CONFIG.merges / .unmerges above.
     applySheetStructure(sheet, SHEET_CONFIG);
+
+    // Static values from SHEET_CONFIG.values (any cell, A1:R39 or beyond) —
+    // written before the dynamic per-record data below so real data always
+    // takes priority if an address is used in both places.
+    applySheetValues(sheet, SHEET_CONFIG);
 
     const headerValues = {
       challanNo: record.challan_no || '',

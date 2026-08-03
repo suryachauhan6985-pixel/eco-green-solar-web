@@ -1,6 +1,6 @@
 const cors = require('cors');
 
-const DEFAULT_ALLOWED_ORIGIN = 'https://eco-green-solar-web.onrender.com';
+const DEFAULT_ALLOWED_ORIGIN = 'https://eco-green-solar-web-1.onrender.com';
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || DEFAULT_ALLOWED_ORIGIN)
   .split(',')
   .map((s) => s.trim().replace(/\/$/, ''))

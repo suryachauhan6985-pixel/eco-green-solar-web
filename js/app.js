@@ -1191,6 +1191,18 @@ window.attachColumnFilters = function (table) {
 
     closeSidebar();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Remember which page is open by writing it into the URL hash (e.g.
+    // "#sales"). On a refresh/reopen, the startup code below reads this
+    // hash to restore the same page instead of always falling back to
+    // Dashboard. history.replaceState (not pushState) so navigating
+    // between tabs doesn't pile up entries in the browser's Back history.
+    try {
+      const newHash = `#${id}`;
+      if (window.location.hash !== newHash) {
+        history.replaceState(null, '', newHash);
+      }
+    } catch (e) { /* ignore (e.g. sandboxed iframe) */ }
   }
 
   // ---------- Sidebar (mobile) ----------
@@ -1290,8 +1302,18 @@ window.attachColumnFilters = function (table) {
     showLoginOverlay();
   }
 
-  // Start on Dashboard
-  go('dashboard');
+  // Start on whichever page the URL hash points to (e.g. "#sales" after a
+  // refresh) — falls back to Dashboard if there's no hash yet, or if the
+  // hash doesn't match a real page (unknown/old id, or someone typed junk).
+  const startPageId = (window.location.hash || '').replace('#', '');
+  go(window.PAGES[startPageId] ? startPageId : 'dashboard');
+
+  // Also react to Back/Forward browser buttons and manual hash edits, so
+  // the visible page always matches the URL hash, not just on first load.
+  window.addEventListener('hashchange', () => {
+    const id = (window.location.hash || '').replace('#', '');
+    if (window.PAGES[id]) go(id);
+  });
 
   // Footer credit line — always show the current year, no manual updates needed.
   const footerYearEl = document.getElementById('footerYear');

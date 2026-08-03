@@ -469,14 +469,14 @@ Deep analysis of every important source file.
 ## `api/services/challanPdf.js`
 
 - **Purpose:** Implements business logic as a service layer.
-- **Lines of code:** 318
-- **Complexity:** Medium (heuristic score: 40)
+- **Lines of code:** 491
+- **Complexity:** Medium (heuristic score: 59)
 - **Imports:** fs, os, path, crypto, child_process, exceljs
 - **Exports:** module.exports
-- **Functions:** getPaper(pageSetup), getPageHeightPt(pageSetup), getPageWidthPt(pageSetup), stretchRowsToFillPage(sheet, firstRow, lastRow, availableHeightPt), widthCharsToPt(widthChars), ptToWidthChars(pt), stretchColumnsToFillPage(sheet, firstCol, lastCol, availableWidthPt), runSoffice(xlsxPath, outDir), fillTemplateAndConvertToPdf(record), cleanup()
+- **Functions:** runSoffice(xlsxPath, outDir), normalizeBorderSide(side), applySheetStructure(sheet, config), applySheetFormatting(sheet, config), fillTemplateAndConvertToPdf(record), cleanup()
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (4 statement keywords: JOIN)
+- **Database usage:** Raw SQL detected (6 statement keywords: JOIN)
 - **Environment variables used:** SOFFICE_PATH
 - **Potential improvements:**
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
