@@ -77,7 +77,12 @@ window.PAGES.lowstock = {
       // has to notice this on its own instead of leaking forever.
       if (!document.body.contains(tbody)) { if (refreshTimer) clearInterval(refreshTimer); return; }
       try {
-        allRows = await window.Api.get('/lowstock');
+        // silent: true — this runs every 15s in the background (and can
+        // keep firing for a few seconds after the user has navigated to a
+        // different page, until the DOM-presence check above catches up),
+        // so it must not trigger the global full-screen loader overlay —
+        // same pattern as dashboard.js's refreshLiveSessions().
+        allRows = await window.Api.get('/lowstock', { silent: true });
       } catch (e) {
         allRows = [];
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load low stock data from the database.</td></tr>`;
