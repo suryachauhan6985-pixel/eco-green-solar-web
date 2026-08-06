@@ -6,7 +6,7 @@ Database layer detected: **Yes**
 
 | Table | File |
 | --- | --- |
-| backup_log | api/routes/backup.js |
+| backup_log | api/routes/backup.routes.js |
 | otp_codes | api/db/schema.js |
 | attachments | api/db/schema.js |
 | scan_sheets | api/db/schema.js |

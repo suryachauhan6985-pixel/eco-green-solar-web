@@ -50,26 +50,25 @@ Database
 
 | File | Purpose |
 | --- | --- |
-| api/middleware/auth.js | Implements Express/Koa middleware. |
+| api/middleware/auth.middleware.js | Implements Express/Koa middleware. |
 | api/middleware/rateLimiters.js | Implements Express/Koa middleware. |
 
 ### `api/routes`
 
 | File | Purpose |
 | --- | --- |
-| api/routes/attachments.js | Defines HTTP route handlers (controller/router layer). |
-| api/routes/auth.js | Defines HTTP route handlers (controller/router layer). |
-| api/routes/backup.js | Defines HTTP route handlers (controller/router layer). |
-| api/routes/challan.js | Defines HTTP route handlers (controller/router layer). |
+| api/routes/attachments.routes.js | Defines HTTP route handlers (controller/router layer). |
+| api/routes/auth.routes.js | Defines HTTP route handlers (controller/router layer). |
+| api/routes/backup.routes.js | Defines HTTP route handlers (controller/router layer). |
+| api/routes/challan.routes.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/health.js | Defines HTTP route handlers (controller/router layer). |
-| api/routes/ledgers.js | Defines HTTP route handlers (controller/router layer). |
-| api/routes/masters.js | Defines HTTP route handlers (controller/router layer). |
-| api/routes/purchase.js | Defines HTTP route handlers (controller/router layer). |
-| api/routes/purchase.rout.js | Defines HTTP route handlers (controller/router layer). |
-| api/routes/reports.js | Defines HTTP route handlers (controller/router layer). |
-| api/routes/sales.js | Defines HTTP route handlers (controller/router layer). |
+| api/routes/ledgers.routes.js | Defines HTTP route handlers (controller/router layer). |
+| api/routes/masters.routes.js | Defines HTTP route handlers (controller/router layer). |
+| api/routes/purchase.routes.js | Defines HTTP route handlers (controller/router layer). |
+| api/routes/reports.routes.js | Defines HTTP route handlers (controller/router layer). |
+| api/routes/sales.routes.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/scansheet.routes.js | Defines HTTP route handlers (controller/router layer). |
-| api/routes/stockassign.js | Defines HTTP route handlers (controller/router layer). |
+| api/routes/stockassign.routes.js | Defines HTTP route handlers (controller/router layer). |
 
 ### `api/services`
 
@@ -97,7 +96,7 @@ Database
 
 | File | Purpose |
 | --- | --- |
-| js/data/api.js | Defines 3 function(s) implementing supporting logic. |
+| js/data/api.js | Defines 5 function(s) implementing supporting logic. |
 | js/data/purchase-data.js | Defines 4 function(s) implementing supporting logic. |
 | js/data/sales-data.js | Supporting source file. |
 | js/data/sheets-store.js | Defines 14 function(s) implementing supporting logic. |

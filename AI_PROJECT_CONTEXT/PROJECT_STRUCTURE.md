@@ -11,22 +11,21 @@ api/
         pool.js
         schema.js
     middleware/
-        auth.js
+        auth.middleware.js
         rateLimiters.js
     routes/
-        attachments.js
-        auth.js
-        backup.js
-        challan.js
+        attachments.routes.js
+        auth.routes.js
+        backup.routes.js
+        challan.routes.js
         health.js
-        ledgers.js
-        masters.js
-        purchase.js
-        purchase.rout.js
-        reports.js
-        sales.js
+        ledgers.routes.js
+        masters.routes.js
+        purchase.routes.js
+        reports.routes.js
+        sales.routes.js
         scansheet.routes.js
-        stockassign.js
+        stockassign.routes.js
     services/
         challanPdf.js
         email.js
@@ -76,5 +75,6 @@ Dockerfile
 index.html
 manifest.webmanifest
 package.json
+PROJECT_GOALS.md
 sw.js
 ```

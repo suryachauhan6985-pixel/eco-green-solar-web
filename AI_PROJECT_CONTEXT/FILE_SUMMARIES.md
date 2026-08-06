@@ -5,8 +5,8 @@ Deep analysis of every important source file.
 ## `Dockerfile`
 
 - **Purpose:** Supporting source file.
-- **Lines of code:** 30
-- **Complexity:** Low (heuristic score: 2)
+- **Lines of code:** 51
+- **Complexity:** Low (heuristic score: 5)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** None
@@ -38,8 +38,8 @@ Deep analysis of every important source file.
 ## `sw.js`
 
 - **Purpose:** Supporting source file.
-- **Lines of code:** 93
-- **Complexity:** Low (heuristic score: 5)
+- **Lines of code:** 128
+- **Complexity:** Low (heuristic score: 11)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** None
@@ -55,8 +55,8 @@ Deep analysis of every important source file.
 ## `js/app.js`
 
 - **Purpose:** Application entry point / bootstrap file.
-- **Lines of code:** 1413
-- **Complexity:** High (heuristic score: 254)
+- **Lines of code:** 1419
+- **Complexity:** High (heuristic score: 255)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** showLoader(), hideLoader(), applyGlobalTableSearch(query), applyAllFilters(), closeMenu(), positionMenu(menu, btn), openMenuFor(btn), updateProfileDisplay(username, role), showApp(), saveSession(username, role, persist, token), loadSession(), clearSession(), startHeartbeat(), stopHeartbeat(), resetIdleTimer(), stopIdleTimer(), notifyServerLogout(), showLoginOverlay(message), buildLoginOverlay(), showCredsStep(), showOtpStep(maskedEmail), hideAllSteps(), showRegisterStep(), showRegisterOtpStep(maskedEmail), showForgotStep(), showResetStep(maskedEmail), finishLogin(data), attemptLogin(), attemptVerifyOtp(), attemptResendOtp(), attemptRegister(), attemptVerifyRegisterOtp(), attemptResendRegisterOtp(), attemptForgotPassword(), attemptResendForgotOtp(), attemptResetPassword(), closeProfileMenu(), endSessionAndShowLogin(), openProfileMenu(), go(id), closeConfirmDialog(result), guardField(el), guardAllFields(root), getRows(), cellValue(row, idx), uniqueValues(idx), itemCbs(), ping()
@@ -91,8 +91,8 @@ Deep analysis of every important source file.
 ## `js/pages/bom.js`
 
 - **Purpose:** Defines 1 class(es) implementing core logic.
-- **Lines of code:** 1973
-- **Complexity:** High (heuristic score: 289)
+- **Lines of code:** 1990
+- **Complexity:** High (heuristic score: 297)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** bomSetPrintPageSize(cssSizeAndMargin), bomLoadCustomKits(), bomSaveCustomKits(obj), bomGetAllKits(), bomIsCustomKitKey(key), bomSlugify(label), bomRenumberAll(sections), bomDefaultSectionsTemplate(), bomParseQtyNumber(qtyStr), bomSplitSerials(text), bomCollectKitItemNames(), bomLoadItemMasterNames(), bomBuildItemOptionsHtml(selectedName), bomRenderScreenItemsHtml(state, opts), bomRenderPrintSheetHtml(kit, header), bomRenderChallanTemplateItemsHtml(template), bomRenderChallanEntryModalHtml(header, kit), bomCollectChallanTemplateValues(), bomChallanBuildRowGroups(template), bomRenderChallanBodyRowsHtml(groups, values), bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy), bomRenderChallanTableHeadRowHtml(), bomRenderChallanFooterRowsHtml(header), bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy), bomRenderChallanPrintSheetHtml(header, kit, templateValues), openChallanModal(bodyHtml), closeChallanModal(), bomLoadSerialMandatoryInfo(), bomItemNeedsSerial(name), searchBomCustomerLedgers(q), searchBomCustomerShortCodes(q), fillBomCustomerDatalist(listEl, ledgers, key), wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), wireBomPartyTypeAutocomplete(inputEl, listEl, ledgerType), search(q), fillList(ledgers), setVerified(isVerified), allItemsChecked(), updateVerifyButtonState(), populateKitDropdown(selectKey), refreshItemsPreview(), renderKitBuilderSections(), handleBuilderFieldEdit(e), handleItemFieldEdit(e), rerenderItemsPreview(), openBomSerialModal(si, ii), updateCountNote(), getHeaderValues(), computeAndApplyFitZoom(), bomEsc(s), bomEscAttr(s), qtyInput(sr, sizeLabel), descInput(sr), setVal(key, patch), getQty(sr, size), getDesc(sr), $(id), blankItem()
@@ -110,7 +110,7 @@ Deep analysis of every important source file.
 ## `js/pages/dashboard.js`
 
 - **Purpose:** Defines 18 function(s) implementing supporting logic.
-- **Lines of code:** 441
+- **Lines of code:** 443
 - **Complexity:** High (heuristic score: 79)
 - **Imports:** None
 - **Exports:** None
@@ -129,8 +129,8 @@ Deep analysis of every important source file.
 ## `js/pages/lowstock.js`
 
 - **Purpose:** Defines 12 function(s) implementing supporting logic.
-- **Lines of code:** 236
-- **Complexity:** Medium (heuristic score: 37)
+- **Lines of code:** 241
+- **Complexity:** Medium (heuristic score: 38)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** rowToValues(r), matchesSearch(values), isRowVisible(values), loadData(), renderTable(), uniqueValues(col), applyAllFilters(), closeMenu(), positionMenu(menu, btn), openMenuFor(btn), $(id), itemCbs()
@@ -326,12 +326,12 @@ Deep analysis of every important source file.
 
 ## `js/data/api.js`
 
-- **Purpose:** Defines 3 function(s) implementing supporting logic.
-- **Lines of code:** 103
-- **Complexity:** Low (heuristic score: 12)
+- **Purpose:** Defines 5 function(s) implementing supporting logic.
+- **Lines of code:** 143
+- **Complexity:** Medium (heuristic score: 26)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** parseApiResponse(res, path), readFileAsBase64(file), uploadAttachments(refType, refNo, fileList)
+- **Functions:** parseApiResponse(res, path), getFileExtension(fileName), validateAttachmentFile(file), readFileAsBase64(file), uploadAttachments(refType, refNo, fileList)
 - **Classes:** None
 - **API endpoints:** None
 - **Database usage:** None
@@ -389,8 +389,8 @@ Deep analysis of every important source file.
 ## `api/api.js`
 
 - **Purpose:** Defines 5 function(s) implementing supporting logic.
-- **Lines of code:** 138
-- **Complexity:** Medium (heuristic score: 22)
+- **Lines of code:** 144
+- **Complexity:** Medium (heuristic score: 26)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** parseApiResponse(res, path), getFileExtension(fileName), validateAttachmentFile(file), readFileAsBase64(file), uploadAttachments(refType, refNo, fileList)
@@ -423,7 +423,7 @@ Deep analysis of every important source file.
 - **Purpose:** Application entry point / bootstrap file.
 - **Lines of code:** 69
 - **Complexity:** Low (heuristic score: 1)
-- **Imports:** dotenv, express, path, ./config/cors, ./db/pool, ./db/schema, ./middleware/auth, ./middleware/rateLimiters, ./services/passwords, ./services/email, ./services/stockHelpers, ./utils/route, ./utils/time, ./routes/attachments, ./routes/health, ./routes/auth, ./routes/masters, ./routes/purchase, ./routes/ledgers, ./routes/sales, ./routes/stockassign, ./routes/scansheet.routes, ./routes/reports, ./routes/backup, ./routes/challan
+- **Imports:** dotenv, express, path, ./config/cors, ./db/pool, ./db/schema, ./middleware/auth.middleware, ./middleware/rateLimiters, ./services/passwords, ./services/email, ./services/stockHelpers, ./utils/route, ./utils/time, ./routes/attachments.routes, ./routes/health, ./routes/auth.routes, ./routes/masters.routes, ./routes/purchase.routes, ./routes/ledgers.routes, ./routes/sales.routes, ./routes/stockassign.routes, ./routes/scansheet.routes, ./routes/reports.routes, ./routes/backup.routes, ./routes/challan.routes
 - **Exports:** None
 - **Functions:** None
 - **Classes:** None
@@ -535,7 +535,7 @@ Deep analysis of every important source file.
 
 ---
 
-## `api/routes/attachments.js`
+## `api/routes/attachments.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
 - **Lines of code:** 107
@@ -552,25 +552,24 @@ Deep analysis of every important source file.
 
 ---
 
-## `api/routes/auth.js`
+## `api/routes/auth.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 395
-- **Complexity:** High (heuristic score: 61)
+- **Lines of code:** 384
+- **Complexity:** Medium (heuristic score: 60)
 - **Imports:** None
 - **Exports:** module.exports
 - **Functions:** registerAuthRoutes(app, deps), completeLoginSession(uname, role, res)
 - **Classes:** None
 - **API endpoints:** POST /api/auth/login, POST /api/auth/verify-otp, POST /api/auth/resend-otp, POST /api/auth/register, POST /api/auth/verify-register-otp, POST /api/auth/forgot-password, POST /api/auth/reset-password, POST /api/auth/logout, POST /api/auth/heartbeat, GET /api/sessions/live
-- **Database usage:** Raw SQL detected (44 statement keywords: UPDATE, SELECT, INSERT INTO, DELETE FROM, JOIN)
+- **Database usage:** Raw SQL detected (42 statement keywords: INSERT INTO, UPDATE, SELECT, DELETE FROM, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
-  - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 
 ---
 
-## `api/routes/backup.js`
+## `api/routes/backup.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
 - **Lines of code:** 168
@@ -588,11 +587,11 @@ Deep analysis of every important source file.
 
 ---
 
-## `api/routes/challan.js`
+## `api/routes/challan.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 63
-- **Complexity:** Low (heuristic score: 6)
+- **Lines of code:** 67
+- **Complexity:** Low (heuristic score: 7)
 - **Imports:** ../services/challanPdf
 - **Exports:** module.exports
 - **Functions:** registerChallanRoutes(app, deps)
@@ -622,7 +621,7 @@ Deep analysis of every important source file.
 
 ---
 
-## `api/routes/ledgers.js`
+## `api/routes/ledgers.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
 - **Lines of code:** 259
@@ -639,7 +638,7 @@ Deep analysis of every important source file.
 
 ---
 
-## `api/routes/masters.js`
+## `api/routes/masters.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
 - **Lines of code:** 243
@@ -657,7 +656,7 @@ Deep analysis of every important source file.
 
 ---
 
-## `api/routes/purchase.js`
+## `api/routes/purchase.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
 - **Lines of code:** 451
@@ -674,24 +673,7 @@ Deep analysis of every important source file.
 
 ---
 
-## `api/routes/purchase.rout.js`
-
-- **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 451
-- **Complexity:** Medium (heuristic score: 59)
-- **Imports:** None
-- **Exports:** module.exports
-- **Functions:** registerPurchaseRoutes(app, deps)
-- **Classes:** None
-- **API endpoints:** GET /api/purchase/brands/:category, GET /api/purchase/wattages, GET /api/purchase/check-serials, POST /api/purchase, GET /api/purchase/find, PUT /api/purchase/:invoiceNo, DELETE /api/purchase/:invoiceNo, GET /api/purchase/register
-- **Database usage:** Raw SQL detected (35 statement keywords: SELECT, JOIN, INSERT INTO, UPDATE, DELETE FROM)
-- **Environment variables used:** None
-- **Potential improvements:**
-  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
-
----
-
-## `api/routes/reports.js`
+## `api/routes/reports.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
 - **Lines of code:** 42
@@ -708,7 +690,7 @@ Deep analysis of every important source file.
 
 ---
 
-## `api/routes/sales.js`
+## `api/routes/sales.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
 - **Lines of code:** 709
@@ -743,7 +725,7 @@ Deep analysis of every important source file.
 
 ---
 
-## `api/routes/stockassign.js`
+## `api/routes/stockassign.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
 - **Lines of code:** 280
@@ -760,7 +742,7 @@ Deep analysis of every important source file.
 
 ---
 
-## `api/middleware/auth.js`
+## `api/middleware/auth.middleware.js`
 
 - **Purpose:** Implements Express/Koa middleware.
 - **Lines of code:** 38

@@ -2577,13 +2577,25 @@
     "type": "file",
     "label": "js/data/api.js",
     "file": "js/data/api.js",
-    "detail": "Defines 3 function(s) implementing supporting logic."
+    "detail": "Defines 5 function(s) implementing supporting logic."
   },
   {
     "type": "function",
     "label": "parseApiResponse",
     "file": "js/data/api.js",
     "detail": "(res, path)"
+  },
+  {
+    "type": "function",
+    "label": "getFileExtension",
+    "file": "js/data/api.js",
+    "detail": "(fileName)"
+  },
+  {
+    "type": "function",
+    "label": "validateAttachmentFile",
+    "file": "js/data/api.js",
+    "detail": "(file)"
   },
   {
     "type": "function",
@@ -2929,104 +2941,104 @@
   },
   {
     "type": "file",
-    "label": "api/routes/attachments.js",
-    "file": "api/routes/attachments.js",
+    "label": "api/routes/attachments.routes.js",
+    "file": "api/routes/attachments.routes.js",
     "detail": "Defines HTTP route handlers (controller/router layer)."
   },
   {
     "type": "function",
     "label": "registerAttachmentsRoutes",
-    "file": "api/routes/attachments.js",
+    "file": "api/routes/attachments.routes.js",
     "detail": "(app, deps)"
   },
   {
     "type": "function",
     "label": "getFileExtension",
-    "file": "api/routes/attachments.js",
+    "file": "api/routes/attachments.routes.js",
     "detail": "(fileName)"
   },
   {
     "type": "function",
     "label": "base64ByteSize",
-    "file": "api/routes/attachments.js",
+    "file": "api/routes/attachments.routes.js",
     "detail": "(base64)"
   },
   {
     "type": "file",
-    "label": "api/routes/auth.js",
-    "file": "api/routes/auth.js",
+    "label": "api/routes/auth.routes.js",
+    "file": "api/routes/auth.routes.js",
     "detail": "Defines HTTP route handlers (controller/router layer)."
   },
   {
     "type": "function",
     "label": "registerAuthRoutes",
-    "file": "api/routes/auth.js",
+    "file": "api/routes/auth.routes.js",
     "detail": "(app, deps)"
   },
   {
     "type": "function",
     "label": "completeLoginSession",
-    "file": "api/routes/auth.js",
+    "file": "api/routes/auth.routes.js",
     "detail": "(uname, role, res)"
   },
   {
     "type": "file",
-    "label": "api/routes/backup.js",
-    "file": "api/routes/backup.js",
+    "label": "api/routes/backup.routes.js",
+    "file": "api/routes/backup.routes.js",
     "detail": "Defines HTTP route handlers (controller/router layer)."
   },
   {
     "type": "function",
     "label": "registerBackupRoutes",
-    "file": "api/routes/backup.js",
+    "file": "api/routes/backup.routes.js",
     "detail": "(app, deps)"
   },
   {
     "type": "function",
     "label": "ensureBackupLogTable",
-    "file": "api/routes/backup.js",
+    "file": "api/routes/backup.routes.js",
     "detail": "()"
   },
   {
     "type": "function",
     "label": "resolveBackupDir",
-    "file": "api/routes/backup.js",
+    "file": "api/routes/backup.routes.js",
     "detail": "()"
   },
   {
     "type": "function",
     "label": "exportAllTablesToExcel",
-    "file": "api/routes/backup.js",
+    "file": "api/routes/backup.routes.js",
     "detail": "(destPath)"
   },
   {
     "type": "function",
     "label": "backupTimestampStamp",
-    "file": "api/routes/backup.js",
+    "file": "api/routes/backup.routes.js",
     "detail": "()"
   },
   {
     "type": "function",
     "label": "runBackup",
-    "file": "api/routes/backup.js",
+    "file": "api/routes/backup.routes.js",
     "detail": "(backupType)"
   },
   {
     "type": "function",
     "label": "checkAutoBackup",
-    "file": "api/routes/backup.js",
+    "file": "api/routes/backup.routes.js",
     "detail": "()"
   },
   {
     "type": "file",
-    "label": "api/routes/challan.js",
-    "file": "api/routes/challan.js",
+    "label": "api/routes/challan.routes.js",
+    "file": "api/routes/challan.routes.js",
     "detail": "Defines HTTP route handlers (controller/router layer)."
   },
   {
     "type": "function",
     "label": "registerChallanRoutes",
-    "file": "api/routes/challan.js",
+    "file": "api/routes/challan.routes.js",
     "detail": "(app, deps)"
   },
   {
@@ -3043,104 +3055,92 @@
   },
   {
     "type": "file",
-    "label": "api/routes/ledgers.js",
-    "file": "api/routes/ledgers.js",
+    "label": "api/routes/ledgers.routes.js",
+    "file": "api/routes/ledgers.routes.js",
     "detail": "Defines HTTP route handlers (controller/router layer)."
   },
   {
     "type": "function",
     "label": "registerLedgersRoutes",
-    "file": "api/routes/ledgers.js",
+    "file": "api/routes/ledgers.routes.js",
     "detail": "(app, deps)"
   },
   {
     "type": "function",
     "label": "ledgerExists",
-    "file": "api/routes/ledgers.js",
+    "file": "api/routes/ledgers.routes.js",
     "detail": "(name, short, excludeId)"
   },
   {
     "type": "file",
-    "label": "api/routes/masters.js",
-    "file": "api/routes/masters.js",
+    "label": "api/routes/masters.routes.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "Defines HTTP route handlers (controller/router layer)."
   },
   {
     "type": "function",
     "label": "registerMastersRoutes",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "(app, deps)"
   },
   {
     "type": "file",
-    "label": "api/routes/purchase.js",
-    "file": "api/routes/purchase.js",
+    "label": "api/routes/purchase.routes.js",
+    "file": "api/routes/purchase.routes.js",
     "detail": "Defines HTTP route handlers (controller/router layer)."
   },
   {
     "type": "function",
     "label": "registerPurchaseRoutes",
-    "file": "api/routes/purchase.js",
+    "file": "api/routes/purchase.routes.js",
     "detail": "(app, deps)"
   },
   {
     "type": "file",
-    "label": "api/routes/purchase.rout.js",
-    "file": "api/routes/purchase.rout.js",
-    "detail": "Defines HTTP route handlers (controller/router layer)."
-  },
-  {
-    "type": "function",
-    "label": "registerPurchaseRoutes",
-    "file": "api/routes/purchase.rout.js",
-    "detail": "(app, deps)"
-  },
-  {
-    "type": "file",
-    "label": "api/routes/reports.js",
-    "file": "api/routes/reports.js",
+    "label": "api/routes/reports.routes.js",
+    "file": "api/routes/reports.routes.js",
     "detail": "Defines HTTP route handlers (controller/router layer)."
   },
   {
     "type": "function",
     "label": "registerReportsRoutes",
-    "file": "api/routes/reports.js",
+    "file": "api/routes/reports.routes.js",
     "detail": "(app, deps)"
   },
   {
     "type": "function",
     "label": "dash",
-    "file": "api/routes/reports.js",
+    "file": "api/routes/reports.routes.js",
     "detail": "(v)"
   },
   {
     "type": "file",
-    "label": "api/routes/sales.js",
-    "file": "api/routes/sales.js",
+    "label": "api/routes/sales.routes.js",
+    "file": "api/routes/sales.routes.js",
     "detail": "Defines HTTP route handlers (controller/router layer)."
   },
   {
     "type": "function",
     "label": "registerSalesRoutes",
-    "file": "api/routes/sales.js",
+    "file": "api/routes/sales.routes.js",
     "detail": "(app, deps)"
   },
   {
     "type": "function",
     "label": "fifoConsumeQty",
-    "file": "api/routes/sales.js",
+    "file": "api/routes/sales.routes.js",
     "detail": "(conn, itemKey, qtyNeeded, meta, editedFlag = 0)"
   },
   {
     "type": "function",
     "label": "releaseQtyToAvailable",
-    "file": "api/routes/sales.js",
+    "file": "api/routes/sales.routes.js",
     "detail": "(conn, itemKey, orderNo, qtyToRelease)"
   },
   {
     "type": "function",
     "label": "isQtyLine",
-    "file": "api/routes/sales.js",
+    "file": "api/routes/sales.routes.js",
     "detail": "(line)"
   },
   {
@@ -3175,44 +3175,44 @@
   },
   {
     "type": "file",
-    "label": "api/routes/stockassign.js",
-    "file": "api/routes/stockassign.js",
+    "label": "api/routes/stockassign.routes.js",
+    "file": "api/routes/stockassign.routes.js",
     "detail": "Defines HTTP route handlers (controller/router layer)."
   },
   {
     "type": "function",
     "label": "registerStockassignRoutes",
-    "file": "api/routes/stockassign.js",
+    "file": "api/routes/stockassign.routes.js",
     "detail": "(app, deps)"
   },
   {
     "type": "function",
     "label": "releaseAssignedSerials",
-    "file": "api/routes/stockassign.js",
+    "file": "api/routes/stockassign.routes.js",
     "detail": "(conn, reference)"
   },
   {
     "type": "file",
-    "label": "api/middleware/auth.js",
-    "file": "api/middleware/auth.js",
+    "label": "api/middleware/auth.middleware.js",
+    "file": "api/middleware/auth.middleware.js",
     "detail": "Implements Express/Koa middleware."
   },
   {
     "type": "function",
     "label": "issueToken",
-    "file": "api/middleware/auth.js",
+    "file": "api/middleware/auth.middleware.js",
     "detail": "(username, role)"
   },
   {
     "type": "function",
     "label": "authenticateToken",
-    "file": "api/middleware/auth.js",
+    "file": "api/middleware/auth.middleware.js",
     "detail": "(req, res, next)"
   },
   {
     "type": "function",
     "label": "requireRole",
-    "file": "api/middleware/auth.js",
+    "file": "api/middleware/auth.middleware.js",
     "detail": "(...roles)"
   },
   {
@@ -3314,121 +3314,121 @@
   {
     "type": "route",
     "label": "GET /api/attachments",
-    "file": "api/routes/attachments.js",
+    "file": "api/routes/attachments.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/attachments",
-    "file": "api/routes/attachments.js",
+    "file": "api/routes/attachments.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "DELETE /api/attachments/:id",
-    "file": "api/routes/attachments.js",
+    "file": "api/routes/attachments.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/attachments/:id/file",
-    "file": "api/routes/attachments.js",
+    "file": "api/routes/attachments.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/auth/forgot-password",
-    "file": "api/routes/auth.js",
+    "file": "api/routes/auth.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/auth/heartbeat",
-    "file": "api/routes/auth.js",
+    "file": "api/routes/auth.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/auth/login",
-    "file": "api/routes/auth.js",
+    "file": "api/routes/auth.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/auth/logout",
-    "file": "api/routes/auth.js",
+    "file": "api/routes/auth.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/auth/register",
-    "file": "api/routes/auth.js",
+    "file": "api/routes/auth.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/auth/resend-otp",
-    "file": "api/routes/auth.js",
+    "file": "api/routes/auth.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/auth/reset-password",
-    "file": "api/routes/auth.js",
+    "file": "api/routes/auth.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/auth/verify-otp",
-    "file": "api/routes/auth.js",
+    "file": "api/routes/auth.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/auth/verify-register-otp",
-    "file": "api/routes/auth.js",
+    "file": "api/routes/auth.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/backup/download/:fileName",
-    "file": "api/routes/backup.js",
+    "file": "api/routes/backup.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/backup/run",
-    "file": "api/routes/backup.js",
+    "file": "api/routes/backup.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/backup/status",
-    "file": "api/routes/backup.js",
+    "file": "api/routes/backup.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/challan",
-    "file": "api/routes/challan.js",
+    "file": "api/routes/challan.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/challan",
-    "file": "api/routes/challan.js",
+    "file": "api/routes/challan.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/challan/:id",
-    "file": "api/routes/challan.js",
+    "file": "api/routes/challan.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/challan/:id/pdf",
-    "file": "api/routes/challan.js",
+    "file": "api/routes/challan.routes.js",
     "detail": "public"
   },
   {
@@ -3446,43 +3446,43 @@
   {
     "type": "route",
     "label": "GET /api/ledgers",
-    "file": "api/routes/ledgers.js",
+    "file": "api/routes/ledgers.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/ledgers",
-    "file": "api/routes/ledgers.js",
+    "file": "api/routes/ledgers.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "DELETE /api/ledgers/:id",
-    "file": "api/routes/ledgers.js",
+    "file": "api/routes/ledgers.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "PUT /api/ledgers/:id",
-    "file": "api/routes/ledgers.js",
+    "file": "api/routes/ledgers.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/ledgers/directory",
-    "file": "api/routes/ledgers.js",
+    "file": "api/routes/ledgers.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/ledgers/shortcodes",
-    "file": "api/routes/ledgers.js",
+    "file": "api/routes/ledgers.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/ledgers/statement",
-    "file": "api/routes/ledgers.js",
+    "file": "api/routes/ledgers.routes.js",
     "detail": "public"
   },
   {
@@ -3494,301 +3494,253 @@
   {
     "type": "route",
     "label": "GET /api/masters/brands",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/masters/categories",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/masters/categories",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "DELETE /api/masters/categories/:name",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "PUT /api/masters/categories/:name/serial-rule",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "PUT /api/masters/categories/:name/watt-rule",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/masters/items",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/masters/items",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "PUT /api/masters/items/:id",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "DELETE /api/masters/subtypes",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/masters/subtypes",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "PUT /api/masters/subtypes",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/masters/subtypes/:category",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "DELETE /api/masters/units",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/masters/units",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/masters/units",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "PUT /api/masters/units",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/masters/users",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/masters/users",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "PUT /api/masters/users/email",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "PUT /api/masters/users/password",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "DELETE /api/masters/warehouses",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/masters/warehouses",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/masters/warehouses",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "PUT /api/masters/warehouses",
-    "file": "api/routes/masters.js",
+    "file": "api/routes/masters.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/purchase",
-    "file": "api/routes/purchase.js",
-    "detail": "public"
-  },
-  {
-    "type": "route",
-    "label": "POST /api/purchase",
-    "file": "api/routes/purchase.rout.js",
+    "file": "api/routes/purchase.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "DELETE /api/purchase/:invoiceNo",
-    "file": "api/routes/purchase.js",
-    "detail": "public"
-  },
-  {
-    "type": "route",
-    "label": "DELETE /api/purchase/:invoiceNo",
-    "file": "api/routes/purchase.rout.js",
+    "file": "api/routes/purchase.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "PUT /api/purchase/:invoiceNo",
-    "file": "api/routes/purchase.js",
-    "detail": "public"
-  },
-  {
-    "type": "route",
-    "label": "PUT /api/purchase/:invoiceNo",
-    "file": "api/routes/purchase.rout.js",
+    "file": "api/routes/purchase.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/purchase/brands/:category",
-    "file": "api/routes/purchase.js",
-    "detail": "public"
-  },
-  {
-    "type": "route",
-    "label": "GET /api/purchase/brands/:category",
-    "file": "api/routes/purchase.rout.js",
+    "file": "api/routes/purchase.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/purchase/check-serials",
-    "file": "api/routes/purchase.js",
-    "detail": "public"
-  },
-  {
-    "type": "route",
-    "label": "GET /api/purchase/check-serials",
-    "file": "api/routes/purchase.rout.js",
+    "file": "api/routes/purchase.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/purchase/find",
-    "file": "api/routes/purchase.js",
-    "detail": "public"
-  },
-  {
-    "type": "route",
-    "label": "GET /api/purchase/find",
-    "file": "api/routes/purchase.rout.js",
+    "file": "api/routes/purchase.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/purchase/register",
-    "file": "api/routes/purchase.js",
-    "detail": "public"
-  },
-  {
-    "type": "route",
-    "label": "GET /api/purchase/register",
-    "file": "api/routes/purchase.rout.js",
+    "file": "api/routes/purchase.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/purchase/wattages",
-    "file": "api/routes/purchase.js",
-    "detail": "public"
-  },
-  {
-    "type": "route",
-    "label": "GET /api/purchase/wattages",
-    "file": "api/routes/purchase.rout.js",
+    "file": "api/routes/purchase.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/reports/master",
-    "file": "api/routes/reports.js",
+    "file": "api/routes/reports.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/returns",
-    "file": "api/routes/sales.js",
+    "file": "api/routes/sales.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/sales/check-line",
-    "file": "api/routes/sales.js",
+    "file": "api/routes/sales.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "DELETE /api/sales/delete/:orderNo",
-    "file": "api/routes/sales.js",
+    "file": "api/routes/sales.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/sales/dispatch",
-    "file": "api/routes/sales.js",
+    "file": "api/routes/sales.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/sales/find/:term",
-    "file": "api/routes/sales.js",
+    "file": "api/routes/sales.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "PUT /api/sales/modify/:orderNo",
-    "file": "api/routes/sales.js",
+    "file": "api/routes/sales.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/sales/register",
-    "file": "api/routes/sales.js",
+    "file": "api/routes/sales.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/sales/types",
-    "file": "api/routes/sales.js",
+    "file": "api/routes/sales.routes.js",
     "detail": "public"
   },
   {
@@ -3848,49 +3800,49 @@
   {
     "type": "route",
     "label": "GET /api/sessions/live",
-    "file": "api/routes/auth.js",
+    "file": "api/routes/auth.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/stockassign",
-    "file": "api/routes/stockassign.js",
+    "file": "api/routes/stockassign.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/stockassign/available",
-    "file": "api/routes/stockassign.js",
+    "file": "api/routes/stockassign.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/stockassign/lines/:reference",
-    "file": "api/routes/stockassign.js",
+    "file": "api/routes/stockassign.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "GET /api/stockassign/register",
-    "file": "api/routes/stockassign.js",
+    "file": "api/routes/stockassign.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/stockassign/release-customer",
-    "file": "api/routes/stockassign.js",
+    "file": "api/routes/stockassign.routes.js",
     "detail": "public"
   },
   {
     "type": "route",
     "label": "POST /api/stockassign/release-firm",
-    "file": "api/routes/stockassign.js",
+    "file": "api/routes/stockassign.routes.js",
     "detail": "public"
   },
   {
     "type": "table",
     "label": "backup_log",
-    "file": "api/routes/backup.js",
+    "file": "api/routes/backup.routes.js",
     "detail": "SQL table"
   },
   {

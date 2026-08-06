@@ -1,6 +1,6 @@
 # Changelog (Since Last Scan)
 
-Scan performed: 2026-08-03T10:58:19.956Z
+Scan performed: 2026-08-06T06:44:18.356Z
 First scan for this project: Yes
 
 ## Added Files (61)
@@ -10,6 +10,7 @@ First scan for this project: Yes
 - index.html
 - manifest.webmanifest
 - package.json
+- PROJECT_GOALS.md
 - sw.js
 - js/app.js
 - js/pages/backup.js
@@ -48,20 +49,19 @@ First scan for this project: Yes
 - api/services/email.js
 - api/services/passwords.js
 - api/services/stockHelpers.js
-- api/routes/attachments.js
-- api/routes/auth.js
-- api/routes/backup.js
-- api/routes/challan.js
+- api/routes/attachments.routes.js
+- api/routes/auth.routes.js
+- api/routes/backup.routes.js
+- api/routes/challan.routes.js
 - api/routes/health.js
-- api/routes/ledgers.js
-- api/routes/masters.js
-- api/routes/purchase.js
-- api/routes/purchase.rout.js
-- api/routes/reports.js
-- api/routes/sales.js
+- api/routes/ledgers.routes.js
+- api/routes/masters.routes.js
+- api/routes/purchase.routes.js
+- api/routes/reports.routes.js
+- api/routes/sales.routes.js
 - api/routes/scansheet.routes.js
-- api/routes/stockassign.js
-- api/middleware/auth.js
+- api/routes/stockassign.routes.js
+- api/middleware/auth.middleware.js
 - api/middleware/rateLimiters.js
 - api/db/pool.js
 - api/db/schema.js
