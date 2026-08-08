@@ -70,7 +70,10 @@ window.PAGES.purchase = {
             </div>
 
             <div class="field span-full" id="purSerialWrap"><label>Serial Numbers <span class="req">*</span></label>
-              <textarea id="purSerials" placeholder="One serial per line, it auto-splits"></textarea>
+              <div class="ss-scan-input-wrap">
+                <textarea id="purSerials" placeholder="One serial per line, it auto-splits — or tap the scan icon"></textarea>
+                <button type="button" class="ss-scan-icon-btn" id="purScanBtn" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
+              </div>
             </div>
             <div class="field span-full" id="purQtyOnlyNote" style="display:none;">
               <p style="color:var(--txt-muted); font-style:italic; margin:0;">This category is quantity-tracked (no serial numbers) — the line's Qty is final as entered.</p>
@@ -139,7 +142,12 @@ window.PAGES.purchase = {
               </div>
             </div>
 
-            <div class="field span-full" id="purEditSerialWrap"><label>Serial Numbers <span class="req">*</span></label><textarea id="purEditSerials" placeholder="Loaded serials will appear here after Find"></textarea></div>
+            <div class="field span-full" id="purEditSerialWrap"><label>Serial Numbers <span class="req">*</span></label>
+              <div class="ss-scan-input-wrap">
+                <textarea id="purEditSerials" placeholder="Loaded serials will appear here after Find — or tap the scan icon"></textarea>
+                <button type="button" class="ss-scan-icon-btn" id="purEditScanBtn" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
+              </div>
+            </div>
             <div class="field span-full" id="purEditQtyOnlyNote" style="display:none;">
               <p style="color:var(--txt-muted); font-style:italic; margin:0;">This category is quantity-tracked (no serial numbers) — the line's Qty is final as entered.</p>
             </div>
@@ -578,6 +586,286 @@ window.PAGES.purchase = {
     purSerialsBox.addEventListener('blur', () => {
       purSerialsBox.value = splitSerials(purSerialsBox.value).join('\n');
     });
+
+    // ---------------- Serial scanner (camera) ----------------
+    // Same "html5-qrcode" library + overlay markup/classes used by the SCAN
+    // To Sheet page (js/pages/scansheet.js — loaded globally via CDN in
+    // index.html, and .ss-scanner-* / .ss-scan-input-wrap / .ss-scan-icon-btn
+    // CSS already ships site-wide via css/modules/scan-sheet.css) so the
+    // scan UI looks/feels identical here instead of reinventing it.
+    // Flow mirrors scansheet.js's onScanSuccess -> showScanResult ->
+    // Retry/Save exactly: after each decode, the camera PAUSES and a result
+    // card shows the scanned value with "Retry" (discard, resume scanning)
+    // and "Done" (add it to the Serial Numbers box, then resume scanning
+    // for the next one). Nothing gets added to the textarea until "Done"
+    // is tapped — this replaces the earlier auto-add-on-every-scan version.
+    const purScanState = {
+      html5QrCode: null,
+      cameras: [],
+      cameraIndex: 0,
+      torchOn: false,
+      overlayEl: null,
+      targetId: null,
+      handledOnce: false,   // true while a scan result is on screen awaiting Retry/Done
+      pendingText: null,
+      pendingIsDup: false,
+      addedCount: 0,
+    };
+
+    function purScanBeep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 1050;
+        gain.gain.setValueAtTime(0.001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.16);
+        osc.onended = () => ctx.close();
+      } catch (e) { /* Web Audio not available — silently skip the beep */ }
+    }
+
+    function purScanSetStatus(msg) {
+      const el = document.getElementById('purScanStatus');
+      if (el) el.textContent = msg;
+    }
+
+    function openPurchaseScanner(targetId) {
+      const box = document.getElementById(targetId);
+      if (!box) return;
+      purScanState.targetId = targetId;
+      purScanState.torchOn = false;
+      purScanState.handledOnce = false;
+      purScanState.pendingText = null;
+      purScanState.pendingIsDup = false;
+      purScanState.addedCount = 0;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'ss-scanner-overlay';
+      overlay.innerHTML = `
+        <div class="ss-scanner-topbar">
+          <button type="button" class="ss-icon-btn light" id="purScanBack" title="Close"><i class="fa-solid fa-arrow-left"></i></button>
+          <div class="ss-scanner-title">Scan Serial Numbers</div>
+          <div class="ss-scanner-topbtns">
+            <button type="button" class="ss-icon-btn light" id="purScanTorch" title="Flashlight"><i class="fa-solid fa-bolt"></i></button>
+            <button type="button" class="ss-icon-btn light" id="purScanFlip" title="Flip camera"><i class="fa-solid fa-camera-rotate"></i></button>
+          </div>
+        </div>
+        <div class="ss-scanner-camwrap">
+          <div id="purScanRegion" class="ss-scanner-camfeed"></div>
+          <div class="ss-scanner-target" id="purScanTargetBox"></div>
+          <div class="ss-scanner-instruction" id="purScanStatus">Requesting camera permission&hellip;</div>
+          <div class="ss-scanner-result" id="purScanResult" style="display:none;">
+            <div class="ss-scanner-result-card" id="purScanResultCard">
+              <div class="ss-scanner-result-label">Scanned value</div>
+              <div class="ss-scanner-result-value" id="purScanResultValue"></div>
+              <div class="ss-scanner-result-msg" id="purScanResultMsg"></div>
+            </div>
+            <div class="ss-scanner-result-actions">
+              <button type="button" class="btn btn-ghost" id="purScanRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
+              <button type="button" class="btn btn-green" id="purScanDone2"><i class="fa-solid fa-check"></i> Done</button>
+            </div>
+          </div>
+        </div>
+        <div class="ss-scanner-bottom">
+          <span class="proof-name" id="purScanCount" style="color:#fff;">0 serial(s) added</span>
+          <button type="button" class="btn btn-red ss-scanner-cancel" id="purScanCancel"><i class="fa-solid fa-xmark"></i> Close</button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      purScanState.overlayEl = overlay;
+      document.body.style.overflow = 'hidden';
+
+      overlay.querySelector('#purScanBack').onclick = closePurchaseScanner;
+      overlay.querySelector('#purScanCancel').onclick = closePurchaseScanner;
+      overlay.querySelector('#purScanTorch').onclick = togglePurchaseTorch;
+      overlay.querySelector('#purScanFlip').onclick = flipPurchaseCamera;
+      overlay.querySelector('#purScanRetry').onclick = retryPurchaseScan;
+      overlay.querySelector('#purScanDone2').onclick = confirmPurchaseScan;
+
+      startPurchaseCamera();
+    }
+
+    function startPurchaseCamera() {
+      if (!window.Html5Qrcode) {
+        purScanSetStatus('Scanner library failed to load. Check your connection and try again.');
+        return;
+      }
+      window.Html5Qrcode.getCameras().then((cameras) => {
+        if (!cameras || !cameras.length) { purScanSetStatus('No camera found on this device.'); return; }
+        purScanState.cameras = cameras;
+        const backIdx = cameras.findIndex((c) => /back|rear|environment/i.test(c.label || ''));
+        purScanState.cameraIndex = backIdx !== -1 ? backIdx : 0;
+        launchPurchaseCamera();
+      }).catch((err) => {
+        console.warn('Camera permission error', err);
+        purScanSetStatus('Camera permission denied. Please allow camera access in your browser settings, then tap Cancel and try again.');
+      });
+    }
+
+    function launchPurchaseCamera() {
+      const camera = purScanState.cameras[purScanState.cameraIndex];
+      if (!camera) return;
+      purScanState.handledOnce = false;
+      purScanSetStatus('Place the serial barcode / QR in the box');
+
+      const config = { fps: 10 };
+      if (window.Html5QrcodeSupportedFormats) {
+        config.formatsToSupport = [
+          window.Html5QrcodeSupportedFormats.QR_CODE,
+          window.Html5QrcodeSupportedFormats.EAN_13,
+          window.Html5QrcodeSupportedFormats.EAN_8,
+          window.Html5QrcodeSupportedFormats.CODE_128,
+          window.Html5QrcodeSupportedFormats.CODE_39,
+          window.Html5QrcodeSupportedFormats.UPC_A,
+          window.Html5QrcodeSupportedFormats.UPC_E,
+          window.Html5QrcodeSupportedFormats.ITF,
+        ];
+      }
+
+      purScanState.html5QrCode = new window.Html5Qrcode('purScanRegion', { verbose: false });
+      purScanState.html5QrCode.start(
+        camera.id,
+        config,
+        onPurchaseScanSuccess,
+        () => { /* per-frame "no code found yet" — expected, ignore */ }
+      ).catch((err) => {
+        console.warn('Camera start error', err);
+        purScanSetStatus('Could not start the camera. Tap Cancel and try again.');
+      });
+    }
+
+    // Decoding pauses here (handledOnce guard, exactly like scansheet.js)
+    // until the user explicitly taps Retry or Done on the result card.
+    function onPurchaseScanSuccess(decodedText) {
+      if (purScanState.handledOnce) return;
+      purScanState.handledOnce = true;
+      purScanBeep();
+      if (navigator.vibrate) { try { navigator.vibrate(180); } catch (e) { /* not supported */ } }
+      showPurchaseScanResult(decodedText);
+    }
+
+    // Paints the decoded value on a result card over the camera feed and
+    // flags it as duplicate (already in this Serial Numbers box) if it is
+    // — same "Retry" (discard) / "Done" (add to box) choice scansheet.js
+    // gives, so nothing lands in the box on a bad/duplicate scan.
+    function showPurchaseScanResult(text) {
+      const code = String(text || '').trim();
+      const box = document.getElementById(purScanState.targetId);
+      const existing = box ? splitSerials(box.value) : [];
+      const dup = !!code && existing.some((s) => s.toLowerCase() === code.toLowerCase());
+
+      purScanState.pendingText = code;
+      purScanState.pendingIsDup = dup;
+
+      const panel = document.getElementById('purScanResult');
+      const card = document.getElementById('purScanResultCard');
+      const valueEl = document.getElementById('purScanResultValue');
+      const msgEl = document.getElementById('purScanResultMsg');
+      const doneBtn = document.getElementById('purScanDone2');
+      const targetBox = document.getElementById('purScanTargetBox');
+      if (!panel || !valueEl) return;
+
+      valueEl.textContent = code || '(empty)';
+      if (card) card.classList.toggle('dup', dup);
+      if (msgEl) msgEl.textContent = dup
+        ? 'This serial no. is already in the box. Retry with a different code, or remove the old one first.'
+        : 'Scanned successfully.';
+      if (doneBtn) doneBtn.style.display = dup ? 'none' : '';
+
+      panel.style.display = 'flex';
+      purScanSetStatus('');
+      if (targetBox) targetBox.style.visibility = 'hidden';
+    }
+
+    function hidePurchaseScanResult() {
+      const panel = document.getElementById('purScanResult');
+      const targetBox = document.getElementById('purScanTargetBox');
+      if (panel) panel.style.display = 'none';
+      if (targetBox) targetBox.style.visibility = '';
+      purScanState.pendingText = null;
+      purScanState.pendingIsDup = false;
+    }
+
+    // "Retry" — discard the paused result and resume live scanning.
+    function retryPurchaseScan() {
+      hidePurchaseScanResult();
+      purScanState.handledOnce = false;
+      purScanSetStatus('Place the serial barcode / QR in the box');
+    }
+
+    // "Done" — commit the scanned value into the Serial Numbers box (one
+    // per line, same normalization the paste handler above uses), then
+    // resume scanning so the next serial can be captured right away.
+    function confirmPurchaseScan() {
+      if (purScanState.pendingIsDup) return; // guard — Done button is hidden for dupes anyway
+      const code = purScanState.pendingText;
+      if (!code) { retryPurchaseScan(); return; }
+
+      const box = document.getElementById(purScanState.targetId);
+      if (box) {
+        const existing = splitSerials(box.value);
+        existing.push(code);
+        box.value = existing.join('\n') + '\n';
+        box.dispatchEvent(new Event('input', { bubbles: true }));
+        purScanState.addedCount = existing.length;
+        const countEl = document.getElementById('purScanCount');
+        if (countEl) countEl.textContent = `${existing.length} serial(s) added`;
+      }
+
+      hidePurchaseScanResult();
+      purScanState.handledOnce = false;
+      purScanSetStatus('Added \u2713 — scan the next one');
+    }
+
+    function togglePurchaseTorch() {
+      if (!purScanState.html5QrCode) return;
+      purScanState.torchOn = !purScanState.torchOn;
+      purScanState.html5QrCode.applyVideoConstraints({ advanced: [{ torch: purScanState.torchOn }] })
+        .then(() => {
+          const btn = document.getElementById('purScanTorch');
+          if (btn) btn.classList.toggle('active', purScanState.torchOn);
+        })
+        .catch(() => { window.showToast('Flashlight not supported on this device'); purScanState.torchOn = false; });
+    }
+
+    function flipPurchaseCamera() {
+      if (!purScanState.cameras.length || purScanState.cameras.length < 2) { window.showToast('Only one camera available'); return; }
+      purScanState.cameraIndex = (purScanState.cameraIndex + 1) % purScanState.cameras.length;
+      const qr = purScanState.html5QrCode;
+      if (qr) qr.stop().then(launchPurchaseCamera).catch(launchPurchaseCamera);
+      else launchPurchaseCamera();
+    }
+
+    function closePurchaseScanner() {
+      const qr = purScanState.html5QrCode;
+      const targetId = purScanState.targetId;
+      purScanState.pendingText = null;
+      purScanState.pendingIsDup = false;
+      const finish = () => {
+        if (purScanState.overlayEl) { purScanState.overlayEl.remove(); purScanState.overlayEl = null; }
+        document.body.style.overflow = '';
+        purScanState.html5QrCode = null;
+        // Final normalize pass (dedupe/trim), same cleanup blur() already
+        // does for the New Entry box — keeps Edit-box scans tidy too.
+        const box = targetId ? document.getElementById(targetId) : null;
+        if (box) {
+          box.value = splitSerials(box.value).join('\n');
+          box.focus();
+        }
+      };
+      if (qr) qr.stop().then(finish).catch(finish);
+      else finish();
+    }
+
+    const purScanBtnEl = $('purScanBtn');
+    if (purScanBtnEl) purScanBtnEl.addEventListener('click', () => openPurchaseScanner('purSerials'));
+    const purEditScanBtnEl = $('purEditScanBtn');
+    if (purEditScanBtnEl) purEditScanBtnEl.addEventListener('click', () => openPurchaseScanner('purEditSerials'));
 
     // ---------------- NEW PURCHASE panel state ----------------
     const purLines = [];
