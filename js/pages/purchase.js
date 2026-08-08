@@ -67,8 +67,11 @@ window.PAGES.purchase = {
               </div>
             </div>
 
-            <div class="field span-full"><label>Serial Numbers <span class="req">*</span></label>
+            <div class="field span-full" id="purSerialWrap"><label>Serial Numbers <span class="req">*</span></label>
               <textarea id="purSerials" placeholder="One serial per line, it auto-splits"></textarea>
+            </div>
+            <div class="field span-full" id="purQtyOnlyNote" style="display:none;">
+              <p style="color:var(--txt-muted); font-style:italic; margin:0;">This category is quantity-tracked (no serial numbers) — the line's Qty is final as entered.</p>
             </div>
 
             <div class="field span-full">
@@ -132,7 +135,10 @@ window.PAGES.purchase = {
               </div>
             </div>
 
-            <div class="field span-full"><label>Serial Numbers <span class="req">*</span></label><textarea id="purEditSerials" placeholder="Loaded serials will appear here after Find"></textarea></div>
+            <div class="field span-full" id="purEditSerialWrap"><label>Serial Numbers <span class="req">*</span></label><textarea id="purEditSerials" placeholder="Loaded serials will appear here after Find"></textarea></div>
+            <div class="field span-full" id="purEditQtyOnlyNote" style="display:none;">
+              <p style="color:var(--txt-muted); font-style:italic; margin:0;">This category is quantity-tracked (no serial numbers) — the line's Qty is final as entered.</p>
+            </div>
           </div>
 
           <div class="actions-row">
@@ -368,9 +374,23 @@ window.PAGES.purchase = {
       }
     }
 
-    purCatEl.addEventListener('change', refreshPurBrandsAndType);
+    purCatEl.addEventListener('change', () => { refreshPurBrandsAndType(); updatePurSerialVisibility(); });
     purBrandEl.addEventListener('change', refreshPurWattages);
-    loadPurCategories();
+    loadPurCategories().then(updatePurSerialVisibility);
+
+    // Shows/hides the pooled Serial Numbers box depending on whether it's
+    // still needed: visible if EITHER the category currently selected
+    // (about to be added as a line) is serial-mandatory, OR any product
+    // line already added to this invoice is serial-mandatory (an invoice
+    // can mix serial and quantity-tracked lines, so removing/blurring a
+    // serial-mandatory category from the dropdown must never hide serials
+    // already typed for an earlier line). Purely quantity-tracked invoices
+    // never see this box at all.
+    function updatePurSerialVisibility() {
+      const needsSerial = purCategoryNeedsSerial(purCatEl.value) || purLines.some((ln) => ln.needsSerial);
+      $('purSerialWrap').style.display = needsSerial ? '' : 'none';
+      $('purQtyOnlyNote').style.display = needsSerial ? 'none' : '';
+    }
 
     // ---------------- Warehouse dropdown(s) — fetched live from
     // /api/masters/warehouses (same Warehouses master the Masters page
@@ -531,12 +551,14 @@ window.PAGES.purchase = {
       purLines.push({ cat, brand, watt, type, warehouse: wh, qty, needsSerial });
       renderLineList(purLineList, purLines, '');
       $('purQty').value = '';
+      updatePurSerialVisibility();
     });
     $('purBtnRemoveLine').addEventListener('click', () => {
       const idx = selectedLineIndex(purLineList);
       if (idx === -1) return;
       purLines.splice(idx, 1);
       renderLineList(purLineList, purLines, 'No product lines added yet — fill the fields above and click "Add Product Line".');
+      updatePurSerialVisibility();
     });
 
     function clearPurchaseForm() {
@@ -549,6 +571,7 @@ window.PAGES.purchase = {
       purProof.files = [];
       $('purProofFile').value = '';
       $('purProofName').textContent = 'No proof selected';
+      updatePurSerialVisibility();
     }
     $('purBtnClearForm').addEventListener('click', clearPurchaseForm);
 
@@ -712,8 +735,19 @@ window.PAGES.purchase = {
         await fillSelectFromApi(purEditWattEl, `/purchase/wattages?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}`, 'N/A', injectWatt);
       }
 
-      purEditCatEl.addEventListener('change', () => refreshPurEditBrandsAndType());
+      purEditCatEl.addEventListener('change', () => { refreshPurEditBrandsAndType(); updatePurEditSerialVisibility(); });
       purEditBrandEl.addEventListener('change', () => refreshPurEditWattages());
+
+      // Same idea as updatePurSerialVisibility() above, but for the Edit
+      // panel's pooled Serials box: visible if either the currently
+      // selected category needs serials, or any line already loaded/added
+      // into this edit session is serial-mandatory.
+      function updatePurEditSerialVisibility() {
+        const needsSerial = purCategoryNeedsSerial(purEditCatEl.value) || purEditLines.some((ln) => ln.needsSerial);
+        $('purEditSerialWrap').style.display = needsSerial ? '' : 'none';
+        $('purEditQtyOnlyNote').style.display = needsSerial ? 'none' : '';
+      }
+      updatePurEditSerialVisibility();
 
       // Loads Category -> Brand -> Wattage -> Type -> Warehouse for the
       // edit panel in one go, keeping whatever the loaded invoice line
@@ -754,6 +788,7 @@ window.PAGES.purchase = {
         purEditProof.files = [];
         $('purEditProofFile').value = '';
         $('purEditProofName').textContent = 'No proof selected';
+        updatePurEditSerialVisibility();
       };
       $('purBtnClearEdit').addEventListener('click', clearEditPanel);
 
@@ -770,12 +805,14 @@ window.PAGES.purchase = {
         purEditLines.push({ cat, brand, watt, type, warehouse: wh, qty, needsSerial, qtyRowIds: [] });
         renderLineList(purEditLineList, purEditLines, '');
         $('purEditQty').value = '';
+        updatePurEditSerialVisibility();
       });
       $('purBtnEditRemoveLine').addEventListener('click', () => {
         const idx = selectedLineIndex(purEditLineList);
         if (idx === -1) return;
         purEditLines.splice(idx, 1);
         renderLineList(purEditLineList, purEditLines, 'Find an invoice above to load its lines.');
+        updatePurEditSerialVisibility();
       });
 
       // Mirrors find_purchase_invoice_for_editing(): search by Invoice No,
@@ -820,6 +857,7 @@ window.PAGES.purchase = {
         await loadEditCascadeForLine(purEditLines[0]);
         const allSerials = inv.lines.reduce((acc, ln) => acc.concat(ln.serials || []), []);
         $('purEditSerials').value = allSerials.join('\n');
+        updatePurEditSerialVisibility();
 
         window.openModal('Invoice Loaded', `<p>Purchase invoice <strong>${inv.invoiceNo}</strong> loaded with ${inv.lines.length} product line(s) and ${allSerials.length} serial(s).</p>`);
         return true;

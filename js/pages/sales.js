@@ -129,7 +129,7 @@ window.PAGES.sales = {
               </div>
             </div>
 
-            <div class="field span-full"><label>Serials <span class="req">*</span></label><textarea id="saleEditSerials" placeholder="Serials will load here..."></textarea></div>
+            <div class="field span-full" id="saleEditSerialsWrap"><label>Serials <span class="req">*</span></label><textarea id="saleEditSerials" placeholder="Serials will load here..."></textarea></div>
           </div>
 
           <div class="actions-row">
@@ -453,12 +453,19 @@ window.PAGES.sales = {
     // Same idea for the Edit panel — the shared Serials textarea there only
     // makes sense for serial-mandatory categories; quantity-tracked ones get
     // their own per-line Qty input (a loaded order can mix both kinds of
-    // lines, this only affects what "Add Line" currently expects).
+    // lines, this only affects what "Add Line" currently expects). The
+    // pooled Serials box stays visible if EITHER the category currently
+    // selected in the dropdown is serial-mandatory, OR any line already
+    // loaded/added into this edit session is serial-mandatory — so
+    // switching the dropdown to a quantity-tracked category never hides
+    // serials already typed for an earlier serial-based line.
     function updateSaleEditQtyFieldVisibility() {
       const cat = saleEditCatEl.value;
       const needsSerial = isSerialMandatory(cat);
       $('saleEditQtyField').style.display = needsSerial ? 'none' : '';
       $('saleEditQtyOnlyNote').style.display = needsSerial ? 'none' : '';
+      const anyLineNeedsSerial = saleEditLines.some((ln) => ln.needsSerial);
+      $('saleEditSerialsWrap').style.display = (needsSerial || anyLineNeedsSerial) ? '' : 'none';
     }
 
     // ---------------- Customer ledger live autocomplete + autofill ---------
@@ -771,6 +778,7 @@ window.PAGES.sales = {
         saleEditProof.files = [];
         $('saleEditProofFile').value = '';
         $('saleEditProofName').textContent = 'No proof selected';
+        updateSaleEditQtyFieldVisibility();
       }
       $('saleBtnClearEdit').addEventListener('click', clearEditPanel);
 
@@ -808,18 +816,21 @@ window.PAGES.sales = {
           saleEditLines.push({ cat, brand, watt, type, needsSerial: false, qty: qtyNum });
           renderLineList(saleEditLineList, saleEditLines, '');
           $('saleEditQty').value = '';
+          updateSaleEditQtyFieldVisibility();
           return;
         }
 
         // ---- Serial-based category (existing flow, unchanged) ----
         saleEditLines.push({ cat, brand, watt, type, needsSerial: true, serials: [] });
         renderLineList(saleEditLineList, saleEditLines, '');
+        updateSaleEditQtyFieldVisibility();
       });
       $('saleBtnEditRemoveLine').addEventListener('click', () => {
         const idx = selectedLineIndex(saleEditLineList);
         if (idx === -1) return;
         saleEditLines.splice(idx, 1);
         renderLineList(saleEditLineList, saleEditLines, 'Find an order above to load its lines.');
+        updateSaleEditQtyFieldVisibility();
       });
 
       // Mirrors find_sales_order_for_editing(): search by Order No, Challan
