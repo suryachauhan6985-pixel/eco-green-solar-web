@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eco-green-solar-erp-v3';
+const CACHE_NAME = 'eco-green-solar-erp-v4';
 
 const APP_SHELL = [
   '/',
@@ -16,6 +16,7 @@ const APP_SHELL = [
   '/assets/icon.ico',
   '/assets/icons/icon-192.png',
   '/assets/icons/icon-512.png',
+  '/assets/icons/icon-1024.png',
   '/assets/logo.png',
   '/js/data/purchase-data.js?v=2',
   '/js/data/api.js?v=3',
