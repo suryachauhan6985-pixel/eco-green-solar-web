@@ -17,14 +17,21 @@ module.exports = function registerSalesRoutes(app, deps) {
   async function fifoConsumeQty(conn, itemKey, qtyNeeded, meta, editedFlag = 0) {
     let remaining = qtyNeeded;
     let consumed = 0;
+    // `model` is only ever set for quantity-tracked (watt=0) model-based
+    // categories (e.g. PVC Pipe) — every other combo has model=NULL. The
+    // `<=>` NULL-safe equality operator matches NULL=NULL as well as
+    // value=value, so this filter is a no-op for non-model categories and
+    // correctly keeps different models of the same brand in separate FIFO
+    // pools (same bug class Step 1 fixed for Purchase's grouping key).
+    const modelVal = itemKey.model ? String(itemKey.model).trim() : null;
     const [rows] = await conn.query(
-      `SELECT id, quantity, item_id, item_name, category, brand_name, watt, solar_type, warehouse,
+      `SELECT id, quantity, item_id, item_name, category, brand_name, watt, solar_type, model, warehouse,
               supplier_name, purchase_invoice, purchase_date, purchase_attachment
        FROM stock_ledger
-       WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND status='Available' AND serial_no IS NULL
+       WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND model <=> ? AND status='Available' AND serial_no IS NULL
        ORDER BY id ASC
        FOR UPDATE`,
-      [itemKey.cat, itemKey.brand, Number(itemKey.watt) || 0, itemKey.type]
+      [itemKey.cat, itemKey.brand, Number(itemKey.watt) || 0, itemKey.type, modelVal]
     );
     for (const row of rows) {
       if (remaining <= 0) break;
@@ -39,12 +46,12 @@ module.exports = function registerSalesRoutes(app, deps) {
       } else {
         await conn.query(
           `INSERT INTO stock_ledger
-             (item_id, item_name, category, brand_name, watt, solar_type, warehouse, status,
+             (item_id, item_name, category, brand_name, watt, solar_type, model, warehouse, status,
               supplier_name, purchase_invoice, purchase_date, purchase_attachment,
               customer_name, order_no, sales_invoice, invoice_date, sales_date, chalan_no, chalan_date, sales_attachment,
               quantity, serial_no, edited_flag)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'Sold', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)`,
-          [row.item_id, row.item_name, row.category, row.brand_name, row.watt, row.solar_type, row.warehouse,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Sold', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)`,
+          [row.item_id, row.item_name, row.category, row.brand_name, row.watt, row.solar_type, row.model, row.warehouse,
            row.supplier_name, row.purchase_invoice, row.purchase_date, row.purchase_attachment,
            meta.customer, meta.orderNo, meta.invoiceNo || '-', meta.invoiceDate, meta.chalanDate, meta.chalanNo, meta.chalanDate, meta.proofName,
            remaining, editedFlag]
@@ -65,12 +72,14 @@ module.exports = function registerSalesRoutes(app, deps) {
   async function releaseQtyToAvailable(conn, itemKey, orderNo, qtyToRelease) {
     let remaining = qtyToRelease;
     let released = 0;
+    // Same NULL-safe model filter as fifoConsumeQty — see comment there.
+    const modelVal = itemKey.model ? String(itemKey.model).trim() : null;
     const [rows] = await conn.query(
       `SELECT id, quantity FROM stock_ledger
-       WHERE order_no=? AND category=? AND brand_name=? AND watt=? AND solar_type=? AND status='Sold' AND serial_no IS NULL
+       WHERE order_no=? AND category=? AND brand_name=? AND watt=? AND solar_type=? AND model <=> ? AND status='Sold' AND serial_no IS NULL
        ORDER BY id ASC
        FOR UPDATE`,
-      [orderNo, itemKey.cat, itemKey.brand, Number(itemKey.watt) || 0, itemKey.type]
+      [orderNo, itemKey.cat, itemKey.brand, Number(itemKey.watt) || 0, itemKey.type, modelVal]
     );
     for (const row of rows) {
       if (remaining <= 0) break;
@@ -85,11 +94,11 @@ module.exports = function registerSalesRoutes(app, deps) {
       } else {
         await conn.query(
           `INSERT INTO stock_ledger
-             (item_id, item_name, category, brand_name, watt, solar_type, warehouse, status,
+             (item_id, item_name, category, brand_name, watt, solar_type, model, warehouse, status,
               supplier_name, purchase_invoice, purchase_date, purchase_attachment,
               customer_name, order_no, sales_invoice, invoice_date, sales_date, chalan_no, chalan_date, sales_attachment,
               quantity, serial_no, edited_flag)
-           SELECT item_id, item_name, category, brand_name, watt, solar_type, warehouse, 'Available',
+           SELECT item_id, item_name, category, brand_name, watt, solar_type, model, warehouse, 'Available',
                   supplier_name, purchase_invoice, purchase_date, purchase_attachment,
                   '-', '-', '-', '-', '-', '-', '-', '-',
                   ?, NULL, 1
@@ -120,12 +129,14 @@ module.exports = function registerSalesRoutes(app, deps) {
   async function fifoMoveQtyStatus(conn, itemKey, qty, fromStatus, toStatus, extraFields = {}, rawSetClauses = []) {
     let remaining = qty;
     let moved = 0;
+    // Same NULL-safe model filter as fifoConsumeQty — see comment there.
+    const modelVal = itemKey.model ? String(itemKey.model).trim() : null;
     const [rows] = await conn.query(
       `SELECT id, quantity FROM stock_ledger
-       WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND status=? AND serial_no IS NULL
+       WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND model <=> ? AND status=? AND serial_no IS NULL
        ORDER BY id ASC
        FOR UPDATE`,
-      [itemKey.cat, itemKey.brand, Number(itemKey.watt) || 0, itemKey.type, fromStatus]
+      [itemKey.cat, itemKey.brand, Number(itemKey.watt) || 0, itemKey.type, modelVal, fromStatus]
     );
 
     const setCols = ['status=?'];
@@ -147,11 +158,11 @@ module.exports = function registerSalesRoutes(app, deps) {
         // new row, and shrink the original row's quantity in place.
         const [insertResult] = await conn.query(
           `INSERT INTO stock_ledger
-             (item_id, item_name, category, brand_name, watt, solar_type, warehouse, status,
+             (item_id, item_name, category, brand_name, watt, solar_type, model, warehouse, status,
               supplier_name, purchase_invoice, purchase_date, purchase_attachment,
               customer_name, order_no, sales_invoice, invoice_date, sales_date, chalan_no, chalan_date, sales_attachment,
               quantity, serial_no, edited_flag)
-           SELECT item_id, item_name, category, brand_name, watt, solar_type, warehouse, status,
+           SELECT item_id, item_name, category, brand_name, watt, solar_type, model, warehouse, status,
                   supplier_name, purchase_invoice, purchase_date, purchase_attachment,
                   customer_name, order_no, sales_invoice, invoice_date, sales_date, chalan_no, chalan_date, sales_attachment,
                   ?, NULL, edited_flag
@@ -183,6 +194,11 @@ module.exports = function registerSalesRoutes(app, deps) {
   // /api/purchase/brands/:category and /api/purchase/wattages endpoints (same
   // underlying `items` table the desktop app's get_categories() /
   // get_brands_for_category() / get_wattages_for_brand_category() read from).
+  // Model dropdown (Wattage<->Model swap, same rule as Masters > Item
+  // Registration — see stockHelpers.js) reuses /api/purchase/models the same
+  // way — it's already category+brand scoped and reads the same `items`
+  // table, nothing Sales-specific about it, so no new /api/sales/models
+  // endpoint is added; js/pages/sales.js just calls it directly.
   // Customer short-code + name autocomplete reuse /api/ledgers and
   // /api/ledgers/shortcodes with type=Customer (same as Supplier on Purchase).
   // ---------------------------------------------------------------------------
@@ -211,6 +227,7 @@ module.exports = function registerSalesRoutes(app, deps) {
   app.get('/api/sales/check-line', route(async (req, res) => {
     const { category, brand, type } = req.query;
     const watt = Number(req.query.watt) || 0;
+    const model = req.query.model ? String(req.query.model).trim() : null;
     const serials = String(req.query.serials || '').split(',').map((s) => s.trim()).filter(Boolean);
     const qty = Number(req.query.qty) || 0;
 
@@ -218,20 +235,29 @@ module.exports = function registerSalesRoutes(app, deps) {
 
     // Quantity-based line (no serials scanned — category is not
     // serial-mandatory): just confirm enough Available quantity-tracked
-    // stock exists for this exact Category+Brand+Wattage+Type combo.
+    // stock exists for this exact Category+Brand+Wattage+Type(+Model) combo.
+    // The `model <=> ?` NULL-safe filter matters most for model-based
+    // categories (watt=0 for every model of a brand) — without it, "2 Inch"
+    // and "3 Inch" PVC pipe stock would be summed together as one pool.
     if (!serials.length) {
       if (!qty) return res.json({ errors: [] });
       const [[{ totalAvail }]] = await pool.query(
         `SELECT COALESCE(SUM(quantity), 0) AS totalAvail FROM stock_ledger
-         WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND status='Available' AND serial_no IS NULL`,
-        [category, brand, watt, type]
+         WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND model <=> ? AND status='Available' AND serial_no IS NULL`,
+        [category, brand, watt, type, model]
       );
       if (totalAvail < qty) {
-        return res.json({ errors: [`Insufficient stock: only ${totalAvail} available, ${qty} requested for ${brand} ${watt ? watt + 'W ' : ''}${type}.`] });
+        return res.json({ errors: [`Insufficient stock: only ${totalAvail} available, ${qty} requested for ${brand} ${model ? model + ' ' : (watt ? watt + 'W ' : '')}${type}.`] });
       }
       return res.json({ errors: [] });
     }
 
+    // No `model` passed here on purpose: model-based categories (e.g. PVC
+    // Pipe) are, by the same rule Masters/Purchase already apply, never
+    // serial_mandatory — a category needs Model exactly when it needs
+    // NEITHER Wattage nor Serial No. So a serial-based line's category can
+    // never be model-based, and validateSalesLineSerials()/stock_ledger's
+    // serial rows never carry a model value to compare against.
     const errors = await validateSalesLineSerials(pool, serials, { cat: category, brand, watt, type });
     res.json({ errors });
   }));
@@ -303,24 +329,26 @@ module.exports = function registerSalesRoutes(app, deps) {
           validationErrors.push('Category, Brand and Type are required for every product line.');
           continue;
         }
-        const itemId = await getItemId(conn, line.cat, line.brand, line.watt, line.type);
+        const model = line.model ? String(line.model).trim() : null;
+        const itemId = await getItemId(conn, line.cat, line.brand, line.watt, line.type, model);
         if (!itemId) {
-          validationErrors.push(`Selected product master (${line.brand} ${line.watt ? line.watt + 'W ' : ''}${line.type}) was not found. Please create/check the master item first.`);
+          validationErrors.push(`Selected product master (${line.brand} ${model ? model + ' ' : (line.watt ? line.watt + 'W ' : '')}${line.type}) was not found. Please create/check the master item first.`);
           continue;
         }
         if (isQtyLine(line)) {
           const qty = Number(line.qty) || 0;
           // FOR UPDATE locks every matching Available row now, so a
           // concurrent dispatch can't double-spend the same stock before
-          // this transaction commits.
+          // this transaction commits. `model <=> ?` keeps different models
+          // of the same brand+category in separate pools (see stockHelpers.js).
           const [[{ totalAvail }]] = await conn.query(
             `SELECT COALESCE(SUM(quantity), 0) AS totalAvail FROM stock_ledger
-             WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND status='Available' AND serial_no IS NULL
+             WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND model <=> ? AND status='Available' AND serial_no IS NULL
              FOR UPDATE`,
-            [line.cat, line.brand, Number(line.watt) || 0, line.type]
+            [line.cat, line.brand, Number(line.watt) || 0, line.type, model]
           );
           if (totalAvail < qty) {
-            validationErrors.push(`Insufficient stock for ${line.brand} ${line.watt ? line.watt + 'W ' : ''}${line.type}: ${totalAvail} available, ${qty} requested.`);
+            validationErrors.push(`Insufficient stock for ${line.brand} ${model ? model + ' ' : (line.watt ? line.watt + 'W ' : '')}${line.type}: ${totalAvail} available, ${qty} requested.`);
           }
         } else {
           validationErrors.push(...(await validateSalesLineSerials(conn, line.serials || [], line)));
@@ -345,7 +373,7 @@ module.exports = function registerSalesRoutes(app, deps) {
       for (const line of lines.filter(isQtyLine)) {
         qtyDispatchedTotal += await fifoConsumeQty(
           conn,
-          { cat: line.cat, brand: line.brand, watt: line.watt, type: line.type },
+          { cat: line.cat, brand: line.brand, watt: line.watt, type: line.type, model: line.model },
           Number(line.qty) || 0,
           { customer, orderNo, invoiceNo, invoiceDate, chalanDate, chalanNo, proofName }
         );
@@ -401,7 +429,7 @@ module.exports = function registerSalesRoutes(app, deps) {
       const hasSerials = Array.isArray(line.serials) && line.serials.length;
       const qty = Number(line.qty) || 0;
       if (hasSerials) serialLines.push(line);
-      else if (qty > 0) qtyLineInputs.push({ ...line, qty });
+      else if (qty > 0) qtyLineInputs.push({ ...line, qty, model: line.model ? String(line.model).trim() : null });
     }
 
     const allSerials = serialLines.flatMap((l) => (l.serials || []).map((s) => String(s).trim()).filter(Boolean));
@@ -449,17 +477,17 @@ module.exports = function registerSalesRoutes(app, deps) {
         }
         const [[{ totalQty }]] = await conn.query(
           `SELECT COALESCE(SUM(quantity),0) AS totalQty FROM stock_ledger
-           WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND status=? AND serial_no IS NULL
+           WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND model <=> ? AND status=? AND serial_no IS NULL
            FOR UPDATE`,
-          [line.cat, line.brand, Number(line.watt) || 0, line.type, fromStatus]
+          [line.cat, line.brand, Number(line.watt) || 0, line.type, line.model, fromStatus]
         );
         if (totalQty < line.qty) {
           const label = actionType === 'Sales Return (Make Available)'
             ? `only ${totalQty} 'Sold' unit(s) available to return`
             : `only ${totalQty} 'Available' unit(s) to mark damaged`;
-          qtyLineErrors.push(`${line.brand} ${line.watt ? line.watt + 'W ' : ''}${line.type}: ${label}, ${line.qty} requested.`);
+          qtyLineErrors.push(`${line.brand} ${line.model ? line.model + ' ' : (line.watt ? line.watt + 'W ' : '')}${line.type}: ${label}, ${line.qty} requested.`);
         } else {
-          validQtyLines.push({ itemKey: { cat: line.cat, brand: line.brand, watt: line.watt, type: line.type }, qty: line.qty });
+          validQtyLines.push({ itemKey: { cat: line.cat, brand: line.brand, watt: line.watt, type: line.type, model: line.model }, qty: line.qty });
         }
       }
 
@@ -537,7 +565,7 @@ module.exports = function registerSalesRoutes(app, deps) {
     const resolvedName = shortMatch.length ? shortMatch[0].ledger_name : null;
 
     let sql = `SELECT id, customer_name, order_no, chalan_no, chalan_date, sales_invoice, invoice_date, category,
-                      brand_name, watt, solar_type, serial_no, quantity, sales_attachment
+                      brand_name, watt, solar_type, model, serial_no, quantity, sales_attachment
                FROM stock_ledger
                WHERE (order_no=? OR chalan_no=? OR customer_name LIKE ?) AND status='Sold'`;
     const params = [term, term, `%${term}%`];
@@ -564,15 +592,18 @@ module.exports = function registerSalesRoutes(app, deps) {
     const qtyGrouped = new Map();
 
     records.forEach((r) => {
-      const key = [r.category, r.brand_name, r.watt || 0, r.solar_type].join('|');
+      // model included in the key — without it, different models of the
+      // same Category+Brand+Watt(0)+Type would wrongly merge into one line
+      // (same bug class Step 1 fixed for Purchase's own grouping key).
+      const key = [r.category, r.brand_name, r.watt || 0, r.solar_type, r.model || ''].join('|');
       if (r.serial_no) {
         if (!serialGrouped.has(key)) {
-          serialGrouped.set(key, { cat: r.category, brand: r.brand_name, watt: r.watt || 0, type: r.solar_type, serials: [] });
+          serialGrouped.set(key, { cat: r.category, brand: r.brand_name, watt: r.watt || 0, type: r.solar_type, model: r.model || '', serials: [] });
         }
         serialGrouped.get(key).serials.push(r.serial_no);
       } else {
         if (!qtyGrouped.has(key)) {
-          qtyGrouped.set(key, { cat: r.category, brand: r.brand_name, watt: r.watt || 0, type: r.solar_type, qty: 0, qtyRowIds: [] });
+          qtyGrouped.set(key, { cat: r.category, brand: r.brand_name, watt: r.watt || 0, type: r.solar_type, model: r.model || '', qty: 0, qtyRowIds: [] });
         }
         const g = qtyGrouped.get(key);
         g.qty += r.quantity || 0;
@@ -656,30 +687,31 @@ module.exports = function registerSalesRoutes(app, deps) {
           validationErrors.push('One product line has no valid item master.');
           continue;
         }
-        const itemId = await getItemId(conn, line.cat, line.brand, line.watt, line.type);
+        const model = line.model ? String(line.model).trim() : null;
+        const itemId = await getItemId(conn, line.cat, line.brand, line.watt, line.type, model);
         if (!itemId) {
-          validationErrors.push(`Selected product master (${line.brand} ${line.watt ? line.watt + 'W ' : ''}${line.type}) was not found. Please create/check the master item first.`);
+          validationErrors.push(`Selected product master (${line.brand} ${model ? model + ' ' : (line.watt ? line.watt + 'W ' : '')}${line.type}) was not found. Please create/check the master item first.`);
           continue;
         }
         if (isQtyLine(line)) {
-          const itemKey = { cat: line.cat, brand: line.brand, watt: line.watt, type: line.type };
+          const itemKey = { cat: line.cat, brand: line.brand, watt: line.watt, type: line.type, model };
           const desiredQty = Number(line.qty) || 0;
           const [[{ ownedQty }]] = await conn.query(
             `SELECT COALESCE(SUM(quantity), 0) AS ownedQty FROM stock_ledger
-             WHERE order_no=? AND category=? AND brand_name=? AND watt=? AND solar_type=? AND status='Sold' AND serial_no IS NULL
+             WHERE order_no=? AND category=? AND brand_name=? AND watt=? AND solar_type=? AND model <=> ? AND status='Sold' AND serial_no IS NULL
              FOR UPDATE`,
-            [loadedOrderNo, line.cat, line.brand, Number(line.watt) || 0, line.type]
+            [loadedOrderNo, line.cat, line.brand, Number(line.watt) || 0, line.type, model]
           );
           const delta = desiredQty - ownedQty;
           if (delta > 0) {
             const [[{ totalAvail }]] = await conn.query(
               `SELECT COALESCE(SUM(quantity), 0) AS totalAvail FROM stock_ledger
-               WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND status='Available' AND serial_no IS NULL
+               WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND model <=> ? AND status='Available' AND serial_no IS NULL
                FOR UPDATE`,
-              [line.cat, line.brand, Number(line.watt) || 0, line.type]
+              [line.cat, line.brand, Number(line.watt) || 0, line.type, model]
             );
             if (totalAvail < delta) {
-              validationErrors.push(`Insufficient stock to increase ${line.brand} ${line.watt ? line.watt + 'W ' : ''}${line.type}: ${totalAvail} available, ${delta} more needed.`);
+              validationErrors.push(`Insufficient stock to increase ${line.brand} ${model ? model + ' ' : (line.watt ? line.watt + 'W ' : '')}${line.type}: ${totalAvail} available, ${delta} more needed.`);
               continue;
             }
           }
@@ -710,15 +742,16 @@ module.exports = function registerSalesRoutes(app, deps) {
       const finalProof = proofName || existingAttachment || '-';
 
       for (const line of lines) {
-        const itemId = await getItemId(conn, line.cat, line.brand, line.watt, line.type);
-        const itemName = itemNameSlug(line.brand, line.watt, line.type);
+        const model = line.model ? String(line.model).trim() : null;
+        const itemId = await getItemId(conn, line.cat, line.brand, line.watt, line.type, model);
+        const itemName = itemNameSlug(line.brand, line.watt, line.type, model);
         for (const sn of (line.serials || [])) {
           await conn.query(
             `UPDATE stock_ledger SET
-               status='Sold', item_id=?, item_name=?, category=?, brand_name=?, watt=?, solar_type=?,
+               status='Sold', item_id=?, item_name=?, category=?, brand_name=?, watt=?, solar_type=?, model=?,
                customer_name=?, order_no=?, sales_invoice=?, invoice_date=?, sales_date=?, chalan_no=?, chalan_date=?, sales_attachment=?, edited_flag=1
              WHERE serial_no=?`,
-            [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type, newCust, loadedOrderNo, newInv || '-', newInvDate, newChalanDate, newChalan, newChalanDate, finalProof, sn]
+            [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type, model, newCust, loadedOrderNo, newInv || '-', newInvDate, newChalanDate, newChalan, newChalanDate, finalProof, sn]
           );
         }
       }
@@ -759,9 +792,9 @@ module.exports = function registerSalesRoutes(app, deps) {
       for (const { itemKey } of qtyDeltas) {
         await conn.query(
           `UPDATE stock_ledger SET customer_name=?, order_no=?, sales_invoice=?, invoice_date=?, sales_date=?, chalan_no=?, chalan_date=?, sales_attachment=?, edited_flag=1
-           WHERE order_no=? AND category=? AND brand_name=? AND watt=? AND solar_type=? AND status='Sold' AND serial_no IS NULL`,
+           WHERE order_no=? AND category=? AND brand_name=? AND watt=? AND solar_type=? AND model <=> ? AND status='Sold' AND serial_no IS NULL`,
           [newCust, loadedOrderNo, newInv || '-', newInvDate, newChalanDate, newChalan, newChalanDate, finalProof,
-           loadedOrderNo, itemKey.cat, itemKey.brand, Number(itemKey.watt) || 0, itemKey.type]
+           loadedOrderNo, itemKey.cat, itemKey.brand, Number(itemKey.watt) || 0, itemKey.type, itemKey.model || null]
         );
       }
 

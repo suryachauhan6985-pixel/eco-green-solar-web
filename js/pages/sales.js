@@ -33,8 +33,10 @@ window.PAGES.sales = {
               <select id="saleCat"><option value="">Loading...</option></select></div>
             <div class="field"><label>Brand <span class="req">*</span></label>
               <select id="saleBrand"><option value="">-- Select Category First --</option></select></div>
-            <div class="field"><label>Wattage <span class="req">*</span></label>
+            <div class="field" id="saleWattField"><label>Wattage <span class="req">*</span></label>
               <select id="saleWatt"><option value="">-- Select Brand First --</option></select></div>
+            <div class="field" id="saleModelField" style="display:none;"><label>Model <span class="req">*</span></label>
+              <select id="saleModel"><option value="">-- Select Brand First --</option></select></div>
             <div class="field"><label>Type <span class="req">*</span></label>
               <select id="saleType"><option value="">-- Select Category First --</option></select></div>
 
@@ -100,8 +102,10 @@ window.PAGES.sales = {
               <select id="saleEditCat"><option value="">Loading...</option></select></div>
             <div class="field"><label>Brand <span class="req">*</span></label>
               <select id="saleEditBrand"><option value="">-- Select Category First --</option></select></div>
-            <div class="field"><label>Wattage <span class="req">*</span></label>
+            <div class="field" id="saleEditWattField"><label>Wattage <span class="req">*</span></label>
               <select id="saleEditWatt"><option value="">-- Select Brand First --</option></select></div>
+            <div class="field" id="saleEditModelField" style="display:none;"><label>Model <span class="req">*</span></label>
+              <select id="saleEditModel"><option value="">-- Select Brand First --</option></select></div>
             <div class="field"><label>Type <span class="req">*</span></label>
               <select id="saleEditType"><option value="">-- Select Category First --</option></select></div>
 
@@ -237,6 +241,15 @@ window.PAGES.sales = {
     // isn't found — matches the existing behaviour so nothing changes until
     // the categories master explicitly says serial_mandatory=0.
     function isSerialMandatory(cat) { return categorySerialRules[cat] !== false; }
+    // Mirrors masters.js's syncWattMandatoryUI() / purchase.js's
+    // purCategoryNeedsModel(): when NEITHER Wattage nor Serial No. applies
+    // to the selected category, Model replaces Wattage as the
+    // differentiator (e.g. PVC Pipe "2 Inch"). Defaults to false (Wattage
+    // shown) until a real category is selected / rules have loaded.
+    function saleCategoryNeedsModel(cat) {
+      if (!cat) return false;
+      return !isWattMandatory(cat) && !isSerialMandatory(cat);
+    }
 
     // Serial box: auto-newline on delimiter, and paste normalization —
     // mirrors ui/serial_widgets.py's SerialTextEdit exactly (same behaviour
@@ -279,7 +292,7 @@ window.PAGES.sales = {
       }
       container.innerHTML = lines.map((ln, idx) => `
         <div class="line-item" data-idx="${idx}">
-          <span>${ln.cat} • ${ln.brand} ${ln.watt ? '• ' + ln.watt + 'W' : ''} • ${ln.type}</span>
+          <span>${ln.cat} • ${ln.brand} ${ln.model ? '• ' + ln.model : (ln.watt ? '• ' + ln.watt + 'W' : '')} • ${ln.type}</span>
           <span class="qty-badge">Qty ${(ln.serials && ln.serials.length) ? ln.serials.length : (ln.qty || 0)}</span>
         </div>
       `).join('');
@@ -372,7 +385,7 @@ window.PAGES.sales = {
     // chain. Type falls back to the category's general Subtypes master
     // (get_subtypes_by_category()) whenever no item is registered for this
     // exact Category+Brand+Wattage combo yet.
-    const saleCatEl = $('saleCat'), saleBrandEl = $('saleBrand'), saleWattEl = $('saleWatt'), saleTypeEl = $('saleType');
+    const saleCatEl = $('saleCat'), saleBrandEl = $('saleBrand'), saleWattEl = $('saleWatt'), saleModelEl = $('saleModel'), saleTypeEl = $('saleType');
 
     async function loadSaleCategories() {
       await fillSelectFromApi(saleCatEl, '/masters/categories', 'No categories found');
@@ -384,6 +397,7 @@ window.PAGES.sales = {
       if (!cat) {
         fillSelect(saleBrandEl, [], '-- Select Category First --');
         fillSelect(saleWattEl, [], '-- Select Brand First --');
+        fillSelect(saleModelEl, [], '-- Select Brand First --');
         await refreshSaleType();
         return;
       }
@@ -394,6 +408,7 @@ window.PAGES.sales = {
         fillSelect(saleBrandEl, [], 'Failed to load brands');
       }
       await refreshSaleWattage();
+      await refreshSaleModels();
     }
 
     async function refreshSaleWattage() {
@@ -410,6 +425,27 @@ window.PAGES.sales = {
         fillSelect(saleWattEl, ['N/A'], 'N/A');
       }
       await refreshSaleType();
+    }
+
+    // Model dropdown's equivalent of refreshSaleWattage() above — same
+    // Category+Brand cascading. Reuses the existing /api/purchase/models
+    // endpoint (already category+brand scoped, reads the same `items`
+    // table) — no separate /api/sales/models endpoint exists, see the
+    // comment above registerSalesRoutes' dispatch section in
+    // sales.routes.js. Only ever shown/used for categories where
+    // saleCategoryNeedsModel() is true.
+    async function refreshSaleModels() {
+      const cat = saleCatEl.value, brand = saleBrandEl.value;
+      if (!cat || !brand) {
+        fillSelect(saleModelEl, [], '-- Select Brand First --');
+        return;
+      }
+      try {
+        const models = await window.Api.get(`/purchase/models?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}`);
+        fillSelect(saleModelEl, models.length ? models : ['N/A'], 'N/A');
+      } catch (e) {
+        fillSelect(saleModelEl, ['N/A'], 'N/A');
+      }
     }
 
     async function refreshSaleType() {
@@ -430,13 +466,15 @@ window.PAGES.sales = {
       fillSelect(saleTypeEl, types, 'Others');
     }
 
-    saleCatEl.addEventListener('change', () => { refreshSaleBrandsAndWatt(); updateSaleSerialFieldVisibility(); });
-    saleBrandEl.addEventListener('change', refreshSaleWattage);
+    saleCatEl.addEventListener('change', () => { refreshSaleBrandsAndWatt(); updateSaleSerialFieldVisibility(); updateSaleWattModelVisibility(); });
+    saleBrandEl.addEventListener('change', () => { refreshSaleWattage(); refreshSaleModels(); });
     saleWattEl.addEventListener('change', refreshSaleType);
     loadSaleCategories();
     loadCategoryWattRules().then(() => {
       updateSaleSerialFieldVisibility();
       updateSaleEditQtyFieldVisibility();
+      updateSaleWattModelVisibility();
+      updateSaleEditWattModelVisibility();
     });
 
     // Shows/hides the serial-scan textarea depending on whether the
@@ -448,6 +486,15 @@ window.PAGES.sales = {
       const needsSerial = isSerialMandatory(cat);
       $('saleSerialsField').style.display = needsSerial ? '' : 'none';
       $('saleQtyOnlyNote').style.display = needsSerial ? 'none' : '';
+    }
+
+    // Swaps the Wattage field for the Model field (or back) based on the
+    // selected category's rule — mirrors purchase.js's
+    // updatePurWattModelVisibility() / masters.js's own Wattage/Model swap.
+    function updateSaleWattModelVisibility() {
+      const showModel = saleCategoryNeedsModel(saleCatEl.value);
+      $('saleWattField').style.display = showModel ? 'none' : '';
+      $('saleModelField').style.display = showModel ? '' : 'none';
     }
 
     // Same idea for the Edit panel — the shared Serials textarea there only
@@ -466,6 +513,18 @@ window.PAGES.sales = {
       $('saleEditQtyOnlyNote').style.display = needsSerial ? 'none' : '';
       const anyLineNeedsSerial = saleEditLines.some((ln) => ln.needsSerial);
       $('saleEditSerialsWrap').style.display = (needsSerial || anyLineNeedsSerial) ? '' : 'none';
+    }
+
+    // Same Wattage<->Model swap as the New Entry form, applied to the Edit
+    // panel's own fields — mirrors purchase.js's
+    // updatePurEditWattModelVisibility(). Defined here (not gated behind
+    // `if (isAdmin)`) for the same reason updateSaleEditQtyFieldVisibility()
+    // is: it's harmless to call for a locked/disabled edit panel too, and
+    // loadCategoryWattRules().then(...) above calls it unconditionally.
+    function updateSaleEditWattModelVisibility() {
+      const showModel = saleCategoryNeedsModel(saleEditCatEl.value);
+      $('saleEditWattField').style.display = showModel ? 'none' : '';
+      $('saleEditModelField').style.display = showModel ? '' : 'none';
     }
 
     // ---------------- Customer ledger live autocomplete + autofill ---------
@@ -532,7 +591,10 @@ window.PAGES.sales = {
     wireProofButtons('saleProofFile', 'saleBtnAttach', 'saleBtnClearProof', 'saleProofName', saleProof);
 
     $('saleBtnAddLine').addEventListener('click', async () => {
-      const cat = saleCatEl.value, brand = saleBrandEl.value, wattVal = saleWattEl.value.trim();
+      const cat = saleCatEl.value, brand = saleBrandEl.value;
+      const needsModel = saleCategoryNeedsModel(cat);
+      const wattVal = needsModel ? '' : saleWattEl.value.trim();
+      const model = needsModel ? saleModelEl.value.trim() : '';
       const type = saleTypeEl.value, qtyStr = $('saleQty').value.trim();
       const watt = (wattVal && wattVal !== 'N/A' && !isNaN(Number(wattVal))) ? Number(wattVal) : 0;
 
@@ -554,7 +616,7 @@ window.PAGES.sales = {
       if (!isSerialMandatory(cat)) {
         let errors = [];
         try {
-          const resp = await window.Api.get(`/sales/check-line?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}&watt=${watt}&type=${encodeURIComponent(type)}&qty=${qtyNum}`);
+          const resp = await window.Api.get(`/sales/check-line?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}&watt=${watt}&type=${encodeURIComponent(type)}&qty=${qtyNum}&model=${encodeURIComponent(model)}`);
           errors = resp.errors || [];
         } catch (e) {
           window.openModal('Server Error', '<p>Could not verify stock availability against the database. Please try again.</p>');
@@ -564,7 +626,7 @@ window.PAGES.sales = {
           window.openModal('Stock Validation Error', `<p><strong>DISPATCH BLOCKED:</strong></p><p>${errors.join('<br>')}</p>`);
           return;
         }
-        saleLines.push({ cat, brand, watt, type, qty: qtyNum });
+        saleLines.push({ cat, brand, watt, model, type, qty: qtyNum });
         renderLineList(saleLineList, saleLines, '');
         $('saleQty').value = '';
         return;
@@ -603,7 +665,7 @@ window.PAGES.sales = {
         return;
       }
 
-      saleLines.push({ cat, brand, watt, type, serials });
+      saleLines.push({ cat, brand, watt, model, type, serials });
       renderLineList(saleLineList, saleLines, '');
       $('saleQty').value = '';
       $('saleSerials').value = '';
@@ -619,6 +681,7 @@ window.PAGES.sales = {
       saleCatEl.selectedIndex = 0;
       refreshSaleBrandsAndWatt();
       updateSaleSerialFieldVisibility();
+      updateSaleWattModelVisibility();
       ['saleCustShort', 'saleCust', 'saleCustMobile', 'saleCustAddr', 'saleOrder', 'saleChalanNo', 'saleInvNo', 'saleQty'].forEach((id) => { $(id).value = ''; });
       $('saleChalanDate').value = '';
       $('saleInvDate').value = '';
@@ -665,7 +728,7 @@ window.PAGES.sales = {
         const result = await window.Api.post('/sales/dispatch', {
           customer, orderNo, chalanNo, chalanDate, invoiceNo, invoiceDate,
           proofName: saleProof.files.length ? (saleProof.files.length === 1 ? saleProof.files[0].name : `${saleProof.files.length} files`) : '-',
-          lines: saleLines.map((l) => ({ cat: l.cat, brand: l.brand, watt: l.watt, type: l.type, serials: l.serials, qty: l.qty })),
+          lines: saleLines.map((l) => ({ cat: l.cat, brand: l.brand, watt: l.watt, model: l.model, type: l.type, serials: l.serials, qty: l.qty })),
         });
         if (window.showToast) window.showToast('Sales Dispatch Executed successfully!');
         // Uploaded against chalanNo — Party Ledger groups OUT vouchers by
@@ -685,7 +748,7 @@ window.PAGES.sales = {
     });
 
     // ---------------- EDIT PANEL ----------------
-    const saleEditCatEl = $('saleEditCat'), saleEditBrandEl = $('saleEditBrand'), saleEditWattEl = $('saleEditWatt'), saleEditTypeEl = $('saleEditType');
+    const saleEditCatEl = $('saleEditCat'), saleEditBrandEl = $('saleEditBrand'), saleEditWattEl = $('saleEditWatt'), saleEditModelEl = $('saleEditModel'), saleEditTypeEl = $('saleEditType');
     const saleEditLineList = $('saleEditLineList');
     const saleEditLines = [];
     let loadedOrderNo = null;
@@ -696,7 +759,11 @@ window.PAGES.sales = {
     // entirely, so we can tell the backend to release it (qty:0) instead of
     // silently leaving that stock stuck in 'Sold'.
     let loadedQtyLines = [];
-    const qtyLineKey = (l) => [l.cat, l.brand, l.watt || 0, l.type].join('|');
+    // `model` included in the key — without it, different models of the
+    // same Category+Brand+Type (both carrying watt=0) would wrongly
+    // collide into one key here, same bug class Step 1 fixed for
+    // Purchase's own grouping key and sales.routes.js's GET /find grouping.
+    const qtyLineKey = (l) => [l.cat, l.brand, l.watt || 0, l.type, l.model || ''].join('|');
 
     const saleEditProof = { files: [] };
 
@@ -714,11 +781,13 @@ window.PAGES.sales = {
         if (!cat) {
           fillSelect(saleEditBrandEl, [], '-- Select Category First --');
           fillSelect(saleEditWattEl, [], '-- Select Brand First --');
+          fillSelect(saleEditModelEl, [], '-- Select Brand First --');
           await refreshSaleEditType();
           return;
         }
         await fillSelectFromApi(saleEditBrandEl, `/purchase/brands/${encodeURIComponent(cat)}`, 'No brands under this category', injectBrand);
         await refreshSaleEditWattage(injectWatt);
+        await refreshSaleEditModels();
       }
       async function refreshSaleEditWattage(injectWatt) {
         const cat = saleEditCatEl.value, brand = saleEditBrandEl.value;
@@ -729,6 +798,17 @@ window.PAGES.sales = {
         }
         await fillSelectFromApi(saleEditWattEl, `/purchase/wattages?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}`, 'N/A', injectWatt);
         await refreshSaleEditType();
+      }
+
+      // Edit panel's Model dropdown — same idea as refreshSaleEditWattage()
+      // above, reusing /api/purchase/models (see refreshSaleModels()).
+      async function refreshSaleEditModels(injectModel) {
+        const cat = saleEditCatEl.value, brand = saleEditBrandEl.value;
+        if (!cat || !brand) {
+          fillSelect(saleEditModelEl, [], '-- Select Brand First --');
+          return;
+        }
+        await fillSelectFromApi(saleEditModelEl, `/purchase/models?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}`, 'N/A', injectModel);
       }
       async function refreshSaleEditType(injectType) {
         const cat = saleEditCatEl.value, brand = saleEditBrandEl.value, wattVal = saleEditWattEl.value;
@@ -750,8 +830,8 @@ window.PAGES.sales = {
         if (injectType) saleEditTypeEl.value = injectType;
       }
 
-      saleEditCatEl.addEventListener('change', () => { refreshSaleEditBrandsAndWatt(); updateSaleEditQtyFieldVisibility(); });
-      saleEditBrandEl.addEventListener('change', () => refreshSaleEditWattage());
+      saleEditCatEl.addEventListener('change', () => { refreshSaleEditBrandsAndWatt(); updateSaleEditQtyFieldVisibility(); updateSaleEditWattModelVisibility(); });
+      saleEditBrandEl.addEventListener('change', () => { refreshSaleEditWattage(); refreshSaleEditModels(); });
       saleEditWattEl.addEventListener('change', () => refreshSaleEditType());
       fillSelectFromApi(saleEditCatEl, '/masters/categories', 'No categories found');
 
@@ -760,8 +840,10 @@ window.PAGES.sales = {
         await fillSelectFromApi(saleEditCatEl, '/masters/categories', 'No categories found', line.cat);
         await fillSelectFromApi(saleEditBrandEl, `/purchase/brands/${encodeURIComponent(saleEditCatEl.value)}`, 'No brands under this category', line.brand);
         await fillSelectFromApi(saleEditWattEl, `/purchase/wattages?category=${encodeURIComponent(saleEditCatEl.value)}&brand=${encodeURIComponent(saleEditBrandEl.value)}`, 'N/A', line.watt);
+        await fillSelectFromApi(saleEditModelEl, `/purchase/models?category=${encodeURIComponent(saleEditCatEl.value)}&brand=${encodeURIComponent(saleEditBrandEl.value)}`, 'N/A', line.model);
         await refreshSaleEditType(line.type);
         updateSaleEditQtyFieldVisibility();
+        updateSaleEditWattModelVisibility();
       }
 
       function clearEditPanel() {
@@ -779,11 +861,15 @@ window.PAGES.sales = {
         $('saleEditProofFile').value = '';
         $('saleEditProofName').textContent = 'No proof selected';
         updateSaleEditQtyFieldVisibility();
+        updateSaleEditWattModelVisibility();
       }
       $('saleBtnClearEdit').addEventListener('click', clearEditPanel);
 
       $('saleBtnEditAddLine').addEventListener('click', async () => {
-        const cat = saleEditCatEl.value, brand = saleEditBrandEl.value, wattVal = saleEditWattEl.value.trim();
+        const cat = saleEditCatEl.value, brand = saleEditBrandEl.value;
+        const needsModel = saleCategoryNeedsModel(cat);
+        const wattVal = needsModel ? '' : saleEditWattEl.value.trim();
+        const model = needsModel ? saleEditModelEl.value.trim() : '';
         const type = saleEditTypeEl.value;
         const watt = (wattVal && wattVal !== 'N/A' && !isNaN(Number(wattVal))) ? Number(wattVal) : 0;
         if (!cat || !brand || !type) {
@@ -806,22 +892,24 @@ window.PAGES.sales = {
           // owns) is the real gate, this is just an early heads-up.
           let errors = [];
           try {
-            const resp = await window.Api.get(`/sales/check-line?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}&watt=${watt}&type=${encodeURIComponent(type)}&qty=${qtyNum}`);
+            const resp = await window.Api.get(`/sales/check-line?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}&watt=${watt}&type=${encodeURIComponent(type)}&qty=${qtyNum}&model=${encodeURIComponent(model)}`);
             errors = resp.errors || [];
           } catch (e) { /* best-effort pre-check only */ }
           if (errors.length) {
             window.openModal('Stock Validation Error', `<p>${errors.join('<br>')}</p><p style="margin-top:8px;">If this quantity includes stock the order already owns, it may still be fine — Apply will do the real check.</p>`);
             return;
           }
-          saleEditLines.push({ cat, brand, watt, type, needsSerial: false, qty: qtyNum });
+          saleEditLines.push({ cat, brand, watt, model, type, needsSerial: false, qty: qtyNum });
           renderLineList(saleEditLineList, saleEditLines, '');
           $('saleEditQty').value = '';
           updateSaleEditQtyFieldVisibility();
           return;
         }
 
-        // ---- Serial-based category (existing flow, unchanged) ----
-        saleEditLines.push({ cat, brand, watt, type, needsSerial: true, serials: [] });
+        // ---- Serial-based category (existing flow, unchanged) — model-
+        // based categories are never serial_mandatory, so `model` here is
+        // always '' by construction (see saleCategoryNeedsModel).
+        saleEditLines.push({ cat, brand, watt, model, type, needsSerial: true, serials: [] });
         renderLineList(saleEditLineList, saleEditLines, '');
         updateSaleEditQtyFieldVisibility();
       });
@@ -862,10 +950,10 @@ window.PAGES.sales = {
         loadedQtyLines = [];
         (order.lines || []).forEach((ln) => {
           if (Array.isArray(ln.serials)) {
-            saleEditLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, needsSerial: true, serials: ln.serials });
+            saleEditLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type, needsSerial: true, serials: ln.serials });
           } else {
-            saleEditLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, needsSerial: false, qty: ln.qty });
-            loadedQtyLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type });
+            saleEditLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type, needsSerial: false, qty: ln.qty });
+            loadedQtyLines.push({ cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type });
           }
         });
         renderLineList(saleEditLineList, saleEditLines, 'Find an order above to load its lines.');
@@ -923,8 +1011,8 @@ window.PAGES.sales = {
         const currentQtyKeys = new Set(qtyLinesIn.map(qtyLineKey));
         const removedQtyLines = loadedQtyLines.filter((ln) => !currentQtyKeys.has(qtyLineKey(ln)));
         const qtyLines = [
-          ...qtyLinesIn.map((ln) => ({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, qty: ln.qty })),
-          ...removedQtyLines.map((ln) => ({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, qty: 0 })),
+          ...qtyLinesIn.map((ln) => ({ cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type, qty: ln.qty })),
+          ...removedQtyLines.map((ln) => ({ cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type, qty: 0 })),
         ];
 
         const lines = [...serialLines, ...qtyLines];
@@ -951,7 +1039,7 @@ window.PAGES.sales = {
           loadedOriginalSerials = allSerials;
           // Reflect the now-current ownership so a further edit in this same
           // session diffs against what actually exists post-Apply.
-          loadedQtyLines = qtyLinesIn.map((ln) => ({ cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type }));
+          loadedQtyLines = qtyLinesIn.map((ln) => ({ cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type }));
           const uploadResult = await window.uploadAttachments('sales', newChalan, saleEditProof.files);
           if (window.showToast) window.showToast('Sales Modifications Saved.');
           const uploadWarning = !uploadResult.ok
@@ -1019,7 +1107,7 @@ window.PAGES.sales = {
       $('saleCustAddr').value = address || '';
       $('saleOrder').value = orderNo || '';
       (lines || []).forEach((line) => {
-        saleLines.push({ cat: line.cat, brand: line.brand, watt: line.watt, type: line.type, qty: line.qty, serials: [] });
+        saleLines.push({ cat: line.cat, brand: line.brand, watt: line.watt, model: line.model, type: line.type, qty: line.qty, serials: [] });
       });
       renderLineList(saleLineList, saleLines, 'No product lines added yet — fill the fields above and click "Add Product Line".');
       window.openModal('Assignment Released', '<p>Reserved stock loaded into this Sales form. Please scan/enter serials for each product line, fill Challan No, and confirm dispatch.</p>');
