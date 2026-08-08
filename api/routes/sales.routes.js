@@ -683,8 +683,12 @@ module.exports = function registerSalesRoutes(app, deps) {
   // exactly like the desktop query's WHERE status='Sold' AND chalan_no != '-'.
   app.get('/api/sales/register', route(async (req, res) => {
     const category = req.query.category;
+    // SUM(quantity) instead of COUNT(*): a serial-tracked row is always
+    // quantity=1 (so this matches the old COUNT(*) behaviour exactly for
+    // those), while a quantity-tracked row (serial_no NULL) can represent
+    // many units in a single row — COUNT(*) was under-reporting it as 1.
     let sql = `SELECT chalan_no, chalan_date, customer_name, order_no, category, brand_name, sales_invoice,
-                      MIN(serial_no) AS first_serial, COUNT(*) AS qty, MAX(edited_flag) AS edited
+                      MIN(serial_no) AS first_serial, COALESCE(SUM(quantity), 0) AS qty, MAX(edited_flag) AS edited
                FROM stock_ledger WHERE status='Sold' AND chalan_no IS NOT NULL AND chalan_no != '-'`;
     const params = [];
     if (category && category !== 'All Categories') { sql += ` AND category = ?`; params.push(category); }
