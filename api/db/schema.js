@@ -10,6 +10,7 @@ async function ensureStartupSchema(pool) {
   await ensureStockQuantitySchema(pool);
   await ensureItemOverrideSchema(pool);
   await ensureStockModelSchema(pool);
+  await ensureWattDecimalSchema(pool);
 }
 async function ensureSessionSchema(pool) { try { await pool.query(`ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS last_seen DATETIME NULL`); } catch (e) { console.warn('[Session schema] Could not ensure last_seen column (will retry lazily on first use):', e.message); } }
 async function ensureSerialRuleSchema(pool) { try { await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS serial_mandatory TINYINT(1) NOT NULL DEFAULT 0`); } catch (e) { console.warn('[Serial rule schema] Could not ensure serial_mandatory column (will retry lazily on first use):', e.message); } }
@@ -123,6 +124,20 @@ async function ensureStockModelSchema(pool) {
   try {
     await pool.query(`ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS model VARCHAR(120) NULL DEFAULT NULL`);
   } catch (e) { console.warn('[Stock model schema] Could not ensure model column on stock_ledger (will retry lazily on first use):', e.message); }
+}
+
+// Goal: Wattage / Capacity must accept decimal values (e.g. 3.3, 4.2, 0.3)
+// instead of being silently rounded to the nearest whole number. Both
+// `items.watt` and `stock_ledger.watt` were originally INT columns, so even
+// after the frontend was fixed to send decimals, MySQL would still truncate
+// them on INSERT/UPDATE. Widening both to DECIMAL(8,2) preserves 2 decimal
+// places and is safe to run repeatedly (MODIFY COLUMN is idempotent) and
+// safe on existing data (existing whole-number values convert unchanged).
+async function ensureWattDecimalSchema(pool) {
+  try {
+    await pool.query(`ALTER TABLE items MODIFY COLUMN watt DECIMAL(8,2) NOT NULL DEFAULT 0`);
+    await pool.query(`ALTER TABLE stock_ledger MODIFY COLUMN watt DECIMAL(8,2) NOT NULL DEFAULT 0`);
+  } catch (e) { console.warn('[Watt decimal schema] Could not widen watt column to DECIMAL(8,2) (will retry lazily on first use):', e.message); }
 }
 
 module.exports = { ensureStartupSchema };

@@ -415,7 +415,7 @@ window.PAGES.masters = {
     $("mBtnSaveItem").addEventListener("click", async () => {
       const category = $("mItemCatDropdown").value;
       const brand = $("mItemBrandInput").value.trim();
-      const watt = parseInt($("mItemWattInput").value.trim()) || 0;
+      const watt = parseFloat($("mItemWattInput").value.trim()) || 0;
       const model = $("mItemModelInput").value.trim();
       const uom = $("mItemUomDropdown").value;
       const minStock = parseInt($("mItemMinStockInput").value.trim()) || 0;
@@ -663,7 +663,7 @@ window.PAGES.masters = {
         const model = valueFromRow(row, ['model', 'model_no', 'model_number', 'size']);
         const uom = valueFromRow(row, ['uom', 'unit'], 'Nos');
         const minStock = parseInt(valueFromRow(row, ['minimum_stock', 'min_stock', 'alert_stock']), 10) || 0;
-        const watt = parseInt(wattRaw, 10) || 0;
+        const watt = parseFloat(wattRaw) || 0;
         const wattOverride = parseOverrideFlag(valueFromRow(row, ['wattage_mandatory', 'watt_mandatory']));
         const serialOverride = parseOverrideFlag(valueFromRow(row, ['serial_mandatory', 'serial_no_mandatory']));
 
