@@ -16,7 +16,7 @@ const APP_SHELL = [
   '/assets/icon.ico',
   '/assets/icons/icon-192.png',
   '/assets/icons/icon-512.png',
-  '/assets/icons/icon-1024.png',
+  '/assets/icons/icon-1024.png?v=1',
   '/assets/logo.png',
   '/js/data/purchase-data.js?v=2',
   '/js/data/api.js?v=3',
