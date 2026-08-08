@@ -29,7 +29,6 @@ Database
 
 | File | Purpose |
 | --- | --- |
-| api/api.js | Defines 5 function(s) implementing supporting logic. |
 | api/package.json | Supporting source file. |
 | api/server.js | Application entry point / bootstrap file. |
 

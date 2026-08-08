@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-06T06:44:18.361Z",
+  "generatedAt": "2026-08-08T06:14:13.917Z",
   "files": {
     ".env": {
       "hash": "fbf93500e5313e2f01018668de228b174a039bbf",
@@ -176,11 +176,6 @@
       "size": 13292,
       "mtimeMs": 1785235534626.1204
     },
-    "api/api.js": {
-      "hash": "60d62cb3d33a295baa89f258cb0c7feaac2db899",
-      "size": 6174,
-      "mtimeMs": 1785755282783.2937
-    },
     "api/package.json": {
       "hash": "a2aa3097daff7cfae0ba782460059a88a5902588",
       "size": 543,
@@ -267,9 +262,9 @@
       "mtimeMs": 1785235629234.0254
     },
     "api/routes/sales.routes.js": {
-      "hash": "60b20fd63ad9f08d83108610c4a37b5f4a8cbe59",
-      "size": 37586,
-      "mtimeMs": 1785753530266.6194
+      "hash": "9edc3d4eeb20017971bb37a299066b1494540a0b",
+      "size": 37902,
+      "mtimeMs": 1786166525542.3833
     },
     "api/routes/scansheet.routes.js": {
       "hash": "a583c622cb0e3b76257b10d27af47923ca702bda",
@@ -277,9 +272,9 @@
       "mtimeMs": 1785241286570.7944
     },
     "api/routes/stockassign.routes.js": {
-      "hash": "896bb7ede4f4c9cd520212d72fd1ee53fcbe10b7",
-      "size": 13945,
-      "mtimeMs": 1785235629234.0254
+      "hash": "47f1c8c14e43e58e340efa79b2aaaa4fb8705694",
+      "size": 22875,
+      "mtimeMs": 1786166512749.752
     },
     "api/middleware/auth.middleware.js": {
       "hash": "931b7757e067af25d722df77a3f797e148269eb8",

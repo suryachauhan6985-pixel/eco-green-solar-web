@@ -34,7 +34,6 @@ api/
     utils/
         route.js
         time.js
-    api.js
     package.json
     server.js
 css/

@@ -10,13 +10,13 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-06T06:44:18.355Z
+- **Generated:** 2026-08-08T06:14:13.902Z
 
 ## 2. Architecture Overview
 
 - **Detected technologies:** Node.js (runtime), Express (backend framework), MySQL (database), JWT Authentication (auth), HTML (markup), JavaScript (language), CSS (styling), PWA (platform)
-- **Total files (post-ignore):** 61
-- **Deeply analyzed files:** 48
+- **Total files (post-ignore):** 60
+- **Deeply analyzed files:** 47
 - **Typical request flow (heuristic):** Browser → Routes → Controller → Service → Database
 
 ## 3. Folder Structure
@@ -52,7 +52,6 @@ api/
     utils/
         route.js
         time.js
-    api.js
     package.json
     server.js
 css/
@@ -160,11 +159,11 @@ Utility/helper files: 2
 
 - Project appears to be plain JavaScript (no TypeScript detected).
 - File naming leans camelCase.
-- 41 of 48 analyzed files define at least one function.
+- 40 of 47 analyzed files define at least one function.
 
 ## 11. Known Issues / Risk Areas
 
-- 11 file(s) flagged as High complexity: js/app.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, js/pages/stockassign.js, api/services/challanPdf.js, ...
+- 12 file(s) flagged as High complexity: js/app.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, js/pages/stockassign.js, api/services/challanPdf.js, ...
 - Raw SQL string usage found in 35 file(s) — verify parameterization to avoid SQL injection.
 - No routes appear to use recognizable auth middleware — verify whether this API is intentionally public.
 - A real `.env` file exists in the project (.env) — ensure it is excluded from version control.

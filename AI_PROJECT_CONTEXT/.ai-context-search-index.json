@@ -2737,42 +2737,6 @@
   },
   {
     "type": "file",
-    "label": "api/api.js",
-    "file": "api/api.js",
-    "detail": "Defines 5 function(s) implementing supporting logic."
-  },
-  {
-    "type": "function",
-    "label": "parseApiResponse",
-    "file": "api/api.js",
-    "detail": "(res, path)"
-  },
-  {
-    "type": "function",
-    "label": "getFileExtension",
-    "file": "api/api.js",
-    "detail": "(fileName)"
-  },
-  {
-    "type": "function",
-    "label": "validateAttachmentFile",
-    "file": "api/api.js",
-    "detail": "(file)"
-  },
-  {
-    "type": "function",
-    "label": "readFileAsBase64",
-    "file": "api/api.js",
-    "detail": "(file)"
-  },
-  {
-    "type": "function",
-    "label": "uploadAttachments",
-    "file": "api/api.js",
-    "detail": "(refType, refNo, fileList)"
-  },
-  {
-    "type": "file",
     "label": "api/package.json",
     "file": "api/package.json",
     "detail": "Supporting source file."
@@ -3184,6 +3148,24 @@
     "label": "registerStockassignRoutes",
     "file": "api/routes/stockassign.routes.js",
     "detail": "(app, deps)"
+  },
+  {
+    "type": "function",
+    "label": "isCategorySerialMandatory",
+    "file": "api/routes/stockassign.routes.js",
+    "detail": "(conn, category)"
+  },
+  {
+    "type": "function",
+    "label": "fifoConsumeQtyForAssign",
+    "file": "api/routes/stockassign.routes.js",
+    "detail": "(conn, itemKey, qtyNeeded, meta)"
+  },
+  {
+    "type": "function",
+    "label": "releaseAssignedQtyRows",
+    "file": "api/routes/stockassign.routes.js",
+    "detail": "(conn, reference)"
   },
   {
     "type": "function",

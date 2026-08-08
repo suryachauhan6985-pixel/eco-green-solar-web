@@ -1,27 +1,18 @@
 // js/pages/returns.js
-// Mirrors ui/returns.py's ReturnsPage exactly, wired to the real backend
-// (/api/returns, see server.js) instead of being a static, non-functional
-// preview form:
-//   - Action Type: "Sales Return (Make Available)" or "Mark as Damaged /
-//     Scrapped" — same two options as the desktop dropdown.
-//   - Remarks/Date/Serials mandatory, same as the desktop app.
-//   - Serial box auto-splits on comma/space/tab/pipe/semicolon and
-//     normalizes pasted text to one serial per line — same behaviour as
-//     ui/serial_widgets.py's SerialTextEdit (same helper already used by
-//     Purchase/Sales in this web app).
-//   - Duplicate scans in the same batch are rejected, exactly like the
-//     desktop app's "Duplicate Scans" check.
-//   - The whole batch is validated server-side against stock_ledger before
-//     anything is written: a "Sales Return" is only allowed if the serial's
-//     current status is 'Sold'; "Mark as Damaged" is blocked if the serial
-//     is currently 'Sold' (must be returned first). If ANY serial fails,
-//     the ENTIRE adjustment is blocked ("ADJUSTMENT BLOCKED" — same as the
-//     desktop app's notify.critical message), nothing partial is saved.
-//   - On success: Sales Return resets status -> 'Available' and clears the
-//     customer/order/invoice/date "ghost" fields (chalan_no gets a
-//     '[RETURNED] ' prefix); Mark as Damaged simply flips status ->
-//     'Damaged'. Form resets (remarks + serials cleared, date back to
-//     today) exactly like the desktop app after a successful adjustment.
+// Goal 4: Return/Damage now supports BOTH serial-based and quantity-based
+// items in a single batch, mirroring the Sales multi-line pattern instead
+// of the old flat "scan any serial" box:
+//   - Each product line picks Category -> Brand -> Wattage -> Type (same
+//     cascading dropdowns as Purchase/Sales, reusing the same endpoints).
+//   - Category's `serial_mandatory` flag (from /api/masters/categories,
+//     see Goal 2/3) decides the line's input: serial-mandatory categories
+//     show the scan/paste serial textarea (same auto-split/dedupe behaviour
+//     as before); non-mandatory categories show a plain Quantity number
+//     input instead — no serial box at all.
+//   - Multiple lines (mixed serial + qty) can be queued and submitted as
+//     ONE batch, sharing the same Action Type / Remarks / Date, same as
+//     before. Whole-batch validation still applies server-side: if ANY
+//     line fails, nothing is written ("ADJUSTMENT BLOCKED").
 window.PAGES = window.PAGES || {};
 
 window.PAGES.returns = {
@@ -30,25 +21,67 @@ window.PAGES.returns = {
   sub: 'Process sales returns & damaged stock',
   html: `
     <div class="page-head"><i class="fa-solid fa-rotate-left" style="color:var(--red);"></i><h2>Return &amp; Damage Control</h2></div>
-    <div class="panel" style="max-width:640px;">
+
+    <div class="panel" style="max-width:760px;">
       <h3><i class="fa-solid fa-tools"></i> Stock Adjustment</h3>
-      <div class="form-grid" style="grid-template-columns:1fr;">
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;">
         <div class="field"><label>Action Type</label>
           <select id="retActionType">
             <option>Sales Return (Make Available)</option>
             <option>Mark as Damaged / Scrapped</option>
           </select>
         </div>
-        <div class="field"><label>Remarks / Reason <span class="req">*</span></label>
-          <input id="retRemarks" placeholder="Enter reason...">
-        </div>
         <div class="field"><label>Action Date <span class="req">*</span></label>
           <input id="retDate" type="date">
         </div>
-        <div class="field"><label>Scan Serial Numbers <span class="req">*</span></label>
-          <textarea id="retSerials" rows="8" placeholder="Scan serial numbers here..." style="font-family:'Courier New', monospace;"></textarea>
+        <div class="field" style="grid-column:1 / -1;"><label>Remarks / Reason <span class="req">*</span></label>
+          <input id="retRemarks" placeholder="Enter reason...">
         </div>
       </div>
+    </div>
+
+    <div class="panel" style="max-width:760px;">
+      <h3><i class="fa-solid fa-layer-group"></i> Add Product Line</h3>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="field"><label>Category</label>
+          <select id="retLineCat"><option value="">Select Category...</option></select>
+        </div>
+        <div class="field"><label>Brand</label>
+          <select id="retLineBrand" disabled><option value="">Select Brand...</option></select>
+        </div>
+        <div class="field"><label>Wattage</label>
+          <select id="retLineWatt" disabled><option value="">Select Wattage...</option></select>
+        </div>
+        <div class="field"><label>Type</label>
+          <select id="retLineType" disabled><option value="">Select Type...</option></select>
+        </div>
+      </div>
+
+      <div id="retLineSerialWrap" class="field" style="display:none;">
+        <label>Scan Serial Numbers <span class="req">*</span></label>
+        <textarea id="retLineSerials" rows="6" placeholder="Scan serial numbers here..." style="font-family:'Courier New', monospace;"></textarea>
+      </div>
+      <div id="retLineQtyWrap" class="field" style="display:none;">
+        <label>Quantity <span class="req">*</span></label>
+        <input id="retLineQty" type="number" min="1" step="1" placeholder="Enter quantity...">
+      </div>
+      <div id="retLineHint" style="color:var(--muted,#888); font-size:.85em; margin:4px 0 8px;"></div>
+
+      <div class="actions-row">
+        <button class="btn btn-outline" id="btnAddLine" disabled><i class="fa-solid fa-plus"></i> Add Line</button>
+      </div>
+    </div>
+
+    <div class="panel" style="max-width:760px;">
+      <h3><i class="fa-solid fa-list"></i> Queued Lines</h3>
+      <table class="data-table" id="retLinesTable">
+        <thead>
+          <tr><th>Category</th><th>Brand</th><th>Watt</th><th>Type</th><th>Serials / Qty</th><th></th></tr>
+        </thead>
+        <tbody id="retLinesBody">
+          <tr id="retLinesEmpty"><td colspan="6" style="text-align:center; color:var(--muted,#888);">No lines added yet</td></tr>
+        </tbody>
+      </table>
       <div class="actions-row">
         <button class="btn btn-red" id="btnProcessReturn"><i class="fa-solid fa-tools"></i> Execute Stock Adjustment</button>
       </div>
@@ -61,16 +94,30 @@ window.PAGES.returns = {
     const actionEl = $('retActionType');
     const remarksEl = $('retRemarks');
     const dateEl = $('retDate');
-    const serialsEl = $('retSerials');
+
+    const catEl = $('retLineCat');
+    const brandEl = $('retLineBrand');
+    const wattEl = $('retLineWatt');
+    const typeEl = $('retLineType');
+    const serialWrap = $('retLineSerialWrap');
+    const serialsEl = $('retLineSerials');
+    const qtyWrap = $('retLineQtyWrap');
+    const qtyEl = $('retLineQty');
+    const hintEl = $('retLineHint');
+    const btnAddLine = $('btnAddLine');
+    const linesBody = $('retLinesBody');
+    const linesEmptyRow = $('retLinesEmpty');
     const btnProcess = $('btnProcessReturn');
 
-    // Default the date to today, same as the desktop app's
-    // action_date_input.setDate(QDate.currentDate()).
     dateEl.value = new Date().toISOString().slice(0, 10);
 
-    // Serial box: auto-newline on delimiter + paste normalization — mirrors
-    // ui/serial_widgets.py's SerialTextEdit exactly (same pattern already
-    // wired for Purchase/Sales elsewhere in this web app).
+    // Queued lines for this batch: { cat, brand, watt, type, serials: [] }
+    // OR { cat, brand, watt, type, qty: N }. Exactly one of serials/qty is set.
+    let queuedLines = [];
+    let categories = []; // cached /api/masters/categories rows (has serial_mandatory)
+    let currentCategoryMeta = null; // the category row matching catEl's selection
+
+    // --- Serial box helpers (unchanged behaviour from before) ---------------
     function splitSerials(text) {
       return String(text || '').match(/[A-Za-z0-9-]+/g) || [];
     }
@@ -101,24 +148,181 @@ window.PAGES.returns = {
     }
     wireSerialBox(serialsEl);
 
+    // --- Cascading dropdowns (Category -> Brand -> Wattage -> Type) --------
+    function resetSelect(el, placeholder) {
+      el.innerHTML = `<option value="">${placeholder}</option>`;
+      el.disabled = true;
+    }
+    function fillSelect(el, values, placeholder) {
+      el.innerHTML = `<option value="">${placeholder}</option>` +
+        values.map((v) => `<option value="${v}">${v}</option>`).join('');
+      el.disabled = !values.length;
+    }
+
+    function updateLineInputVisibility() {
+      resetSelect(brandEl, 'Select Brand...');
+      resetSelect(wattEl, 'Select Wattage...');
+      resetSelect(typeEl, 'Select Type...');
+      serialWrap.style.display = 'none';
+      qtyWrap.style.display = 'none';
+      hintEl.textContent = '';
+      btnAddLine.disabled = true;
+    }
+
+    catEl.addEventListener('change', async () => {
+      updateLineInputVisibility();
+      const cat = catEl.value;
+      currentCategoryMeta = categories.find((c) => c.name === cat) || null;
+      if (!cat) return;
+      try {
+        const brands = await window.Api.get(`/purchase/brands/${encodeURIComponent(cat)}`);
+        fillSelect(brandEl, (brands || []).map((b) => b.brand_name || b), 'Select Brand...');
+      } catch (e) {
+        fillSelect(brandEl, [], 'Select Brand...');
+      }
+    });
+
+    brandEl.addEventListener('change', async () => {
+      resetSelect(wattEl, 'Select Wattage...');
+      resetSelect(typeEl, 'Select Type...');
+      serialWrap.style.display = 'none';
+      qtyWrap.style.display = 'none';
+      btnAddLine.disabled = true;
+      const cat = catEl.value, brand = brandEl.value;
+      if (!cat || !brand) return;
+      try {
+        const watts = await window.Api.get(`/purchase/wattages?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}`);
+        fillSelect(wattEl, watts || [], 'Select Wattage...');
+        // Some categories have no wattage concept at all (watt_mandatory=0
+        // and no rows come back) — allow proceeding straight to Type in
+        // that case by treating wattage as "0".
+        if (!(watts || []).length) {
+          wattEl.innerHTML = `<option value="0">N/A</option>`;
+          wattEl.disabled = false;
+        }
+      } catch (e) {
+        fillSelect(wattEl, [], 'Select Wattage...');
+      }
+    });
+
+    wattEl.addEventListener('change', async () => {
+      resetSelect(typeEl, 'Select Type...');
+      serialWrap.style.display = 'none';
+      qtyWrap.style.display = 'none';
+      btnAddLine.disabled = true;
+      const cat = catEl.value, brand = brandEl.value, watt = wattEl.value;
+      if (!cat || !brand || watt === '') return;
+      try {
+        let types = await window.Api.get(`/sales/types?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}&watt=${encodeURIComponent(watt)}`);
+        if (!types || !types.length) {
+          // Fall back to subtypes-by-category, same fallback sync_sales_solartype() uses.
+          types = await window.Api.get(`/masters/subtypes/${encodeURIComponent(cat)}`);
+        }
+        fillSelect(typeEl, types || [], 'Select Type...');
+      } catch (e) {
+        fillSelect(typeEl, [], 'Select Type...');
+      }
+    });
+
+    typeEl.addEventListener('change', () => {
+      serialsEl.value = '';
+      qtyEl.value = '';
+      if (!typeEl.value) {
+        serialWrap.style.display = 'none';
+        qtyWrap.style.display = 'none';
+        hintEl.textContent = '';
+        btnAddLine.disabled = true;
+        return;
+      }
+      const serialMandatory = currentCategoryMeta ? !!currentCategoryMeta.serial_mandatory : true;
+      if (serialMandatory) {
+        serialWrap.style.display = '';
+        qtyWrap.style.display = 'none';
+        hintEl.textContent = 'This category requires Serial Numbers.';
+      } else {
+        serialWrap.style.display = 'none';
+        qtyWrap.style.display = '';
+        hintEl.textContent = 'This category is quantity-tracked — no Serial Number needed.';
+      }
+      btnAddLine.disabled = false;
+    });
+
+    // --- Queued lines table ---------------------------------------------------
+    function renderLines() {
+      linesBody.querySelectorAll('tr[data-idx]').forEach((tr) => tr.remove());
+      linesEmptyRow.style.display = queuedLines.length ? 'none' : '';
+      queuedLines.forEach((line, idx) => {
+        const tr = document.createElement('tr');
+        tr.dataset.idx = idx;
+        const detail = line.serials
+          ? `${line.serials.length} serial(s): ${line.serials.slice(0, 3).join(', ')}${line.serials.length > 3 ? '...' : ''}`
+          : `Qty: ${line.qty}`;
+        tr.innerHTML = `
+          <td>${line.cat}</td><td>${line.brand}</td><td>${line.watt || 'N/A'}</td><td>${line.type}</td>
+          <td>${detail}</td>
+          <td><button class="btn btn-sm btn-outline" data-remove="${idx}"><i class="fa-solid fa-xmark"></i></button></td>
+        `;
+        linesBody.appendChild(tr);
+      });
+      linesBody.querySelectorAll('[data-remove]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          queuedLines.splice(Number(btn.dataset.remove), 1);
+          renderLines();
+        });
+      });
+    }
+
+    btnAddLine.addEventListener('click', () => {
+      const cat = catEl.value, brand = brandEl.value, watt = wattEl.value, type = typeEl.value;
+      if (!cat || !brand || watt === '' || !type) {
+        window.openModal('Validation Error', '<p>Select Category, Brand, Wattage and Type first.</p>');
+        return;
+      }
+      const serialMandatory = currentCategoryMeta ? !!currentCategoryMeta.serial_mandatory : true;
+      if (serialMandatory) {
+        const serials = splitSerials(serialsEl.value);
+        if (!serials.length) {
+          window.openModal('Validation Error', '<p>Scan at least one Serial Number for this line.</p>');
+          return;
+        }
+        const allExisting = queuedLines.flatMap((l) => l.serials || []);
+        const dupes = serials.filter((s) => allExisting.includes(s));
+        if (dupes.length) {
+          window.openModal('Duplicate Scans', `<p>Already queued: ${dupes.join(', ')}</p>`);
+          return;
+        }
+        queuedLines.push({ cat, brand, watt, type, serials });
+      } else {
+        const qty = Number(qtyEl.value) || 0;
+        if (qty <= 0) {
+          window.openModal('Validation Error', '<p>Enter a Quantity greater than 0 for this line.</p>');
+          return;
+        }
+        queuedLines.push({ cat, brand, watt, type, qty });
+      }
+      renderLines();
+      // Reset just the line-entry inputs, keep Category selected for
+      // convenience when adding several lines of the same category.
+      serialsEl.value = '';
+      qtyEl.value = '';
+    });
+
     function resetForm() {
       remarksEl.value = '';
-      serialsEl.value = '';
       dateEl.value = new Date().toISOString().slice(0, 10);
+      queuedLines = [];
+      renderLines();
+      catEl.value = '';
+      updateLineInputVisibility();
     }
 
     btnProcess.addEventListener('click', async () => {
       const actionType = actionEl.value;
       const remarks = remarksEl.value.trim();
       const actionDate = dateEl.value;
-      const serials = splitSerials(serialsEl.value);
 
-      if (!remarks || !actionDate || !serials.length) {
-        window.openModal('Validation Error', '<p>Remarks, Date, and Serials are mandatory.</p>');
-        return;
-      }
-      if (new Set(serials).size !== serials.length) {
-        window.openModal('Duplicate Scans', '<p>The entry queue contains identical duplicates.</p>');
+      if (!remarks || !actionDate || !queuedLines.length) {
+        window.openModal('Validation Error', '<p>Remarks, Date, and at least one queued Line are mandatory.</p>');
         return;
       }
 
@@ -126,9 +330,15 @@ window.PAGES.returns = {
       const originalLabel = btnProcess.innerHTML;
       btnProcess.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
       try {
-        const result = await window.Api.post('/returns', { actionType, remarks, date: actionDate, serials });
+        const result = await window.Api.post('/returns', {
+          actionType, remarks, date: actionDate,
+          lines: queuedLines.map((l) => ({
+            cat: l.cat, brand: l.brand, watt: l.watt, type: l.type,
+            serials: l.serials || [], qty: l.qty || 0,
+          })),
+        });
         if (window.showToast) window.showToast(`Stock successfully adjusted as ${actionType}!`);
-        window.openModal('Success', `<p>${result.count} serial(s) successfully adjusted as <strong>${actionType}</strong>!</p>`);
+        window.openModal('Success', `<p>${result.serialCount || 0} serial(s) and ${result.qtyAdjusted || 0} unit(s) successfully adjusted as <strong>${actionType}</strong>!</p>`);
         resetForm();
       } catch (err) {
         window.openModal('Constraint Mismatch', `<p style="color:var(--red); white-space:pre-line;">${err.message}</p>`);
@@ -137,5 +347,17 @@ window.PAGES.returns = {
         btnProcess.innerHTML = originalLabel;
       }
     });
+
+    // --- Load categories once, on init ---------------------------------------
+    (async () => {
+      try {
+        categories = await window.Api.get('/masters/categories');
+        fillSelect(catEl, categories.map((c) => c.name), 'Select Category...');
+      } catch (e) {
+        // leave categories empty; dropdown stays on placeholder
+      }
+    })();
+
+    renderLines();
   },
 };

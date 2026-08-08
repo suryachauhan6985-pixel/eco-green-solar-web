@@ -386,21 +386,6 @@ Deep analysis of every important source file.
 
 ---
 
-## `api/api.js`
-
-- **Purpose:** Defines 5 function(s) implementing supporting logic.
-- **Lines of code:** 144
-- **Complexity:** Medium (heuristic score: 26)
-- **Imports:** None
-- **Exports:** None
-- **Functions:** parseApiResponse(res, path), getFileExtension(fileName), validateAttachmentFile(file), readFileAsBase64(file), uploadAttachments(refType, refNo, fileList)
-- **Classes:** None
-- **API endpoints:** None
-- **Database usage:** None
-- **Environment variables used:** None
-
----
-
 ## `api/package.json`
 
 - **Purpose:** Supporting source file.
@@ -693,8 +678,8 @@ Deep analysis of every important source file.
 ## `api/routes/sales.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 709
-- **Complexity:** High (heuristic score: 103)
+- **Lines of code:** 713
+- **Complexity:** High (heuristic score: 105)
 - **Imports:** None
 - **Exports:** module.exports
 - **Functions:** registerSalesRoutes(app, deps), fifoConsumeQty(conn, itemKey, qtyNeeded, meta, editedFlag = 0), releaseQtyToAvailable(conn, itemKey, orderNo, qtyToRelease), isQtyLine(line)
@@ -728,16 +713,17 @@ Deep analysis of every important source file.
 ## `api/routes/stockassign.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 280
-- **Complexity:** Medium (heuristic score: 41)
+- **Lines of code:** 436
+- **Complexity:** High (heuristic score: 68)
 - **Imports:** None
 - **Exports:** module.exports
-- **Functions:** registerStockassignRoutes(app, deps), releaseAssignedSerials(conn, reference)
+- **Functions:** registerStockassignRoutes(app, deps), isCategorySerialMandatory(conn, category), fifoConsumeQtyForAssign(conn, itemKey, qtyNeeded, meta), releaseAssignedQtyRows(conn, reference), releaseAssignedSerials(conn, reference)
 - **Classes:** None
 - **API endpoints:** GET /api/stockassign/available, POST /api/stockassign, GET /api/stockassign/register, GET /api/stockassign/lines/:reference, POST /api/stockassign/release-firm, POST /api/stockassign/release-customer
-- **Database usage:** Raw SQL detected (16 statement keywords: SELECT, UPDATE, JOIN, INSERT INTO)
+- **Database usage:** Raw SQL detected (29 statement keywords: SELECT, UPDATE, INSERT INTO, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
+  - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 
 ---

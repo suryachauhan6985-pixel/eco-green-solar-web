@@ -103,6 +103,71 @@ module.exports = function registerSalesRoutes(app, deps) {
     }
     return released;
   }
+
+  // FIFO-move `qty` units of itemKey from `fromStatus` to `toStatus` for
+  // quantity-tracked stock (serial_no IS NULL). Generalizes
+  // fifoConsumeQty/releaseQtyToAvailable's split logic to any status pair
+  // with NO order_no filter — Return/Damage adjustments (Goal 4) aren't
+  // tied to a specific order the way Sales dispatch/modify are, so any
+  // matching row for this Category+Brand+Watt+Type combo is fair game,
+  // oldest first. `extraFields` resets/tags plain columns on every moved
+  // row (e.g. clearing customer/order info on a Sold->Available return,
+  // same as the serial-based return branch does). `rawSetClauses` lets the
+  // caller pass raw `column = expression` SQL (no bound params) for things
+  // like CONCAT('[RETURNED] ', COALESCE(chalan_no, '')) that can't be
+  // expressed as a plain value. Caller must already hold the transaction
+  // and have validated enough `fromStatus` stock exists. Returns qty moved.
+  async function fifoMoveQtyStatus(conn, itemKey, qty, fromStatus, toStatus, extraFields = {}, rawSetClauses = []) {
+    let remaining = qty;
+    let moved = 0;
+    const [rows] = await conn.query(
+      `SELECT id, quantity FROM stock_ledger
+       WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND status=? AND serial_no IS NULL
+       ORDER BY id ASC
+       FOR UPDATE`,
+      [itemKey.cat, itemKey.brand, Number(itemKey.watt) || 0, itemKey.type, fromStatus]
+    );
+
+    const setCols = ['status=?'];
+    const setVals = [toStatus];
+    for (const [col, val] of Object.entries(extraFields)) { setCols.push(`${col}=?`); setVals.push(val); }
+    for (const raw of rawSetClauses) { setCols.push(raw); }
+    const setSql = setCols.join(', ');
+
+    for (const row of rows) {
+      if (remaining <= 0) break;
+      if (row.quantity <= remaining) {
+        await conn.query(`UPDATE stock_ledger SET ${setSql} WHERE id=?`, [...setVals, row.id]);
+        remaining -= row.quantity;
+        moved += row.quantity;
+      } else {
+        // Partial consume: split the row — copy a new row for the moved
+        // portion (still carrying the source row's identity/customer/chalan
+        // data), then apply status + extraFields/rawSetClauses to just the
+        // new row, and shrink the original row's quantity in place.
+        const [insertResult] = await conn.query(
+          `INSERT INTO stock_ledger
+             (item_id, item_name, category, brand_name, watt, solar_type, warehouse, status,
+              supplier_name, purchase_invoice, purchase_date, purchase_attachment,
+              customer_name, order_no, sales_invoice, invoice_date, sales_date, chalan_no, chalan_date, sales_attachment,
+              quantity, serial_no, edited_flag)
+           SELECT item_id, item_name, category, brand_name, watt, solar_type, warehouse, status,
+                  supplier_name, purchase_invoice, purchase_date, purchase_attachment,
+                  customer_name, order_no, sales_invoice, invoice_date, sales_date, chalan_no, chalan_date, sales_attachment,
+                  ?, NULL, edited_flag
+           FROM stock_ledger WHERE id=?`,
+          [remaining, row.id]
+        );
+        const newId = insertResult.insertId;
+        await conn.query(`UPDATE stock_ledger SET ${setSql} WHERE id=?`, [...setVals, newId]);
+        await conn.query(`UPDATE stock_ledger SET quantity = quantity - ? WHERE id=?`, [remaining, row.id]);
+        moved += remaining;
+        remaining = 0;
+      }
+    }
+    return moved;
+  }
+
   // ---------------------------------------------------------------------------
   // PROJECT SALES / DISPATCH — mirrors ui/sales.py exactly (SalesPage). Every
   // dropdown, autofill and validation the desktop Sale Outward screen does
@@ -297,32 +362,56 @@ module.exports = function registerSalesRoutes(app, deps) {
   }));
 
   // ---------------------------------------------------------------------------
-  // RETURN & DAMAGE — mirrors ui/returns.py's ReturnsPage.process_adjustment()
-  // exactly: scan serials, apply one of two actions:
-  //   1) "Sales Return (Make Available)" — only allowed if current status is
-  //      'Sold'. Resets customer/order/invoice/date fields back to '-' and
-  //      tags chalan_no with a '[RETURNED] ' prefix (same ghost-data cleanup
-  //      the desktop app does), status -> 'Available'.
-  //   2) "Mark as Damaged / Scrapped" — blocked if current status is 'Sold'
-  //      (must Sales-Return it back to Available first), status -> 'Damaged'.
-  // Whole-batch validation: if ANY scanned serial fails (not found / wrong
-  // status for the chosen action), the ENTIRE adjustment is blocked — nothing
-  // is written — exactly like the desktop app's "ADJUSTMENT BLOCKED" message.
+  // RETURN & DAMAGE — Goal 4: multi-line `lines: [...]` (mirrors the Sales
+  // dispatch pattern) instead of a flat `serials: [...]` array, so a single
+  // batch can mix serial-based lines AND quantity-based lines:
+  //   - Serial line:  { cat, brand, watt, type, serials: ['SN1','SN2',...] }
+  //   - Quantity line:{ cat, brand, watt, type, qty: 5 }
+  // Same two actions as before, applied to the whole batch:
+  //   1) "Sales Return (Make Available)" — serial: only if current status is
+  //      'Sold'. qty line: needs enough 'Sold' quantity for that combo.
+  //      Resets customer/order/invoice/date fields, tags chalan_no with a
+  //      '[RETURNED] ' prefix, status -> 'Available'.
+  //   2) "Mark as Damaged / Scrapped" — serial: blocked if status is 'Sold'
+  //      (must Sales-Return it back to Available first). qty line: needs
+  //      enough 'Available' quantity for that combo (can't damage stock
+  //      that's currently Sold — mirrors the serial rule). status -> 'Damaged'.
+  // Whole-batch validation: if ANY line/serial fails, the ENTIRE adjustment
+  // is blocked — nothing is written — same "ADJUSTMENT BLOCKED" contract as
+  // before.
   // ---------------------------------------------------------------------------
   app.post('/api/returns', route(async (req, res) => {
     const actionType = String(req.body.actionType || '').trim();
     const remarks = String(req.body.remarks || '').trim();
     const actionDate = String(req.body.date || '').trim();
-    const serials = Array.isArray(req.body.serials) ? req.body.serials.map((s) => String(s).trim()).filter(Boolean) : [];
+    const lines = Array.isArray(req.body.lines) ? req.body.lines : [];
 
     if (!['Sales Return (Make Available)', 'Mark as Damaged / Scrapped'].includes(actionType)) {
       return res.status(400).json({ error: 'Invalid Action Type.' });
     }
-    if (!remarks || !actionDate || !serials.length) {
-      return res.status(400).json({ error: 'Remarks, Date, and Serials are mandatory.' });
+    if (!remarks || !actionDate || !lines.length) {
+      return res.status(400).json({ error: 'Remarks, Date, and at least one Line are mandatory.' });
     }
-    if (new Set(serials).size !== serials.length) {
-      return res.status(400).json({ error: 'The entry queue contains identical duplicates.' });
+
+    // Split lines into serial-based and quantity-based, same either/or
+    // convention used by POST /api/sales/dispatch.
+    const serialLines = [];
+    const qtyLineInputs = [];
+    for (const line of lines) {
+      const hasSerials = Array.isArray(line.serials) && line.serials.length;
+      const qty = Number(line.qty) || 0;
+      if (hasSerials) serialLines.push(line);
+      else if (qty > 0) qtyLineInputs.push({ ...line, qty });
+    }
+
+    const allSerials = serialLines.flatMap((l) => (l.serials || []).map((s) => String(s).trim()).filter(Boolean));
+    if (!allSerials.length && !qtyLineInputs.length) {
+      return res.status(400).json({ error: 'Add Serial Numbers or a Quantity to at least one line before saving.' });
+    }
+    const seen = new Set(), innerDupes = new Set();
+    allSerials.forEach((sn) => { if (seen.has(sn)) innerDupes.add(sn); seen.add(sn); });
+    if (innerDupes.size) {
+      return res.status(400).json({ error: `Same serial number is present in multiple lines: ${[...innerDupes].join(', ')}` });
     }
 
     const conn = await pool.getConnection();
@@ -330,8 +419,8 @@ module.exports = function registerSalesRoutes(app, deps) {
       await conn.beginTransaction();
 
       const invalidSerials = [];
-      const validUpdates = [];
-      for (const sn of serials) {
+      const validSerialUpdates = [];
+      for (const sn of allSerials) {
         const [rows] = await conn.query(`SELECT status FROM stock_ledger WHERE serial_no=? FOR UPDATE`, [sn]);
         if (!rows.length) {
           invalidSerials.push(`'${sn}' (Not found in Database Ledger)`);
@@ -343,16 +432,44 @@ module.exports = function registerSalesRoutes(app, deps) {
         } else if (actionType === 'Mark as Damaged / Scrapped' && status === 'Sold') {
           invalidSerials.push(`'${sn}' (Cannot mark damaged directly, perform Sales Return first.)`);
         } else {
-          validUpdates.push({ sn, newStatus: actionType === 'Sales Return (Make Available)' ? 'Available' : 'Damaged' });
+          validSerialUpdates.push({ sn, newStatus: actionType === 'Sales Return (Make Available)' ? 'Available' : 'Damaged' });
         }
       }
 
-      if (invalidSerials.length) {
-        await conn.rollback();
-        return res.status(400).json({ error: 'ADJUSTMENT BLOCKED:\n\n' + invalidSerials.join('\n') });
+      // Quantity-line validation: confirm enough stock exists in the source
+      // status for each combo. FOR UPDATE locks it so a concurrent
+      // adjustment can't double-spend before this transaction commits.
+      const qtyLineErrors = [];
+      const validQtyLines = [];
+      const fromStatus = actionType === 'Sales Return (Make Available)' ? 'Sold' : 'Available';
+      for (const line of qtyLineInputs) {
+        if (!line.cat || !line.brand || !line.type) {
+          qtyLineErrors.push('Category, Brand and Type are required for every quantity line.');
+          continue;
+        }
+        const [[{ totalQty }]] = await conn.query(
+          `SELECT COALESCE(SUM(quantity),0) AS totalQty FROM stock_ledger
+           WHERE category=? AND brand_name=? AND watt=? AND solar_type=? AND status=? AND serial_no IS NULL
+           FOR UPDATE`,
+          [line.cat, line.brand, Number(line.watt) || 0, line.type, fromStatus]
+        );
+        if (totalQty < line.qty) {
+          const label = actionType === 'Sales Return (Make Available)'
+            ? `only ${totalQty} 'Sold' unit(s) available to return`
+            : `only ${totalQty} 'Available' unit(s) to mark damaged`;
+          qtyLineErrors.push(`${line.brand} ${line.watt ? line.watt + 'W ' : ''}${line.type}: ${label}, ${line.qty} requested.`);
+        } else {
+          validQtyLines.push({ itemKey: { cat: line.cat, brand: line.brand, watt: line.watt, type: line.type }, qty: line.qty });
+        }
       }
 
-      for (const { sn, newStatus } of validUpdates) {
+      if (invalidSerials.length || qtyLineErrors.length) {
+        await conn.rollback();
+        return res.status(400).json({ error: 'ADJUSTMENT BLOCKED:\n\n' + [...invalidSerials, ...qtyLineErrors].join('\n') });
+      }
+
+      // Apply serial-based updates — unchanged from before.
+      for (const { sn, newStatus } of validSerialUpdates) {
         if (newStatus === 'Available') {
           await conn.query(
             `UPDATE stock_ledger
@@ -371,17 +488,36 @@ module.exports = function registerSalesRoutes(app, deps) {
         }
       }
 
+      // Apply quantity-based moves.
+      let qtyAdjustedTotal = 0;
+      for (const { itemKey, qty } of validQtyLines) {
+        if (actionType === 'Sales Return (Make Available)') {
+          qtyAdjustedTotal += await fifoMoveQtyStatus(
+            conn, itemKey, qty, 'Sold', 'Available',
+            { customer_name: '-', order_no: '-', sales_invoice: '-', invoice_date: '-', sales_date: '-', sales_attachment: '-' },
+            [`chalan_no = CONCAT('[RETURNED] ', COALESCE(chalan_no, ''))`]
+          );
+        } else {
+          qtyAdjustedTotal += await fifoMoveQtyStatus(conn, itemKey, qty, 'Available', 'Damaged');
+        }
+      }
+
       await conn.commit();
       try {
         const oldDetails = `Action: ${actionType} | Date: ${actionDate}`;
-        const newDetails = `Remarks: ${remarks} | Serials: ${serials.join(', ')}`;
+        const newDetails = `Remarks: ${remarks} | Serials: ${allSerials.join(', ') || 'none'} | Qty lines adjusted: ${qtyAdjustedTotal}`;
         await pool.query(
           `INSERT INTO audit_logs (transaction_type, reference_no, action_by, action_timestamp, old_details, new_details) VALUES ('RETURN_ADJUST', ?, 'User', ?, ?, ?)`,
           [remarks.slice(0, 50), ledgerTimestamp(), oldDetails, newDetails]
         );
       } catch (e) { /* audit log is best-effort, never block the adjustment on it */ }
 
-      res.json({ success: true, actionType, count: validUpdates.length });
+      res.json({
+        success: true,
+        actionType,
+        serialCount: validSerialUpdates.length,
+        qtyAdjusted: qtyAdjustedTotal,
+      });
     } catch (err) {
       await conn.rollback();
       throw err;

@@ -1,9 +1,9 @@
 # Changelog (Since Last Scan)
 
-Scan performed: 2026-08-06T06:44:18.356Z
+Scan performed: 2026-08-08T06:14:13.904Z
 First scan for this project: Yes
 
-## Added Files (61)
+## Added Files (60)
 
 - .env
 - Dockerfile
@@ -40,7 +40,6 @@ First scan for this project: Yes
 - css/modules/party-ledger.css
 - css/modules/responsive.css
 - css/modules/scan-sheet.css
-- api/api.js
 - api/package.json
 - api/server.js
 - api/utils/route.js
