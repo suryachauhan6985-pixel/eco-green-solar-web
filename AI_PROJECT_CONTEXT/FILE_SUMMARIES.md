@@ -145,15 +145,15 @@ Deep analysis of every important source file.
 
 ## `js/pages/masters.js`
 
-- **Purpose:** Defines 8 function(s) implementing supporting logic.
-- **Lines of code:** 897
-- **Complexity:** High (heuristic score: 102)
+- **Purpose:** Defines 15 function(s) implementing supporting logic.
+- **Lines of code:** 1154
+- **Complexity:** High (heuristic score: 162)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** loadMastersSystemEngine(), syncWattMandatoryUI(), resetItemFormState(), loadSubtypesForCategory(cat), resetSubForm(), resetUomForm(), resetWhForm(), $(id)
+- **Functions:** loadMastersSystemEngine(), syncWattMandatoryUI(clearIfHidden), renderSubtypeInfo(catName), resetItemFormState(), downloadCsvGeneric(filename, rows), normalizeHeaderRow(header), parseItemsCsv(text), parseItemsWorkbook(arrayBuffer), valueFromRow(row, keys, def = ''), loadSubtypesForCategory(cat), resetSubForm(), resetUomForm(), resetWhForm(), $(id), splitLine(line)
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (31 statement keywords: SELECT, UPDATE, JOIN)
+- **Database usage:** Raw SQL detected (42 statement keywords: SELECT, UPDATE, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
@@ -626,14 +626,14 @@ Deep analysis of every important source file.
 ## `api/routes/masters.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 243
-- **Complexity:** Medium (heuristic score: 30)
+- **Lines of code:** 270
+- **Complexity:** Medium (heuristic score: 43)
 - **Imports:** None
 - **Exports:** module.exports
-- **Functions:** registerMastersRoutes(app, deps)
+- **Functions:** registerMastersRoutes(app, deps), validateItemPayload({ brand_name, watt, category, editingId })
 - **Classes:** None
 - **API endpoints:** GET /api/masters/categories, POST /api/masters/categories, PUT /api/masters/categories/:name/watt-rule, PUT /api/masters/categories/:name/serial-rule, DELETE /api/masters/categories/:name, GET /api/masters/subtypes/:category, POST /api/masters/subtypes, PUT /api/masters/subtypes, DELETE /api/masters/subtypes, GET /api/masters/units, POST /api/masters/units, PUT /api/masters/units, DELETE /api/masters/units, GET /api/masters/items, POST /api/masters/items, PUT /api/masters/items/:id, GET /api/masters/warehouses, POST /api/masters/warehouses, PUT /api/masters/warehouses, DELETE /api/masters/warehouses, GET /api/masters/brands, GET /api/masters/users, POST /api/masters/users, PUT /api/masters/users/password, PUT /api/masters/users/email
-- **Database usage:** Raw SQL detected (39 statement keywords: SELECT, INSERT INTO, UPDATE, DELETE FROM, JOIN)
+- **Database usage:** Raw SQL detected (41 statement keywords: SELECT, INSERT INTO, UPDATE, DELETE FROM, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.

@@ -10,7 +10,7 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-08T06:39:12.478Z
+- **Generated:** 2026-08-08T07:13:28.925Z
 
 ## 2. Architecture Overview
 
@@ -104,7 +104,7 @@ sw.js
 - `js/pages/bom.js` — Defines 1 class(es) implementing core logic.
 - `js/pages/dashboard.js` — Defines 18 function(s) implementing supporting logic.
 - `js/pages/lowstock.js` — Defines 12 function(s) implementing supporting logic.
-- `js/pages/masters.js` — Defines 8 function(s) implementing supporting logic.
+- `js/pages/masters.js` — Defines 15 function(s) implementing supporting logic.
 - `js/pages/partyledger.js` — Defines 39 function(s) implementing supporting logic.
 - `js/pages/purchase.js` — Defines 26 function(s) implementing supporting logic.
 - `js/pages/purchaseregister.js` — Defines 15 function(s) implementing supporting logic.

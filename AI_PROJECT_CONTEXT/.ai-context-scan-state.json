@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-08T06:39:12.486Z",
+  "generatedAt": "2026-08-08T07:13:28.931Z",
   "files": {
     ".env": {
       "hash": "fbf93500e5313e2f01018668de228b174a039bbf",
@@ -27,9 +27,9 @@
       "mtimeMs": 1785652231023.2954
     },
     "PROJECT_GOALS.md": {
-      "hash": "68e3944544a7ac1042808186d0f5711489973349",
-      "size": 11188,
-      "mtimeMs": 1785750491881.8699
+      "hash": "8dd70fde881b45172986e6300474f9a383b2eef9",
+      "size": 13067,
+      "mtimeMs": 1786171503623.2048
     },
     "sw.js": {
       "hash": "9afe12ad01379081dc2aa67b9ee8de0d5522b798",
@@ -62,9 +62,9 @@
       "mtimeMs": 1785996191731.5178
     },
     "js/pages/masters.js": {
-      "hash": "265a2f4c7588b038a8749d5649e7ce717007b23c",
-      "size": 41584,
-      "mtimeMs": 1785745516754.9731
+      "hash": "9c949a4bade590582746f0e68d272289b5487b30",
+      "size": 54320,
+      "mtimeMs": 1786172040179.0796
     },
     "js/pages/partyledger.js": {
       "hash": "1648db6f2544ae217d146320ecfd348698448507",
@@ -247,9 +247,9 @@
       "mtimeMs": 1785235629234.0254
     },
     "api/routes/masters.routes.js": {
-      "hash": "83c81d1c2bfac991bbfed29cff5dbd7a411ea465",
-      "size": 12853,
-      "mtimeMs": 1785235629234.0254
+      "hash": "edcec575e98c2b5a4284093240f2bd7d7ed3aa15",
+      "size": 14649,
+      "mtimeMs": 1786172051595.354
     },
     "api/routes/purchase.routes.js": {
       "hash": "ef765a170875852ac1fefb010edeb27e9da5f95d",

@@ -7,7 +7,7 @@ It contains structured Markdown documentation describing the project at
 AI assistants (ChatGPT, Claude, Gemini, Qwen, DeepSeek, etc.) so they can
 understand the codebase without re-reading every source file.
 
-Generated: 2026-08-08T06:39:12.478Z
+Generated: 2026-08-08T07:13:28.925Z
 Files scanned: 60
 Files analyzed in depth: 47
 

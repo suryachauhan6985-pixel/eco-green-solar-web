@@ -8,6 +8,7 @@ async function ensureStartupSchema(pool) {
   await ensureScanSheetSchema(pool);
   await ensureBomChallanSchema(pool);
   await ensureStockQuantitySchema(pool);
+  await ensureItemOverrideSchema(pool);
 }
 async function ensureSessionSchema(pool) { try { await pool.query(`ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS last_seen DATETIME NULL`); } catch (e) { console.warn('[Session schema] Could not ensure last_seen column (will retry lazily on first use):', e.message); } }
 async function ensureSerialRuleSchema(pool) { try { await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS serial_mandatory TINYINT(1) NOT NULL DEFAULT 0`); } catch (e) { console.warn('[Serial rule schema] Could not ensure serial_mandatory column (will retry lazily on first use):', e.message); } }
@@ -86,4 +87,23 @@ async function ensureStockQuantitySchema(pool) {
     await pool.query(`ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS quantity INT NOT NULL DEFAULT 1`);
   } catch (e) { console.warn('[Stock quantity schema] Could not ensure quantity column on stock_ledger (will retry lazily on first use):', e.message); }
 }
+// Goal: per-item override of the Wattage/Serial "mandatory" rule, plus a
+// free-text `model` field for items that need neither (e.g. PVC Pipe,
+// distinguished by size/model instead of wattage). These 3 columns are
+// nullable and default to NULL, which means "no override — inherit the
+// rule from Category Master" (categories.watt_mandatory /
+// categories.serial_mandatory). A non-NULL 0/1 here means this specific
+// item explicitly overrides its category's default (set manually or via
+// the Excel bulk-import's optional wattage_mandatory/serial_mandatory
+// columns). Every place that used to read category.watt_mandatory /
+// category.serial_mandatory directly must now read the EFFECTIVE value:
+// COALESCE(item.watt_mandatory, category.watt_mandatory), same for serial.
+async function ensureItemOverrideSchema(pool) {
+  try {
+    await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS watt_mandatory TINYINT(1) NULL DEFAULT NULL`);
+    await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS serial_mandatory TINYINT(1) NULL DEFAULT NULL`);
+    await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS model VARCHAR(120) NULL DEFAULT NULL`);
+  } catch (e) { console.warn('[Item override schema] Could not ensure watt_mandatory/serial_mandatory/model columns on items (will retry lazily on first use):', e.message); }
+}
+
 module.exports = { ensureStartupSchema };

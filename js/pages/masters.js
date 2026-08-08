@@ -52,6 +52,8 @@ window.PAGES.masters = {
                 <input id="mItemBrandInput" placeholder="e.g. Adani"></div>
               <div class="field" id="mItemWattField"><label>Wattage / Capacity <span class="req" id="mItemWattReq" style="display:none;">*</span></label>
                 <input id="mItemWattInput" placeholder="e.g. 545"></div>
+              <div class="field" id="mItemModelField" style="display:none;"><label>Model <span class="req" id="mItemModelReq">*</span></label>
+                <input id="mItemModelInput" placeholder="e.g. 2 Inch"></div>
               <div class="field"><label>UOM (Unit of Measure)</label>
                 <select id="mItemUomDropdown"></select></div>
               <div class="field"><label>Minimum Stock Alert level</label>
@@ -74,7 +76,7 @@ window.PAGES.masters = {
               <input type="file" id="mItemImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
             </div>
             <div class="table-wrap"><table>
-              <thead><tr><th>Category</th><th>Brand</th><th>Wattage</th><th>Subtype</th><th>Alert Stock</th><th>UOM</th></tr></thead>
+              <thead><tr><th>Category</th><th>Brand</th><th>Watt / Model</th><th>Subtype</th><th>Alert Stock</th><th>UOM</th></tr></thead>
               <tbody id="mastersItemBody"></tbody>
             </table></div>
           </div>
@@ -304,7 +306,7 @@ window.PAGES.masters = {
         <tr class="m-item-row" data-id="${it.id}" style="cursor:pointer;">
           <td>${it.category}</td>
           <td class="gold-txt" style="font-weight:600;">${it.brand_name}</td>
-          <td>${it.watt ? it.watt + 'W' : '-'}</td>
+          <td>${it.watt ? it.watt + 'W' : (it.model ? it.model : '-')}</td>
           <td>${it.solar_type || '-'}</td>
           <td style="color:var(--orange); font-weight:600;">${it.minimum_stock || 0}</td>
           <td>${it.uom || 'Nos'}</td>
@@ -348,6 +350,14 @@ window.PAGES.masters = {
       if (wattReq) wattReq.style.display = wattMandatory ? '' : 'none';
       if (!wattMandatory && clearIfHidden) $('mItemWattInput').value = '';
 
+      // Goal: when NEITHER Wattage nor Serial No. applies to this category,
+      // Wattage is replaced by a mandatory free-text Model field (e.g. PVC
+      // Pipe "2 Inch") so the item can still be uniquely identified.
+      const showModel = !wattMandatory && !serialMandatory;
+      const modelField = $('mItemModelField');
+      if (modelField) modelField.style.display = showModel ? '' : 'none';
+      if (!showModel && clearIfHidden) $('mItemModelInput').value = '';
+
       renderSubtypeInfo(cat ? cat.name : '');
     }
     $('mItemCatDropdown').addEventListener('change', () => syncWattMandatoryUI(true));
@@ -380,6 +390,7 @@ window.PAGES.masters = {
       editingItemSolarType = null;
       $("mItemBrandInput").value = "";
       $("mItemWattInput").value = "";
+      $("mItemModelInput").value = "";
       $("mItemMinStockInput").value = "0";
       $("mItemFormHeading").innerHTML =
         `<i class="fa-solid fa-square-plus"></i> Item Profiler & Registration`;
@@ -394,6 +405,7 @@ window.PAGES.masters = {
       const category = $("mItemCatDropdown").value;
       const brand = $("mItemBrandInput").value.trim();
       const watt = parseInt($("mItemWattInput").value.trim()) || 0;
+      const model = $("mItemModelInput").value.trim();
       const uom = $("mItemUomDropdown").value;
       const minStock = parseInt($("mItemMinStockInput").value.trim()) || 0;
 
@@ -405,12 +417,24 @@ window.PAGES.masters = {
         return;
       }
 
-      // Wattage mandatory-ness is now driven by the Category Master rule
+      // Wattage/Serial mandatory-ness is driven by the Category Master rule
+      // (this form has no per-item override — that's Excel-bulk-import only).
       const catInfo = cachedCategories.find((c) => c.name === category);
-      if (catInfo && catInfo.watt_mandatory && watt <= 0) {
+      const wattMandatory = !!(catInfo && catInfo.watt_mandatory);
+      const serialMandatory = !!(catInfo && catInfo.serial_mandatory);
+      if (wattMandatory && watt <= 0) {
         window.openModal(
           "Property Restraint Rule",
           `<p style="color:var(--orange);">Wattage/Capacity is mandatory for category '${category}'. Please provide a numeric value.</p>`,
+        );
+        return;
+      }
+      // Goal: when neither Wattage nor Serial No. applies, Model is the
+      // mandatory differentiator instead.
+      if (!wattMandatory && !serialMandatory && !model) {
+        window.openModal(
+          "Property Restraint Rule",
+          `<p style="color:var(--orange);">Model is mandatory for category '${category}' since Wattage/Serial No. rule does not apply here.</p>`,
         );
         return;
       }
@@ -424,6 +448,7 @@ window.PAGES.masters = {
         category,
         brand_name: brand,
         watt,
+        model: model || null,
         solar_type: finalSolarType,
         uom,
         minimum_stock: minStock,
@@ -477,6 +502,10 @@ window.PAGES.masters = {
     // Columns intentionally EXCLUDE Subtype — per the Category Master
     // design, subtype is chosen per purchase invoice line in Purchase
     // Inward, not at item registration.
+    // `wattage_mandatory` / `serial_mandatory` columns are OPTIONAL
+    // per-row overrides of the Category Master rule (Yes/No — blank means
+    // "inherit the category's rule as-is"). `model` is required only for
+    // rows where the effective rule needs neither Wattage nor Serial No.
     // ---------------------------------------------------------------------
 
     function downloadCsvGeneric(filename, rows) {
@@ -495,9 +524,10 @@ window.PAGES.masters = {
     $('mBtnDownloadItemTemplate').addEventListener('click', () => {
       const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       downloadCsvGeneric(`Item_Registration_Template_${stamp}.csv`, [
-        ['category', 'brand_name', 'watt', 'uom', 'minimum_stock'],
-        ['Solar Panel', 'Adani', '545', 'Nos', '5'],
-        ['Cable', 'Polycab', '', 'Meters', '20'],
+        ['category', 'brand_name', 'watt', 'model', 'wattage_mandatory', 'serial_mandatory', 'uom', 'minimum_stock'],
+        ['Solar Panel', 'Adani', '545', '', 'Yes', 'No', 'Nos', '5'],
+        ['Cable', 'Polycab', '', '', 'No', 'No', 'Meters', '20'],
+        ['Pipe', 'Astral', '', '2 Inch', 'No', 'No', 'Nos', '10'],
       ]);
       window.showToast('Item import template downloaded.');
     });
@@ -596,6 +626,22 @@ window.PAGES.masters = {
       const catByName = {};
       cachedCategories.forEach((c) => { catByName[c.name.toLowerCase()] = c; });
 
+      // Optional per-row overrides of the Category Master rule — blank/absent
+      // means "no override, inherit the category's rule" (see
+      // normalizeOverrideFlag() server-side, mirrored here client-side so
+      // bad rows are reported before anything is sent to the API).
+      function parseOverrideFlag(raw) {
+        if (raw === undefined || raw === null || String(raw).trim() === '') return null;
+        const s = String(raw).trim().toLowerCase();
+        if (['1', 'true', 'yes', 'y', 'mandatory', 'required'].includes(s)) return true;
+        if (['0', 'false', 'no', 'n', 'optional', 'not mandatory', 'not required'].includes(s)) return false;
+        return null; // unrecognized value -> treat as "not specified"
+      }
+
+      const existingModelKeys = new Set(
+        cachedItems.filter((it) => !it.watt).map((it) => `${(it.category || '').toLowerCase()}|${(it.brand_name || '').toLowerCase()}|${(it.model || '').toLowerCase()}`),
+      );
+
       const valid = [];
       const rowErrors = [];
       rawRows.forEach((row, idx) => {
@@ -603,30 +649,53 @@ window.PAGES.masters = {
         const categoryInput = valueFromRow(row, ['category', 'category_name']);
         const brand = valueFromRow(row, ['brand_name', 'brand', 'name']);
         const wattRaw = valueFromRow(row, ['watt', 'wattage', 'capacity']);
+        const model = valueFromRow(row, ['model', 'model_no', 'model_number', 'size']);
         const uom = valueFromRow(row, ['uom', 'unit'], 'Nos');
         const minStock = parseInt(valueFromRow(row, ['minimum_stock', 'min_stock', 'alert_stock']), 10) || 0;
         const watt = parseInt(wattRaw, 10) || 0;
+        const wattOverride = parseOverrideFlag(valueFromRow(row, ['wattage_mandatory', 'watt_mandatory']));
+        const serialOverride = parseOverrideFlag(valueFromRow(row, ['serial_mandatory', 'serial_no_mandatory']));
 
         if (!categoryInput) { rowErrors.push(`Row ${rowNum}: Category is blank.`); return; }
         const catMatch = catByName[categoryInput.toLowerCase()];
         if (!catMatch) { rowErrors.push(`Row ${rowNum}: Unknown category '${categoryInput}'. Create it first in Category Master.`); return; }
         if (!brand) { rowErrors.push(`Row ${rowNum}: Brand Name is blank.`); return; }
-        if (catMatch.watt_mandatory && watt <= 0) {
-          rowErrors.push(`Row ${rowNum}: Wattage is mandatory for category '${catMatch.name}' but is blank/zero.`);
+
+        // Effective rule = this row's override if given, else the category's
+        // own default from Category Master.
+        const effWatt = wattOverride === null ? !!catMatch.watt_mandatory : wattOverride;
+        const effSerial = serialOverride === null ? !!catMatch.serial_mandatory : serialOverride;
+
+        if (effWatt && watt <= 0) {
+          rowErrors.push(`Row ${rowNum}: Wattage is mandatory for '${brand}' but is blank/zero.`);
           return;
         }
-        const key = `${catMatch.name.toLowerCase()}|${brand.toLowerCase()}|${watt}`;
-        if (existingKeys.has(key)) {
-          rowErrors.push(`Row ${rowNum}: '${brand}' (${watt || 0}W) already exists under '${catMatch.name}' — skipped.`);
+        if (!effWatt && !effSerial && !model) {
+          rowErrors.push(`Row ${rowNum}: Model is mandatory for '${brand}' (no Wattage/Serial No. rule applies here).`);
           return;
         }
-        existingKeys.add(key);
+
+        const hasWatt = watt > 0;
+        const key = hasWatt
+          ? `${catMatch.name.toLowerCase()}|${brand.toLowerCase()}|${watt}`
+          : `${catMatch.name.toLowerCase()}|${brand.toLowerCase()}|${model.toLowerCase()}`;
+        const dupSet = hasWatt ? existingKeys : existingModelKeys;
+        if (dupSet.has(key)) {
+          rowErrors.push(hasWatt
+            ? `Row ${rowNum}: '${brand}' (${watt}W) already exists under '${catMatch.name}' — skipped.`
+            : `Row ${rowNum}: '${brand}' (model '${model}') already exists under '${catMatch.name}' — skipped.`);
+          return;
+        }
+        dupSet.add(key);
         valid.push({
           rowNum,
           payload: {
             category: catMatch.name,
             brand_name: brand,
             watt,
+            model: model || null,
+            watt_mandatory: wattOverride,
+            serial_mandatory: serialOverride,
             solar_type: '-',
             uom: uom || 'Nos',
             minimum_stock: minStock,
@@ -744,6 +813,7 @@ window.PAGES.masters = {
       $("mItemCatDropdown").value = match.category;
       $("mItemBrandInput").value = match.brand_name;
       $("mItemWattInput").value = match.watt ? match.watt : "";
+      $("mItemModelInput").value = match.model || "";
       $("mItemUomDropdown").value = match.uom || "Nos";
       $("mItemMinStockInput").value = match.minimum_stock || 0;
       syncWattMandatoryUI();

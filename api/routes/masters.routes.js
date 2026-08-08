@@ -110,56 +110,108 @@ module.exports = function registerMastersRoutes(app, deps) {
   }));
 
   // Items Read + Create + Update Profile (Desktop matching attributes)
+  // watt_mandatory/serial_mandatory here are the raw per-item OVERRIDE
+  // values (NULL = no override, inherits Category Master's rule). The
+  // *_effective columns are what every UI/consumer should actually check —
+  // COALESCE(item override, category default) — so old callers that only
+  // look at watt/category still work unchanged.
   app.get('/api/masters/items', route(async (req, res) => {
-    const [rows] = await pool.query(`SELECT id, name, brand_name, watt, solar_type, category, uom, minimum_stock FROM items ORDER BY category ASC, brand_name ASC`);
+    const [rows] = await pool.query(`
+      SELECT i.id, i.name, i.brand_name, i.watt, i.solar_type, i.category, i.uom, i.minimum_stock,
+             i.model, i.watt_mandatory, i.serial_mandatory,
+             COALESCE(i.watt_mandatory, c.watt_mandatory, 0) AS watt_mandatory_effective,
+             COALESCE(i.serial_mandatory, c.serial_mandatory, 0) AS serial_mandatory_effective
+      FROM items i
+      LEFT JOIN categories c ON c.name = i.category
+      ORDER BY i.category ASC, i.brand_name ASC
+    `);
     res.json(rows);
   }));
+
+  // Normalizes an incoming override value into: true / false / null.
+  // null means "not specified — inherit Category Master's rule". Accepts
+  // booleans, 0/1, and the Yes/No/Mandatory/Optional strings the Excel
+  // bulk-import (Goal 11) columns use.
+  function normalizeOverrideFlag(val) {
+    if (val === undefined || val === null || val === '') return null;
+    if (typeof val === 'boolean') return val;
+    const s = String(val).trim().toLowerCase();
+    if (['1', 'true', 'yes', 'y', 'mandatory', 'required'].includes(s)) return true;
+    if (['0', 'false', 'no', 'n', 'optional', 'not mandatory', 'not required'].includes(s)) return false;
+    return null;
+  }
 
   // Shared validation used by both the manual "Save Product Profile" form
   // and the bulk Excel import (Goal 11) — kept server-side too so bad rows
   // never slip in even if a client (or a future import path) skips its own
   // checks. Returns a { error } string, or null if the row is valid.
-  async function validateItemPayload({ brand_name, watt, category, editingId }) {
+  // `watt_mandatory`/`serial_mandatory` here are raw per-item OVERRIDES
+  // (true/false/null) — pass through normalizeOverrideFlag() first.
+  async function validateItemPayload({ brand_name, watt, category, model, watt_mandatory, serial_mandatory, editingId }) {
     if (!brand_name || !String(brand_name).trim()) return 'Brand Name is required.';
     if (!category || !String(category).trim()) return 'Category is required.';
     const [[catRow]] = await pool.query(
-      `SELECT name, COALESCE(watt_mandatory,0) AS watt_mandatory FROM categories WHERE name = ?`,
+      `SELECT name, COALESCE(watt_mandatory,0) AS watt_mandatory, COALESCE(serial_mandatory,0) AS serial_mandatory FROM categories WHERE name = ?`,
       [category],
     );
     if (!catRow) return `Category '${category}' does not exist. Create it first in Category Master.`;
-    if (catRow.watt_mandatory && (!watt || Number(watt) <= 0)) {
-      return `Wattage/Capacity is mandatory for category '${category}'.`;
+
+    const effWatt = watt_mandatory === null || watt_mandatory === undefined ? !!catRow.watt_mandatory : !!watt_mandatory;
+    const effSerial = serial_mandatory === null || serial_mandatory === undefined ? !!catRow.serial_mandatory : !!serial_mandatory;
+
+    if (effWatt && (!watt || Number(watt) <= 0)) {
+      return `Wattage/Capacity is mandatory for '${brand_name}' under category '${category}'.`;
     }
-    // Duplicate check: same category + brand + watt combo already registered.
-    const dupParams = [category, String(brand_name).trim(), watt || 0];
-    let dupQuery = `SELECT id FROM items WHERE category = ? AND LOWER(brand_name) = LOWER(?) AND watt = ?`;
+    // Neither Wattage nor Serial No. applies to this item — Model becomes
+    // the mandatory differentiator instead (e.g. PVC Pipe "2 Inch").
+    if (!effWatt && !effSerial && (!model || !String(model).trim())) {
+      return `Model is mandatory for '${brand_name}' under category '${category}' (no Wattage/Serial No. rule applies here).`;
+    }
+
+    // Duplicate check: same category + brand, differentiated by watt when
+    // wattage applies, otherwise by model (case-insensitive either way).
+    const hasWatt = Number(watt) > 0;
+    const dupParams = hasWatt
+      ? [category, String(brand_name).trim(), Number(watt)]
+      : [category, String(brand_name).trim(), String(model || '').trim()];
+    let dupQuery = hasWatt
+      ? `SELECT id FROM items WHERE category = ? AND LOWER(brand_name) = LOWER(?) AND watt = ?`
+      : `SELECT id FROM items WHERE category = ? AND LOWER(brand_name) = LOWER(?) AND LOWER(COALESCE(model,'')) = LOWER(?)`;
     if (editingId) { dupQuery += ` AND id <> ?`; dupParams.push(editingId); }
     const [[dupRow]] = await pool.query(dupQuery, dupParams);
-    if (dupRow) return `An item with brand '${brand_name}', wattage '${watt || 0}' already exists under '${category}'.`;
+    if (dupRow) {
+      return hasWatt
+        ? `An item with brand '${brand_name}', wattage '${watt || 0}' already exists under '${category}'.`
+        : `An item with brand '${brand_name}', model '${model || ''}' already exists under '${category}'.`;
+    }
     return null;
   }
 
   app.post('/api/masters/items', route(async (req, res) => {
-    const { name, brand_name, watt, solar_type, category, uom, minimum_stock } = req.body;
-    const errMsg = await validateItemPayload({ brand_name, watt, category });
+    const { name, brand_name, watt, solar_type, category, uom, minimum_stock, model, watt_mandatory, serial_mandatory } = req.body;
+    const wattOverride = normalizeOverrideFlag(watt_mandatory);
+    const serialOverride = normalizeOverrideFlag(serial_mandatory);
+    const errMsg = await validateItemPayload({ brand_name, watt, category, model, watt_mandatory: wattOverride, serial_mandatory: serialOverride });
     if (errMsg) return res.status(400).json({ error: errMsg });
     await pool.query(`
-      INSERT INTO items (name, brand_name, watt, solar_type, category, uom, minimum_stock) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [name || `${brand_name} ${watt || ''}`.trim(), brand_name, watt || 0, solar_type || '-', category, uom || 'Nos', minimum_stock || 0]);
+      INSERT INTO items (name, brand_name, watt, solar_type, category, uom, minimum_stock, model, watt_mandatory, serial_mandatory) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [name || `${brand_name} ${watt || model || ''}`.trim(), brand_name, watt || 0, solar_type || '-', category, uom || 'Nos', minimum_stock || 0, model ? String(model).trim() : null, wattOverride, serialOverride]);
     res.json({ success: true });
   }));
 
   app.put('/api/masters/items/:id', route(async (req, res) => {
     const { id } = req.params;
-    const { name, brand_name, watt, solar_type, category, uom, minimum_stock } = req.body;
-    const errMsg = await validateItemPayload({ brand_name, watt, category, editingId: id });
+    const { name, brand_name, watt, solar_type, category, uom, minimum_stock, model, watt_mandatory, serial_mandatory } = req.body;
+    const wattOverride = normalizeOverrideFlag(watt_mandatory);
+    const serialOverride = normalizeOverrideFlag(serial_mandatory);
+    const errMsg = await validateItemPayload({ brand_name, watt, category, model, watt_mandatory: wattOverride, serial_mandatory: serialOverride, editingId: id });
     if (errMsg) return res.status(400).json({ error: errMsg });
     await pool.query(`
       UPDATE items 
-      SET name = ?, brand_name = ?, watt = ?, solar_type = ?, category = ?, uom = ?, minimum_stock = ?
+      SET name = ?, brand_name = ?, watt = ?, solar_type = ?, category = ?, uom = ?, minimum_stock = ?, model = ?, watt_mandatory = ?, serial_mandatory = ?
       WHERE id = ?
-    `, [name || `${brand_name} ${watt || ''}`.trim(), brand_name, watt || 0, solar_type || '-', category, uom || 'Nos', minimum_stock || 0, id]);
+    `, [name || `${brand_name} ${watt || model || ''}`.trim(), brand_name, watt || 0, solar_type || '-', category, uom || 'Nos', minimum_stock || 0, model ? String(model).trim() : null, wattOverride, serialOverride, id]);
     res.json({ success: true });
   }));
 

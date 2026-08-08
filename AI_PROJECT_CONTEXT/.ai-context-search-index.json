@@ -891,7 +891,7 @@
     "type": "file",
     "label": "js/pages/masters.js",
     "file": "js/pages/masters.js",
-    "detail": "Defines 8 function(s) implementing supporting logic."
+    "detail": "Defines 15 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -903,13 +903,49 @@
     "type": "function",
     "label": "syncWattMandatoryUI",
     "file": "js/pages/masters.js",
-    "detail": "()"
+    "detail": "(clearIfHidden)"
+  },
+  {
+    "type": "function",
+    "label": "renderSubtypeInfo",
+    "file": "js/pages/masters.js",
+    "detail": "(catName)"
   },
   {
     "type": "function",
     "label": "resetItemFormState",
     "file": "js/pages/masters.js",
     "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "downloadCsvGeneric",
+    "file": "js/pages/masters.js",
+    "detail": "(filename, rows)"
+  },
+  {
+    "type": "function",
+    "label": "normalizeHeaderRow",
+    "file": "js/pages/masters.js",
+    "detail": "(header)"
+  },
+  {
+    "type": "function",
+    "label": "parseItemsCsv",
+    "file": "js/pages/masters.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "parseItemsWorkbook",
+    "file": "js/pages/masters.js",
+    "detail": "(arrayBuffer)"
+  },
+  {
+    "type": "function",
+    "label": "valueFromRow",
+    "file": "js/pages/masters.js",
+    "detail": "(row, keys, def = '')"
   },
   {
     "type": "function",
@@ -940,6 +976,12 @@
     "label": "$",
     "file": "js/pages/masters.js",
     "detail": "(id)"
+  },
+  {
+    "type": "function",
+    "label": "splitLine",
+    "file": "js/pages/masters.js",
+    "detail": "(line)"
   },
   {
     "type": "file",
@@ -3082,6 +3124,12 @@
     "label": "registerMastersRoutes",
     "file": "api/routes/masters.routes.js",
     "detail": "(app, deps)"
+  },
+  {
+    "type": "function",
+    "label": "validateItemPayload",
+    "file": "api/routes/masters.routes.js",
+    "detail": "({ brand_name, watt, category, editingId })"
   },
   {
     "type": "file",
