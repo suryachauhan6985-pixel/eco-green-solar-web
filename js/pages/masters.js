@@ -199,6 +199,17 @@ window.PAGES.masters = {
 
   init() {
     const $ = (id) => document.getElementById(id);
+
+    // Bulk-import row reports (Excel/CSV import validation errors, post-
+    // import failure summary) can run to 30-40+ lines — without a cap the
+    // modal (window.openModal/confirmDialog, shared across every page) just
+    // grows to fit the content and blows past the viewport. Wraps a list of
+    // already-HTML-escaped `<br>`-joined lines in a fixed-height box with
+    // its own internal scrollbar, so the OUTER modal never has to resize
+    // for this — same fixed footprint whether it's 3 rows or 300.
+    function scrollList(items) {
+      return `<div style="max-height:260px; overflow-y:auto; margin-top:8px; padding:8px 10px; border:1px solid rgba(255,255,255,0.12); border-radius:6px; font-size:12.5px; line-height:1.6;">${items.join('<br>')}</div>`;
+    }
     const API_BASE = window.API_BASE || "http://192.168.0.123:5000/api";
 
     let cachedItems = [];
@@ -704,14 +715,14 @@ window.PAGES.masters = {
       });
 
       if (!valid.length) {
-        window.openModal('Nothing To Import', `<p>No valid rows found.</p>${rowErrors.length ? `<p style="color:var(--red); margin-top:8px;">${rowErrors.join('<br>')}</p>` : ''}`);
+        window.openModal('Nothing To Import', `<p>No valid rows found.</p>${rowErrors.length ? `<div style="color:var(--red);">${scrollList(rowErrors)}</div>` : ''}`);
         return;
       }
 
       if (rowErrors.length) {
         const proceed = await window.confirmDialog(
           'Some Rows Have Issues',
-          `${valid.length} row(s) are valid and ready to import. ${rowErrors.length} row(s) will be skipped:<br><br>${rowErrors.join('<br>')}`,
+          `<p>${valid.length} row(s) are valid and ready to import. ${rowErrors.length} row(s) will be skipped:</p>${scrollList(rowErrors)}`,
           { kind: 'warning', okLabel: `Import ${valid.length} Valid Row(s)` },
         );
         if (!proceed) return;
@@ -737,10 +748,10 @@ window.PAGES.masters = {
       await loadMastersSystemEngine();
       window.showToast(`${created} item(s) imported successfully.`);
       const reportParts = [];
-      if (rowErrors.length) reportParts.push(`<strong>Skipped before import (${rowErrors.length}):</strong><br>${rowErrors.join('<br>')}`);
-      if (createFailed.length) reportParts.push(`<strong>Failed during import (${createFailed.length}):</strong><br>${createFailed.join('<br>')}`);
+      if (rowErrors.length) reportParts.push(`<strong style="color:var(--orange);">Skipped before import (${rowErrors.length}):</strong>${scrollList(rowErrors)}`);
+      if (createFailed.length) reportParts.push(`<strong style="color:var(--orange);">Failed during import (${createFailed.length}):</strong>${scrollList(createFailed)}`);
       if (reportParts.length) {
-        window.openModal('Import Summary', `<p style="color:var(--orange); font-size:12.5px;">${reportParts.join('<br><br>')}</p>`);
+        window.openModal('Import Summary', `<div style="font-size:12.5px;">${reportParts.join('<div style="height:10px;"></div>')}</div>`);
       }
     });
 

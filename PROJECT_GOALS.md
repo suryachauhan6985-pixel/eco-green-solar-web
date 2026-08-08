@@ -10,22 +10,7 @@
 
 ---
 
-## Goal 1 — Item Registration Panel: Dynamic Fields + Subtype Display
-**Status:** 🟡 In Progress
-**Related files:** `js/pages/masters.js`, `api/routes/masters.js`
-
-- **Problem:**
-  - Item registration form mein fields auto hide/show nahi hoti.
-  - Agar wattage kisi item/category ke liye mandatory nahi hai, tab bhi wattage field dikhti hai.
-  - Item registration panel mein subtype field dikhta hi nahi hai.
-- **Expected behavior:**
-  - Category select karte hi backend rule check ho (`syncWattMandatoryUI()` jaisa logic already partially exists — use/extend karna hai) — agar wattage mandatory nahi to field hide ho.
-  - Subtype field panel mein visible ho aur category ke hisaab se subtypes load ho (`loadSubtypesForCategory(cat)` already exists — UI mein wire karna hai).
-- **Acceptance criteria:** Item add/edit karte waqt sirf relevant fields dikhein; subtype dropdown category ke hisaab se populate ho aur save ho.
-
----
-
-## Goal 2 — Purchase Inward + Sales: Conditional Serial No. Box
+## Goal 1 — Purchase Inward + Sales: Conditional Serial No. Box
 **Status:** 🟢 Done
 **Related files:** `js/pages/purchase.js`, `js/pages/sales.js` (add + edit sections dono)
 
@@ -38,7 +23,7 @@
 
 ---
 
-## Goal 3 — Dual Item Type Support: Serial-based AND Quantity-based
+## Goal 2 — Dual Item Type Support: Serial-based AND Quantity-based
 **Status:** 🟢 Done
 **Related files:** `js/pages/purchase.js`, `js/pages/sales.js`, `js/pages/stockassign.js`, `api/services/stockHelpers.js`, `api/db/schema.js`
 
@@ -51,7 +36,7 @@
 
 ---
 
-## Goal 4 — Return/Damage Section: Conditional Serial No.
+## Goal 3 — Return/Damage Section: Conditional Serial No.
 **Status:** 🟢 Done
 **Related files:** `js/pages/returns.js` (aur related return/damage API routes)
 
@@ -63,7 +48,7 @@
 
 ---
 
-## Goal 5 — BOM Section: Partial Dispatch + Pending BOM Tracking
+## Goal 4 — BOM Section: Partial Dispatch + Pending BOM Tracking
 **Status:** 🔴 Pending
 **Related files:** `js/pages/bom.js`, `api/routes/challan.js`, `api/services/challanPdf.js`
 
@@ -79,7 +64,7 @@
 
 ---
 
-## Goal 6 — Challan Template (Excel-based) — Row Count Mismatch
+## Goal 5 — Challan Template (Excel-based) — Row Count Mismatch
 **Status:** 🔴 Pending
 **Related files:** `api/services/challanPdf.js`, related challan template/excel file
 
@@ -93,7 +78,7 @@
 
 ---
 
-## Goal 7 — BOM User Activity Tracking (Audit Trail)
+## Goal 6 — BOM User Activity Tracking (Audit Trail)
 **Status:** 🔴 Pending
 **Related files:** `js/pages/bom.js`, `api/routes/challan.js`, `api/db/schema.js` (naya audit table chahiye ho sakta hai)
 
@@ -106,8 +91,8 @@
 
 ---
 
-## Goal 8 — Multi-Device Login Support (Remove Single-Device Restriction)
-**Status:** 🔴 Pending
+## Goal 7 — Multi-Device Login Support (Remove Single-Device Restriction)
+**Status:** 🟢 Done
 **Related files:** `api/middleware/auth.js`, `api/routes/auth.js`, session/JWT handling logic
 
 - **Problem:** Abhi ek user ek time par sirf ek hi device mein login kar sakta hai.
@@ -116,7 +101,7 @@
 
 ---
 
-## Goal 9 — Real Camera + BT Scanner for Serial No. Boxes (BOM, Sales, Purchase)
+## Goal 8 — Real Camera + BT Scanner for Serial No. Boxes (BOM, Sales, Purchase)
 **Status:** 🔴 Pending
 **Related files:** `js/pages/bom.js`, `js/pages/sales.js`, `js/pages/purchase.js`, `js/pages/scansheet.js` (reference/reuse existing scan engine), `api/routes/backup.js`, `api/services/stockHelpers.js`
 
@@ -141,7 +126,7 @@
 
 ---
 
-## Goal 10 — Settings Tab: Show/Hide Scansheet Tab
+## Goal 9 — Settings Tab: Show/Hide Scansheet Tab
 **Status:** 🔴 Pending
 **Related files:** `js/app.js` (nav/menu rendering), naya `js/pages/settings.js` (page banani hogi), `index.html`, `api/routes/masters.js` ya naya settings route/table
 
@@ -153,8 +138,8 @@
 
 ---
 
-## Goal 11 — Excel Upload se Bulk Item Creation (Masters)
-**Status:** 🔴 Pending
+## Goal 10 — Excel Upload se Bulk Item Creation (Masters)
+**Status:** 🟢 Done
 **Related files:** `js/pages/masters.js`, `api/routes/masters.js`, (reference: Party Ledger ka existing Excel-upload-based creation flow — same pattern reuse karna hai)
 
 - **Problem:** Abhi items sirf ek-ek karke manually create ho sakte hain. Party Ledger module mein jaisa Excel-upload-se-bulk-creation feature hai, waisa hi Items ke liye nahi hai.
