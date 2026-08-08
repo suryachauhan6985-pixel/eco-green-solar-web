@@ -891,7 +891,7 @@
     "type": "file",
     "label": "js/pages/masters.js",
     "file": "js/pages/masters.js",
-    "detail": "Defines 15 function(s) implementing supporting logic."
+    "detail": "Defines 16 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -946,6 +946,12 @@
     "label": "valueFromRow",
     "file": "js/pages/masters.js",
     "detail": "(row, keys, def = '')"
+  },
+  {
+    "type": "function",
+    "label": "parseOverrideFlag",
+    "file": "js/pages/masters.js",
+    "detail": "(raw)"
   },
   {
     "type": "function",
@@ -3127,9 +3133,15 @@
   },
   {
     "type": "function",
+    "label": "normalizeOverrideFlag",
+    "file": "api/routes/masters.routes.js",
+    "detail": "(val)"
+  },
+  {
+    "type": "function",
     "label": "validateItemPayload",
     "file": "api/routes/masters.routes.js",
-    "detail": "({ brand_name, watt, category, editingId })"
+    "detail": "({ brand_name, watt, category, model, watt_mandatory, serial_mandatory, editingId })"
   },
   {
     "type": "file",
@@ -3309,7 +3321,7 @@
     "type": "file",
     "label": "api/db/schema.js",
     "file": "api/db/schema.js",
-    "detail": "Defines 10 function(s) implementing supporting logic."
+    "detail": "Defines 11 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -3368,6 +3380,12 @@
   {
     "type": "function",
     "label": "ensureStockQuantitySchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureItemOverrideSchema",
     "file": "api/db/schema.js",
     "detail": "(pool)"
   },

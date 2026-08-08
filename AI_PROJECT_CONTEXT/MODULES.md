@@ -43,7 +43,7 @@ Database
 | File | Purpose |
 | --- | --- |
 | api/db/pool.js | Supporting source file. |
-| api/db/schema.js | Defines 10 function(s) implementing supporting logic. |
+| api/db/schema.js | Defines 11 function(s) implementing supporting logic. |
 
 ### `api/middleware`
 
@@ -108,7 +108,7 @@ Database
 | js/pages/bom.js | Defines 1 class(es) implementing core logic. |
 | js/pages/dashboard.js | Defines 18 function(s) implementing supporting logic. |
 | js/pages/lowstock.js | Defines 12 function(s) implementing supporting logic. |
-| js/pages/masters.js | Defines 15 function(s) implementing supporting logic. |
+| js/pages/masters.js | Defines 16 function(s) implementing supporting logic. |
 | js/pages/partyledger.js | Defines 39 function(s) implementing supporting logic. |
 | js/pages/purchase.js | Defines 26 function(s) implementing supporting logic. |
 | js/pages/purchaseregister.js | Defines 15 function(s) implementing supporting logic. |

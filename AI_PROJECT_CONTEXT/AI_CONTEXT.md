@@ -10,7 +10,7 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-08T07:13:28.925Z
+- **Generated:** 2026-08-08T09:14:32.312Z
 
 ## 2. Architecture Overview
 
@@ -104,7 +104,7 @@ sw.js
 - `js/pages/bom.js` — Defines 1 class(es) implementing core logic.
 - `js/pages/dashboard.js` — Defines 18 function(s) implementing supporting logic.
 - `js/pages/lowstock.js` — Defines 12 function(s) implementing supporting logic.
-- `js/pages/masters.js` — Defines 15 function(s) implementing supporting logic.
+- `js/pages/masters.js` — Defines 16 function(s) implementing supporting logic.
 - `js/pages/partyledger.js` — Defines 39 function(s) implementing supporting logic.
 - `js/pages/purchase.js` — Defines 26 function(s) implementing supporting logic.
 - `js/pages/purchaseregister.js` — Defines 15 function(s) implementing supporting logic.
@@ -132,7 +132,7 @@ sw.js
 - `api/routes/scansheet.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/stockassign.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/db/pool.js` — Supporting source file.
-- `api/db/schema.js` — Defines 10 function(s) implementing supporting logic.
+- `api/db/schema.js` — Defines 11 function(s) implementing supporting logic.
 
 ## 5. Data Flow / Business Logic Entry Points
 
@@ -184,6 +184,7 @@ Utility/helper files: 2
 - js/pages/dashboard.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
 - js/pages/dashboard.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 - js/pages/lowstock.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+- js/pages/masters.js: File defines a large number of functions — consider splitting into smaller modules.
 - js/pages/masters.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
 - js/pages/masters.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 - js/pages/partyledger.js: File defines a large number of functions — consider splitting into smaller modules.
@@ -194,7 +195,6 @@ Utility/helper files: 2
 - js/pages/purchase.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 - js/pages/purchaseregister.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 - js/pages/reports.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
-- js/pages/returns.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 
 ---
 

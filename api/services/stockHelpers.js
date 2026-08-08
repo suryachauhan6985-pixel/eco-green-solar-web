@@ -1,6 +1,13 @@
-function itemNameSlug(brand, watt, solarType) {
+function itemNameSlug(brand, watt, solarType, model) {
   const w = Number(watt) || 0;
   const st = solarType || 'Others';
+  const m = (model || '').trim();
+  // Model-based items (Wattage/Serial both non-mandatory for the category,
+  // e.g. PVC Pipe) have watt=0 — fold the model into the slug so different
+  // models of the same brand never collide into one name (e.g.
+  // "PVCBrand_2 Inch" vs "PVCBrand_3 Inch" instead of both being
+  // "PVCBrand_Others").
+  if (w <= 0 && m) return `${brand}_${m}`;
   return w > 0 ? `${brand}_${w}_${st}` : `${brand}_${st}`;
 }
 
@@ -9,9 +16,21 @@ function itemNameSlug(brand, watt, solarType) {
 // silently create a new item master. If the (category, brand, watt, type)
 // combo doesn't already exist as a registered item, the dispatch is blocked
 // with "Selected product master was not found", exactly like the desktop app.
-async function getItemId(runner, category, brand, watt, solarType) {
+async function getItemId(runner, category, brand, watt, solarType, model) {
   const w = Number(watt) || 0;
   const st = solarType || 'Others';
+  // Model-based items (category has neither Wattage nor Serial No. rule,
+  // e.g. PVC Pipe) always carry watt=0 — matching on watt+solar_type alone
+  // would collapse every model of the same brand into a single item, so
+  // fall back to the same category+brand+model key Masters > Item
+  // Registration uses (see masters_routes.js's validateItemPayload).
+  if (w <= 0 && model) {
+    const [rows] = await runner.query(
+      `SELECT id FROM items WHERE category=? AND brand_name=? AND LOWER(COALESCE(model,''))=LOWER(?)`,
+      [category, brand, String(model).trim()]
+    );
+    return rows.length ? rows[0].id : null;
+  }
   const [rows] = await runner.query(
     `SELECT id FROM items WHERE category=? AND brand_name=? AND watt=? AND solar_type=?`,
     [category, brand, w, st]
@@ -45,38 +64,44 @@ async function validateSalesLineSerials(runner, serials, line) {
   return errors;
 }
 
-async function getOrCreateItem(conn, category, brand, watt, solarType) {
+async function getOrCreateItem(conn, category, brand, watt, solarType, model) {
   const w = Number(watt) || 0;
   const st = solarType || 'Others';
+  const m = (model || '').trim();
+  // Model-based items (Wattage/Serial both non-mandatory for this category)
+  // must be looked up / created by category+brand+model, not watt — every
+  // model-based item shares watt=0, so watt+solar_type can't tell them
+  // apart (see getItemId above for the same reasoning).
+  const isModelBased = w <= 0 && !!m;
 
-  const [rows] = await conn.query(
-    `SELECT id FROM items WHERE category=? AND brand_name=? AND watt=? AND solar_type=?`,
-    [category, brand, w, st]
-  );
+  const lookupSql = isModelBased
+    ? `SELECT id FROM items WHERE category=? AND brand_name=? AND LOWER(COALESCE(model,''))=LOWER(?)`
+    : `SELECT id FROM items WHERE category=? AND brand_name=? AND watt=? AND solar_type=?`;
+  const lookupParams = isModelBased ? [category, brand, m] : [category, brand, w, st];
+
+  const [rows] = await conn.query(lookupSql, lookupParams);
   if (rows.length) return rows[0].id;
 
-  const [baseRows] = await conn.query(
-    `SELECT uom, minimum_stock FROM items WHERE category=? AND brand_name=? AND watt=? LIMIT 1`,
-    [category, brand, w]
-  );
+  const baseSql = isModelBased
+    ? `SELECT uom, minimum_stock FROM items WHERE category=? AND brand_name=? LIMIT 1`
+    : `SELECT uom, minimum_stock FROM items WHERE category=? AND brand_name=? AND watt=? LIMIT 1`;
+  const baseParams = isModelBased ? [category, brand] : [category, brand, w];
+  const [baseRows] = await conn.query(baseSql, baseParams);
   const uom = baseRows.length && baseRows[0].uom ? baseRows[0].uom : 'Nos';
   const minimumStock = baseRows.length && baseRows[0].minimum_stock != null ? baseRows[0].minimum_stock : 0;
-  const nameSlug = itemNameSlug(brand, w, st);
+  const nameSlug = itemNameSlug(brand, w, st, m);
 
   try {
     const [result] = await conn.query(
-      `INSERT INTO items (name, brand_name, watt, solar_type, category, uom, minimum_stock) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [nameSlug, brand, w, st, category, uom, minimumStock]
+      `INSERT INTO items (name, brand_name, watt, solar_type, category, uom, minimum_stock, model) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nameSlug, brand, w, st, category, uom, minimumStock, isModelBased ? m : null]
     );
     return result.insertId;
   } catch (e) {
     // Race/duplicate safety net, same as the .py try/except around the
     // INSERT: if another line/request created it in the meantime, or the
     // name slug collided, just look it up instead of failing the whole save.
-    const [retryRows] = await conn.query(
-      `SELECT id FROM items WHERE category=? AND brand_name=? AND watt=? AND solar_type=?`,
-      [category, brand, w, st]
-    );
+    const [retryRows] = await conn.query(lookupSql, lookupParams);
     if (retryRows.length) return retryRows[0].id;
     throw e;
   }

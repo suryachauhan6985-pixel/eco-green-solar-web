@@ -40,8 +40,10 @@ window.PAGES.purchase = {
               <select id="purCat"><option value="">Loading...</option></select></div>
             <div class="field"><label>Brand <span class="req">*</span></label>
               <select id="purBrand"><option value="">-- Select Category First --</option></select></div>
-            <div class="field"><label>Wattage <span class="req">*</span></label>
+            <div class="field" id="purWattField"><label>Wattage <span class="req">*</span></label>
               <select id="purWatt"><option value="">-- Select Brand First --</option></select></div>
+            <div class="field" id="purModelField" style="display:none;"><label>Model <span class="req">*</span></label>
+              <select id="purModel"><option value="">-- Select Brand First --</option></select></div>
             <div class="field"><label>Type <span class="req">*</span></label>
               <select id="purType"><option value="">-- Select Category First --</option></select></div>
 
@@ -109,8 +111,10 @@ window.PAGES.purchase = {
               <select id="purEditCat"><option value="">Loading...</option></select></div>
             <div class="field"><label>Brand <span class="req">*</span></label>
               <select id="purEditBrand"><option value="">-- Select Category First --</option></select></div>
-            <div class="field"><label>Wattage <span class="req">*</span></label>
+            <div class="field" id="purEditWattField"><label>Wattage <span class="req">*</span></label>
               <select id="purEditWatt"><option value="">-- Select Brand First --</option></select></div>
+            <div class="field" id="purEditModelField" style="display:none;"><label>Model <span class="req">*</span></label>
+              <select id="purEditModel"><option value="">-- Select Brand First --</option></select></div>
             <div class="field"><label>Type <span class="req">*</span></label>
               <select id="purEditType"><option value="">-- Select Category First --</option></select></div>
             <div class="field"><label>Qty <span class="req">*</span></label><input id="purEditQty" type="number" placeholder="0"></div>
@@ -221,7 +225,7 @@ window.PAGES.purchase = {
       }
       container.innerHTML = lines.map((ln, idx) => `
         <div class="line-item" data-idx="${idx}">
-          <span>${ln.cat} • ${ln.brand} ${ln.watt ? '• ' + ln.watt + 'W' : ''} • ${ln.type} • ${ln.warehouse}</span>
+          <span>${ln.cat} • ${ln.brand} ${ln.model ? '• ' + ln.model : (ln.watt ? '• ' + ln.watt + 'W' : '')} • ${ln.type} • ${ln.warehouse}</span>
           <span class="qty-badge">Qty ${ln.qty}${ln.needsSerial === false ? ' <small>(Quantity-based, no serial)</small>' : ''}</span>
         </div>
       `).join('');
@@ -314,15 +318,26 @@ window.PAGES.purchase = {
       selectEl.innerHTML = items.map((v) => `<option value="${v}">${v}</option>`).join('');
     }
 
-    const purCatEl = $('purCat'), purBrandEl = $('purBrand'), purWattEl = $('purWatt'), purTypeEl = $('purType');
+    const purCatEl = $('purCat'), purBrandEl = $('purBrand'), purWattEl = $('purWatt'), purModelEl = $('purModel'), purTypeEl = $('purType');
 
-    // Category -> serial_mandatory lookup — only Panel/Inverter-type
-    // categories (flagged in Masters > Category) need actual Serial
-    // Numbers. Every other category is quantity-tracked: the Qty field
-    // entered on the line IS the final quantity, no serial scanning needed.
+    // Category -> serial_mandatory / watt_mandatory lookup — only
+    // Panel/Inverter-type categories (flagged in Masters > Category) need
+    // actual Serial Numbers. Every other category is quantity-tracked: the
+    // Qty field entered on the line IS the final quantity, no serial
+    // scanning needed. watt_mandatory drives the Wattage<->Model field swap
+    // below (same rule Masters > Item Registration already applies).
     let purCategorySerialMandatory = {};
+    let purCategoryWattMandatory = {};
     function purCategoryNeedsSerial(cat) {
       return !!purCategorySerialMandatory[cat];
+    }
+    // Mirrors masters.js's syncWattMandatoryUI(): when NEITHER Wattage nor
+    // Serial No. applies to the selected category, Model replaces Wattage
+    // as the differentiator (e.g. PVC Pipe "2 Inch"). Defaults to false
+    // (Wattage shown) until a real category is selected.
+    function purCategoryNeedsModel(cat) {
+      if (!cat) return false;
+      return !purCategoryWattMandatory[cat] && !purCategorySerialMandatory[cat];
     }
 
     async function loadPurCategories() {
@@ -330,7 +345,11 @@ window.PAGES.purchase = {
         const cats = await window.Api.get('/masters/categories');
         fillSelect(purCatEl, cats.map((c) => c.name), 'No categories found');
         purCategorySerialMandatory = {};
-        (cats || []).forEach((c) => { purCategorySerialMandatory[c.name] = !!c.serial_mandatory; });
+        purCategoryWattMandatory = {};
+        (cats || []).forEach((c) => {
+          purCategorySerialMandatory[c.name] = !!c.serial_mandatory;
+          purCategoryWattMandatory[c.name] = !!c.watt_mandatory;
+        });
       } catch (e) {
         fillSelect(purCatEl, [], 'Failed to load categories');
       }
@@ -343,6 +362,7 @@ window.PAGES.purchase = {
         fillSelect(purBrandEl, [], '-- Select Category First --');
         fillSelect(purTypeEl, [], '-- Select Category First --');
         await refreshPurWattages();
+        await refreshPurModels();
         return;
       }
       try {
@@ -358,6 +378,7 @@ window.PAGES.purchase = {
         fillSelect(purTypeEl, ['Others'], 'Others');
       }
       await refreshPurWattages();
+      await refreshPurModels();
     }
 
     async function refreshPurWattages() {
@@ -374,9 +395,35 @@ window.PAGES.purchase = {
       }
     }
 
-    purCatEl.addEventListener('change', () => { refreshPurBrandsAndType(); updatePurSerialVisibility(); });
-    purBrandEl.addEventListener('change', refreshPurWattages);
-    loadPurCategories().then(updatePurSerialVisibility);
+    // Model dropdown's equivalent of refreshPurWattages() above — same
+    // Category+Brand cascading, just a different source list. Only ever
+    // shown/used for categories where purCategoryNeedsModel() is true.
+    async function refreshPurModels() {
+      const cat = purCatEl.value, brand = purBrandEl.value;
+      if (!cat || !brand) {
+        fillSelect(purModelEl, [], '-- Select Brand First --');
+        return;
+      }
+      try {
+        const models = await window.Api.get(`/purchase/models?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}`);
+        fillSelect(purModelEl, models.length ? models : ['N/A'], 'N/A');
+      } catch (e) {
+        fillSelect(purModelEl, ['N/A'], 'N/A');
+      }
+    }
+
+    // Swaps the Wattage field for the Model field (or back) based on the
+    // selected category's rule — mirrors masters.js's own Wattage/Model
+    // field toggle in Item Registration.
+    function updatePurWattModelVisibility() {
+      const showModel = purCategoryNeedsModel(purCatEl.value);
+      $('purWattField').style.display = showModel ? 'none' : '';
+      $('purModelField').style.display = showModel ? '' : 'none';
+    }
+
+    purCatEl.addEventListener('change', () => { refreshPurBrandsAndType(); updatePurSerialVisibility(); updatePurWattModelVisibility(); });
+    purBrandEl.addEventListener('change', () => { refreshPurWattages(); refreshPurModels(); });
+    loadPurCategories().then(() => { updatePurSerialVisibility(); updatePurWattModelVisibility(); });
 
     // Shows/hides the pooled Serial Numbers box depending on whether it's
     // still needed: visible if EITHER the category currently selected
@@ -541,14 +588,17 @@ window.PAGES.purchase = {
     wireProofButtons('purProofFile', 'purBtnAttach', 'purBtnClearProof', 'purProofName', purProof);
 
     $('purBtnAddLine').addEventListener('click', () => {
-      const cat = $('purCat').value, brand = $('purBrand').value, watt = $('purWatt').value.trim();
+      const cat = $('purCat').value, brand = $('purBrand').value;
+      const needsModel = purCategoryNeedsModel(cat);
+      const watt = needsModel ? '' : $('purWatt').value.trim();
+      const model = needsModel ? $('purModel').value.trim() : '';
       const type = $('purType').value, wh = $('purWh').value, qty = $('purQty').value.trim();
       if (!qty || Number(qty) <= 0) {
         window.openModal('Validation Error', '<p>Enter a valid Qty before adding a product line.</p>');
         return;
       }
       const needsSerial = purCategoryNeedsSerial(cat);
-      purLines.push({ cat, brand, watt, type, warehouse: wh, qty, needsSerial });
+      purLines.push({ cat, brand, watt, model, type, warehouse: wh, qty, needsSerial });
       renderLineList(purLineList, purLines, '');
       $('purQty').value = '';
       updatePurSerialVisibility();
@@ -564,6 +614,7 @@ window.PAGES.purchase = {
     function clearPurchaseForm() {
       ['purSuppShort', 'purSupp', 'purSuppMobile', 'purSuppAddr', 'purSuppGstin', 'purInv', 'purPallet', 'purQty'].forEach((id) => { $(id).value = ''; });
       $('purWatt').value = '';
+      $('purModel').value = '';
       $('purDate').value = '';
       $('purSerials').value = '';
       purLines.length = 0;
@@ -641,11 +692,11 @@ window.PAGES.purchase = {
         const qty = Number(ln.qty) || 0;
         if (!ln.needsSerial) {
           // Quantity-based line — Qty is final, no serials attached.
-          return { cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse, qty, serials: [] };
+          return { cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type, warehouse: ln.warehouse, qty, serials: [] };
         }
         const serials = allSerials.slice(cursor, cursor + qty);
         cursor += qty;
-        return { cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse, qty, serials };
+        return { cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type, warehouse: ln.warehouse, qty, serials };
       });
 
       const invoiceNo = $('purInv').value.trim();
@@ -703,7 +754,7 @@ window.PAGES.purchase = {
       // masters. `injectValue` keeps an already-saved historical value
       // visible/selected even if it's no longer part of the current master
       // data (same "add item if missing" behaviour as the desktop combo).
-      const purEditCatEl = $('purEditCat'), purEditBrandEl = $('purEditBrand'), purEditWattEl = $('purEditWatt'), purEditTypeEl = $('purEditType');
+      const purEditCatEl = $('purEditCat'), purEditBrandEl = $('purEditBrand'), purEditWattEl = $('purEditWatt'), purEditModelEl = $('purEditModel'), purEditTypeEl = $('purEditType');
 
       async function refreshPurEditBrandsAndType(injectBrand, injectType) {
         const cat = purEditCatEl.value;
@@ -711,6 +762,7 @@ window.PAGES.purchase = {
           fillSelect(purEditBrandEl, [], '-- Select Category First --');
           fillSelect(purEditTypeEl, [], '-- Select Category First --');
           await refreshPurEditWattages();
+          await refreshPurEditModels();
           return;
         }
         await fillSelectFromApi(purEditBrandEl, `/purchase/brands/${encodeURIComponent(cat)}`, 'No brands under this category', injectBrand);
@@ -724,6 +776,7 @@ window.PAGES.purchase = {
           fillSelect(purEditTypeEl, injectType ? [injectType] : ['Others'], 'Others');
         }
         await refreshPurEditWattages();
+        await refreshPurEditModels();
       }
 
       async function refreshPurEditWattages(injectWatt) {
@@ -735,8 +788,26 @@ window.PAGES.purchase = {
         await fillSelectFromApi(purEditWattEl, `/purchase/wattages?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}`, 'N/A', injectWatt);
       }
 
-      purEditCatEl.addEventListener('change', () => { refreshPurEditBrandsAndType(); updatePurEditSerialVisibility(); });
-      purEditBrandEl.addEventListener('change', () => refreshPurEditWattages());
+      // Edit panel's Model dropdown — same idea as refreshPurEditWattages().
+      async function refreshPurEditModels(injectModel) {
+        const cat = purEditCatEl.value, brand = purEditBrandEl.value;
+        if (!cat || !brand) {
+          fillSelect(purEditModelEl, [], '-- Select Brand First --');
+          return;
+        }
+        await fillSelectFromApi(purEditModelEl, `/purchase/models?category=${encodeURIComponent(cat)}&brand=${encodeURIComponent(brand)}`, 'N/A', injectModel);
+      }
+
+      // Same Wattage<->Model swap as the New Entry form, applied to the
+      // Edit panel's own fields.
+      function updatePurEditWattModelVisibility() {
+        const showModel = purCategoryNeedsModel(purEditCatEl.value);
+        $('purEditWattField').style.display = showModel ? 'none' : '';
+        $('purEditModelField').style.display = showModel ? '' : 'none';
+      }
+
+      purEditCatEl.addEventListener('change', () => { refreshPurEditBrandsAndType(); updatePurEditSerialVisibility(); updatePurEditWattModelVisibility(); });
+      purEditBrandEl.addEventListener('change', () => { refreshPurEditWattages(); refreshPurEditModels(); });
 
       // Same idea as updatePurSerialVisibility() above, but for the Edit
       // panel's pooled Serials box: visible if either the currently
@@ -748,6 +819,7 @@ window.PAGES.purchase = {
         $('purEditQtyOnlyNote').style.display = needsSerial ? 'none' : '';
       }
       updatePurEditSerialVisibility();
+      updatePurEditWattModelVisibility();
 
       // Loads Category -> Brand -> Wattage -> Type -> Warehouse for the
       // edit panel in one go, keeping whatever the loaded invoice line
@@ -766,7 +838,9 @@ window.PAGES.purchase = {
           fillSelect(purEditTypeEl, line.type ? [line.type] : ['Others'], 'Others');
         }
         await fillSelectFromApi(purEditWattEl, `/purchase/wattages?category=${encodeURIComponent(purEditCatEl.value)}&brand=${encodeURIComponent(purEditBrandEl.value)}`, 'N/A', line.watt);
+        await fillSelectFromApi(purEditModelEl, `/purchase/models?category=${encodeURIComponent(purEditCatEl.value)}&brand=${encodeURIComponent(purEditBrandEl.value)}`, 'N/A', line.model);
         await fillSelectFromApi(purEditWhEl, '/masters/warehouses', 'No warehouses found', line.warehouse);
+        updatePurEditWattModelVisibility();
       }
 
       // Initial fill so the panel isn't empty before any invoice is found.
@@ -778,7 +852,7 @@ window.PAGES.purchase = {
       });
 
       clearEditPanel = function () {
-        ['purEditSupp', 'purEditInv', 'purEditPallet', 'purEditWatt', 'purEditQty', 'purEditSerials'].forEach((id) => { $(id).value = ''; });
+        ['purEditSupp', 'purEditInv', 'purEditPallet', 'purEditWatt', 'purEditModel', 'purEditQty', 'purEditSerials'].forEach((id) => { $(id).value = ''; });
         $('purEditDate').value = '';
         purEditLines.length = 0;
         loadedInvoiceNo = null;
@@ -793,7 +867,10 @@ window.PAGES.purchase = {
       $('purBtnClearEdit').addEventListener('click', clearEditPanel);
 
       $('purBtnEditAddLine').addEventListener('click', () => {
-        const cat = $('purEditCat').value, brand = $('purEditBrand').value, watt = $('purEditWatt').value.trim();
+        const cat = $('purEditCat').value, brand = $('purEditBrand').value;
+        const needsModel = purCategoryNeedsModel(cat);
+        const watt = needsModel ? '' : $('purEditWatt').value.trim();
+        const model = needsModel ? $('purEditModel').value.trim() : '';
         const type = $('purEditType').value, wh = $('purEditWh').value, qty = $('purEditQty').value.trim();
         if (!qty || Number(qty) <= 0) {
           window.openModal('Validation Error', '<p>Enter a valid Qty before adding a product line.</p>');
@@ -802,7 +879,7 @@ window.PAGES.purchase = {
         const needsSerial = purCategoryNeedsSerial(cat);
         // Brand-new line added during this edit — no existing db row(s)
         // behind it yet, so qtyRowIds starts empty (PUT will INSERT it).
-        purEditLines.push({ cat, brand, watt, type, warehouse: wh, qty, needsSerial, qtyRowIds: [] });
+        purEditLines.push({ cat, brand, watt, model, type, warehouse: wh, qty, needsSerial, qtyRowIds: [] });
         renderLineList(purEditLineList, purEditLines, '');
         $('purEditQty').value = '';
         updatePurEditSerialVisibility();
@@ -844,7 +921,7 @@ window.PAGES.purchase = {
 
         purEditLines.length = 0;
         inv.lines.forEach((ln) => purEditLines.push({
-          cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse,
+          cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type, warehouse: ln.warehouse,
           qty: ln.qty, serials: ln.serials, qtyRowIds: ln.qtyRowIds || [],
           needsSerial: purCategoryNeedsSerial(ln.cat),
         }));
@@ -902,11 +979,11 @@ window.PAGES.purchase = {
             // Quantity-tracked line — Qty is final, no serials. qtyRowIds
             // carries forward whichever db row(s) it came from (empty
             // means it's brand-new, added during this edit).
-            return { cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse, qty, serials: [], qtyRowIds: ln.qtyRowIds || [] };
+            return { cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type, warehouse: ln.warehouse, qty, serials: [], qtyRowIds: ln.qtyRowIds || [] };
           }
           const serials = allSerials.slice(cursor, cursor + qty);
           cursor += qty;
-          return { cat: ln.cat, brand: ln.brand, watt: ln.watt, type: ln.type, warehouse: ln.warehouse, qty, serials };
+          return { cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type, warehouse: ln.warehouse, qty, serials };
         });
 
         const applyBtn = $('purBtnApply');

@@ -145,17 +145,18 @@ Deep analysis of every important source file.
 
 ## `js/pages/masters.js`
 
-- **Purpose:** Defines 15 function(s) implementing supporting logic.
-- **Lines of code:** 1154
-- **Complexity:** High (heuristic score: 162)
+- **Purpose:** Defines 16 function(s) implementing supporting logic.
+- **Lines of code:** 1224
+- **Complexity:** High (heuristic score: 175)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** loadMastersSystemEngine(), syncWattMandatoryUI(clearIfHidden), renderSubtypeInfo(catName), resetItemFormState(), downloadCsvGeneric(filename, rows), normalizeHeaderRow(header), parseItemsCsv(text), parseItemsWorkbook(arrayBuffer), valueFromRow(row, keys, def = ''), loadSubtypesForCategory(cat), resetSubForm(), resetUomForm(), resetWhForm(), $(id), splitLine(line)
+- **Functions:** loadMastersSystemEngine(), syncWattMandatoryUI(clearIfHidden), renderSubtypeInfo(catName), resetItemFormState(), downloadCsvGeneric(filename, rows), normalizeHeaderRow(header), parseItemsCsv(text), parseItemsWorkbook(arrayBuffer), valueFromRow(row, keys, def = ''), parseOverrideFlag(raw), loadSubtypesForCategory(cat), resetSubForm(), resetUomForm(), resetWhForm(), $(id), splitLine(line)
 - **Classes:** None
 - **API endpoints:** None
 - **Database usage:** Raw SQL detected (42 statement keywords: SELECT, UPDATE, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
+  - File defines a large number of functions — consider splitting into smaller modules.
   - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 
@@ -626,14 +627,14 @@ Deep analysis of every important source file.
 ## `api/routes/masters.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 270
-- **Complexity:** Medium (heuristic score: 43)
+- **Lines of code:** 322
+- **Complexity:** Medium (heuristic score: 52)
 - **Imports:** None
 - **Exports:** module.exports
-- **Functions:** registerMastersRoutes(app, deps), validateItemPayload({ brand_name, watt, category, editingId })
+- **Functions:** registerMastersRoutes(app, deps), normalizeOverrideFlag(val), validateItemPayload({ brand_name, watt, category, model, watt_mandatory, serial_mandatory, editingId })
 - **Classes:** None
 - **API endpoints:** GET /api/masters/categories, POST /api/masters/categories, PUT /api/masters/categories/:name/watt-rule, PUT /api/masters/categories/:name/serial-rule, DELETE /api/masters/categories/:name, GET /api/masters/subtypes/:category, POST /api/masters/subtypes, PUT /api/masters/subtypes, DELETE /api/masters/subtypes, GET /api/masters/units, POST /api/masters/units, PUT /api/masters/units, DELETE /api/masters/units, GET /api/masters/items, POST /api/masters/items, PUT /api/masters/items/:id, GET /api/masters/warehouses, POST /api/masters/warehouses, PUT /api/masters/warehouses, DELETE /api/masters/warehouses, GET /api/masters/brands, GET /api/masters/users, POST /api/masters/users, PUT /api/masters/users/password, PUT /api/masters/users/email
-- **Database usage:** Raw SQL detected (41 statement keywords: SELECT, INSERT INTO, UPDATE, DELETE FROM, JOIN)
+- **Database usage:** Raw SQL detected (43 statement keywords: SELECT, INSERT INTO, UPDATE, DELETE FROM, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
@@ -781,15 +782,15 @@ Deep analysis of every important source file.
 
 ## `api/db/schema.js`
 
-- **Purpose:** Defines 10 function(s) implementing supporting logic.
-- **Lines of code:** 89
-- **Complexity:** Medium (heuristic score: 30)
+- **Purpose:** Defines 11 function(s) implementing supporting logic.
+- **Lines of code:** 109
+- **Complexity:** Medium (heuristic score: 35)
 - **Imports:** None
 - **Exports:** module.exports
-- **Functions:** ensureStartupSchema(pool), ensureSessionSchema(pool), ensureSerialRuleSchema(pool), ensureLedgerTypeSchema(pool), ensureAuthOtpSchema(pool), ensureEmailRoleUniqueSchema(pool), ensureAttachmentsSchema(pool), ensureScanSheetSchema(pool), ensureBomChallanSchema(pool), ensureStockQuantitySchema(pool)
+- **Functions:** ensureStartupSchema(pool), ensureSessionSchema(pool), ensureSerialRuleSchema(pool), ensureLedgerTypeSchema(pool), ensureAuthOtpSchema(pool), ensureEmailRoleUniqueSchema(pool), ensureAttachmentsSchema(pool), ensureScanSheetSchema(pool), ensureBomChallanSchema(pool), ensureStockQuantitySchema(pool), ensureItemOverrideSchema(pool)
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (14 statement keywords: ALTER TABLE, CREATE TABLE, SELECT, UPDATE)
+- **Database usage:** Raw SQL detected (17 statement keywords: ALTER TABLE, CREATE TABLE, SELECT, UPDATE)
 - **Environment variables used:** None
 - **Potential improvements:**
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.

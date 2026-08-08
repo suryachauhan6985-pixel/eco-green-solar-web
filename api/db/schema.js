@@ -9,6 +9,7 @@ async function ensureStartupSchema(pool) {
   await ensureBomChallanSchema(pool);
   await ensureStockQuantitySchema(pool);
   await ensureItemOverrideSchema(pool);
+  await ensureStockModelSchema(pool);
 }
 async function ensureSessionSchema(pool) { try { await pool.query(`ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS last_seen DATETIME NULL`); } catch (e) { console.warn('[Session schema] Could not ensure last_seen column (will retry lazily on first use):', e.message); } }
 async function ensureSerialRuleSchema(pool) { try { await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS serial_mandatory TINYINT(1) NOT NULL DEFAULT 0`); } catch (e) { console.warn('[Serial rule schema] Could not ensure serial_mandatory column (will retry lazily on first use):', e.message); } }
@@ -104,6 +105,24 @@ async function ensureItemOverrideSchema(pool) {
     await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS serial_mandatory TINYINT(1) NULL DEFAULT NULL`);
     await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS model VARCHAR(120) NULL DEFAULT NULL`);
   } catch (e) { console.warn('[Item override schema] Could not ensure watt_mandatory/serial_mandatory/model columns on items (will retry lazily on first use):', e.message); }
+}
+
+// Goal: for categories where NEITHER Wattage nor Serial No. applies (e.g.
+// PVC Pipe, distinguished by size/model instead), Purchase Inward and
+// Project Sales need to record WHICH model of that brand a line is for —
+// exactly the same "model" concept already stored on `items` (see
+// ensureItemOverrideSchema above). stock_ledger denormalizes category/
+// brand_name/watt/solar_type onto every row for fast reads (Purchase
+// Register, Reports, etc. read straight from stock_ledger instead of
+// joining items every time) — `model` needs the same treatment, or every
+// model-based line would be indistinguishable from every other model of
+// the same brand once written to stock_ledger (watt is always 0 for them).
+// Nullable, defaults to NULL: existing wattage/serial-based rows are
+// untouched and simply never populate it.
+async function ensureStockModelSchema(pool) {
+  try {
+    await pool.query(`ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS model VARCHAR(120) NULL DEFAULT NULL`);
+  } catch (e) { console.warn('[Stock model schema] Could not ensure model column on stock_ledger (will retry lazily on first use):', e.message); }
 }
 
 module.exports = { ensureStartupSchema };

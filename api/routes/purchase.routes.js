@@ -28,6 +28,21 @@ module.exports = function registerPurchaseRoutes(app, deps) {
     res.json(rows.map(r => r.watt));
   }));
 
+  // Models registered for one category+brand combo — the Model dropdown's
+  // equivalent of /wattages above, used when the selected category has
+  // NEITHER Wattage nor Serial No. mandatory (e.g. PVC Pipe), so Purchase
+  // Inward shows a Model dropdown instead of a Wattage dropdown, same rule
+  // Masters > Item Registration already applies to its own form.
+  app.get('/api/purchase/models', route(async (req, res) => {
+    const { category, brand } = req.query;
+    if (!category || !brand) return res.json([]);
+    const [rows] = await pool.query(
+      `SELECT DISTINCT model FROM items WHERE category = ? AND brand_name = ? AND model IS NOT NULL AND model <> '' ORDER BY model ASC`,
+      [category, brand]
+    );
+    res.json(rows.map(r => r.model));
+  }));
+
   // Which of the given serial numbers already exist in stock_ledger — mirrors
   // process_purchase_inward()'s per-serial "SELECT COUNT(*) FROM stock_ledger
   // WHERE serial_no=%s" duplicate check from the desktop app. Called by the
@@ -103,17 +118,18 @@ module.exports = function registerPurchaseRoutes(app, deps) {
       }
 
       for (const line of lines) {
-        const itemId = await getOrCreateItem(conn, line.cat, line.brand, line.watt, line.type);
-        const itemName = itemNameSlug(line.brand, line.watt, line.type);
+        const model = line.model ? String(line.model).trim() : null;
+        const itemId = await getOrCreateItem(conn, line.cat, line.brand, line.watt, line.type, model);
+        const itemName = itemNameSlug(line.brand, line.watt, line.type, model);
         const serials = line.serials || [];
         if (serials.length) {
           // Serial-tracked category (e.g. Panel/Inverter) — unchanged:
           // one row per serial, quantity is implicitly 1 per row.
           for (const sn of serials) {
             await conn.query(
-              `INSERT INTO stock_ledger (item_id, item_name, category, brand_name, watt, solar_type, serial_no, quantity, pallet_no, warehouse, status, supplier_name, purchase_invoice, purchase_date, purchase_attachment)
-               VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, 'Available', ?, ?, ?, ?)`,
-              [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', sn, line.pallet || pallet, line.warehouse, supplier, invoiceNo, date, proofName]
+              `INSERT INTO stock_ledger (item_id, item_name, category, brand_name, watt, solar_type, model, serial_no, quantity, pallet_no, warehouse, status, supplier_name, purchase_invoice, purchase_date, purchase_attachment)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, 'Available', ?, ?, ?, ?)`,
+              [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', model, sn, line.pallet || pallet, line.warehouse, supplier, invoiceNo, date, proofName]
             );
           }
         } else {
@@ -122,9 +138,9 @@ module.exports = function registerPurchaseRoutes(app, deps) {
           const qty = Number(line.qty) || 0;
           if (qty > 0) {
             await conn.query(
-              `INSERT INTO stock_ledger (item_id, item_name, category, brand_name, watt, solar_type, serial_no, quantity, pallet_no, warehouse, status, supplier_name, purchase_invoice, purchase_date, purchase_attachment)
-               VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, 'Available', ?, ?, ?, ?)`,
-              [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', qty, line.pallet || pallet, line.warehouse, supplier, invoiceNo, date, proofName]
+              `INSERT INTO stock_ledger (item_id, item_name, category, brand_name, watt, solar_type, model, serial_no, quantity, pallet_no, warehouse, status, supplier_name, purchase_invoice, purchase_date, purchase_attachment)
+               VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, 'Available', ?, ?, ?, ?)`,
+              [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', model, qty, line.pallet || pallet, line.warehouse, supplier, invoiceNo, date, proofName]
             );
           }
         }
@@ -154,7 +170,7 @@ module.exports = function registerPurchaseRoutes(app, deps) {
     );
     const resolvedName = shortMatch.length ? shortMatch[0].ledger_name : null;
 
-    let sql = `SELECT id, category, brand_name, watt, solar_type, supplier_name, purchase_invoice, pallet_no, warehouse, purchase_date, serial_no, purchase_attachment, quantity
+    let sql = `SELECT id, category, brand_name, watt, solar_type, model, supplier_name, purchase_invoice, pallet_no, warehouse, purchase_date, serial_no, purchase_attachment, quantity
                FROM stock_ledger WHERE purchase_invoice = ? OR supplier_name LIKE ?`;
     const params = [term, `%${term}%`];
     if (resolvedName) { sql += ` OR supplier_name = ?`; params.push(resolvedName); }
@@ -180,10 +196,10 @@ module.exports = function registerPurchaseRoutes(app, deps) {
     // update/delete instead of re-inserting everything from scratch.
     const grouped = new Map();
     records.forEach((r) => {
-      const key = [r.category, r.brand_name, r.watt || 0, r.solar_type, r.pallet_no || '', r.warehouse || ''].join('|');
+      const key = [r.category, r.brand_name, r.watt || 0, r.solar_type, r.model || '', r.pallet_no || '', r.warehouse || ''].join('|');
       if (!grouped.has(key)) {
         grouped.set(key, {
-          cat: r.category, brand: r.brand_name, watt: r.watt || 0, type: r.solar_type,
+          cat: r.category, brand: r.brand_name, watt: r.watt || 0, type: r.solar_type, model: r.model || '',
           pallet: r.pallet_no || '', warehouse: r.warehouse || '', serials: [], qtyRows: [],
         });
       }
@@ -208,7 +224,7 @@ module.exports = function registerPurchaseRoutes(app, deps) {
       // invoice today — PUT uses this to know what got removed during edit.
       originalQtyRowIds: records.filter((r) => !r.serial_no).map((r) => r.id),
       lines: Array.from(grouped.values()).map((l) => ({
-        cat: l.cat, brand: l.brand, watt: l.watt, type: l.type, pallet: l.pallet, warehouse: l.warehouse,
+        cat: l.cat, brand: l.brand, watt: l.watt, type: l.type, model: l.model, pallet: l.pallet, warehouse: l.warehouse,
         serials: l.serials,
         qtyRowIds: l.qtyRows.map((r) => r.id),
         qty: l.serials.length ? l.serials.length : l.qtyRows.reduce((sum, r) => sum + r.qty, 0),
@@ -311,8 +327,9 @@ module.exports = function registerPurchaseRoutes(app, deps) {
           await conn.rollback();
           return res.status(400).json({ error: 'One product line has no valid item master.' });
         }
-        const itemId = await getOrCreateItem(conn, line.cat, line.brand, line.watt, line.type);
-        const itemName = itemNameSlug(line.brand, line.watt, line.type);
+        const model = line.model ? String(line.model).trim() : null;
+        const itemId = await getOrCreateItem(conn, line.cat, line.brand, line.watt, line.type, model);
+        const itemName = itemNameSlug(line.brand, line.watt, line.type, model);
         const serials = line.serials || [];
 
         if (serials.length) {
@@ -320,16 +337,16 @@ module.exports = function registerPurchaseRoutes(app, deps) {
           for (const sn of serials) {
             if (originalSerials.includes(sn)) {
               await conn.query(
-                `UPDATE stock_ledger SET item_id=?, item_name=?, category=?, brand_name=?, watt=?, solar_type=?,
+                `UPDATE stock_ledger SET item_id=?, item_name=?, category=?, brand_name=?, watt=?, solar_type=?, model=?,
                  pallet_no=?, warehouse=?, supplier_name=?, purchase_invoice=?, purchase_date=?, purchase_attachment=?, edited_flag=1
                  WHERE serial_no=?`,
-                [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', line.pallet || pallet, line.warehouse, newSupp, newInv, newDate, finalProof, sn]
+                [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', model, line.pallet || pallet, line.warehouse, newSupp, newInv, newDate, finalProof, sn]
               );
             } else {
               await conn.query(
-                `INSERT INTO stock_ledger (item_id, item_name, category, brand_name, watt, solar_type, serial_no, pallet_no, warehouse, status, supplier_name, purchase_invoice, purchase_date, purchase_attachment, edited_flag)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Available', ?, ?, ?, ?, 1)`,
-                [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', sn, line.pallet || pallet, line.warehouse, newSupp, newInv, newDate, finalProof]
+                `INSERT INTO stock_ledger (item_id, item_name, category, brand_name, watt, solar_type, model, serial_no, pallet_no, warehouse, status, supplier_name, purchase_invoice, purchase_date, purchase_attachment, edited_flag)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Available', ?, ?, ?, ?, 1)`,
+                [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', model, sn, line.pallet || pallet, line.warehouse, newSupp, newInv, newDate, finalProof]
               );
             }
           }
@@ -348,18 +365,18 @@ module.exports = function registerPurchaseRoutes(app, deps) {
               // into this one row.
               const primaryId = qtyRowIds[0];
               await conn.query(
-                `UPDATE stock_ledger SET item_id=?, item_name=?, category=?, brand_name=?, watt=?, solar_type=?,
+                `UPDATE stock_ledger SET item_id=?, item_name=?, category=?, brand_name=?, watt=?, solar_type=?, model=?,
                  pallet_no=?, warehouse=?, supplier_name=?, purchase_invoice=?, purchase_date=?, purchase_attachment=?, quantity=?, edited_flag=1
                  WHERE id=?`,
-                [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', line.pallet || pallet, line.warehouse, newSupp, newInv, newDate, finalProof, qty, primaryId]
+                [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', model, line.pallet || pallet, line.warehouse, newSupp, newInv, newDate, finalProof, qty, primaryId]
               );
               survivingQtyRowIds.push(primaryId);
             } else {
               // Brand-new quantity line added during this edit.
               await conn.query(
-                `INSERT INTO stock_ledger (item_id, item_name, category, brand_name, watt, solar_type, serial_no, quantity, pallet_no, warehouse, status, supplier_name, purchase_invoice, purchase_date, purchase_attachment, edited_flag)
-                 VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, 'Available', ?, ?, ?, ?, 1)`,
-                [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', qty, line.pallet || pallet, line.warehouse, newSupp, newInv, newDate, finalProof]
+                `INSERT INTO stock_ledger (item_id, item_name, category, brand_name, watt, solar_type, model, serial_no, quantity, pallet_no, warehouse, status, supplier_name, purchase_invoice, purchase_date, purchase_attachment, edited_flag)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, 'Available', ?, ?, ?, ?, 1)`,
+                [itemId, itemName, line.cat, line.brand, Number(line.watt) || 0, line.type || 'Others', model, qty, line.pallet || pallet, line.warehouse, newSupp, newInv, newDate, finalProof]
               );
             }
           }
