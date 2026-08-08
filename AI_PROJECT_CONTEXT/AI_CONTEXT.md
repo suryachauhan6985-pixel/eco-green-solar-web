@@ -10,7 +10,7 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-08T06:14:13.902Z
+- **Generated:** 2026-08-08T06:39:12.478Z
 
 ## 2. Architecture Overview
 
@@ -106,10 +106,10 @@ sw.js
 - `js/pages/lowstock.js` — Defines 12 function(s) implementing supporting logic.
 - `js/pages/masters.js` — Defines 8 function(s) implementing supporting logic.
 - `js/pages/partyledger.js` — Defines 39 function(s) implementing supporting logic.
-- `js/pages/purchase.js` — Defines 24 function(s) implementing supporting logic.
+- `js/pages/purchase.js` — Defines 26 function(s) implementing supporting logic.
 - `js/pages/purchaseregister.js` — Defines 15 function(s) implementing supporting logic.
 - `js/pages/reports.js` — Defines 14 function(s) implementing supporting logic.
-- `js/pages/returns.js` — Defines 4 function(s) implementing supporting logic.
+- `js/pages/returns.js` — Defines 8 function(s) implementing supporting logic.
 - `js/pages/saleregister.js` — Defines 15 function(s) implementing supporting logic.
 - `js/pages/sales.js` — Defines 33 function(s) implementing supporting logic.
 - `js/pages/scansheet.js` — Defines 95 function(s) implementing supporting logic.

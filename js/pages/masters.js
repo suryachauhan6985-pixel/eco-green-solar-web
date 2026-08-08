@@ -39,12 +39,18 @@ window.PAGES.masters = {
   </label>
 </div>
 
+            <div style="background: rgba(212,175,55,0.06); padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px dashed rgba(212,175,55,0.25);" id="mItemSubtypeInfoBox">
+  <strong style="color:var(--gold); font-size:12px; display:block; margin-bottom:6px;"><i class="fa-solid fa-tags"></i> Subtypes Available for this Category (info only)</strong>
+  <div id="mItemSubtypeInfo" style="font-size:12px; color:var(--txt-muted);">Select a category above to view its subtypes.</div>
+  <div style="font-size:11px; color:var(--txt-muted); margin-top:6px; font-style:italic;">Subtype is not set here — it is chosen per purchase invoice line in Purchase Inward, which auto-creates the matching item variant.</div>
+</div>
+
             <div class="form-grid cols-1">
               <div class="field"><label>Category <span class="req">*</span></label>
                 <select id="mItemCatDropdown"></select></div>
               <div class="field"><label>Brand Name <span class="req">*</span></label>
                 <input id="mItemBrandInput" placeholder="e.g. Adani"></div>
-              <div class="field"><label>Wattage / Capacity</label>
+              <div class="field" id="mItemWattField"><label>Wattage / Capacity <span class="req" id="mItemWattReq" style="display:none;">*</span></label>
                 <input id="mItemWattInput" placeholder="e.g. 545"></div>
               <div class="field"><label>UOM (Unit of Measure)</label>
                 <select id="mItemUomDropdown"></select></div>
@@ -62,6 +68,11 @@ window.PAGES.masters = {
             <h3><i class="fa-solid fa-table-list"></i> Registered Inventory Items Sourced
               <button type="button" class="info-btn" data-info="Double-click any row to edit its properties in the form on the left."><i class="fa-solid fa-circle-info"></i></button>
             </h3>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+              <button class="btn btn-ghost" id="mBtnImportItems" style="background:#1F7A4D;"><i class="fa-solid fa-file-import"></i> Upload Excel (Bulk Create Items)</button>
+              <button class="btn btn-ghost" id="mBtnDownloadItemTemplate" style="background:#4B6584;"><i class="fa-solid fa-download"></i> Download Excel Template</button>
+              <input type="file" id="mItemImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
+            </div>
             <div class="table-wrap"><table>
               <thead><tr><th>Category</th><th>Brand</th><th>Wattage</th><th>Subtype</th><th>Alert Stock</th><th>UOM</th></tr></thead>
               <tbody id="mastersItemBody"></tbody>
@@ -225,6 +236,7 @@ window.PAGES.masters = {
 
     // Sync Live Dataset from database cache pool
     async function loadMastersSystemEngine() {
+      subtypeInfoCache = {};
       try {
         const [cats, items, whs, units, users, brands] = await Promise.all([
           fetch(`${API_BASE}/masters/categories`).then(r => r.json()),
@@ -315,7 +327,7 @@ window.PAGES.masters = {
       }
     }
 
-    function syncWattMandatoryUI() {
+    function syncWattMandatoryUI(clearIfHidden) {
       const cat = cachedCategories.find(c => c.name === $('mItemCatDropdown').value);
       const wattMandatory = !!(cat && cat.watt_mandatory);
       $('cfgWattMandatory').checked = wattMandatory;
@@ -323,8 +335,45 @@ window.PAGES.masters = {
       const serialMandatory = !!(cat && cat.serial_mandatory);
       $('cfgSerialMandatory').checked = serialMandatory;
       $('cfgSerialMandatory').disabled = true;
+
+      // Goal 1: actually hide the Wattage input (not just the info
+      // checkbox) when the selected category doesn't require it, and show
+      // the "required" asterisk when it does. clearIfHidden is only passed
+      // true from the dropdown's own "change" handler below — NOT when this
+      // runs while populating an existing item into the edit form, so we
+      // never silently wipe an already-saved wattage value.
+      const wattField = $('mItemWattField');
+      const wattReq = $('mItemWattReq');
+      if (wattField) wattField.style.display = wattMandatory ? '' : 'none';
+      if (wattReq) wattReq.style.display = wattMandatory ? '' : 'none';
+      if (!wattMandatory && clearIfHidden) $('mItemWattInput').value = '';
+
+      renderSubtypeInfo(cat ? cat.name : '');
     }
-    $('mItemCatDropdown').addEventListener('change', syncWattMandatoryUI);
+    $('mItemCatDropdown').addEventListener('change', () => syncWattMandatoryUI(true));
+
+    // Goal 1: read-only subtype info for the selected category — subtype is
+    // intentionally NOT set here (see info-btn note above); it's chosen per
+    // purchase invoice line in Purchase Inward. This just lets the user see
+    // what subtypes already exist for the category while registering an item.
+    let subtypeInfoCache = {};
+    async function renderSubtypeInfo(catName) {
+      const box = $('mItemSubtypeInfo');
+      if (!box) return;
+      if (!catName) { box.innerHTML = 'Select a category above to view its subtypes.'; return; }
+      try {
+        let subs = subtypeInfoCache[catName];
+        if (!subs) {
+          subs = await fetch(`${API_BASE}/masters/subtypes/${encodeURIComponent(catName)}`).then(r => r.json());
+          subtypeInfoCache[catName] = subs;
+        }
+        box.innerHTML = subs.length
+          ? subs.map(s => `<span style="display:inline-block; background:rgba(212,175,55,0.15); color:var(--gold); padding:2px 8px; border-radius:10px; margin:2px 4px 2px 0; font-size:11px;">${s}</span>`).join('')
+          : `<span style="font-style:italic;">No subtypes defined yet for '${catName}' — add them in Category Master &rarr; Subtype Management.</span>`;
+      } catch (e) {
+        box.innerHTML = '<span style="color:var(--red);">Could not load subtypes.</span>';
+      }
+    }
 
     function resetItemFormState() {
       editingItemId = null;
@@ -415,6 +464,214 @@ window.PAGES.masters = {
           "Database Error",
           `<p style="color:var(--red);">${err.message}</p>`,
         );
+      }
+    });
+
+    // ---------------------------------------------------------------------
+    // Goal 11 — Excel Upload -> Bulk Item Creation
+    // Mirrors partyledger.js's Import/Template pattern (same UX language:
+    // Download Template -> fill -> Upload -> per-row summary), but reads
+    // real .xlsx/.xls via the SheetJS library already loaded globally in
+    // index.html (window.XLSX, used elsewhere for the Scan Sheet feature),
+    // with a plain-CSV fallback so a Save-As-CSV export also works.
+    // Columns intentionally EXCLUDE Subtype — per the Category Master
+    // design, subtype is chosen per purchase invoice line in Purchase
+    // Inward, not at item registration.
+    // ---------------------------------------------------------------------
+
+    function downloadCsvGeneric(filename, rows) {
+      const csv = rows.map((r) => r.map((v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    $('mBtnDownloadItemTemplate').addEventListener('click', () => {
+      const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      downloadCsvGeneric(`Item_Registration_Template_${stamp}.csv`, [
+        ['category', 'brand_name', 'watt', 'uom', 'minimum_stock'],
+        ['Solar Panel', 'Adani', '545', 'Nos', '5'],
+        ['Cable', 'Polycab', '', 'Meters', '20'],
+      ]);
+      window.showToast('Item import template downloaded.');
+    });
+
+    function normalizeHeaderRow(header) {
+      return header.map((h) => String(h || '').trim().toLowerCase().replace(/\s+/g, '_'));
+    }
+
+    // Same quoted-CSV splitter used by partyledger.js's import.
+    function parseItemsCsv(text) {
+      const lines = text.split(/\r?\n/).filter((l) => l.trim().length);
+      if (!lines.length) return [];
+      const splitLine = (line) => {
+        const out = []; let cur = ''; let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const c = line[i];
+          if (inQuotes) {
+            if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+            else if (c === '"') { inQuotes = false; }
+            else cur += c;
+          } else if (c === '"') { inQuotes = true; }
+          else if (c === ',') { out.push(cur); cur = ''; }
+          else cur += c;
+        }
+        out.push(cur);
+        return out;
+      };
+      const header = normalizeHeaderRow(splitLine(lines[0]));
+      return lines.slice(1).map((line) => {
+        const cells = splitLine(line);
+        const row = {};
+        header.forEach((h, i) => { row[h] = (cells[i] || '').trim(); });
+        return row;
+      });
+    }
+
+    // Real .xlsx/.xls parsing via SheetJS (window.XLSX) — first sheet only.
+    function parseItemsWorkbook(arrayBuffer) {
+      if (typeof window.XLSX === 'undefined') {
+        throw new Error('Excel parser library did not load. Please hard-refresh the page (Ctrl+Shift+R) and try again, or upload a .csv file instead.');
+      }
+      const wb = window.XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const grid = window.XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
+      const dataRows = grid.filter((r) => r.some((cell) => String(cell || '').trim().length));
+      if (!dataRows.length) return [];
+      const header = normalizeHeaderRow(dataRows[0]);
+      return dataRows.slice(1).map((cells) => {
+        const row = {};
+        header.forEach((h, i) => { row[h] = String(cells[i] != null ? cells[i] : '').trim(); });
+        return row;
+      });
+    }
+
+    function valueFromRow(row, keys, def = '') {
+      for (const k of keys) { if (row[k] !== undefined && row[k] !== '') return row[k]; }
+      return def;
+    }
+
+    $('mBtnImportItems').addEventListener('click', () => $('mItemImportFile').click());
+
+    $('mItemImportFile').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+
+      let rawRows;
+      try {
+        if (/\.(xlsx|xls)$/i.test(file.name)) {
+          const buf = await file.arrayBuffer();
+          rawRows = parseItemsWorkbook(buf);
+        } else if (/\.csv$/i.test(file.name)) {
+          rawRows = parseItemsCsv(await file.text());
+        } else {
+          window.openModal('Unsupported File', '<p>Please select a .xlsx, .xls, or .csv file.</p>');
+          return;
+        }
+      } catch (err) {
+        window.openModal('Could Not Read File', `<p style="color:var(--red);">${err.message}</p>`);
+        return;
+      }
+
+      if (!rawRows.length) {
+        window.openModal('No Data', '<p>Selected file has no rows to import.</p>');
+        return;
+      }
+
+      // Validate every row up-front (category exists + its watt-mandatory
+      // rule, brand required, duplicate against already-registered items
+      // AND against earlier valid rows in this same file) before creating
+      // anything — so the user gets one clear row-by-row report instead of
+      // a half-imported mess.
+      const existingKeys = new Set(
+        cachedItems.map((it) => `${(it.category || '').toLowerCase()}|${(it.brand_name || '').toLowerCase()}|${it.watt || 0}`),
+      );
+      const catByName = {};
+      cachedCategories.forEach((c) => { catByName[c.name.toLowerCase()] = c; });
+
+      const valid = [];
+      const rowErrors = [];
+      rawRows.forEach((row, idx) => {
+        const rowNum = idx + 2; // +1 header, +1 for 1-based row numbering
+        const categoryInput = valueFromRow(row, ['category', 'category_name']);
+        const brand = valueFromRow(row, ['brand_name', 'brand', 'name']);
+        const wattRaw = valueFromRow(row, ['watt', 'wattage', 'capacity']);
+        const uom = valueFromRow(row, ['uom', 'unit'], 'Nos');
+        const minStock = parseInt(valueFromRow(row, ['minimum_stock', 'min_stock', 'alert_stock']), 10) || 0;
+        const watt = parseInt(wattRaw, 10) || 0;
+
+        if (!categoryInput) { rowErrors.push(`Row ${rowNum}: Category is blank.`); return; }
+        const catMatch = catByName[categoryInput.toLowerCase()];
+        if (!catMatch) { rowErrors.push(`Row ${rowNum}: Unknown category '${categoryInput}'. Create it first in Category Master.`); return; }
+        if (!brand) { rowErrors.push(`Row ${rowNum}: Brand Name is blank.`); return; }
+        if (catMatch.watt_mandatory && watt <= 0) {
+          rowErrors.push(`Row ${rowNum}: Wattage is mandatory for category '${catMatch.name}' but is blank/zero.`);
+          return;
+        }
+        const key = `${catMatch.name.toLowerCase()}|${brand.toLowerCase()}|${watt}`;
+        if (existingKeys.has(key)) {
+          rowErrors.push(`Row ${rowNum}: '${brand}' (${watt || 0}W) already exists under '${catMatch.name}' — skipped.`);
+          return;
+        }
+        existingKeys.add(key);
+        valid.push({
+          rowNum,
+          payload: {
+            category: catMatch.name,
+            brand_name: brand,
+            watt,
+            solar_type: '-',
+            uom: uom || 'Nos',
+            minimum_stock: minStock,
+          },
+        });
+      });
+
+      if (!valid.length) {
+        window.openModal('Nothing To Import', `<p>No valid rows found.</p>${rowErrors.length ? `<p style="color:var(--red); margin-top:8px;">${rowErrors.join('<br>')}</p>` : ''}`);
+        return;
+      }
+
+      if (rowErrors.length) {
+        const proceed = await window.confirmDialog(
+          'Some Rows Have Issues',
+          `${valid.length} row(s) are valid and ready to import. ${rowErrors.length} row(s) will be skipped:<br><br>${rowErrors.join('<br>')}`,
+          { kind: 'warning', okLabel: `Import ${valid.length} Valid Row(s)` },
+        );
+        if (!proceed) return;
+      }
+
+      let created = 0;
+      const createFailed = [];
+      for (const { rowNum, payload } of valid) {
+        try {
+          const res = await fetch(`${API_BASE}/masters/items`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (res.ok) created++;
+          else createFailed.push(`Row ${rowNum}: ${data.error || 'failed'}`);
+        } catch (err) {
+          createFailed.push(`Row ${rowNum}: ${err.message}`);
+        }
+      }
+
+      await loadMastersSystemEngine();
+      window.showToast(`${created} item(s) imported successfully.`);
+      const reportParts = [];
+      if (rowErrors.length) reportParts.push(`<strong>Skipped before import (${rowErrors.length}):</strong><br>${rowErrors.join('<br>')}`);
+      if (createFailed.length) reportParts.push(`<strong>Failed during import (${createFailed.length}):</strong><br>${createFailed.join('<br>')}`);
+      if (reportParts.length) {
+        window.openModal('Import Summary', `<p style="color:var(--orange); font-size:12.5px;">${reportParts.join('<br><br>')}</p>`);
       }
     });
 

@@ -182,12 +182,12 @@ Deep analysis of every important source file.
 
 ## `js/pages/purchase.js`
 
-- **Purpose:** Defines 24 function(s) implementing supporting logic.
-- **Lines of code:** 957
-- **Complexity:** High (heuristic score: 130)
+- **Purpose:** Defines 26 function(s) implementing supporting logic.
+- **Lines of code:** 995
+- **Complexity:** High (heuristic score: 138)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** splitSerials(text), setPurEditOpen(open), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), fillSelect(selectEl, items, placeholder), purCategoryNeedsSerial(cat), loadPurCategories(), refreshPurBrandsAndType(), refreshPurWattages(), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadPurWarehouses(injectEditValue), searchSupplierLedgers(q), searchSupplierShortCodes(q), fillSupplierDatalist(listEl, ledgers, key), applyLedgerToSupplierFields(l), wireSupplierAutocomplete(inputEl, listEl, matchKey, searchFn), clearPurchaseForm(), refreshPurEditBrandsAndType(injectBrand, injectType), refreshPurEditWattages(injectWatt), loadEditCascadeForLine(line), $(id)
+- **Functions:** splitSerials(text), setPurEditOpen(open), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), fillSelect(selectEl, items, placeholder), purCategoryNeedsSerial(cat), loadPurCategories(), refreshPurBrandsAndType(), refreshPurWattages(), updatePurSerialVisibility(), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadPurWarehouses(injectEditValue), searchSupplierLedgers(q), searchSupplierShortCodes(q), fillSupplierDatalist(listEl, ledgers, key), applyLedgerToSupplierFields(l), wireSupplierAutocomplete(inputEl, listEl, matchKey, searchFn), clearPurchaseForm(), refreshPurEditBrandsAndType(injectBrand, injectType), refreshPurEditWattages(injectWatt), updatePurEditSerialVisibility(), loadEditCascadeForLine(line), $(id)
 - **Classes:** None
 - **API endpoints:** None
 - **Database usage:** Raw SQL detected (46 statement keywords: SELECT, JOIN, UPDATE)
@@ -235,15 +235,15 @@ Deep analysis of every important source file.
 
 ## `js/pages/returns.js`
 
-- **Purpose:** Defines 4 function(s) implementing supporting logic.
-- **Lines of code:** 141
-- **Complexity:** Low (heuristic score: 16)
+- **Purpose:** Defines 8 function(s) implementing supporting logic.
+- **Lines of code:** 363
+- **Complexity:** Medium (heuristic score: 42)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** splitSerials(text), wireSerialBox(el), resetForm(), $(id)
+- **Functions:** splitSerials(text), wireSerialBox(el), resetSelect(el, placeholder), fillSelect(el, values, placeholder), updateLineInputVisibility(), renderLines(), resetForm(), $(id)
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (4 statement keywords: SELECT, JOIN)
+- **Database usage:** Raw SQL detected (33 statement keywords: SELECT, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
@@ -270,8 +270,8 @@ Deep analysis of every important source file.
 ## `js/pages/sales.js`
 
 - **Purpose:** Defines 33 function(s) implementing supporting logic.
-- **Lines of code:** 1017
-- **Complexity:** High (heuristic score: 164)
+- **Lines of code:** 1028
+- **Complexity:** High (heuristic score: 166)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** fillSelect(selectEl, items, placeholder), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadCategoryWattRules(), isWattMandatory(cat), isSerialMandatory(cat), splitSerials(text), wireSerialBox(el), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), loadSaleCategories(), refreshSaleBrandsAndWatt(), refreshSaleWattage(), refreshSaleType(), updateSaleSerialFieldVisibility(), updateSaleEditQtyFieldVisibility(), searchCustomerLedgers(q), searchCustomerShortCodes(q), fillCustomerDatalist(listEl, ledgers, key), applyLedgerToCustomerFields(l), wireCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), clearSalesForm(), refreshSaleEditBrandsAndWatt(injectBrand, injectWatt), refreshSaleEditWattage(injectWatt), refreshSaleEditType(injectType), loadEditCascadeForLine(line), clearEditPanel(), findSalesOrderForEditing(term), prefillFromAssign(customerName, orderNo, mobile, address, lines), $(id), qtyLineKey(l)
@@ -678,14 +678,14 @@ Deep analysis of every important source file.
 ## `api/routes/sales.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 713
-- **Complexity:** High (heuristic score: 105)
+- **Lines of code:** 849
+- **Complexity:** High (heuristic score: 129)
 - **Imports:** None
 - **Exports:** module.exports
-- **Functions:** registerSalesRoutes(app, deps), fifoConsumeQty(conn, itemKey, qtyNeeded, meta, editedFlag = 0), releaseQtyToAvailable(conn, itemKey, orderNo, qtyToRelease), isQtyLine(line)
+- **Functions:** registerSalesRoutes(app, deps), fifoConsumeQty(conn, itemKey, qtyNeeded, meta, editedFlag = 0), releaseQtyToAvailable(conn, itemKey, orderNo, qtyToRelease), fifoMoveQtyStatus(conn, itemKey, qty, fromStatus, toStatus, extraFields = {}, rawSetClauses = []), isQtyLine(line)
 - **Classes:** None
 - **API endpoints:** GET /api/sales/types, GET /api/sales/check-line, POST /api/sales/dispatch, POST /api/returns, GET /api/sales/find/:term, PUT /api/sales/modify/:orderNo, DELETE /api/sales/delete/:orderNo, GET /api/sales/register
-- **Database usage:** Raw SQL detected (49 statement keywords: SELECT, UPDATE, INSERT INTO, JOIN)
+- **Database usage:** Raw SQL detected (61 statement keywords: SELECT, UPDATE, INSERT INTO, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - High branching complexity detected — consider refactoring conditional logic into smaller helpers.

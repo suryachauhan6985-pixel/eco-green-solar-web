@@ -1185,7 +1185,7 @@
     "type": "file",
     "label": "js/pages/purchase.js",
     "file": "js/pages/purchase.js",
-    "detail": "Defines 24 function(s) implementing supporting logic."
+    "detail": "Defines 26 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -1261,6 +1261,12 @@
   },
   {
     "type": "function",
+    "label": "updatePurSerialVisibility",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "fillSelectFromApi",
     "file": "js/pages/purchase.js",
     "detail": "(selectEl, apiPath, emptyLabel, injectValue)"
@@ -1318,6 +1324,12 @@
     "label": "refreshPurEditWattages",
     "file": "js/pages/purchase.js",
     "detail": "(injectWatt)"
+  },
+  {
+    "type": "function",
+    "label": "updatePurEditSerialVisibility",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
   },
   {
     "type": "function",
@@ -1521,7 +1533,7 @@
     "type": "file",
     "label": "js/pages/returns.js",
     "file": "js/pages/returns.js",
-    "detail": "Defines 4 function(s) implementing supporting logic."
+    "detail": "Defines 8 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -1534,6 +1546,30 @@
     "label": "wireSerialBox",
     "file": "js/pages/returns.js",
     "detail": "(el)"
+  },
+  {
+    "type": "function",
+    "label": "resetSelect",
+    "file": "js/pages/returns.js",
+    "detail": "(el, placeholder)"
+  },
+  {
+    "type": "function",
+    "label": "fillSelect",
+    "file": "js/pages/returns.js",
+    "detail": "(el, values, placeholder)"
+  },
+  {
+    "type": "function",
+    "label": "updateLineInputVisibility",
+    "file": "js/pages/returns.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "renderLines",
+    "file": "js/pages/returns.js",
+    "detail": "()"
   },
   {
     "type": "function",
@@ -3100,6 +3136,12 @@
     "label": "releaseQtyToAvailable",
     "file": "api/routes/sales.routes.js",
     "detail": "(conn, itemKey, orderNo, qtyToRelease)"
+  },
+  {
+    "type": "function",
+    "label": "fifoMoveQtyStatus",
+    "file": "api/routes/sales.routes.js",
+    "detail": "(conn, itemKey, qty, fromStatus, toStatus, extraFields = {}, rawSetClauses = [])"
   },
   {
     "type": "function",

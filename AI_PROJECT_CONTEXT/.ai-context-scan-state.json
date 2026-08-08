@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-08T06:14:13.917Z",
+  "generatedAt": "2026-08-08T06:39:12.486Z",
   "files": {
     ".env": {
       "hash": "fbf93500e5313e2f01018668de228b174a039bbf",
@@ -72,9 +72,9 @@
       "mtimeMs": 1785070246476.3562
     },
     "js/pages/purchase.js": {
-      "hash": "0495933bf805aeb56847785d80951ebe3eb2dda2",
-      "size": 52335,
-      "mtimeMs": 1785744929555.1223
+      "hash": "bf8021529168ee0aa3426072c65d4436b4973ad9",
+      "size": 54799,
+      "mtimeMs": 1786170968524.1475
     },
     "js/pages/purchaseregister.js": {
       "hash": "e155cf368a8b35e8dd7b493aa7f7e1e0c3c335a4",
@@ -87,9 +87,9 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/returns.js": {
-      "hash": "10593abae5e931d3eebd9fe0bad1a7336ead37dc",
-      "size": 6528,
-      "mtimeMs": 1784465054999.5994
+      "hash": "f2b86ec30d701084e6bfbd7021ca8278740b4b08",
+      "size": 15578,
+      "mtimeMs": 1786170282917.2385
     },
     "js/pages/saleregister.js": {
       "hash": "5c8e773944f5a374c0298338ad5765d11b2b793f",
@@ -97,9 +97,9 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/sales.js": {
-      "hash": "09230b5b7c3ee2d920d8e97d0466196a070338de",
-      "size": 54584,
-      "mtimeMs": 1785752782949.6843
+      "hash": "14b6b596d4f49fd141f492595812e42913d989b2",
+      "size": 55318,
+      "mtimeMs": 1786170979571.6326
     },
     "js/pages/scansheet.js": {
       "hash": "8fa99e1e75299b9422d10b0dbd83d9b52de8b598",
@@ -262,9 +262,9 @@
       "mtimeMs": 1785235629234.0254
     },
     "api/routes/sales.routes.js": {
-      "hash": "9edc3d4eeb20017971bb37a299066b1494540a0b",
-      "size": 37902,
-      "mtimeMs": 1786166525542.3833
+      "hash": "c74122fee7d38b483698e31f583798e3d49dc281",
+      "size": 44993,
+      "mtimeMs": 1786170450417.1477
     },
     "api/routes/scansheet.routes.js": {
       "hash": "a583c622cb0e3b76257b10d27af47923ca702bda",

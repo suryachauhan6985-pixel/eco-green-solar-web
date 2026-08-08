@@ -115,8 +115,34 @@ module.exports = function registerMastersRoutes(app, deps) {
     res.json(rows);
   }));
 
+  // Shared validation used by both the manual "Save Product Profile" form
+  // and the bulk Excel import (Goal 11) — kept server-side too so bad rows
+  // never slip in even if a client (or a future import path) skips its own
+  // checks. Returns a { error } string, or null if the row is valid.
+  async function validateItemPayload({ brand_name, watt, category, editingId }) {
+    if (!brand_name || !String(brand_name).trim()) return 'Brand Name is required.';
+    if (!category || !String(category).trim()) return 'Category is required.';
+    const [[catRow]] = await pool.query(
+      `SELECT name, COALESCE(watt_mandatory,0) AS watt_mandatory FROM categories WHERE name = ?`,
+      [category],
+    );
+    if (!catRow) return `Category '${category}' does not exist. Create it first in Category Master.`;
+    if (catRow.watt_mandatory && (!watt || Number(watt) <= 0)) {
+      return `Wattage/Capacity is mandatory for category '${category}'.`;
+    }
+    // Duplicate check: same category + brand + watt combo already registered.
+    const dupParams = [category, String(brand_name).trim(), watt || 0];
+    let dupQuery = `SELECT id FROM items WHERE category = ? AND LOWER(brand_name) = LOWER(?) AND watt = ?`;
+    if (editingId) { dupQuery += ` AND id <> ?`; dupParams.push(editingId); }
+    const [[dupRow]] = await pool.query(dupQuery, dupParams);
+    if (dupRow) return `An item with brand '${brand_name}', wattage '${watt || 0}' already exists under '${category}'.`;
+    return null;
+  }
+
   app.post('/api/masters/items', route(async (req, res) => {
     const { name, brand_name, watt, solar_type, category, uom, minimum_stock } = req.body;
+    const errMsg = await validateItemPayload({ brand_name, watt, category });
+    if (errMsg) return res.status(400).json({ error: errMsg });
     await pool.query(`
       INSERT INTO items (name, brand_name, watt, solar_type, category, uom, minimum_stock) 
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -127,6 +153,8 @@ module.exports = function registerMastersRoutes(app, deps) {
   app.put('/api/masters/items/:id', route(async (req, res) => {
     const { id } = req.params;
     const { name, brand_name, watt, solar_type, category, uom, minimum_stock } = req.body;
+    const errMsg = await validateItemPayload({ brand_name, watt, category, editingId: id });
+    if (errMsg) return res.status(400).json({ error: errMsg });
     await pool.query(`
       UPDATE items 
       SET name = ?, brand_name = ?, watt = ?, solar_type = ?, category = ?, uom = ?, minimum_stock = ?

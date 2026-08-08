@@ -11,7 +11,7 @@
 ---
 
 ## Goal 1 — Item Registration Panel: Dynamic Fields + Subtype Display
-**Status:** 🔴 Pending
+**Status:** 🟡 In Progress
 **Related files:** `js/pages/masters.js`, `api/routes/masters.js`
 
 - **Problem:**
@@ -26,7 +26,7 @@
 ---
 
 ## Goal 2 — Purchase Inward + Sales: Conditional Serial No. Box
-**Status:** 🔴 Pending
+**Status:** 🟢 Done
 **Related files:** `js/pages/purchase.js`, `js/pages/sales.js` (add + edit sections dono)
 
 - **Problem:** Jis item ke liye serial no. mandatory nahi hai, uske liye bhi serial no. box dikhta hai.
@@ -39,7 +39,7 @@
 ---
 
 ## Goal 3 — Dual Item Type Support: Serial-based AND Quantity-based
-**Status:** 🔴 Pending
+**Status:** 🟢 Done
 **Related files:** `js/pages/purchase.js`, `js/pages/sales.js`, `js/pages/stockassign.js`, `api/services/stockHelpers.js`, `api/db/schema.js`
 
 - **Problem:** Pura system abhi sirf serial-no.-based items ke liye design hai.
@@ -52,7 +52,7 @@
 ---
 
 ## Goal 4 — Return/Damage Section: Conditional Serial No.
-**Status:** 🔴 Pending
+**Status:** 🟢 Done
 **Related files:** `js/pages/returns.js` (aur related return/damage API routes)
 
 - **Problem:** Return/damage section mein quantity return karte waqt serial no. dalna mandatory hai — chahe item ke liye serial mandatory ho ya na ho.
@@ -150,6 +150,24 @@
   - Jaha abhi Logout option/menu hai, wahi se ek **"Settings"** option milega.
   - Settings page/tab khulega jisme toggle hoga: **Scansheet tab Hide/Unhide** — ON/OFF karne se main navigation mein Scansheet tab dikhna/chupna control hoga.
 - **Acceptance criteria:** Settings se Scansheet tab hide karne par woh nav menu se gayab ho jaye; unhide karne par wapas dikhe. Setting persist ho (refresh/relogin ke baad bhi yaad rahe — per-user ya global, yeh implementation ke time confirm karenge).
+
+---
+
+## Goal 11 — Excel Upload se Bulk Item Creation (Masters)
+**Status:** 🔴 Pending
+**Related files:** `js/pages/masters.js`, `api/routes/masters.js`, (reference: Party Ledger ka existing Excel-upload-based creation flow — same pattern reuse karna hai)
+
+- **Problem:** Abhi items sirf ek-ek karke manually create ho sakte hain. Party Ledger module mein jaisa Excel-upload-se-bulk-creation feature hai, waisa hi Items ke liye nahi hai.
+- **Expected behavior:**
+  - Item Registration panel mein ek **"Upload Excel"** option ho (jaise Party Ledger mein hai).
+  - Ek **downloadable Excel template** provide ho jisme columns already defined ho: Item Name, Category, Subtype, Wattage (agar mandatory ho), Serial Mandatory (Yes/No), aur baaki required master fields.
+  - Excel upload hone par backend row-by-row validate kare:
+    - Category valid ho, uske hisaab se Subtype valid ho (Goal 1 ke subtype-load logic se consistent).
+    - Wattage sirf tab mandatory treat ho jab category/item ke rule ke hisaab se mandatory ho (Goal 1 ki `syncWattMandatoryUI()` / mandatory-rule logic backend side bhi honi chahiye).
+    - Serial-mandatory flag correctly set ho (Goal 3 ke dual item-type support — serial-based vs quantity-based — ke saath consistent).
+  - Bulk import ke baad ek summary dikhe: kitne items successfully create hue, kitni rows mein error aaya (row number + reason ke saath), taaki user fix karke dobara try kar sake.
+  - Duplicate item (same name/category) detect ho aur skip/flag ho, duplicate na bane.
+- **Acceptance criteria:** User Excel template download kare → fill kare → upload kare → sabhi valid rows se items automatically create ho jayein (sahi category/subtype/wattage-mandatory/serial-mandatory ke saath), invalid rows clearly reported hon, koi duplicate na bane. Behavior Party Ledger ke existing Excel-upload flow jaisa consistent/familiar ho.
 
 ---
 
