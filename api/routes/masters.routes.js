@@ -35,13 +35,22 @@ module.exports = function registerMastersRoutes(app, deps) {
     res.json({ success: true });
   }));
 
-  // Category: delete (blocked if items still exist under it)
+  // Category: delete — cascades to every item registered under it (parent
+  // delete removes its children), but stays blocked if ANY of those items
+  // still carry stock_ledger history (purchased/dispatched stock), so real
+  // inventory/transaction data can never be silently wiped out. Same
+  // protective pattern as the standalone Item delete endpoint below.
   app.delete('/api/masters/categories/:name', route(async (req, res) => {
     const { name } = req.params;
-    const [[{ cnt }]] = await pool.query(`SELECT COUNT(*) AS cnt FROM items WHERE category = ?`, [name]);
+    const [[{ cnt }]] = await pool.query(`
+      SELECT COUNT(*) AS cnt FROM stock_ledger sl
+      JOIN items i ON i.id = sl.item_id
+      WHERE i.category = ?
+    `, [name]);
     if (cnt > 0) {
-      return res.status(400).json({ error: `Cannot delete '${name}': ${cnt} item(s) still registered under this category.` });
+      return res.status(400).json({ error: `Cannot delete '${name}': ${cnt} stock record(s) exist for item(s) under this category. Clear/reassign that stock first.` });
     }
+    await pool.query(`DELETE FROM items WHERE category = ?`, [name]);
     const [result] = await pool.query(`DELETE FROM categories WHERE name = ?`, [name]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Category not found.' });
     res.json({ success: true });
@@ -212,6 +221,21 @@ module.exports = function registerMastersRoutes(app, deps) {
       SET name = ?, brand_name = ?, watt = ?, solar_type = ?, category = ?, uom = ?, minimum_stock = ?, model = ?, watt_mandatory = ?, serial_mandatory = ?
       WHERE id = ?
     `, [name || `${brand_name} ${watt || model || ''}`.trim(), brand_name, watt || 0, solar_type || '-', category, uom || 'Nos', minimum_stock || 0, model ? String(model).trim() : null, wattOverride, serialOverride, id]);
+    res.json({ success: true });
+  }));
+
+  // Item: delete a single registered item — blocked if any stock_ledger
+  // row (purchased or dispatched) still references it, so a delete can
+  // never silently erase real purchase/sale/stock history. Same guarded
+  // pattern as Units/Warehouses delete above.
+  app.delete('/api/masters/items/:id', route(async (req, res) => {
+    const { id } = req.params;
+    const [[{ cnt }]] = await pool.query(`SELECT COUNT(*) AS cnt FROM stock_ledger WHERE item_id = ?`, [id]);
+    if (cnt > 0) {
+      return res.status(400).json({ error: `Cannot delete this item: ${cnt} stock record(s) (purchase/stock history) exist for it. Clear/reassign that stock first.` });
+    }
+    const [result] = await pool.query(`DELETE FROM items WHERE id = ?`, [id]);
+    if (result.affectedRows === 0) return res.status(400).json({ error: 'Item not found.' });
     res.json({ success: true });
   }));
 

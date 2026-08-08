@@ -76,7 +76,7 @@ window.PAGES.masters = {
               <input type="file" id="mItemImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
             </div>
             <div class="table-wrap"><table>
-              <thead><tr><th>Category</th><th>Brand</th><th>Watt / Model</th><th>Subtype</th><th>Alert Stock</th><th>UOM</th></tr></thead>
+              <thead><tr><th>Category</th><th>Brand</th><th>Watt / Model</th><th>Subtype</th><th>Alert Stock</th><th>UOM</th><th>Actions</th></tr></thead>
               <tbody id="mastersItemBody"></tbody>
             </table></div>
           </div>
@@ -311,7 +311,7 @@ window.PAGES.masters = {
 
         cachedItems = items;
         if (!items.length) {
-          $('mastersItemBody').innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--txt-muted);">No recorded profiles found.</td></tr>`;
+          $('mastersItemBody').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--txt-muted);">No recorded profiles found.</td></tr>`;
         } else {
           $('mastersItemBody').innerHTML = items.map(it => `
         <tr class="m-item-row" data-id="${it.id}" style="cursor:pointer;">
@@ -321,6 +321,7 @@ window.PAGES.masters = {
           <td>${it.solar_type || '-'}</td>
           <td style="color:var(--orange); font-weight:600;">${it.minimum_stock || 0}</td>
           <td>${it.uom || 'Nos'}</td>
+          <td><button class="btn btn-red m-item-delete" data-id="${it.id}" data-label="${it.brand_name}${it.watt ? ' ' + it.watt + 'W' : (it.model ? ' ' + it.model : '')}" style="padding:6px 10px; font-size:11px;" title="Delete item"><i class="fa-solid fa-trash"></i></button></td>
         </tr>
       `).join('');
         }
@@ -813,8 +814,11 @@ window.PAGES.masters = {
       }
     });
 
-    // --- Item Registration: click row to load into edit form ---
-    $("mastersItemBody").addEventListener("click", (e) => {
+    // --- Item Registration: DOUBLE-click row to load into edit form ---
+    // (matches the info-icon tooltip above the table, and keeps a single
+    // click free for the row's own Delete button below).
+    $("mastersItemBody").addEventListener("dblclick", (e) => {
+      if (e.target.closest(".m-item-delete")) return;
       const row = e.target.closest(".m-item-row");
       if (!row) return;
       const match = cachedItems.find((i) => String(i.id) === String(row.dataset.id));
@@ -833,6 +837,28 @@ window.PAGES.masters = {
       $("mBtnSaveItem").innerHTML =
         '<i class="fa-solid fa-save"></i> Update Product Profile';
       $("mBtnCancelItemEdit").style.display = "inline-block";
+    });
+
+    // --- Item Registration: single-click Delete button (per row) ---
+    $("mastersItemBody").addEventListener("click", async (e) => {
+      const btn = e.target.closest(".m-item-delete");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const label = btn.dataset.label || "this item";
+      if (!(await window.confirmDanger("Delete Item", `Delete item '${label}' permanently? This cannot be undone.`))) return;
+      try {
+        const res = await fetch(`${API_BASE}/masters/items/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Could not delete this item.");
+        window.showToast(`Item '${label}' deleted.`);
+        if (editingItemId && String(editingItemId) === String(id)) resetItemFormState();
+        loadMastersSystemEngine();
+      } catch (err) {
+        window.openModal(
+          "Cannot Delete Item",
+          `<p style="color:var(--red);">${err.message}</p>`,
+        );
+      }
     });
 
     // --- Category: watt-mandatory inline toggle ---
@@ -911,7 +937,7 @@ window.PAGES.masters = {
       const btn = e.target.closest(".m-cat-delete");
       if (!btn) return;
       const cat = btn.dataset.cat;
-      if (!(await window.confirmDanger('Delete Category', `Delete category '${cat}' permanently? This will also remove its subtypes.`))) return;
+      if (!(await window.confirmDanger('Delete Category', `Delete category '${cat}' permanently? This will also delete every item registered under it and its subtypes.`))) return;
       try {
         const res = await fetch(`${API_BASE}/masters/categories/${encodeURIComponent(cat)}`, {
           method: "DELETE",
