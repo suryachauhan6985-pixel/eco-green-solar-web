@@ -208,12 +208,18 @@ module.exports = function registerSalesRoutes(app, deps) {
   // master (mirrors get_types_for_category_brand_watt()). The frontend falls
   // back to /api/masters/subtypes/:category (get_subtypes_by_category()) when
   // this comes back empty, exactly like sync_sales_solartype() does.
+  // NOTE: items created via Masters > Item Registration Panel have no Type
+  // field there, so their solar_type is stored as the literal placeholder
+  // '-' (see masters_routes.js POST/PUT /items). That placeholder is
+  // excluded here — otherwise a Masters-registered item would make this
+  // query return ['-'] (non-empty), which stops the frontend from ever
+  // falling back to the category's real registered subtypes.
   app.get('/api/sales/types', route(async (req, res) => {
     const { category, brand } = req.query;
     const watt = Number(req.query.watt) || 0;
     if (!category || !brand) return res.json([]);
     const [rows] = await pool.query(
-      `SELECT DISTINCT solar_type FROM items WHERE category=? AND brand_name=? AND watt=? AND solar_type IS NOT NULL AND solar_type <> '' ORDER BY solar_type ASC`,
+      `SELECT DISTINCT solar_type FROM items WHERE category=? AND brand_name=? AND watt=? AND solar_type IS NOT NULL AND solar_type <> '' AND solar_type <> '-' ORDER BY solar_type ASC`,
       [category, brand, watt]
     );
     res.json(rows.map((r) => r.solar_type));
