@@ -62,7 +62,10 @@ window.PAGES.sales = {
             </div>
 
             <div class="field span-full" id="saleSerialsField"><label>Scan Serial Numbers <span class="req">*</span></label>
-              <textarea id="saleSerials" placeholder="One serial per line, it auto-splits"></textarea>
+              <div class="ss-scan-input-wrap">
+                <textarea id="saleSerials" placeholder="One serial per line, it auto-splits — or tap the scan icon"></textarea>
+                <button type="button" class="ss-scan-icon-btn" id="saleScanBtn" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
+              </div>
             </div>
             <div class="field span-full" id="saleQtyOnlyNote" style="display:none;">
               <p style="color:var(--txt-muted); font-style:italic; margin:0;">This category is quantity-tracked (no serial numbers) — just set the Expected Qty above and click "Add Product Line".</p>
@@ -133,7 +136,12 @@ window.PAGES.sales = {
               </div>
             </div>
 
-            <div class="field span-full" id="saleEditSerialsWrap"><label>Serials <span class="req">*</span></label><textarea id="saleEditSerials" placeholder="Serials will load here..."></textarea></div>
+            <div class="field span-full" id="saleEditSerialsWrap"><label>Serials <span class="req">*</span></label>
+              <div class="ss-scan-input-wrap">
+                <textarea id="saleEditSerials" placeholder="Serials will load here... or tap the scan icon"></textarea>
+                <button type="button" class="ss-scan-icon-btn" id="saleEditScanBtn" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
+              </div>
+            </div>
           </div>
 
           <div class="actions-row">
@@ -284,6 +292,281 @@ window.PAGES.sales = {
     }
     wireSerialBox($('saleSerials'));
     wireSerialBox($('saleEditSerials'));
+
+    // ---------------- Serial scanner (camera) ----------------
+    // Same html5-qrcode-based scanner used by Purchase Inward (see
+    // js/pages/purchase.js's openPurchaseScanner) — identical UI/behaviour
+    // ported over here for Sales so scanning feels exactly the same in
+    // both places. Each decode pauses the camera and shows a result card
+    // with "Retry" (discard, resume scanning) and "Done" (add to the
+    // Serial Numbers box, then resume scanning for the next one).
+    const saleScanState = {
+      html5QrCode: null,
+      cameras: [],
+      cameraIndex: 0,
+      torchOn: false,
+      overlayEl: null,
+      targetId: null,
+      handledOnce: false,
+      pendingText: null,
+      pendingIsDup: false,
+      addedCount: 0,
+    };
+
+    function saleScanBeep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 1050;
+        gain.gain.setValueAtTime(0.001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.16);
+        osc.onended = () => ctx.close();
+      } catch (e) { /* Web Audio not available — silently skip the beep */ }
+    }
+
+    function saleScanSetStatus(msg) {
+      const el = document.getElementById('saleScanStatus');
+      if (el) el.textContent = msg;
+    }
+
+    function openSaleScanner(targetId) {
+      const box = document.getElementById(targetId);
+      if (!box) return;
+      saleScanState.targetId = targetId;
+      saleScanState.torchOn = false;
+      saleScanState.handledOnce = false;
+      saleScanState.pendingText = null;
+      saleScanState.pendingIsDup = false;
+      saleScanState.addedCount = 0;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'ss-scanner-overlay';
+      overlay.innerHTML = `
+        <div class="ss-scanner-topbar">
+          <button type="button" class="ss-icon-btn light" id="saleScanBack" title="Close"><i class="fa-solid fa-arrow-left"></i></button>
+          <div class="ss-scanner-title">Scan Serial Numbers</div>
+          <div class="ss-scanner-topbtns">
+            <button type="button" class="ss-icon-btn light" id="saleScanTorch" title="Flashlight"><i class="fa-solid fa-bolt"></i></button>
+            <button type="button" class="ss-icon-btn light" id="saleScanFlip" title="Flip camera"><i class="fa-solid fa-camera-rotate"></i></button>
+          </div>
+        </div>
+        <div class="ss-scanner-camwrap">
+          <div id="saleScanRegion" class="ss-scanner-camfeed"></div>
+          <div class="ss-scanner-target" id="saleScanTargetBox"></div>
+          <div class="ss-scanner-instruction" id="saleScanStatus">Requesting camera permission&hellip;</div>
+          <div class="ss-scanner-result" id="saleScanResult" style="display:none;">
+            <div class="ss-scanner-result-card" id="saleScanResultCard">
+              <div class="ss-scanner-result-label">Scanned value</div>
+              <div class="ss-scanner-result-value" id="saleScanResultValue"></div>
+              <div class="ss-scanner-result-msg" id="saleScanResultMsg"></div>
+            </div>
+            <div class="ss-scanner-result-actions">
+              <button type="button" class="btn btn-ghost" id="saleScanRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
+              <button type="button" class="btn btn-green" id="saleScanDone2"><i class="fa-solid fa-check"></i> Done</button>
+            </div>
+          </div>
+        </div>
+        <div class="ss-scanner-bottom">
+          <span class="proof-name" id="saleScanCount" style="color:#fff;">0 serial(s) added</span>
+          <button type="button" class="btn btn-red ss-scanner-cancel" id="saleScanCancel"><i class="fa-solid fa-xmark"></i> Close</button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      saleScanState.overlayEl = overlay;
+      document.body.style.overflow = 'hidden';
+
+      overlay.querySelector('#saleScanBack').onclick = closeSaleScanner;
+      overlay.querySelector('#saleScanCancel').onclick = closeSaleScanner;
+      overlay.querySelector('#saleScanTorch').onclick = toggleSaleTorch;
+      overlay.querySelector('#saleScanFlip').onclick = flipSaleCamera;
+      overlay.querySelector('#saleScanRetry').onclick = retrySaleScan;
+      overlay.querySelector('#saleScanDone2').onclick = confirmSaleScan;
+
+      startSaleCamera();
+    }
+
+    function startSaleCamera() {
+      if (!window.Html5Qrcode) {
+        saleScanSetStatus('Scanner library failed to load. Check your connection and try again.');
+        return;
+      }
+      window.Html5Qrcode.getCameras().then((cameras) => {
+        if (!cameras || !cameras.length) { saleScanSetStatus('No camera found on this device.'); return; }
+        saleScanState.cameras = cameras;
+        const backIdx = cameras.findIndex((c) => /back|rear|environment/i.test(c.label || ''));
+        saleScanState.cameraIndex = backIdx !== -1 ? backIdx : 0;
+        launchSaleCamera();
+      }).catch((err) => {
+        console.warn('Camera permission error', err);
+        saleScanSetStatus('Camera permission denied. Please allow camera access in your browser settings, then tap Cancel and try again.');
+      });
+    }
+
+    function launchSaleCamera() {
+      const camera = saleScanState.cameras[saleScanState.cameraIndex];
+      if (!camera) return;
+      saleScanState.handledOnce = false;
+      saleScanSetStatus('Place the serial barcode / QR in the box');
+
+      const config = { fps: 10 };
+      if (window.Html5QrcodeSupportedFormats) {
+        config.formatsToSupport = [
+          window.Html5QrcodeSupportedFormats.QR_CODE,
+          window.Html5QrcodeSupportedFormats.EAN_13,
+          window.Html5QrcodeSupportedFormats.EAN_8,
+          window.Html5QrcodeSupportedFormats.CODE_128,
+          window.Html5QrcodeSupportedFormats.CODE_39,
+          window.Html5QrcodeSupportedFormats.UPC_A,
+          window.Html5QrcodeSupportedFormats.UPC_E,
+          window.Html5QrcodeSupportedFormats.ITF,
+        ];
+      }
+
+      saleScanState.html5QrCode = new window.Html5Qrcode('saleScanRegion', { verbose: false });
+      saleScanState.html5QrCode.start(
+        camera.id,
+        config,
+        onSaleScanSuccess,
+        () => { /* per-frame "no code found yet" — expected, ignore */ }
+      ).catch((err) => {
+        console.warn('Camera start error', err);
+        saleScanSetStatus('Could not start the camera. Tap Cancel and try again.');
+      });
+    }
+
+    // Decoding pauses here (handledOnce guard, exactly like Purchase) until
+    // the user explicitly taps Retry or Done on the result card.
+    function onSaleScanSuccess(decodedText) {
+      if (saleScanState.handledOnce) return;
+      saleScanState.handledOnce = true;
+      saleScanBeep();
+      if (navigator.vibrate) { try { navigator.vibrate(180); } catch (e) { /* not supported */ } }
+      showSaleScanResult(decodedText);
+    }
+
+    // Paints the decoded value on a result card over the camera feed and
+    // flags it as duplicate (already in this Serial Numbers box) if it is
+    // — same Retry (discard) / Done (add to box) choice Purchase gives, so
+    // nothing lands in the box on a bad/duplicate scan.
+    function showSaleScanResult(text) {
+      const code = String(text || '').trim();
+      const box = document.getElementById(saleScanState.targetId);
+      const existing = box ? splitSerials(box.value) : [];
+      const dup = !!code && existing.some((s) => s.toLowerCase() === code.toLowerCase());
+
+      saleScanState.pendingText = code;
+      saleScanState.pendingIsDup = dup;
+
+      const panel = document.getElementById('saleScanResult');
+      const card = document.getElementById('saleScanResultCard');
+      const valueEl = document.getElementById('saleScanResultValue');
+      const msgEl = document.getElementById('saleScanResultMsg');
+      const doneBtn = document.getElementById('saleScanDone2');
+      const targetBox = document.getElementById('saleScanTargetBox');
+      if (!panel || !valueEl) return;
+
+      valueEl.textContent = code || '(empty)';
+      if (card) card.classList.toggle('dup', dup);
+      if (msgEl) msgEl.textContent = dup
+        ? 'This serial no. is already in the box. Retry with a different code, or remove the old one first.'
+        : 'Scanned successfully.';
+      if (doneBtn) doneBtn.style.display = dup ? 'none' : '';
+
+      panel.style.display = 'flex';
+      saleScanSetStatus('');
+      if (targetBox) targetBox.style.visibility = 'hidden';
+    }
+
+    function hideSaleScanResult() {
+      const panel = document.getElementById('saleScanResult');
+      const targetBox = document.getElementById('saleScanTargetBox');
+      if (panel) panel.style.display = 'none';
+      if (targetBox) targetBox.style.visibility = '';
+      saleScanState.pendingText = null;
+      saleScanState.pendingIsDup = false;
+    }
+
+    // "Retry" — discard the paused result and resume live scanning.
+    function retrySaleScan() {
+      hideSaleScanResult();
+      saleScanState.handledOnce = false;
+      saleScanSetStatus('Place the serial barcode / QR in the box');
+    }
+
+    // "Done" — commit the scanned value into the Serial Numbers box (one
+    // per line, same normalization the paste handler above uses), then
+    // resume scanning so the next serial can be captured right away.
+    function confirmSaleScan() {
+      if (saleScanState.pendingIsDup) return; // guard — Done button is hidden for dupes anyway
+      const code = saleScanState.pendingText;
+      if (!code) { retrySaleScan(); return; }
+
+      const box = document.getElementById(saleScanState.targetId);
+      if (box) {
+        const existing = splitSerials(box.value);
+        existing.push(code);
+        box.value = existing.join('\n') + '\n';
+        box.dispatchEvent(new Event('input', { bubbles: true }));
+        saleScanState.addedCount = existing.length;
+        const countEl = document.getElementById('saleScanCount');
+        if (countEl) countEl.textContent = `${existing.length} serial(s) added`;
+      }
+
+      hideSaleScanResult();
+      saleScanState.handledOnce = false;
+      saleScanSetStatus('Added \u2713 — scan the next one');
+    }
+
+    function toggleSaleTorch() {
+      if (!saleScanState.html5QrCode) return;
+      saleScanState.torchOn = !saleScanState.torchOn;
+      saleScanState.html5QrCode.applyVideoConstraints({ advanced: [{ torch: saleScanState.torchOn }] })
+        .then(() => {
+          const btn = document.getElementById('saleScanTorch');
+          if (btn) btn.classList.toggle('active', saleScanState.torchOn);
+        })
+        .catch(() => { window.showToast('Flashlight not supported on this device'); saleScanState.torchOn = false; });
+    }
+
+    function flipSaleCamera() {
+      if (!saleScanState.cameras.length || saleScanState.cameras.length < 2) { window.showToast('Only one camera available'); return; }
+      saleScanState.cameraIndex = (saleScanState.cameraIndex + 1) % saleScanState.cameras.length;
+      const qr = saleScanState.html5QrCode;
+      if (qr) qr.stop().then(launchSaleCamera).catch(launchSaleCamera);
+      else launchSaleCamera();
+    }
+
+    function closeSaleScanner() {
+      const qr = saleScanState.html5QrCode;
+      const targetId = saleScanState.targetId;
+      saleScanState.pendingText = null;
+      saleScanState.pendingIsDup = false;
+      const finish = () => {
+        if (saleScanState.overlayEl) { saleScanState.overlayEl.remove(); saleScanState.overlayEl = null; }
+        document.body.style.overflow = '';
+        saleScanState.html5QrCode = null;
+        // Final normalize pass (dedupe/trim), same cleanup blur() already
+        // does for the New Entry box — keeps Edit-box scans tidy too.
+        const box = targetId ? document.getElementById(targetId) : null;
+        if (box) {
+          box.value = splitSerials(box.value).join('\n');
+          box.focus();
+        }
+      };
+      if (qr) qr.stop().then(finish).catch(finish);
+      else finish();
+    }
+
+    const saleScanBtnEl = $('saleScanBtn');
+    if (saleScanBtnEl) saleScanBtnEl.addEventListener('click', () => openSaleScanner('saleSerials'));
+    const saleEditScanBtnEl = $('saleEditScanBtn');
+    if (saleEditScanBtnEl) saleEditScanBtnEl.addEventListener('click', () => openSaleScanner('saleEditSerials'));
 
     function renderLineList(container, lines, emptyText) {
       if (!lines.length) {
