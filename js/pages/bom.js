@@ -1720,11 +1720,29 @@ window.PAGES.bom = {
       return out;
     }
 
+    // Shared renderer for "here's exactly which item(s) failed and why" —
+    // used by both Convert into Challan's stock CHECK (Step 1) and Create
+    // Dispatch's actual DEDUCTION (Step 2), so the person sees the same
+    // itemized list either way.
+    function bomShowStockIssuesModal(title, intro, rows) {
+      const listHtml = (rows || []).map((r) => `
+        <li style="margin-bottom:6px;">
+          <b>${bomEsc(r.name || '(blank)')}</b>${r.category ? ` <span class="note">(${bomEsc(r.category)})</span>` : ''}
+          <br><span style="color:var(--red);">${bomEsc(r.reason || 'Not available.')}</span>
+        </li>
+      `).join('');
+      window.openModal(title, `
+        <p>${intro}</p>
+        <ul style="padding-left:18px; margin-top:10px;">${listHtml || '<li>Unknown error.</li>'}</ul>
+      `);
+    }
+
     // Real, read-only stock check — asks the server whether every item in
     // this BOM can actually be dispatched right now (item registered in
     // Masters? enough Available quantity? entered serials real/Available/
     // matching?) and, if not, exactly why. Nothing is deducted or reserved
-    // here — that's a later step. Returns true only if every item is ok.
+    // here — used by Convert into Challan (Step 1); the actual deduction
+    // happens separately via Create Dispatch (Step 2, bomRunDispatch below).
     async function bomRunStockCheck() {
       const items = bomCollectItemsForStockCheck();
       let result;
@@ -1737,17 +1755,43 @@ window.PAGES.bom = {
       if (result && result.canDispatch) return true;
 
       const rows = (result && result.items ? result.items : []).filter((r) => !r.ok);
-      const listHtml = rows.map((r) => `
-        <li style="margin-bottom:6px;">
-          <b>${bomEsc(r.name || '(blank)')}</b>${r.category ? ` <span class="note">(${bomEsc(r.category)})</span>` : ''}
-          <br><span style="color:var(--red);">${bomEsc(r.reason || 'Not available.')}</span>
-        </li>
-      `).join('');
-      window.openModal('Dispatch Not Possible', `
-        <p>This BOM cannot be dispatched right now — the following item(s) failed the stock check:</p>
-        <ul style="padding-left:18px; margin-top:10px;">${listHtml || '<li>Unknown error.</li>'}</ul>
-      `);
+      bomShowStockIssuesModal(
+        'Dispatch Not Possible',
+        'This BOM cannot be dispatched right now — the following item(s) failed the stock check:',
+        rows
+      );
       return false;
+    }
+
+    // Create Dispatch — Step 2: the REAL, transactional stock deduction.
+    // Server re-checks everything (with row locks, in case stock changed
+    // since the last Convert-into-Challan check) and only then deducts —
+    // serial items get marked Dispatched, quantity items get FIFO-consumed
+    // from Available. Nothing is deducted if any single item fails.
+    async function bomRunDispatch() {
+      const items = bomCollectItemsForStockCheck();
+      const header = getHeaderValues();
+      let result;
+      try {
+        result = await window.Api.post('/bom/dispatch', { orderNo: header.orderNo, header, items });
+      } catch (e) {
+        const msg = (e && e.message) || '';
+        // Server sends "DISPATCH BLOCKED:\n<item>: <reason>\n..." as the
+        // error message on a failed dispatch (mirrors Sales dispatch's own
+        // convention) — split it back into rows for the same itemized
+        // modal Convert into Challan uses, instead of one wall of text.
+        if (msg.startsWith('DISPATCH BLOCKED')) {
+          const rows = msg.split('\n').slice(1).map((line) => {
+            const idx = line.indexOf(': ');
+            return idx === -1 ? { name: line, reason: '' } : { name: line.slice(0, idx), reason: line.slice(idx + 2) };
+          });
+          bomShowStockIssuesModal('Dispatch Not Possible', 'This BOM could not be dispatched — the following item(s) failed the stock check:', rows);
+        } else {
+          window.openModal('Dispatch Failed', `<p>${bomEsc(msg || 'Could not dispatch this BOM. Please try again.')}</p>`);
+        }
+        return false;
+      }
+      return result;
     }
 
     if (btnChallan) {
@@ -1886,16 +1930,32 @@ window.PAGES.bom = {
     }
 
     if (btnDispatch) {
-      btnDispatch.addEventListener('click', () => {
+      btnDispatch.addEventListener('click', async () => {
         if (!bomVerified) return; // belt-and-braces — button is disabled until verified anyway
-        // STAGE 1 (front-end only): the real single-dispatch workflow that
-        // deducts every kit item from stock at once still needs to be wired
-        // to the backend once that full process is described — this just
-        // confirms the verify → unlock → dispatch flow end-to-end for now.
-        window.openModal(
+        if (!currentKitState) {
+          window.openModal('Select a Kit', '<p>Please select a BOM Kit before dispatching.</p>');
+          return;
+        }
+        const confirmed = await window.confirmDialog(
           'Create Dispatch',
-          '<p>This BOM is verified and ready. The actual stock-deduction dispatch workflow will be wired up here once the process is finalized.</p>',
+          'This will permanently deduct every item in this BOM from stock. This cannot be undone from here. Continue?',
+          { kind: 'warning', okLabel: 'Yes, Dispatch' }
         );
+        if (!confirmed) return;
+
+        const originalLabel = btnDispatch.innerHTML;
+        btnDispatch.disabled = true;
+        btnDispatch.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Dispatching...';
+        const result = await bomRunDispatch();
+        btnDispatch.disabled = false;
+        btnDispatch.innerHTML = originalLabel;
+
+        if (result && result.success) {
+          if (window.showToast) window.showToast('Dispatched — stock has been deducted.');
+          window.openModal('Dispatch Complete', '<p>This BOM has been dispatched and stock has been deducted accordingly.</p>');
+          btnDispatch.disabled = true; // one dispatch per verified BOM in this session — avoids an accidental double-deduct
+        }
+        // On failure, bomRunDispatch() already showed the itemized/error modal.
       });
     }
 

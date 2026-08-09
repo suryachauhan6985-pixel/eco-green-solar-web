@@ -11,6 +11,7 @@ async function ensureStartupSchema(pool) {
   await ensureItemOverrideSchema(pool);
   await ensureStockModelSchema(pool);
   await ensureWattDecimalSchema(pool);
+  await ensureBomDispatchSchema(pool);
 }
 async function ensureSessionSchema(pool) { try { await pool.query(`ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS last_seen DATETIME NULL`); } catch (e) { console.warn('[Session schema] Could not ensure last_seen column (will retry lazily on first use):', e.message); } }
 async function ensureSerialRuleSchema(pool) { try { await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS serial_mandatory TINYINT(1) NOT NULL DEFAULT 0`); } catch (e) { console.warn('[Serial rule schema] Could not ensure serial_mandatory column (will retry lazily on first use):', e.message); } }
@@ -141,3 +142,37 @@ async function ensureWattDecimalSchema(pool) {
 }
 
 module.exports = { ensureStartupSchema };
+
+// Goal 4, Step 2: "Create Dispatch" moves from a frontend-only stub to a
+// real, transactional stock deduction. Two additions:
+//   1. `bom_dispatches` — one row per Create Dispatch click. There's no
+//      persisted BOM record yet (kit contents are still deliberately
+//      frontend-only — most kit items aren't registered in Masters yet,
+//      per explicit instruction), so this table doubles as the only
+//      durable record that a dispatch happened at all: which order it was
+//      for, who dispatched it, when, and a snapshot of exactly what was
+//      sent (header_json/items_json) for later reference/audit. It is
+//      also the anchor Steps 3 (partial dispatch) and 4 (Pending BOM
+//      Register) will build on — a `bom_no`/proper BOM identity can be
+//      layered on top of this later without re-touching stock_ledger.
+//   2. `stock_ledger.bom_dispatch_id` — every row a BOM dispatch touches
+//      (serial-based UPDATE or quantity-based FIFO split/UPDATE) is tagged
+//      with the bom_dispatches.id that consumed it. This is what stays
+//      traceable regardless of which status string ends up being used
+//      (see BOM_DISPATCH_STATUS in api/routes/bom.routes.js — still a
+//      single easy-to-change constant, business decision on 'Sold' vs a
+//      dedicated status not made yet).
+async function ensureBomDispatchSchema(pool) {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS bom_dispatches (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      order_no VARCHAR(100),
+      header_json LONGTEXT,
+      items_json LONGTEXT NOT NULL,
+      dispatched_by VARCHAR(100),
+      dispatched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_bom_dispatches_order (order_no)
+    )`);
+    await pool.query(`ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS bom_dispatch_id INT NULL DEFAULT NULL`);
+  } catch (e) { console.warn('[BOM dispatch schema] Could not ensure bom_dispatches table / bom_dispatch_id column (will retry lazily on first use):', e.message); }
+}
