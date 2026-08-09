@@ -212,6 +212,7 @@ function bomDefaultSectionsTemplate() {
     it.model = '';
     it.qty = '';
     it.remarks = '';
+    it.dispatchQty = '';
   }));
   bomRenumberAll(cloned);
   return cloned;
@@ -229,6 +230,51 @@ const bomEscAttr = (s) => bomEsc(s).replace(/"/g, '&quot;');
 function bomParseQtyNumber(qtyStr) {
   const m = String(qtyStr || '').match(/\d+/);
   return m ? parseInt(m[0], 10) : null;
+}
+
+// ---------- Role-based Dispatch Qty (partial dispatch) ----------
+// Admin/SuperAdmin CREATE a BOM — they set the full "Quantity" per item
+// (e.g. "06 Nos"), same as before. A plain User does not create BOMs; they
+// only DISPATCH from one, and may only send PART of the allocated qty in
+// one go (partial dispatch). "Dispatch Qty" is that new, separate column:
+//   - Admin/SuperAdmin: Quantity stays editable (unchanged); Dispatch Qty
+//     is disabled and always mirrors Quantity's numeric value (kept in
+//     sync automatically whenever Admin edits Quantity — see
+//     handleItemFieldEdit's 'qty' branch) — Admin isn't doing a partial
+//     split, so there's nothing separate for them to enter here.
+//   - User: Quantity becomes read-only (locked to whatever Admin set, so
+//     the original BOM allocation is preserved and never accidentally
+//     overwritten by whoever is dispatching it); Dispatch Qty is the ONLY
+//     editable qty field for them, auto-filled from Quantity by default,
+//     and clamped so it can never exceed the original allocation.
+// bomEffectiveQty() is THE single source of truth for "how many units are
+// actually being sent right now" — used everywhere serial-count
+// requirements and the stock check are computed (Verify BOM, Tick All,
+// the Serial No. modal/button, and the check-stock/dispatch API payload),
+// so a partial Dispatch Qty of e.g. 4 (out of an allocated 6) only ever
+// asks for 4 serials and only ever checks/deducts 4 units of stock.
+function bomEffectiveQty(it) {
+  if (it && it.dispatchQty !== undefined && it.dispatchQty !== null && String(it.dispatchQty).trim() !== '') {
+    const n = Number(it.dispatchQty);
+    if (!Number.isNaN(n)) return n;
+  }
+  return bomParseQtyNumber(it && it.qty);
+}
+
+// Fills in a blank/missing dispatchQty on every item from its Quantity
+// (e.g. "06 Nos" -> 6) — called whenever a kit is freshly loaded into
+// currentKitState, so both Admin and User always start with Dispatch Qty
+// = full Quantity, and User then narrows it down for a partial dispatch.
+// Never overwrites a dispatchQty that's already been explicitly set.
+function bomNormalizeDispatchQty(state) {
+  (state || []).forEach((sec) => {
+    (sec.items || []).forEach((it) => {
+      if (it.dispatchQty === undefined || it.dispatchQty === null || it.dispatchQty === '') {
+        const n = bomParseQtyNumber(it.qty);
+        it.dispatchQty = n != null ? String(n) : '';
+      }
+    });
+  });
 }
 
 // Mirrors Purchase/Sale's serial box: split on ANY separator (space, comma,
@@ -305,7 +351,7 @@ function bomRenderScreenItemsHtml(state, opts) {
   const rows = state.map((sec, si) => {
     const catRow = `
       <tr class="bom-screen-cat">
-        <td colspan="7">
+        <td colspan="8">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
             <input type="text" class="bom-field-input bom-section-title-input" data-sec="${si}" data-field="sectitle" value="${bomEscAttr(sec.title)}">
             ${isAdmin ? `
@@ -319,7 +365,7 @@ function bomRenderScreenItemsHtml(state, opts) {
     const itemRows = sec.items.map((it, ii) => {
       let serialCell;
       if (needsSerial(it.name)) {
-        const required = bomParseQtyNumber(it.qty);
+        const required = bomEffectiveQty(it);
         const entered = bomSplitSerials(it.serials).length;
         const isComplete = required != null && entered === required;
         const btnClass = isComplete ? 'btn-green' : (entered > 0 ? 'btn-ghost' : 'btn-red');
@@ -334,7 +380,8 @@ function bomRenderScreenItemsHtml(state, opts) {
         <td><input type="text" class="bom-field-input bom-field-sr" data-sec="${si}" data-idx="${ii}" data-field="sr" value="${bomEscAttr(it.sr)}"></td>
         <td><select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(it.name)}</select></td>
         <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="model" value="${bomEscAttr(it.model)}"></td>
-        <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="qty" value="${bomEscAttr(it.qty)}"></td>
+        <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="qty" value="${bomEscAttr(it.qty)}" ${isAdmin ? '' : 'disabled title="Set by whoever created this BOM — not editable here."'}></td>
+        <td><input type="number" min="0" class="bom-field-input bom-field-dispatchqty" data-sec="${si}" data-idx="${ii}" data-field="dispatchQty" value="${bomEscAttr(it.dispatchQty)}" ${isAdmin ? 'disabled title="Mirrors Quantity — Admin dispatches the full allocated amount."' : 'title="How many of this item you are dispatching right now (can be less than Quantity for a partial dispatch)."'}></td>
         <td class="bom-serial-cell">${serialCell}</td>
         <td style="white-space:nowrap;">
           <input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="remarks" value="${bomEscAttr(it.remarks)}" style="width:calc(100% - ${isAdmin ? '60px' : '0px'}); display:inline-block;">
@@ -353,7 +400,7 @@ function bomRenderScreenItemsHtml(state, opts) {
   return `
     <div class="table-wrap">
       <table class="bom-items-form-table">
-        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th><th>Serial No.</th><th>Remarks</th><th>Check</th></tr></thead>
+        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th><th>Dispatch Qty</th><th>Serial No.</th><th>Remarks</th><th>Check</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
@@ -1128,7 +1175,7 @@ window.PAGES.bom = {
         currentKitState.forEach((sec) => {
           sec.items.forEach((it) => {
             if (bomItemNeedsSerial(it.name)) {
-              const required = bomParseQtyNumber(it.qty);
+              const required = bomEffectiveQty(it);
               const entered = bomSplitSerials(it.serials).length;
               if (!entered || (required != null && entered !== required)) {
                 blocked += 1;
@@ -1183,6 +1230,7 @@ window.PAGES.bom = {
       const kit = bomGetAllKits()[kitSelect.value];
       // Deep clone so editing on-screen never mutates the kit catalogue itself.
       currentKitState = kit ? JSON.parse(JSON.stringify(kit.sections)) : null;
+      bomNormalizeDispatchQty(currentKitState); // Dispatch Qty defaults to Quantity until User narrows it for a partial dispatch
       itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState, { isAdmin: bomIsAdmin, needsSerial: bomItemNeedsSerial });
       setVerified(false); // changing the kit invalidates any prior verification
       updateVerifyButtonState(); // fresh kit — nothing ticked yet, Verify stays disabled
@@ -1431,7 +1479,7 @@ window.PAGES.bom = {
       // once every item, including these, is genuinely ready.
       if (field === 'checked') {
         if (el.checked && bomItemNeedsSerial(item.name)) {
-          const required = bomParseQtyNumber(item.qty);
+          const required = bomEffectiveQty(item);
           const entered = bomSplitSerials(item.serials).length;
           if (!entered) {
             el.checked = false;
@@ -1445,6 +1493,42 @@ window.PAGES.bom = {
           }
         }
         item.checked = el.checked;
+        updateVerifyButtonState();
+        return;
+      }
+
+      // Quantity (Admin/SuperAdmin only — disabled for a plain User, see
+      // bomRenderScreenItemsHtml). Admin's Dispatch Qty column is disabled
+      // and always mirrors Quantity, so keep it in sync here — Admin isn't
+      // doing a partial split, that's the User's job on their own copy.
+      if (field === 'qty') {
+        item.qty = el.value;
+        if (bomIsAdmin) {
+          const n = bomParseQtyNumber(el.value);
+          item.dispatchQty = n != null ? String(n) : '';
+        }
+        item.checked = false;
+        setVerified(false);
+        updateVerifyButtonState();
+        return;
+      }
+
+      // Dispatch Qty — User-only editable field (disabled for Admin, see
+      // bomRenderScreenItemsHtml). How many units of the allocated
+      // Quantity are being sent right now (partial dispatch). Clamped so
+      // it can never exceed the original allocation, and never negative.
+      if (field === 'dispatchQty') {
+        const full = bomParseQtyNumber(item.qty);
+        let n = Number(el.value);
+        if (Number.isNaN(n) || n < 0) n = 0;
+        if (full != null && n > full) {
+          n = full;
+          el.value = n;
+          if (window.showToast) window.showToast(`Cannot dispatch more than the allocated ${full}.`);
+        }
+        item.dispatchQty = String(n);
+        item.checked = false;
+        setVerified(false);
         updateVerifyButtonState();
         return;
       }
@@ -1471,7 +1555,7 @@ window.PAGES.bom = {
     function openBomSerialModal(si, ii) {
       const item = currentKitState[si] && currentKitState[si].items[ii];
       if (!item) return;
-      const required = bomParseQtyNumber(item.qty);
+      const required = bomEffectiveQty(item);
 
       window.openModal(`Serial No. — ${item.name || 'Item'}`, `
         <div class="bom-serial-modal">
@@ -1633,7 +1717,7 @@ window.PAGES.bom = {
       const removeSectionBtn = e.target.closest('[data-sec-remove]');
       const addSectionBtn = e.target.closest('#bomBtnAddSectionLive');
       if ((insertBtn || removeItemBtn || addItemBtn || removeSectionBtn || addSectionBtn) && !bomIsAdmin) return;
-      const blankItem = () => ({ sr: '', name: '', model: '', qty: '', remarks: '', serials: '', checked: false });
+      const blankItem = () => ({ sr: '', name: '', model: '', qty: '', remarks: '', serials: '', checked: false, dispatchQty: '' });
 
       if (insertBtn) {
         const si = Number(insertBtn.dataset.insertAfterSec);
@@ -1690,6 +1774,19 @@ window.PAGES.bom = {
           window.openModal('Tick Every Item', '<p>Please tick every item in the <b>Check</b> column before verifying.</p>');
           return;
         }
+
+        // Real stock check now happens HERE (moved off Convert into
+        // Challan) — checks whether Dispatch Qty for every item is
+        // actually available right now. Convert into Challan and Create
+        // Dispatch both stay locked until this passes.
+        const originalLabel = btnVerify.innerHTML;
+        btnVerify.disabled = true;
+        btnVerify.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking Stock...';
+        const canProceed = await bomRunStockCheck();
+        btnVerify.innerHTML = originalLabel;
+        updateVerifyButtonState(); // restores the normal enabled/disabled state (still gated on allItemsChecked)
+        if (!canProceed) return;
+
         const confirmed = await window.confirmDialog(
           'Verify BOM',
           'Are you sure all items in this BOM are ready for dispatch?',
@@ -1703,16 +1800,18 @@ window.PAGES.bom = {
     }
 
     // Flattens currentKitState's sections into the flat { name, qty, serials }
-    // list /api/bom/check-stock expects — same fields the on-screen table
-    // already tracks per item (bomParseQtyNumber/bomSplitSerials mirror
-    // exactly what the Serial No. modal and quantity column already use).
+    // list /api/bom/check-stock (and /api/bom/dispatch) expects. `qty` here
+    // is bomEffectiveQty() — the User's partial Dispatch Qty when set,
+    // otherwise Admin's full Quantity — so a partial dispatch only ever
+    // checks/deducts the amount actually being sent right now, not the
+    // BOM's full original allocation.
     function bomCollectItemsForStockCheck() {
       const out = [];
       (currentKitState || []).forEach((sec) => {
         (sec.items || []).forEach((it) => {
           out.push({
             name: it.name || '',
-            qty: bomParseQtyNumber(it.qty) || 0,
+            qty: bomEffectiveQty(it) || 0,
             serials: bomSplitSerials(it.serials || ''),
           });
         });
@@ -1721,9 +1820,8 @@ window.PAGES.bom = {
     }
 
     // Shared renderer for "here's exactly which item(s) failed and why" —
-    // used by both Convert into Challan's stock CHECK (Step 1) and Create
-    // Dispatch's actual DEDUCTION (Step 2), so the person sees the same
-    // itemized list either way.
+    // used by both Verify BOM's stock CHECK and Create Dispatch's actual
+    // DEDUCTION, so the person sees the same itemized list either way.
     function bomShowStockIssuesModal(title, intro, rows) {
       const listHtml = (rows || []).map((r) => `
         <li style="margin-bottom:6px;">
@@ -1739,10 +1837,12 @@ window.PAGES.bom = {
 
     // Real, read-only stock check — asks the server whether every item in
     // this BOM can actually be dispatched right now (item registered in
-    // Masters? enough Available quantity? entered serials real/Available/
-    // matching?) and, if not, exactly why. Nothing is deducted or reserved
-    // here — used by Convert into Challan (Step 1); the actual deduction
-    // happens separately via Create Dispatch (Step 2, bomRunDispatch below).
+    // Masters? enough Available quantity for the entered Dispatch Qty?
+    // entered serials real/Available/matching?) and, if not, exactly why.
+    // Nothing is deducted or reserved here. Called from Verify BOM (moved
+    // off Convert into Challan) — so verifying is what gates whether the
+    // BOM can be dispatched/challan'd at all; the actual deduction happens
+    // separately via Create Dispatch (bomRunDispatch below).
     async function bomRunStockCheck() {
       const items = bomCollectItemsForStockCheck();
       let result;
@@ -1765,9 +1865,9 @@ window.PAGES.bom = {
 
     // Create Dispatch — Step 2: the REAL, transactional stock deduction.
     // Server re-checks everything (with row locks, in case stock changed
-    // since the last Convert-into-Challan check) and only then deducts —
-    // serial items get marked Dispatched, quantity items get FIFO-consumed
-    // from Available. Nothing is deducted if any single item fails.
+    // since Verify BOM's check) and only then deducts — serial items get
+    // marked Dispatched, quantity items get FIFO-consumed from Available.
+    // Nothing is deducted if any single item fails.
     async function bomRunDispatch() {
       const items = bomCollectItemsForStockCheck();
       const header = getHeaderValues();
@@ -1796,19 +1896,14 @@ window.PAGES.bom = {
 
     if (btnChallan) {
       btnChallan.addEventListener('click', async () => {
-        if (!bomVerified) return; // belt-and-braces — button is disabled until verified anyway
+        // belt-and-braces — button stays disabled until Verify BOM passes,
+        // which already ran the real stock check (see btnVerify above), so
+        // there's nothing left to check here.
+        if (!bomVerified) return;
         if (!currentKitState) {
           window.openModal('Select a Kit', '<p>Please select a BOM Kit before converting to a challan.</p>');
           return;
         }
-
-        const originalLabel = btnChallan.innerHTML;
-        btnChallan.disabled = true;
-        btnChallan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking Stock...';
-        const canProceed = await bomRunStockCheck();
-        btnChallan.disabled = false;
-        btnChallan.innerHTML = originalLabel;
-        if (!canProceed) return;
 
         const kw = bomGetAllKits()[kitSelect.value] ? bomGetAllKits()[kitSelect.value].kw : '';
         const kit = { kw, sections: currentKitState };
