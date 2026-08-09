@@ -13,6 +13,7 @@ async function ensureStartupSchema(pool) {
   await ensureWattDecimalSchema(pool);
   await ensureBomDispatchSchema(pool);
   await ensureBomOrderSchema(pool);
+  await ensureChallanCategoryMapSchema(pool);
 }
 async function ensureSessionSchema(pool) { try { await pool.query(`ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS last_seen DATETIME NULL`); } catch (e) { console.warn('[Session schema] Could not ensure last_seen column (will retry lazily on first use):', e.message); } }
 async function ensureSerialRuleSchema(pool) { try { await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS serial_mandatory TINYINT(1) NOT NULL DEFAULT 0`); } catch (e) { console.warn('[Serial rule schema] Could not ensure serial_mandatory column (will retry lazily on first use):', e.message); } }
@@ -210,4 +211,87 @@ async function ensureBomOrderSchema(pool) {
     )`);
     await pool.query(`ALTER TABLE bom_dispatches ADD COLUMN IF NOT EXISTS bom_order_id INT NULL DEFAULT NULL`);
   } catch (e) { console.warn('[BOM order schema] Could not ensure bom_orders table / bom_order_id column (will retry lazily on first use):', e.message); }
+}
+
+// Goal 5: "Convert into Challan" compresses the ~53-line BOM kit down into
+// the Challan's ~14 fixed summary rows (see BOM_CHALLAN_TEMPLATE in
+// bom.js / CHALLAN_CATEGORIES in bom.routes.js). WHICH BOM item folds into
+// WHICH Challan category used to have no representation at all (Challan
+// Qty was 100% hand-typed by whoever printed it). This table is that
+// mapping, one row per distinct BOM item name -> one of the fixed Challan
+// category names — deliberately a plain DB table (not hardcoded in JS) so
+// it's editable from the app (Masters-style admin screen) as item names
+// change/grow, instead of needing a code deploy every time. `item_name` is
+// unique/PK: every BOM item name maps to exactly one Challan category.
+// Seeded once from the user's source Excel (Book1.xlsx) mapping sheet —
+// INSERT IGNORE so re-running this on every startup never clobbers any
+// category re-assignment made later from the admin screen.
+async function ensureChallanCategoryMapSchema(pool) {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS challan_category_map (
+      item_name VARCHAR(190) NOT NULL PRIMARY KEY,
+      challan_category VARCHAR(60) NOT NULL,
+      updated_by VARCHAR(100),
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`);
+    const seed = [
+      ['Solar Penal', 'Solar Panel'],
+      ['DCR Solar Penal', 'Solar Panel'],
+      ['GI Structure', 'GI Structure'],
+      ['LA Bracket', 'GI Structure'],
+      ['GI PIPE', 'GI Pipe'],
+      ['GI Pipe', 'GI Pipe'],
+      ['Base Plate', 'Bom Box'],
+      ['Base Angle', 'Bom Box'],
+      ['Wall Patti', 'Bom Box'],
+      ['LA Patti', 'Bom Box'],
+      ['Anchor Bolt (Pin)', 'Bom Box'],
+      ['American Bolt', 'Bom Box'],
+      ['Stud Bolt with Nut & Washer', 'Bom Box'],
+      ['Clamps', 'Bom Box'],
+      ['U - Bolt with Nut Bolt', 'Bom Box'],
+      ['Nut Bolt - GI 4 Aani X 0.5" Long', 'Bom Box'],
+      ['Nut Bolt - SS 4 Aani X 1.5" Long', 'Bom Box'],
+      ['Nut Bolt - SS 4 Aani X 2.5" Long', 'Bom Box'],
+      ['Nut Bolt - SS 5 Aani X 3" Long', 'Bom Box'],
+      ['Nito Bond Chemical', 'Bom Box'],
+      ['ACDB Box', 'Bom Box'],
+      ['DCDB Box', 'Bom Box'],
+      ['MC 4 Connector', 'Bom Box'],
+      ['Lug', 'Bom Box'],
+      ['PVC Albow', 'Bom Box'],
+      ['PVC Bend', 'Bom Box'],
+      ['PVC Tee', 'Bom Box'],
+      ['PVC Coupler', 'Bom Box'],
+      ['Bendable Pipe', 'Bom Box'],
+      ['Clamp for Pipe', 'Bom Box'],
+      ['Cable Tie (PVC)', 'Bom Box'],
+      ['Cable Tie (S.S)', 'Bom Box'],
+      ['Screw + Grip', 'Bom Box'],
+      ['MCB', 'Bom Box'],
+      ['Nozzle Kit', 'Bom Box'],
+      ['Zinc Spray', 'Bom Box'],
+      ['Solar Inverter - DEYE', 'Inverter'],
+      ['Earthing Rod & LA Kit', 'Earthing & LA Kit'],
+      ['DC Wire - Red - Polycab', 'Wire Box'],
+      ['DC Wire - Black - Polycab', 'Wire Box'],
+      ['DC Earthing Wire - Yellow - Polycab', 'Wire Box'],
+      ['AC Earthing Wire - Green - Polycab', 'Wire Box'],
+      ['LA Earthing Wire - Green (Allu.) - Aircab', 'Wire Box'],
+      ['AC - 2 Core - Polycab', 'Wire Box'],
+      ['AC - 4 Core - Polycab', 'Wire Box'],
+      ['PVC Pipe', 'PVC Pipe'],
+      ['Cable Tray', 'PVC Pipe'],
+      ['Sand - Rati', 'Reti Bag'],
+      ['Grit - Kapchi', 'Kapchi Bag'],
+      ['Cement', 'Cement Bag'],
+      ['Farma', 'Ferma'],
+    ];
+    for (const [itemName, category] of seed) {
+      await pool.query(
+        `INSERT IGNORE INTO challan_category_map (item_name, challan_category) VALUES (?, ?)`,
+        [itemName, category]
+      );
+    }
+  } catch (e) { console.warn('[Challan category map schema] Could not ensure challan_category_map table:', e.message); }
 }

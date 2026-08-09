@@ -501,12 +501,164 @@ const BOM_CHALLAN_TEMPLATE = [
   { sr: 6, name: 'Inverter', model: '', unit: 'Nos' },
   { sr: 7, name: 'Earthing & LA Kit', model: '', unit: 'Nos' },
   { sr: 8, name: 'Earthing Bag', model: '', unit: 'Nos' },
-  { sr: 9, name: 'PVC Pipe', model: '', unit: 'Nos' },
-  { sr: 10, name: 'Ferma', model: '', unit: 'Nos' },
-  { sr: 11, name: 'Reti Bag', model: '', unit: 'Bori' },
-  { sr: 12, name: 'Kapchi Bag', model: '', unit: 'Bori' },
-  { sr: 13, name: 'Cement Bag', model: '', unit: 'Bori' },
+  // "Wire Box" — added per the challan-category Excel (Book1.xlsx): every
+  // DC/AC/Earthing wire item compresses into this one row. Kept alongside
+  // "Earthing Bag" (not a replacement) per explicit instruction — both stay
+  // on the template even though only Wire Box currently has items mapped
+  // to it (see challan_category_map / CHALLAN_CATEGORIES).
+  { sr: 9, name: 'Wire Box', model: '', unit: 'Box' },
+  { sr: 10, name: 'PVC Pipe', model: '', unit: 'Nos' },
+  { sr: 11, name: 'Ferma', model: '', unit: 'Nos' },
+  { sr: 12, name: 'Reti Bag', model: '', unit: 'Bori' },
+  { sr: 13, name: 'Kapchi Bag', model: '', unit: 'Bori' },
+  { sr: 14, name: 'Cement Bag', model: '', unit: 'Bori' },
 ];
+
+// Category name -> its BOM_CHALLAN_TEMPLATE row Sr No. (everything except
+// "GI Pipe", which fans out to Sr 3 / Sr 4 by model — handled separately by
+// bomGiPipeModelSr()). Kept as a lookup so the compress logic below never
+// hardcodes Sr numbers a second time.
+const BOM_CHALLAN_CATEGORY_SR = {};
+BOM_CHALLAN_TEMPLATE.forEach((row) => {
+  if (row.name !== 'GI Pipe') BOM_CHALLAN_CATEGORY_SR[row.name] = row.sr;
+});
+
+// ---------- "Convert into Challan" — item -> category mapping (Goal 5) ----------
+// Loaded once from GET /api/challan/category-map (see challan.routes.js).
+// bomChallanCategoryMap: { itemName: 'Bom Box' | 'Wire Box' | ... }.
+// bomChallanCategoryList: the fixed 13 category names, for the mapping-editor
+// dropdown. Both start empty so a slow/failed fetch just means "nothing
+// auto-fills yet" (Qty inputs stay blank, exactly like before this feature)
+// rather than breaking the Challan modal.
+let bomChallanCategoryMap = {};
+let bomChallanCategoryList = [];
+
+async function bomLoadChallanCategoryMap() {
+  try {
+    const res = await fetch('/api/challan/category-map', { credentials: 'include' });
+    if (!res.ok) return;
+    const data = await res.json();
+    bomChallanCategoryMap = (data && data.map) || {};
+    bomChallanCategoryList = (data && data.categories) || [];
+  } catch (e) {
+    // offline/first-load race — Convert into Challan still works, just
+    // without auto-fill until the next page load succeeds.
+  }
+}
+
+// ---------- GI Pipe — hardcoded feet -> standard-length pieces ----------
+// Business rule (explicit, NOT configurable from the mapping screen —
+// confirmed with the user): total running feet for a given GI Pipe model
+// gets broken into the fewest 20/15/10/5-Feet pieces, greedy from the
+// largest size down. Every real-world total this feeds is a multiple of 5
+// (pipes are only ever cut/counted in 5-Feet steps), so the remainder after
+// dividing by 20 is always exactly 0, 5, 10, or 15 — i.e. at most ONE extra
+// non-20-Feet piece is ever needed. Examples the user gave, preserved as
+// the source of truth:
+//   60  Feet -> 3x 20 Feet
+//   85  Feet -> 4x 20 Feet + 1x 5 Feet
+//   75  Feet -> 3x 20 Feet + 1x 15 Feet
+function bomGiPipeFeetToPieces(totalFeet) {
+  const pieces = { '20 Feet': 0, '15 Feet': 0, '10 Feet': 0, '5 Feet': 0 };
+  let remaining = Math.max(0, Math.round(Number(totalFeet) || 0));
+  pieces['20 Feet'] = Math.floor(remaining / 20);
+  remaining -= pieces['20 Feet'] * 20;
+  // remaining is one of 0/5/10/15 for well-formed (multiple-of-5) totals —
+  // for anything else (bad data), fall back to greedy 15->10->5 so no feet
+  // silently vanish instead of hard-failing the whole Challan.
+  if (remaining >= 15) { pieces['15 Feet'] += 1; remaining -= 15; }
+  else if (remaining >= 10) { pieces['10 Feet'] += 1; remaining -= 10; }
+  else if (remaining >= 5) { pieces['5 Feet'] += 1; remaining -= 5; }
+  return pieces;
+}
+
+// Which template row (Sr 3 = "1.5 X 1.5", Sr 4 = "2.5 X 1.5") a GI Pipe
+// kit-item's Model text belongs under. Matched by whichever size number
+// appears first in the model text (kit items use `1.5" X 1.5"` /
+// `2.5" X 1.5"` — quotes and spacing vary, so this only looks for the
+// leading "1.5" vs "2.5"). Anything else (e.g. the kit's 3rd "1\" X 1\""
+// GI Pipe row, which has no matching template row) returns null and is
+// skipped — same as it being left blank/'-' today.
+function bomGiPipeModelSr(modelText) {
+  const m = String(modelText || '');
+  if (m.indexOf('1.5') !== -1) return 3;
+  if (m.indexOf('2.5') !== -1) return 4;
+  return null;
+}
+
+// ---------- "Convert into Challan" — auto-compress a kit's items into Challan Qty ----------
+// Walks every item across every section of `sections` (currentKitState —
+// the ACTUAL on-screen BOM for this dispatch trip, so Dispatch Qty
+// overrides from a partial dispatch are respected via bomEffectiveQty)
+// and buckets it under its mapped Challan category (bomChallanCategoryMap).
+// Aggregation rule per the user's explicit instruction:
+//   - a category with exactly ONE present item (qty > 0) on this BOM ->
+//     Challan Qty = that item's own effective quantity, as-is.
+//   - a category with MORE THAN ONE present item on this BOM -> Challan
+//     Qty = 1 (e.g. 25 different Bom Box items present = "1 Box").
+//   - a category with zero present items -> left blank (untouched).
+// GI Pipe is handled entirely separately (bomGiPipeFeetToPieces) and never
+// goes through this count-based rule.
+// Returns { qtyBySr: { [sr]: number }, giPipe: { 3: {size:qty}, 4: {size:qty} } }.
+function bomComputeChallanAutoQty(sections) {
+  const qtyBySr = {};
+  const giPipe = { 3: {}, 4: {} };
+  const presentByCategory = {}; // category -> [{ qty }]
+
+  (sections || []).forEach((sec) => {
+    (sec.items || []).forEach((it) => {
+      const qty = bomEffectiveQty(it);
+      if (!qty || qty <= 0) return; // '-' / blank / 0 -> not "present" on this trip
+      const category = bomChallanCategoryMap[it.name];
+      if (!category) return; // unmapped item — nothing to compress it into yet
+
+      if (category === 'GI Pipe') {
+        const sr = bomGiPipeModelSr(it.model);
+        if (!sr) return;
+        // qty text for GI Pipe is feet (e.g. "60 Feet"), not a plain count —
+        // bomEffectiveQty already returns just the leading number, feet or not.
+        const pieces = bomGiPipeFeetToPieces(qty);
+        Object.keys(pieces).forEach((size) => {
+          giPipe[sr][size] = (giPipe[sr][size] || 0) + pieces[size];
+        });
+        return;
+      }
+
+      const sr = BOM_CHALLAN_CATEGORY_SR[category];
+      if (!sr) return; // category exists in the map but has no template row (shouldn't happen — defensive)
+      if (!presentByCategory[category]) presentByCategory[category] = [];
+      presentByCategory[category].push(qty);
+    });
+  });
+
+  Object.keys(presentByCategory).forEach((category) => {
+    const list = presentByCategory[category];
+    const sr = BOM_CHALLAN_CATEGORY_SR[category];
+    qtyBySr[sr] = list.length === 1 ? list[0] : 1;
+  });
+
+  return { qtyBySr, giPipe };
+}
+
+// Writes bomComputeChallanAutoQty()'s result straight into the entry
+// modal's Qty <input>s (already in the DOM at this point — called right
+// after openChallanModal). Every value stays a normal, editable number
+// input afterwards — this only sets the starting value, same as any other
+// pre-filled field elsewhere in the app; the person can still overwrite any
+// of them by hand before Print Challan.
+function bomApplyChallanAutoQty(sections) {
+  const { qtyBySr, giPipe } = bomComputeChallanAutoQty(sections);
+  document.querySelectorAll('.bom-challan-qty-input').forEach((inp) => {
+    const sr = Number(inp.getAttribute('data-challan-tpl-sr'));
+    const size = inp.getAttribute('data-challan-tpl-size');
+    if (size) {
+      const bucket = giPipe[sr];
+      if (bucket && bucket[size]) inp.value = bucket[size];
+    } else if (qtyBySr[sr] != null) {
+      inp.value = qtyBySr[sr];
+    }
+  });
+}
 
 // ---------- "Convert into Challan" — ENTRY MODAL (software-style, NOT the Excel look) ----------
 // This is the on-screen counterpart to the main BOM entry form (#1 in the
@@ -938,6 +1090,7 @@ window.PAGES.bom = {
         <button class="btn btn-ghost" type="button" id="bomBtnTrackBom"><i class="fa-solid fa-route"></i> Track BOM</button>
         <button class="btn btn-ghost" type="button" id="bomBtnPendingRegister"><i class="fa-solid fa-clipboard-list"></i> Pending BOM Register</button>
         <button type="button" class="btn btn-ghost" id="bomBtnNewKit" title="Create a new BOM Kit / Template"><i class="fa-solid fa-plus"></i> New Kit</button>
+        <button type="button" class="btn btn-ghost" id="bomBtnChallanMap" style="display:none;" title="Decide which BOM item folds into which Challan line"><i class="fa-solid fa-sitemap"></i> Challan Category Mapping</button>
       </div>
       <p class="note" id="bomVerifyStatus" style="margin-top:8px;">
         <i class="fa-solid fa-circle-info"></i> Tick every item in the <b>Check</b> column below, then click <b>Verify BOM</b>. "Create Dispatch" stays locked until then.
@@ -1164,6 +1317,77 @@ window.PAGES.bom = {
       challanOverlay.addEventListener('click', (e) => {
         if (e.target === challanOverlay) closeChallanModal(); // backdrop click only
       });
+    }
+
+    // ---------- Challan Category Mapping — admin editor (Goal 5) ----------
+    // Reuses the same fullscreen Challan overlay/body (openChallanModal
+    // above) — it's already a generic "big scrollable panel" host, no need
+    // for a second modal shell. Lists every distinct item name seen across
+    // every kit (built-in + saved custom templates) with a dropdown to
+    // (re)assign its Challan category; "Save Mapping" bulk-PUTs the whole
+    // set. This is the ONLY place bomChallanCategoryMap changes — the
+    // Convert-into-Challan compress logic (bomComputeChallanAutoQty) only
+    // ever reads it.
+    function bomCollectAllKitItemNamesForMapping() {
+      const set = new Set();
+      Object.values(bomGetAllKits()).forEach((kit) => {
+        kit.sections.forEach((sec) => sec.items.forEach((it) => { if (it.name) set.add(it.name); }));
+      });
+      return Array.from(set).sort((a, b) => a.localeCompare(b));
+    }
+
+    function bomRenderChallanMapModalHtml() {
+      const names = bomCollectAllKitItemNamesForMapping();
+      const categoryOptions = (selected) =>
+        `<option value="">-- Unmapped --</option>` +
+        bomChallanCategoryList.map((c) => `<option value="${bomEscAttr(c)}" ${c === selected ? 'selected' : ''}>${bomEsc(c)}</option>`).join('');
+      const rows = names.map((name) => `
+        <tr>
+          <td>${bomEsc(name)}</td>
+          <td><select class="bom-field-input bom-challanmap-select" data-item-name="${bomEscAttr(name)}">${categoryOptions(bomChallanCategoryMap[name] || '')}</select></td>
+        </tr>`).join('');
+      return `
+        <div id="bomChallanMapModalRoot">
+          <p class="note" style="margin-bottom:12px;">
+            <i class="fa-solid fa-circle-info"></i> Decide which Challan line each BOM item's quantity folds into.
+            "GI Pipe" items are handled automatically (feet &rarr; 20/15/10/5-Feet pieces) &mdash; you only need to tag
+            them "GI Pipe" here so they're excluded from every other category's count.
+          </p>
+          <div class="table-wrap" style="max-height:60vh;overflow:auto;">
+            <table class="bom-items-form-table">
+              <thead><tr><th>Item Name</th><th>Challan Category</th></tr></thead>
+              <tbody>${rows || '<tr><td colspan="2">No items found across any kit yet.</td></tr>'}</tbody>
+            </table>
+          </div>
+          <div class="actions-row" style="margin-top:14px;">
+            <button type="button" class="btn btn-blue" id="bomChallanMapSaveBtn"><i class="fa-solid fa-floppy-disk"></i> Save Mapping</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function bomOpenChallanMapModal() {
+      openChallanModal(bomRenderChallanMapModalHtml());
+      const saveBtn = document.getElementById('bomChallanMapSaveBtn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+          const mappings = Array.from(document.querySelectorAll('.bom-challanmap-select')).map((sel) => ({
+            itemName: sel.getAttribute('data-item-name'),
+            category: sel.value,
+          }));
+          saveBtn.disabled = true;
+          try {
+            await window.Api.put('/challan/category-map', { mappings });
+            await bomLoadChallanCategoryMap(); // refresh the in-memory map the compress logic reads
+            if (window.showToast) window.showToast('Challan category mapping saved.');
+            closeChallanModal();
+          } catch (e) {
+            window.openModal('Save Failed', `<p>${bomEsc((e && e.message) || 'Could not save the mapping. Please try again.')}</p>`);
+          } finally {
+            saveBtn.disabled = false;
+          }
+        });
+      }
     }
 
     // Step 4: Pending BOM Register modal — same open/close pattern as the
@@ -1635,6 +1859,7 @@ window.PAGES.bom = {
     // otherwise (see bomLoadItemMasterNames). Load once, up front.
     await bomLoadItemMasterNames();
     await bomLoadSerialMandatoryInfo();
+    await bomLoadChallanCategoryMap();
 
     const btnDeleteKit = $('bomBtnDeleteKit');
 
@@ -1709,6 +1934,15 @@ window.PAGES.bom = {
     // role gate used for the edit sections in sales.js/purchase.js. (role
     // computed once, near the top of init() — see bomIsAdmin above.)
     if (btnNewKit) btnNewKit.style.display = bomIsAdmin ? '' : 'none';
+
+    // "Challan Category Mapping" — same Admin/SuperAdmin gate as New Kit:
+    // this decides which BOM item's quantity feeds which Challan summary
+    // line, same trust level as editing an Item Master rule.
+    const btnChallanMap = $('bomBtnChallanMap');
+    if (btnChallanMap) {
+      btnChallanMap.style.display = bomIsAdmin ? '' : 'none';
+      btnChallanMap.addEventListener('click', bomOpenChallanMapModal);
+    }
 
     // Live, mutable working copy of the kit being built — same
     // {title, items:[{sr,name,model,qty,remarks}]} shape as any real kit's
@@ -2868,6 +3102,11 @@ window.PAGES.bom = {
         const header = getHeaderValues();
 
         openChallanModal(bomRenderChallanEntryModalHtml(header, kit));
+        // Auto-fill Qty from the actual on-screen kit items (respecting any
+        // partial Dispatch Qty) via the item->category mapping — see
+        // bomComputeChallanAutoQty above. Every field stays editable after
+        // this; it only sets the starting value.
+        bomApplyChallanAutoQty(currentKitState);
 
         const modalNo = document.getElementById('bomChallanModalNo');
         const modalDate = document.getElementById('bomChallanModalDate');
