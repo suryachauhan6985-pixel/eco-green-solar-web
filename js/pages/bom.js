@@ -2297,8 +2297,31 @@ window.PAGES.bom = {
       if (field === 'name') rerenderItemsPreview(); // item changed — refresh the Serial No. column for this row
     }
 
+    // Re-renders the item table in place (after a dropdown/field edit,
+    // add/remove row, etc.) WITHOUT jumping the page back to the top.
+    // itemsPreview.innerHTML replaces the whole table with a fresh DOM
+    // tree, so the browser loses whatever scroll position it had — this
+    // finds whichever ancestor is actually scrolling (the page itself, or
+    // a scrollable panel wrapping it) and restores its scrollTop right
+    // after the swap, so editing row 25 keeps row 25 in view instead of
+    // snapping back to row 1.
+    function bomFindScrollParent(el) {
+      let node = el && el.parentElement;
+      while (node && node !== document.body) {
+        const style = window.getComputedStyle(node);
+        if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight) {
+          return node;
+        }
+        node = node.parentElement;
+      }
+      return document.scrollingElement || document.documentElement;
+    }
+
     function rerenderItemsPreview() {
+      const scrollParent = bomFindScrollParent(itemsPreview);
+      const scrollTop = scrollParent.scrollTop;
       itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState, { isAdmin: bomIsAdmin, needsSerial: bomItemNeedsSerial });
+      scrollParent.scrollTop = scrollTop;
       setVerified(false);
       updateVerifyButtonState();
     }
@@ -3368,7 +3391,12 @@ window.PAGES.bom = {
                 }
               });
             });
-            if (itemsPreview) itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState, { isAdmin: bomIsAdmin, needsSerial: bomItemNeedsSerial });
+            if (itemsPreview) {
+              const scrollParent = bomFindScrollParent(itemsPreview);
+              const scrollTop = scrollParent.scrollTop;
+              itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState, { isAdmin: bomIsAdmin, needsSerial: bomItemNeedsSerial });
+              scrollParent.scrollTop = scrollTop;
+            }
 
             const listHtml = pending.map((p) => `<li>${bomEsc(p.name)} — <b>${p.remaining}</b> pending (dispatched ${p.dispatched} of ${p.total})</li>`).join('');
             window.openModal('Partial Dispatch Done', `
