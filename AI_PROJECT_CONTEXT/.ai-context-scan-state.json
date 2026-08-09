@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-09T05:46:49.264Z",
+  "generatedAt": "2026-08-09T07:58:09.034Z",
   "files": {
     ".env": {
       "hash": "fbf93500e5313e2f01018668de228b174a039bbf",
@@ -12,9 +12,9 @@
       "mtimeMs": 1785760530681.6638
     },
     "index.html": {
-      "hash": "7ec3a7c92e6809d182e1578230065bbf9735a338",
-      "size": 7812,
-      "mtimeMs": 1785759846650.5105
+      "hash": "b4569b04b18102a342c2660ded5780c618a5030d",
+      "size": 7811,
+      "mtimeMs": 1786258110322.3835
     },
     "manifest.webmanifest": {
       "hash": "1a394524a536e053f78cdd82bfedeb87443475ae",
@@ -47,9 +47,9 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/bom.js": {
-      "hash": "5d9120a839b9cf33bcc5bca6a40c821167a7c2ab",
-      "size": 104307,
-      "mtimeMs": 1785763857760.4387
+      "hash": "fdee9b1e27e7c7d0ff06270f1975042ca15c0f0b",
+      "size": 115525,
+      "mtimeMs": 1786261472292.5066
     },
     "js/pages/dashboard.js": {
       "hash": "af49b335f2d4a08a7e0871848e53f3a03428b7cb",
@@ -182,9 +182,9 @@
       "mtimeMs": 1784981514487.0725
     },
     "api/server.js": {
-      "hash": "a11788481863afb41de001db63d3accde609589b",
-      "size": 3471,
-      "mtimeMs": 1785998609240.201
+      "hash": "e671b6ff063729b6e4e263f2220b2dff2c49b124",
+      "size": 3559,
+      "mtimeMs": 1786256903335.0688
     },
     "api/utils/route.js": {
       "hash": "a3aa995b6d3f373aac34725907b963ada59eb150",
@@ -230,6 +230,11 @@
       "hash": "3905a9bcf09f5bde292cf5b0adb6774af7389a3a",
       "size": 6895,
       "mtimeMs": 1785235629252.7383
+    },
+    "api/routes/bom.routes.js": {
+      "hash": "855a2752e383af42978f219f7e8698bedd9b15ea",
+      "size": 11761,
+      "mtimeMs": 1786258069378.9675
     },
     "api/routes/challan.routes.js": {
       "hash": "494d57968bbc47177d1f77d2cdecc41eea58424b",
@@ -292,9 +297,9 @@
       "mtimeMs": 1785235534568.3574
     },
     "api/db/schema.js": {
-      "hash": "785d3c70c05ac21236c1982d87a418e1ac1100d2",
-      "size": 9138,
-      "mtimeMs": 1786189703204.8828
+      "hash": "6cab37c7c05658aa97e39059dc51509c5cd5e8b5",
+      "size": 11194,
+      "mtimeMs": 1786258078329.5588
     },
     "api/config/cors.js": {
       "hash": "44ceee6de7c0d263b0fffe1a4b70d15c459ac96b",

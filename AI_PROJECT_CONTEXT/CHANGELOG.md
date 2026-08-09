@@ -1,9 +1,9 @@
 # Changelog (Since Last Scan)
 
-Scan performed: 2026-08-09T05:46:49.256Z
+Scan performed: 2026-08-09T07:58:09.028Z
 First scan for this project: Yes
 
-## Added Files (60)
+## Added Files (61)
 
 - .env
 - Dockerfile
@@ -51,6 +51,7 @@ First scan for this project: Yes
 - api/routes/attachments.routes.js
 - api/routes/auth.routes.js
 - api/routes/backup.routes.js
+- api/routes/bom.routes.js
 - api/routes/challan.routes.js
 - api/routes/health.js
 - api/routes/ledgers.routes.js

@@ -1,13 +1,13 @@
 # API Documentation
 
-Total endpoints detected: **90**
+Total endpoints detected: **92**
 
 ## Endpoints by Method
 
 | Method | Count |
 | --- | --- |
 | GET | 38 |
-| POST | 27 |
+| POST | 29 |
 | DELETE | 12 |
 | PUT | 13 |
 
@@ -32,6 +32,8 @@ Total endpoints detected: **90**
 | GET | /api/backup/download/:fileName | api/routes/backup.routes.js | No |
 | POST | /api/backup/run | api/routes/backup.routes.js | No |
 | GET | /api/backup/status | api/routes/backup.routes.js | No |
+| POST | /api/bom/check-stock | api/routes/bom.routes.js | No |
+| POST | /api/bom/dispatch | api/routes/bom.routes.js | No |
 | GET | /api/challan | api/routes/challan.routes.js | No |
 | POST | /api/challan | api/routes/challan.routes.js | No |
 | GET | /api/challan/:id | api/routes/challan.routes.js | No |

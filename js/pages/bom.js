@@ -1827,6 +1827,27 @@ window.PAGES.bom = {
       return out;
     }
 
+    // Same as bomCollectItemsForStockCheck, but for Create Dispatch only
+    // (Step 3) — also carries `totalQty`, the item's full originally-
+    // required Quantity (not the partial amount being sent this trip).
+    // The server needs this once per Order No. to set the pending
+    // baseline; check-stock (read-only, no persistence) never needs it,
+    // so that collector is left untouched.
+    function bomCollectItemsForDispatch() {
+      const out = [];
+      (currentKitState || []).forEach((sec) => {
+        (sec.items || []).forEach((it) => {
+          out.push({
+            name: it.name || '',
+            qty: bomEffectiveQty(it) || 0,
+            totalQty: Number(it.qty) || bomEffectiveQty(it) || 0,
+            serials: bomSplitSerials(it.serials || ''),
+          });
+        });
+      });
+      return out;
+    }
+
     // Shared renderer for "here's exactly which item(s) failed and why" —
     // used by both Verify BOM's stock CHECK and Create Dispatch's actual
     // DEDUCTION, so the person sees the same itemized list either way.
@@ -1877,8 +1898,17 @@ window.PAGES.bom = {
     // marked Dispatched, quantity items get FIFO-consumed from Available.
     // Nothing is deducted if any single item fails.
     async function bomRunDispatch() {
-      const items = bomCollectItemsForStockCheck();
       const header = getHeaderValues();
+      // Step 3: Order No. is now how the server links multiple partial
+      // dispatch trips back to the same BOM (pending-qty tracking).
+      // Checked here, right before the call, rather than earlier in the
+      // flow — Verify BOM / stock check don't persist anything, so they
+      // never needed it.
+      if (!header.orderNo || !header.orderNo.trim()) {
+        window.openModal('Order No. Required', '<p>Please enter an <b>Order No.</b> before creating a dispatch — it\'s how partial dispatches for this BOM get tracked together.</p>');
+        return false;
+      }
+      const items = bomCollectItemsForDispatch();
       let result;
       try {
         result = await window.Api.post('/bom/dispatch', { orderNo: header.orderNo, header, items });
@@ -2054,9 +2084,56 @@ window.PAGES.bom = {
         btnDispatch.innerHTML = originalLabel;
 
         if (result && result.success) {
+          const pending = Array.isArray(result.pending) ? result.pending : [];
           if (window.showToast) window.showToast('Dispatched — stock has been deducted.');
-          window.openModal('Dispatch Complete', '<p>This BOM has been dispatched and stock has been deducted accordingly.</p>');
-          btnDispatch.disabled = true; // one dispatch per verified BOM in this session — avoids an accidental double-deduct
+
+          if (result.orderStatus === 'Completed' || !pending.length) {
+            // Nothing left pending for this Order No. — same end state as
+            // before Step 3.
+            window.openModal('Dispatch Complete', '<p>This BOM has been dispatched and stock has been deducted accordingly. Nothing is pending for this Order No. anymore.</p>');
+            btnDispatch.disabled = true; // fully done — avoids an accidental re-dispatch of a completed order
+          } else {
+            // Step 3: Partial dispatch — some item(s) still have qty left
+            // pending for this Order No. Pre-fill Dispatch Qty with what's
+            // still remaining (per item) and re-render, so the person can
+            // immediately do the next trip in this same session without
+            // retyping numbers. Entered serials are cleared for every row
+            // since whatever was entered this trip is already Dispatched
+            // in stock_ledger — they'd otherwise fail re-validation as
+            // "not Available" on the next check.
+            const pendingByName = {};
+            pending.forEach((p) => { pendingByName[p.name] = p.remaining; });
+            (currentKitState || []).forEach((sec) => {
+              (sec.items || []).forEach((it) => {
+                const rem = pendingByName[it.name || ''];
+                if (rem !== undefined) {
+                  it.dispatchQty = String(rem);
+                  it.serials = '';
+                  it.checked = false;
+                } else if (it.name) {
+                  // Fully dispatched already — nothing left to send for
+                  // this item on a future trip.
+                  it.dispatchQty = '0';
+                  it.serials = '';
+                }
+              });
+            });
+            if (itemsPreview) itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState, { isAdmin: bomIsAdmin, needsSerial: bomItemNeedsSerial });
+
+            const listHtml = pending.map((p) => `<li>${bomEsc(p.name)} — <b>${p.remaining}</b> pending (dispatched ${p.dispatched} of ${p.total})</li>`).join('');
+            window.openModal('Partial Dispatch Done', `
+              <p>Stock has been deducted for this trip. The following item(s) are still pending for Order No. <b>${bomEsc(getHeaderValues().orderNo)}</b>:</p>
+              <ul style="padding-left:18px; margin-top:10px;">${listHtml}</ul>
+              <p style="margin-top:10px;">Dispatch Qty has been pre-filled with the remaining amounts — tick <b>Check</b> again and re-verify when ready to send the rest.</p>
+            `);
+            // Remaining stock could have moved since this trip, and every
+            // row needs to be re-ticked for the next partial trip anyway
+            // (fresh serials, fresh amounts) — so require Verify BOM again
+            // before Create Dispatch unlocks, same gate as the very first
+            // trip.
+            setVerified(false);
+            updateVerifyButtonState();
+          }
         }
         // On failure, bomRunDispatch() already showed the itemized/error modal.
       });

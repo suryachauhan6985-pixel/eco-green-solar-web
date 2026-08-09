@@ -12,6 +12,7 @@ Database layer detected: **Yes**
 | scan_sheets | api/db/schema.js |
 | scan_sheet_entries | api/db/schema.js |
 | bom_challans | api/db/schema.js |
+| bom_dispatches | api/db/schema.js |
 
 
 ## Foreign Keys

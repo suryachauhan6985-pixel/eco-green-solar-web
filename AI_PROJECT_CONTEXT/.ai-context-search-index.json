@@ -397,6 +397,18 @@
   },
   {
     "type": "function",
+    "label": "bomEffectiveQty",
+    "file": "js/pages/bom.js",
+    "detail": "(it)"
+  },
+  {
+    "type": "function",
+    "label": "bomNormalizeDispatchQty",
+    "file": "js/pages/bom.js",
+    "detail": "(state)"
+  },
+  {
+    "type": "function",
     "label": "bomSplitSerials",
     "file": "js/pages/bom.js",
     "detail": "(text)"
@@ -626,6 +638,30 @@
   {
     "type": "function",
     "label": "getHeaderValues",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomCollectItemsForStockCheck",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomShowStockIssuesModal",
+    "file": "js/pages/bom.js",
+    "detail": "(title, intro, rows)"
+  },
+  {
+    "type": "function",
+    "label": "bomRunStockCheck",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomRunDispatch",
     "file": "js/pages/bom.js",
     "detail": "()"
   },
@@ -3235,6 +3271,42 @@
   },
   {
     "type": "file",
+    "label": "api/routes/bom.routes.js",
+    "file": "api/routes/bom.routes.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerBomRoutes",
+    "file": "api/routes/bom.routes.js",
+    "detail": "(app, deps)"
+  },
+  {
+    "type": "function",
+    "label": "findItemByName",
+    "file": "api/routes/bom.routes.js",
+    "detail": "(runner, name)"
+  },
+  {
+    "type": "function",
+    "label": "availableQtyForItem",
+    "file": "api/routes/bom.routes.js",
+    "detail": "(runner, itemId, forUpdate)"
+  },
+  {
+    "type": "function",
+    "label": "checkItems",
+    "file": "api/routes/bom.routes.js",
+    "detail": "(runner, items, forUpdate)"
+  },
+  {
+    "type": "function",
+    "label": "fifoConsumeQtyForBom",
+    "file": "api/routes/bom.routes.js",
+    "detail": "(conn, item, qtyNeeded, dispatchId)"
+  },
+  {
+    "type": "file",
     "label": "api/routes/challan.routes.js",
     "file": "api/routes/challan.routes.js",
     "detail": "Defines HTTP route handlers (controller/router layer)."
@@ -3489,7 +3561,7 @@
     "type": "file",
     "label": "api/db/schema.js",
     "file": "api/db/schema.js",
-    "detail": "Defines 13 function(s) implementing supporting logic."
+    "detail": "Defines 14 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -3566,6 +3638,12 @@
   {
     "type": "function",
     "label": "ensureWattDecimalSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureBomDispatchSchema",
     "file": "api/db/schema.js",
     "detail": "(pool)"
   },
@@ -3675,6 +3753,18 @@
     "type": "route",
     "label": "GET /api/backup/status",
     "file": "api/routes/backup.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/bom/check-stock",
+    "file": "api/routes/bom.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/bom/dispatch",
+    "file": "api/routes/bom.routes.js",
     "detail": "public"
   },
   {
@@ -4154,6 +4244,12 @@
   {
     "type": "table",
     "label": "bom_challans",
+    "file": "api/db/schema.js",
+    "detail": "SQL table"
+  },
+  {
+    "type": "table",
+    "label": "bom_dispatches",
     "file": "api/db/schema.js",
     "detail": "SQL table"
   }

@@ -17,6 +17,7 @@ api/
         attachments.routes.js
         auth.routes.js
         backup.routes.js
+        bom.routes.js
         challan.routes.js
         health.js
         ledgers.routes.js

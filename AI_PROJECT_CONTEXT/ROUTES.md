@@ -18,6 +18,8 @@
 | GET | /api/backup/download/:fileName | api/routes/backup.routes.js |
 | POST | /api/backup/run | api/routes/backup.routes.js |
 | GET | /api/backup/status | api/routes/backup.routes.js |
+| POST | /api/bom/check-stock | api/routes/bom.routes.js |
+| POST | /api/bom/dispatch | api/routes/bom.routes.js |
 | GET | /api/challan | api/routes/challan.routes.js |
 | POST | /api/challan | api/routes/challan.routes.js |
 | GET | /api/challan/:id | api/routes/challan.routes.js |

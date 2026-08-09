@@ -12,6 +12,7 @@ async function ensureStartupSchema(pool) {
   await ensureStockModelSchema(pool);
   await ensureWattDecimalSchema(pool);
   await ensureBomDispatchSchema(pool);
+  await ensureBomOrderSchema(pool);
 }
 async function ensureSessionSchema(pool) { try { await pool.query(`ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS last_seen DATETIME NULL`); } catch (e) { console.warn('[Session schema] Could not ensure last_seen column (will retry lazily on first use):', e.message); } }
 async function ensureSerialRuleSchema(pool) { try { await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS serial_mandatory TINYINT(1) NOT NULL DEFAULT 0`); } catch (e) { console.warn('[Serial rule schema] Could not ensure serial_mandatory column (will retry lazily on first use):', e.message); } }
@@ -175,4 +176,38 @@ async function ensureBomDispatchSchema(pool) {
     )`);
     await pool.query(`ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS bom_dispatch_id INT NULL DEFAULT NULL`);
   } catch (e) { console.warn('[BOM dispatch schema] Could not ensure bom_dispatches table / bom_dispatch_id column (will retry lazily on first use):', e.message); }
+}
+
+// Goal 4, Step 3: Partial Dispatch + Pending Qty tracking.
+// A single BOM can now be dispatched across MULTIPLE trips (e.g. site can
+// only fit half the panels today, rest goes next week) instead of one
+// all-or-nothing "Create Dispatch". `bom_orders` is the new durable anchor
+// for "this Order No. is one BOM order" — one row per Order No., created
+// the FIRST time that order is dispatched. `items_json` on this row is the
+// frozen BASELINE (the full originally-required qty per item, captured
+// once and never silently changed by a later trip's edits) that every
+// later partial trip's "how much is still pending?" math is computed
+// against. `bom_dispatches.bom_order_id` links each individual trip back
+// to its order — pending-remaining for an item is always baseline qty
+// minus the SUM of that item's qty across every bom_dispatches row sharing
+// the same bom_order_id (computed fresh each time in bom.routes.js rather
+// than cached here, so it's always correct even if a dispatch is ever
+// manually corrected in the DB).
+// `status`: 'Open' while any baseline item still has qty pending,
+// 'Completed' once every baseline item's pending reaches 0 — set by
+// bom.routes.js after each successful dispatch, not by this schema file.
+async function ensureBomOrderSchema(pool) {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS bom_orders (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      order_no VARCHAR(100) NOT NULL,
+      header_json LONGTEXT,
+      items_json LONGTEXT NOT NULL,
+      status VARCHAR(20) NOT NULL DEFAULT 'Open',
+      created_by VARCHAR(100),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE INDEX uniq_bom_orders_order_no (order_no)
+    )`);
+    await pool.query(`ALTER TABLE bom_dispatches ADD COLUMN IF NOT EXISTS bom_order_id INT NULL DEFAULT NULL`);
+  } catch (e) { console.warn('[BOM order schema] Could not ensure bom_orders table / bom_order_id column (will retry lazily on first use):', e.message); }
 }

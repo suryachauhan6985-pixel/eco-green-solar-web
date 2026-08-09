@@ -43,7 +43,7 @@ Database
 | File | Purpose |
 | --- | --- |
 | api/db/pool.js | Supporting source file. |
-| api/db/schema.js | Defines 13 function(s) implementing supporting logic. |
+| api/db/schema.js | Defines 14 function(s) implementing supporting logic. |
 
 ### `api/middleware`
 
@@ -59,6 +59,7 @@ Database
 | api/routes/attachments.routes.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/auth.routes.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/backup.routes.js | Defines HTTP route handlers (controller/router layer). |
+| api/routes/bom.routes.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/challan.routes.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/health.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/ledgers.routes.js | Defines HTTP route handlers (controller/router layer). |

@@ -91,14 +91,14 @@ Deep analysis of every important source file.
 ## `js/pages/bom.js`
 
 - **Purpose:** Defines 1 class(es) implementing core logic.
-- **Lines of code:** 1990
-- **Complexity:** High (heuristic score: 297)
+- **Lines of code:** 2210
+- **Complexity:** High (heuristic score: 343)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** bomSetPrintPageSize(cssSizeAndMargin), bomLoadCustomKits(), bomSaveCustomKits(obj), bomGetAllKits(), bomIsCustomKitKey(key), bomSlugify(label), bomRenumberAll(sections), bomDefaultSectionsTemplate(), bomParseQtyNumber(qtyStr), bomSplitSerials(text), bomCollectKitItemNames(), bomLoadItemMasterNames(), bomBuildItemOptionsHtml(selectedName), bomRenderScreenItemsHtml(state, opts), bomRenderPrintSheetHtml(kit, header), bomRenderChallanTemplateItemsHtml(template), bomRenderChallanEntryModalHtml(header, kit), bomCollectChallanTemplateValues(), bomChallanBuildRowGroups(template), bomRenderChallanBodyRowsHtml(groups, values), bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy), bomRenderChallanTableHeadRowHtml(), bomRenderChallanFooterRowsHtml(header), bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy), bomRenderChallanPrintSheetHtml(header, kit, templateValues), openChallanModal(bodyHtml), closeChallanModal(), bomLoadSerialMandatoryInfo(), bomItemNeedsSerial(name), searchBomCustomerLedgers(q), searchBomCustomerShortCodes(q), fillBomCustomerDatalist(listEl, ledgers, key), wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), wireBomPartyTypeAutocomplete(inputEl, listEl, ledgerType), search(q), fillList(ledgers), setVerified(isVerified), allItemsChecked(), updateVerifyButtonState(), populateKitDropdown(selectKey), refreshItemsPreview(), renderKitBuilderSections(), handleBuilderFieldEdit(e), handleItemFieldEdit(e), rerenderItemsPreview(), openBomSerialModal(si, ii), updateCountNote(), getHeaderValues(), computeAndApplyFitZoom(), bomEsc(s), bomEscAttr(s), qtyInput(sr, sizeLabel), descInput(sr), setVal(key, patch), getQty(sr, size), getDesc(sr), $(id), blankItem()
+- **Functions:** bomSetPrintPageSize(cssSizeAndMargin), bomLoadCustomKits(), bomSaveCustomKits(obj), bomGetAllKits(), bomIsCustomKitKey(key), bomSlugify(label), bomRenumberAll(sections), bomDefaultSectionsTemplate(), bomParseQtyNumber(qtyStr), bomEffectiveQty(it), bomNormalizeDispatchQty(state), bomSplitSerials(text), bomCollectKitItemNames(), bomLoadItemMasterNames(), bomBuildItemOptionsHtml(selectedName), bomRenderScreenItemsHtml(state, opts), bomRenderPrintSheetHtml(kit, header), bomRenderChallanTemplateItemsHtml(template), bomRenderChallanEntryModalHtml(header, kit), bomCollectChallanTemplateValues(), bomChallanBuildRowGroups(template), bomRenderChallanBodyRowsHtml(groups, values), bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy), bomRenderChallanTableHeadRowHtml(), bomRenderChallanFooterRowsHtml(header), bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy), bomRenderChallanPrintSheetHtml(header, kit, templateValues), openChallanModal(bodyHtml), closeChallanModal(), bomLoadSerialMandatoryInfo(), bomItemNeedsSerial(name), searchBomCustomerLedgers(q), searchBomCustomerShortCodes(q), fillBomCustomerDatalist(listEl, ledgers, key), wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), wireBomPartyTypeAutocomplete(inputEl, listEl, ledgerType), search(q), fillList(ledgers), setVerified(isVerified), allItemsChecked(), updateVerifyButtonState(), populateKitDropdown(selectKey), refreshItemsPreview(), renderKitBuilderSections(), handleBuilderFieldEdit(e), handleItemFieldEdit(e), rerenderItemsPreview(), openBomSerialModal(si, ii), updateCountNote(), getHeaderValues(), bomCollectItemsForStockCheck(), bomShowStockIssuesModal(title, intro, rows), bomRunStockCheck(), bomRunDispatch(), computeAndApplyFitZoom(), bomEsc(s), bomEscAttr(s), qtyInput(sr, sizeLabel), descInput(sr), setVal(key, patch), getQty(sr, size), getDesc(sr), $(id), blankItem()
 - **Classes:** in
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (39 statement keywords: SELECT, JOIN)
+- **Database usage:** Raw SQL detected (42 statement keywords: SELECT, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - File defines a large number of functions — consider splitting into smaller modules.
@@ -407,9 +407,9 @@ Deep analysis of every important source file.
 ## `api/server.js`
 
 - **Purpose:** Application entry point / bootstrap file.
-- **Lines of code:** 69
+- **Lines of code:** 71
 - **Complexity:** Low (heuristic score: 1)
-- **Imports:** dotenv, express, path, ./config/cors, ./db/pool, ./db/schema, ./middleware/auth.middleware, ./middleware/rateLimiters, ./services/passwords, ./services/email, ./services/stockHelpers, ./utils/route, ./utils/time, ./routes/attachments.routes, ./routes/health, ./routes/auth.routes, ./routes/masters.routes, ./routes/purchase.routes, ./routes/ledgers.routes, ./routes/sales.routes, ./routes/stockassign.routes, ./routes/scansheet.routes, ./routes/reports.routes, ./routes/backup.routes, ./routes/challan.routes
+- **Imports:** dotenv, express, path, ./config/cors, ./db/pool, ./db/schema, ./middleware/auth.middleware, ./middleware/rateLimiters, ./services/passwords, ./services/email, ./services/stockHelpers, ./utils/route, ./utils/time, ./routes/attachments.routes, ./routes/health, ./routes/auth.routes, ./routes/masters.routes, ./routes/purchase.routes, ./routes/ledgers.routes, ./routes/sales.routes, ./routes/stockassign.routes, ./routes/scansheet.routes, ./routes/reports.routes, ./routes/backup.routes, ./routes/challan.routes, ./routes/bom.routes
 - **Exports:** None
 - **Functions:** None
 - **Classes:** None
@@ -570,6 +570,23 @@ Deep analysis of every important source file.
 - **Potential improvements:**
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
   - process.env is used directly — confirm environment variables are validated/typed at startup.
+
+---
+
+## `api/routes/bom.routes.js`
+
+- **Purpose:** Defines HTTP route handlers (controller/router layer).
+- **Lines of code:** 243
+- **Complexity:** Medium (heuristic score: 38)
+- **Imports:** None
+- **Exports:** module.exports
+- **Functions:** registerBomRoutes(app, deps), findItemByName(runner, name), availableQtyForItem(runner, itemId, forUpdate), checkItems(runner, items, forUpdate), fifoConsumeQtyForBom(conn, item, qtyNeeded, dispatchId)
+- **Classes:** None
+- **API endpoints:** POST /api/bom/check-stock, POST /api/bom/dispatch
+- **Database usage:** Raw SQL detected (16 statement keywords: SELECT, JOIN, UPDATE, INSERT INTO)
+- **Environment variables used:** None
+- **Potential improvements:**
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 
 ---
 
@@ -783,15 +800,15 @@ Deep analysis of every important source file.
 
 ## `api/db/schema.js`
 
-- **Purpose:** Defines 13 function(s) implementing supporting logic.
-- **Lines of code:** 143
-- **Complexity:** Medium (heuristic score: 45)
+- **Purpose:** Defines 14 function(s) implementing supporting logic.
+- **Lines of code:** 178
+- **Complexity:** Medium (heuristic score: 50)
 - **Imports:** None
 - **Exports:** module.exports
-- **Functions:** ensureStartupSchema(pool), ensureSessionSchema(pool), ensureSerialRuleSchema(pool), ensureLedgerTypeSchema(pool), ensureAuthOtpSchema(pool), ensureEmailRoleUniqueSchema(pool), ensureAttachmentsSchema(pool), ensureScanSheetSchema(pool), ensureBomChallanSchema(pool), ensureStockQuantitySchema(pool), ensureItemOverrideSchema(pool), ensureStockModelSchema(pool), ensureWattDecimalSchema(pool)
+- **Functions:** ensureStartupSchema(pool), ensureSessionSchema(pool), ensureSerialRuleSchema(pool), ensureLedgerTypeSchema(pool), ensureAuthOtpSchema(pool), ensureEmailRoleUniqueSchema(pool), ensureAttachmentsSchema(pool), ensureScanSheetSchema(pool), ensureBomChallanSchema(pool), ensureStockQuantitySchema(pool), ensureItemOverrideSchema(pool), ensureStockModelSchema(pool), ensureWattDecimalSchema(pool), ensureBomDispatchSchema(pool)
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (21 statement keywords: ALTER TABLE, CREATE TABLE, SELECT, UPDATE)
+- **Database usage:** Raw SQL detected (25 statement keywords: ALTER TABLE, CREATE TABLE, SELECT, UPDATE)
 - **Environment variables used:** None
 - **Potential improvements:**
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.

@@ -10,13 +10,13 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-09T05:46:49.255Z
+- **Generated:** 2026-08-09T07:58:09.027Z
 
 ## 2. Architecture Overview
 
 - **Detected technologies:** Node.js (runtime), Express (backend framework), MySQL (database), JWT Authentication (auth), HTML (markup), JavaScript (language), CSS (styling), PWA (platform)
-- **Total files (post-ignore):** 60
-- **Deeply analyzed files:** 47
+- **Total files (post-ignore):** 61
+- **Deeply analyzed files:** 48
 - **Typical request flow (heuristic):** Browser → Routes → Controller → Service → Database
 
 ## 3. Folder Structure
@@ -35,6 +35,7 @@ api/
         attachments.routes.js
         auth.routes.js
         backup.routes.js
+        bom.routes.js
         challan.routes.js
         health.js
         ledgers.routes.js
@@ -122,6 +123,7 @@ sw.js
 - `api/routes/attachments.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/auth.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/backup.routes.js` — Defines HTTP route handlers (controller/router layer).
+- `api/routes/bom.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/challan.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/health.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/ledgers.routes.js` — Defines HTTP route handlers (controller/router layer).
@@ -132,7 +134,7 @@ sw.js
 - `api/routes/scansheet.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/stockassign.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/db/pool.js` — Supporting source file.
-- `api/db/schema.js` — Defines 13 function(s) implementing supporting logic.
+- `api/db/schema.js` — Defines 14 function(s) implementing supporting logic.
 
 ## 5. Data Flow / Business Logic Entry Points
 
@@ -144,11 +146,11 @@ No route-level authentication middleware detected (verify manually if auth is ex
 
 ## 7. Database
 
-6 SQL table(s): backup_log, otp_codes, attachments, scan_sheets, scan_sheet_entries, bom_challans
+7 SQL table(s): backup_log, otp_codes, attachments, scan_sheets, scan_sheet_entries, bom_challans, bom_dispatches
 
 ## 8. API
 
-90 HTTP endpoint(s) detected. Method breakdown: GET=38, POST=27, DELETE=12, PUT=13.
+92 HTTP endpoint(s) detected. Method breakdown: GET=38, POST=29, DELETE=12, PUT=13.
 
 ## 9. Services & Utilities
 
@@ -159,12 +161,12 @@ Utility/helper files: 2
 
 - Project appears to be plain JavaScript (no TypeScript detected).
 - File naming leans camelCase.
-- 40 of 47 analyzed files define at least one function.
+- 41 of 48 analyzed files define at least one function.
 
 ## 11. Known Issues / Risk Areas
 
 - 13 file(s) flagged as High complexity: js/app.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, js/pages/stockassign.js, api/services/challanPdf.js, ...
-- Raw SQL string usage found in 35 file(s) — verify parameterization to avoid SQL injection.
+- Raw SQL string usage found in 36 file(s) — verify parameterization to avoid SQL injection.
 - No routes appear to use recognizable auth middleware — verify whether this API is intentionally public.
 - A real `.env` file exists in the project (.env) — ensure it is excluded from version control.
 

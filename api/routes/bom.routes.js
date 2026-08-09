@@ -140,6 +140,68 @@ module.exports = function registerBomRoutes(app, deps) {
     res.json({ canDispatch, items: clean });
   }));
 
+  // ---- Goal 4, Step 3: Partial Dispatch + Pending Qty helpers ----
+
+  // Finds (and FOR UPDATE-locks) the bom_orders row for this Order No., or
+  // creates it if this is the first-ever dispatch trip for that order. The
+  // baseline captured on creation is FROZEN — it's the source of truth
+  // every later partial trip's "how much is still pending" math uses, so a
+  // later trip editing the on-screen Quantity field can never quietly
+  // shrink/inflate what the order originally required. The one exception:
+  // if a later trip includes an item name that wasn't part of the
+  // baseline at all (order genuinely grew), that item gets appended to the
+  // baseline (and persisted back) rather than rejected outright — it's a
+  // legitimate order expansion, not drift on an existing line.
+  async function getOrCreateBomOrder(conn, orderNo, items, header, username) {
+    const [existingRows] = await conn.query(`SELECT * FROM bom_orders WHERE order_no=? FOR UPDATE`, [orderNo]);
+    if (existingRows.length) {
+      const order = existingRows[0];
+      const baseline = JSON.parse(order.items_json || '{}');
+      let changed = false;
+      for (const it of items) {
+        const name = (it.name || '').trim();
+        if (name && !(name in baseline)) {
+          baseline[name] = Number(it.totalQty) || Number(it.qty) || 0;
+          changed = true;
+        }
+      }
+      if (changed) {
+        await conn.query(`UPDATE bom_orders SET items_json=? WHERE id=?`, [JSON.stringify(baseline), order.id]);
+        order.items_json = JSON.stringify(baseline);
+      }
+      return order;
+    }
+    const baseline = {};
+    for (const it of items) {
+      const name = (it.name || '').trim();
+      if (name) baseline[name] = Number(it.totalQty) || Number(it.qty) || 0;
+    }
+    const [result] = await conn.query(
+      `INSERT INTO bom_orders (order_no, header_json, items_json, status, created_by) VALUES (?, ?, ?, 'Open', ?)`,
+      [orderNo, JSON.stringify(header || {}), JSON.stringify(baseline), username]
+    );
+    return { id: result.insertId, order_no: orderNo, header_json: JSON.stringify(header || {}), items_json: JSON.stringify(baseline), status: 'Open' };
+  }
+
+  // Sums every past dispatch trip's qty per item name for this bom_order —
+  // always recomputed from bom_dispatches.items_json rather than cached,
+  // so it stays correct even if a dispatch row is ever hand-corrected.
+  async function dispatchedSoFarByName(conn, bomOrderId) {
+    const totals = {};
+    if (!bomOrderId) return totals;
+    const [rows] = await conn.query(`SELECT items_json FROM bom_dispatches WHERE bom_order_id=?`, [bomOrderId]);
+    for (const row of rows) {
+      let items;
+      try { items = JSON.parse(row.items_json || '[]'); } catch (e) { items = []; }
+      for (const it of items) {
+        const name = (it.name || '').trim();
+        if (!name) continue;
+        totals[name] = (totals[name] || 0) + (Number(it.qty) || 0);
+      }
+    }
+    return totals;
+  }
+
   // FIFO-consume `qtyNeeded` quantity-tracked units for one item, tagging
   // every unit BOM_DISPATCH_STATUS + this dispatch's id. Mirrors
   // sales.routes.js's fifoConsumeQty / stockassign.routes.js's
@@ -199,10 +261,50 @@ module.exports = function registerBomRoutes(app, deps) {
     const header = req.body.header && typeof req.body.header === 'object' ? req.body.header : {};
     const items = Array.isArray(req.body.items) ? req.body.items : [];
     if (!items.length) return res.status(400).json({ error: 'No items to dispatch.', items: [] });
+    // Step 3: Order No. is now the key every partial trip is linked back to
+    // (bom_orders.order_no) — without it there's no way to know "this
+    // trip" and "that trip next week" are the same BOM, so pending
+    // tracking can't work at all. Required from here on, unlike before.
+    if (!orderNo) return res.status(400).json({ error: 'Order No. is required before you can create a dispatch.', items: [] });
 
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
+
+      // Baseline (first trip ever for this Order No. creates it; every
+      // later trip just locks + reuses it) — see getOrCreateBomOrder.
+      const bomOrder = await getOrCreateBomOrder(conn, orderNo, items, header, req.user ? req.user.username : null);
+      const baseline = JSON.parse(bomOrder.items_json || '{}');
+      const dispatchedSoFar = await dispatchedSoFarByName(conn, bomOrder.id);
+
+      // Pending ceiling check — this trip can never ask for more of an
+      // item than what's still left un-dispatched for this Order No.,
+      // regardless of whether enough physical stock exists. Checked BEFORE
+      // the stock-availability check below so a "you're trying to
+      // over-dispatch this order" mistake shows its own clear reason
+      // instead of getting mixed in with a stock-shortage reason.
+      const pendingFailed = [];
+      for (const raw of items) {
+        const name = (raw.name || '').trim();
+        if (!name) continue;
+        const requested = Number(raw.qty) || 0;
+        const total = baseline[name] || 0;
+        const remaining = total - (dispatchedSoFar[name] || 0);
+        if (requested > remaining) {
+          pendingFailed.push({
+            name,
+            ok: false,
+            reason: `Only ${remaining} still pending for this Order No. (already dispatched ${dispatchedSoFar[name] || 0} of ${total}), but ${requested} requested now.`,
+          });
+        }
+      }
+      if (pendingFailed.length) {
+        await conn.rollback();
+        return res.status(400).json({
+          error: 'DISPATCH BLOCKED:\n' + pendingFailed.map((r) => `${r.name}: ${r.reason}`).join('\n'),
+          items: pendingFailed,
+        });
+      }
 
       const results = await checkItems(conn, items, true);
       const failed = results.filter((r) => !r.ok);
@@ -215,9 +317,9 @@ module.exports = function registerBomRoutes(app, deps) {
       }
 
       const [dispatchResult] = await conn.query(
-        `INSERT INTO bom_dispatches (order_no, header_json, items_json, dispatched_by)
-         VALUES (?, ?, ?, ?)`,
-        [orderNo || null, JSON.stringify(header), JSON.stringify(items), req.user ? req.user.username : null]
+        `INSERT INTO bom_dispatches (order_no, bom_order_id, header_json, items_json, dispatched_by)
+         VALUES (?, ?, ?, ?, ?)`,
+        [orderNo, bomOrder.id, JSON.stringify(header), JSON.stringify(items), req.user ? req.user.username : null]
       );
       const dispatchId = dispatchResult.insertId;
 
@@ -231,8 +333,31 @@ module.exports = function registerBomRoutes(app, deps) {
         }
       }
 
+      // Recompute pending across the WHOLE order's baseline (not just the
+      // items in this trip) so the response always reflects the full
+      // picture — e.g. an item nobody touched this trip still shows up if
+      // it was never fully dispatched by an earlier trip either.
+      const dispatchedNow = {};
+      for (const it of items) {
+        const name = (it.name || '').trim();
+        if (!name) continue;
+        dispatchedNow[name] = (dispatchedNow[name] || 0) + (Number(it.qty) || 0);
+      }
+      const pending = [];
+      let allDone = true;
+      for (const name of Object.keys(baseline)) {
+        const total = baseline[name] || 0;
+        const doneSoFar = (dispatchedSoFar[name] || 0) + (dispatchedNow[name] || 0);
+        const remaining = Math.max(0, total - doneSoFar);
+        if (remaining > 0) { pending.push({ name, total, dispatched: doneSoFar, remaining }); allDone = false; }
+      }
+      const orderStatus = allDone ? 'Completed' : 'Open';
+      if (orderStatus !== bomOrder.status) {
+        await conn.query(`UPDATE bom_orders SET status=? WHERE id=?`, [orderStatus, bomOrder.id]);
+      }
+
       await conn.commit();
-      res.json({ success: true, dispatchId });
+      res.json({ success: true, dispatchId, bomOrderId: bomOrder.id, orderStatus, pending });
     } catch (err) {
       await conn.rollback();
       throw err;
