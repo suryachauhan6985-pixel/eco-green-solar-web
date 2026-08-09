@@ -885,6 +885,8 @@ window.PAGES.bom = {
         <button class="btn btn-blue" type="button" id="bomBtnVerify" disabled><i class="fa-solid fa-check-double"></i> Verify BOM</button>
         <button class="btn btn-green" type="button" id="bomBtnChallan" disabled><i class="fa-solid fa-file-invoice"></i> Convert into Challan</button>
         <button class="btn btn-green" type="button" id="bomBtnDispatch" disabled><i class="fa-solid fa-truck"></i> Create Dispatch</button>
+        <button class="btn btn-green" type="button" id="bomBtnCreateBom" style="display:none;"><i class="fa-solid fa-plus-circle"></i> Create BOM</button>
+        <button class="btn btn-ghost" type="button" id="bomBtnTrackBom"><i class="fa-solid fa-route"></i> Track BOM</button>
         <button class="btn btn-ghost" type="button" id="bomBtnPendingRegister"><i class="fa-solid fa-clipboard-list"></i> Pending BOM Register</button>
         <button type="button" class="btn btn-ghost" id="bomBtnNewKit" title="Create a new BOM Kit / Template"><i class="fa-solid fa-plus"></i> New Kit</button>
       </div>
@@ -1040,6 +1042,153 @@ window.PAGES.bom = {
     // very first render below (bomRenderScreenItemsHtml reads it via opts).
     const bomCurrentRole = window.currentUserRole || 'User';
     const bomIsAdmin = bomCurrentRole === 'SuperAdmin' || bomCurrentRole === 'Admin';
+
+    // ---------------- BOM: Create BOM + Track BOM (new goal, Step 1 — UI
+    // only, no backend wiring yet, per explicit instruction) ----------------
+    // Today a BOM only ever gets a real backend record (`bom_orders`) the
+    // FIRST time it's dispatched (see schema.js's ensureBomOrderSchema
+    // comment) — there is no explicit "Create BOM" action, so a fully
+    // filled-in-but-never-dispatched BOM leaves no trace anywhere. This
+    // adds that missing action as an Admin/SuperAdmin-only button: once
+    // wired to a real endpoint (later step), it will create the BOM
+    // up-front with status 'Pending', which then flips to
+    // 'Partially Dispatched' or 'Dispatched' automatically as trips go out
+    // — exactly the 3-state lifecycle bomTrackStatusPill below renders.
+    // Track BOM (visible to everyone) is the read-only counterpart: look
+    // up any Order No. and see its status + a step-by-step timeline,
+    // styled after the PM Surya Ghar portal's "Track Application" panel.
+    const btnCreateBom = $('bomBtnCreateBom');
+    const btnTrackBom = $('bomBtnTrackBom');
+    if (btnCreateBom) btnCreateBom.style.display = bomIsAdmin ? '' : 'none';
+
+    function bomTrackStatusPill(status) {
+      const map = {
+        Pending: { color: '#a15c00', bg: '#fff3da' },
+        'Partially Dispatched': { color: '#0b5ea8', bg: '#e4f1ff' },
+        Dispatched: { color: '#1a7f37', bg: '#e6f7ea' },
+      };
+      const c = map[status] || map.Pending;
+      return `<span style="display:inline-block; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; color:${c.color}; background:${c.bg};">${bomEsc(status)}</span>`;
+    }
+
+    // Sample/mock timeline — shaped exactly like what a real
+    // GET /api/bom/orders/:id/track (or similar, not built yet) will
+    // return: an ordered array of { label, actor, status, timestamp }.
+    // Kept as its own function so swapping this out for a real API
+    // response later is a one-function change.
+    function bomMockTrackSteps(overallStatus) {
+      const dispatchStarted = overallStatus !== 'Pending';
+      const fullyDone = overallStatus === 'Dispatched';
+      return [
+        { label: 'BOM Created', actor: 'Admin', status: 'done', timestamp: '09-08-2026 11:20 am' },
+        { label: 'Verified', actor: 'User', status: 'done', timestamp: '09-08-2026 11:22 am' },
+        { label: 'Challan Generated', actor: 'User', status: 'done', timestamp: '09-08-2026 11:25 am' },
+        { label: 'Dispatch Started', actor: 'User', status: dispatchStarted ? 'done' : 'active', timestamp: dispatchStarted ? '09-08-2026 12:05 pm' : '' },
+        { label: 'Partially Dispatched', actor: 'User', status: fullyDone ? 'done' : (dispatchStarted ? 'active' : 'pending'), timestamp: dispatchStarted ? '09-08-2026 12:05 pm' : '' },
+        { label: 'Fully Dispatched', actor: 'User', status: fullyDone ? 'done' : 'pending', timestamp: fullyDone ? '09-08-2026 3:40 pm' : '' },
+      ];
+    }
+
+    function bomRenderTrackTimelineHtml(orderNo, overallStatus) {
+      const steps = bomMockTrackSteps(overallStatus);
+      const rows = steps.map((s, idx) => {
+        const isLast = idx === steps.length - 1;
+        const iconColor = s.status === 'done' ? '#1a7f37' : (s.status === 'active' ? '#0b5ea8' : '#c3c3c3');
+        const icon = s.status === 'done' ? 'fa-check' : (s.status === 'active' ? 'fa-clock' : 'fa-file');
+        const statusLabel = s.status === 'pending' ? 'Pending' : (s.status === 'active' ? 'In Progress' : 'Completed');
+        const statusColor = s.status === 'pending' ? '#999' : (s.status === 'active' ? '#0b5ea8' : '#1a7f37');
+        return `
+          <div style="display:flex; gap:12px;">
+            <div style="display:flex; flex-direction:column; align-items:center;">
+              <div style="width:26px; height:26px; border-radius:50%; background:${iconColor}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0;">
+                <i class="fa-solid ${icon}"></i>
+              </div>
+              ${!isLast ? `<div style="width:2px; flex:1; background:${s.status === 'done' ? '#1a7f37' : '#e6e6e6'}; min-height:26px;"></div>` : ''}
+            </div>
+            <div style="padding-bottom:20px;">
+              <div style="font-weight:600; color:#222; font-size:13.5px;">${bomEsc(s.label)} <span style="font-weight:400; color:#999; font-size:11.5px;">(${bomEsc(s.actor)})</span></div>
+              <div style="font-size:12px; color:${statusColor};">${statusLabel}</div>
+              ${s.timestamp ? `<div style="font-size:11px; color:#999; margin-top:2px;">${bomEsc(s.timestamp)}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+      return `
+        <div style="margin-bottom:14px;">
+          <div style="font-weight:700; font-size:15px; color:#222;">Order No <span style="color:var(--gold, #b8860b);">${bomEsc(orderNo)}</span></div>
+          <div style="margin-top:6px;">${bomTrackStatusPill(overallStatus)}</div>
+        </div>
+        <div>${rows}</div>
+        <p class="note" style="margin-top:6px;"><i class="fa-solid fa-circle-info"></i> Preview only — sample timeline. Will show real dispatch history once this is wired to the backend.</p>
+      `;
+    }
+
+    function bomOpenTrackModal() {
+      window.openModal('Track BOM', `
+        <div class="field" style="margin-bottom:12px;">
+          <label>Order No.</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="bomTrackOrderInput" placeholder="e.g. ORD-1234" style="flex:1;">
+            <button type="button" class="btn btn-blue" id="bomTrackSearchBtn"><i class="fa-solid fa-magnifying-glass"></i> Track</button>
+          </div>
+        </div>
+        <div id="bomTrackResult"></div>
+      `);
+      const input = document.getElementById('bomTrackOrderInput');
+      const searchBtn = document.getElementById('bomTrackSearchBtn');
+      const resultBox = document.getElementById('bomTrackResult');
+      function runTrack() {
+        const orderNo = ((input && input.value) || '').trim();
+        if (!orderNo) {
+          if (resultBox) resultBox.innerHTML = '<p class="note" style="color:var(--red);">Enter an Order No. first.</p>';
+          return;
+        }
+        // Step 1 mock — rotates through the 3 statuses by input length so
+        // every state can be previewed without a backend yet. Replace with
+        // a real GET /api/bom/orders/track?orderNo=... lookup later.
+        const statuses = ['Pending', 'Partially Dispatched', 'Dispatched'];
+        const pick = statuses[orderNo.length % statuses.length];
+        if (resultBox) resultBox.innerHTML = bomRenderTrackTimelineHtml(orderNo, pick);
+      }
+      if (searchBtn) searchBtn.addEventListener('click', runTrack);
+      if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') runTrack(); });
+    }
+
+    function bomOpenCreateBomModal() {
+      const orderNo = ($('bomOrderNo') && $('bomOrderNo').value) || '';
+      const customer = ($('bomCustomerName') && $('bomCustomerName').value) || '';
+      window.openModal('Create BOM', `
+        <p class="note" style="margin-bottom:10px;">
+          <i class="fa-solid fa-circle-info"></i> This creates the BOM as a tracked entity — before any dispatch happens.
+          It will land in the <b>Pending BOM Register</b> until the first trip goes out, then move to
+          <b>Partially Dispatched</b> or <b>Dispatched</b> on its own as dispatch progresses.
+        </p>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:14px;">
+          <tr><td style="padding:6px 0; color:#888;">Order No.</td><td style="padding:6px 0; font-weight:600;">${bomEsc(orderNo || '—')}</td></tr>
+          <tr><td style="padding:6px 0; color:#888;">Customer</td><td style="padding:6px 0; font-weight:600;">${bomEsc(customer || '—')}</td></tr>
+          <tr><td style="padding:6px 0; color:#888;">Initial Status</td><td style="padding:6px 0;">${bomTrackStatusPill('Pending')}</td></tr>
+        </table>
+        <div class="actions-row">
+          <button type="button" class="btn btn-green" id="bomCreateBomConfirmBtn"><i class="fa-solid fa-check"></i> Create BOM</button>
+          <button type="button" class="btn btn-ghost" id="bomCreateBomCancelBtn">Cancel</button>
+        </div>
+      `);
+      const confirmBtn = document.getElementById('bomCreateBomConfirmBtn');
+      const cancelBtn = document.getElementById('bomCreateBomCancelBtn');
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+          // Step 1 mock — no backend call yet, this only confirms the UI
+          // flow end to end. A real create call + Pending Register refresh
+          // gets wired in the next step.
+          window.closeModal();
+          if (window.showToast) window.showToast('BOM created (preview) — will appear in Pending BOM Register once wired to the backend.');
+        });
+      }
+      if (cancelBtn) cancelBtn.addEventListener('click', () => window.closeModal());
+    }
+
+    if (btnCreateBom) btnCreateBom.addEventListener('click', bomOpenCreateBomModal);
+    if (btnTrackBom) btnTrackBom.addEventListener('click', bomOpenTrackModal);
 
     // Item -> category -> Serial No. mandatory lookup. Panels (and any other
     // category with the Serial No. mandatory rule set in Masters > Category)
