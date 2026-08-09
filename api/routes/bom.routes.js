@@ -256,6 +256,97 @@ module.exports = function registerBomRoutes(app, deps) {
     res.json(out);
   }));
 
+  // POST /api/bom/orders — "Create BOM" for real: captures a kit's FULL
+  // baseline (every item's full Quantity, not a partial Dispatch Qty) as
+  // its own bom_orders row up front, before any dispatch trip has gone
+  // out. No new status value is introduced — the row is inserted with
+  // status='Open' exactly like a dispatch-created order, and
+  // pendingForOrder naturally reports dispatched=0/remaining=total for
+  // every item until the first real trip, which is what "Pending" (not
+  // yet started) looks like. getOrCreateBomOrder (used by /dispatch) needs
+  // no changes — it already finds and extends this row on the first trip.
+  // Body: { orderNo, header: {...}, items: [{ name, qty }] }
+  app.post('/api/bom/orders', route(async (req, res) => {
+    const orderNo = String(req.body.orderNo || '').trim();
+    const header = req.body.header && typeof req.body.header === 'object' ? req.body.header : {};
+    const items = Array.isArray(req.body.items) ? req.body.items : [];
+    if (!orderNo) return res.status(400).json({ error: 'Order No. is required.' });
+
+    const baseline = {};
+    for (const it of items) {
+      const name = (it.name || '').trim();
+      const qty = Number(it.qty) || 0;
+      if (name && qty > 0) baseline[name] = qty;
+    }
+    if (!Object.keys(baseline).length) {
+      return res.status(400).json({ error: 'Add at least one item with a quantity before creating the BOM.' });
+    }
+
+    const [existing] = await pool.query(`SELECT id FROM bom_orders WHERE order_no=?`, [orderNo]);
+    if (existing.length) {
+      return res.status(409).json({
+        error: `A BOM already exists for Order No. '${orderNo}'. Use Track BOM or the BOM Register to continue it instead of creating a duplicate.`,
+      });
+    }
+
+    try {
+      const [result] = await pool.query(
+        `INSERT INTO bom_orders (order_no, header_json, items_json, status, created_by) VALUES (?, ?, ?, 'Open', ?)`,
+        [orderNo, JSON.stringify(header), JSON.stringify(baseline), req.user ? req.user.username : null]
+      );
+      res.json({ success: true, id: result.insertId, orderNo, status: 'Open' });
+    } catch (e) {
+      // Race safety net — two people creating the same Order No. at once.
+      if (e && e.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({ error: `A BOM already exists for Order No. '${orderNo}'.` });
+      }
+      throw e;
+    }
+  }));
+
+  // GET /api/bom/orders/by-order-no/:orderNo — the real Track BOM lookup.
+  // Registered BEFORE GET /api/bom/orders/:id below so "by-order-no" is
+  // never swallowed as a numeric :id. Same per-item breakdown as GET
+  // /:id, PLUS the full dispatch-trip history (bom_dispatches rows for
+  // this order, oldest first) so Track BOM can render a real "who
+  // dispatched what, when" timeline. `status` is the 3-state label the
+  // frontend's status pill expects (Pending / Partially Dispatched /
+  // Dispatched), derived from the items breakdown rather than stored.
+  app.get('/api/bom/orders/by-order-no/:orderNo', route(async (req, res) => {
+    const orderNo = String(req.params.orderNo || '').trim();
+    if (!orderNo) return res.status(400).json({ error: 'Order No. is required.' });
+    const [[row]] = await pool.query(`SELECT * FROM bom_orders WHERE order_no=?`, [orderNo]);
+    if (!row) return res.status(404).json({ error: `No BOM found for Order No. '${orderNo}'.` });
+
+    const { items } = await pendingForOrder(pool, row, true);
+    const totalAcross = items.reduce((s, it) => s + it.total, 0);
+    const dispatchedAcross = items.reduce((s, it) => s + it.dispatched, 0);
+    const overallStatus = dispatchedAcross <= 0
+      ? 'Pending'
+      : (dispatchedAcross >= totalAcross ? 'Dispatched' : 'Partially Dispatched');
+
+    const [tripRows] = await pool.query(
+      `SELECT id, items_json, dispatched_by, dispatched_at FROM bom_dispatches WHERE bom_order_id=? ORDER BY dispatched_at ASC`,
+      [row.id]
+    );
+    const trips = tripRows.map((t) => {
+      let tripItems;
+      try { tripItems = JSON.parse(t.items_json || '[]'); } catch (e) { tripItems = []; }
+      return { id: t.id, dispatchedBy: t.dispatched_by, dispatchedAt: t.dispatched_at, items: tripItems };
+    });
+
+    res.json({
+      id: row.id,
+      orderNo: row.order_no,
+      header: JSON.parse(row.header_json || '{}'),
+      status: overallStatus,
+      createdBy: row.created_by,
+      createdAt: row.created_at,
+      items,
+      trips,
+    });
+  }));
+
   // GET /api/bom/orders/:id — Step 4 Continue Dispatch form data. Full
   // per-item breakdown (category/serialMandatory included) for every
   // baseline item, not just the pending ones — the frontend filters to

@@ -851,14 +851,63 @@ function bomRenderChallanPrintSheetHtml(header, kit, templateValues) {
   `;
 }
 
+// ---------------------------------------------------------------------------
+// BOM Home — the new landing view for the BOM tab. Replaces "click BOM in
+// the sidebar -> straight into the big New BOM Entry form" with a small
+// launcher screen: Create BOM / Track BOM / BOM Register buttons up top,
+// and a live table of every still-pending bom_orders row underneath so an
+// in-progress BOM is one double-click away instead of buried inside the
+// BOM Register modal. The actual kit-selection/dispatch form (unchanged)
+// now lives inside #bomEntryView, hidden until Create BOM or a table
+// double-click switches views — see init()'s showBomHome()/showBomEntry().
+// ---------------------------------------------------------------------------
+function bomRenderHomeViewHtml() {
+  return `
+    <div id="bomHomeView">
+      <div class="page-head"><i class="fa-solid fa-list-check" style="color:var(--gold);"></i><h2>Bill of Material (BOM)</h2></div>
+      <div class="panel">
+        <h3><i class="fa-solid fa-box-open"></i> BOM</h3>
+        <p class="note" style="margin-bottom:12px;">
+          <i class="fa-solid fa-circle-info"></i> Start a new BOM, track any Order No.'s dispatch progress, or open the full register.
+        </p>
+        <div class="actions-row">
+          <button type="button" class="btn btn-green" id="bomHomeBtnCreate"><i class="fa-solid fa-plus-circle"></i> Create BOM</button>
+          <button type="button" class="btn btn-ghost" id="bomHomeBtnTrack"><i class="fa-solid fa-route"></i> Track BOM</button>
+          <button type="button" class="btn btn-ghost" id="bomHomeBtnRegister"><i class="fa-solid fa-clipboard-list"></i> BOM Register</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span><i class="fa-solid fa-hourglass-half"></i> Pending BOM Orders <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(double-click a row to open it)</span></span>
+          <button type="button" class="btn btn-ghost bom-mini-btn" id="bomHomeBtnRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button>
+        </h3>
+        <div id="bomHomePendingWrap"><p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading pending BOM orders...</p></div>
+      </div>
+    </div>
+  `;
+}
+
 window.PAGES.bom = {
   name: 'BOM',
   icon: 'fa-list-check',
   sub: 'Bill of Material — kit-wise item list',
   html: `
-    <div class="page-head"><i class="fa-solid fa-list-check" style="color:var(--gold);"></i><h2>Bill of Material (BOM)</h2></div>
+    ${bomRenderHomeViewHtml()}
+    <div id="bomEntryView" style="display:none;">
+    <div class="page-head" style="justify-content:space-between; flex-wrap:wrap; gap:10px;">
+      <div style="display:flex; align-items:center; gap:10px;"><i class="fa-solid fa-list-check" style="color:var(--gold);"></i><h2>Bill of Material (BOM)</h2></div>
+      <button type="button" class="btn btn-ghost" id="bomBtnBackHome"><i class="fa-solid fa-arrow-left"></i> Back to BOM Home</button>
+    </div>
 
-    <div class="panel">
+    <!-- Populated instead of the Kit Items panel when a pending order is
+         opened from the BOM Home table / BOM Register — see
+         bomOpenOrderInline() in init(). Hidden the rest of the time. -->
+    <div class="panel" id="bomContinuePanel" style="display:none;">
+      <h3><i class="fa-solid fa-truck"></i> Continue Dispatch <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(picking up a pending order)</span></h3>
+      <div id="bomContinueInlineBody"></div>
+    </div>
+
+    <div class="panel" id="bomNewEntryPanel">
       <h3><i class="fa-solid fa-box-open"></i> New BOM Entry</h3>
       <div class="form-grid cols-2">
         <div class="field"><label>BOM Kit <span class="req">*</span></label>
@@ -974,6 +1023,7 @@ window.PAGES.bom = {
          runs window.print(). Kept completely separate from #bomPrintRoot so
          the existing BOM print is never touched by this. -->
     <div class="bom-print-only" id="bomChallanPrintRoot"></div>
+    </div><!-- /bomEntryView -->
   `,
 
   async init() {
@@ -987,6 +1037,112 @@ window.PAGES.bom = {
     const challanOverlay = $('bomChallanOverlay');
     const challanModalBody = $('bomChallanModalBody');
     const challanCloseBtn = $('bomChallanCloseBtn');
+
+    // ------------------------------------------------------------------
+    // BOM Home <-> BOM Entry view switching. The BOM tab now lands on a
+    // small launcher (bomHomeView: Create BOM / Track BOM / BOM Register +
+    // a live pending-orders table) instead of dropping straight into the
+    // full kit-selection form (bomEntryView, unchanged, just wrapped).
+    // ------------------------------------------------------------------
+    const homeView = $('bomHomeView');
+    const entryView = $('bomEntryView');
+    const continuePanel = $('bomContinuePanel');
+    const continueInlineBody = $('bomContinueInlineBody');
+    const newEntryPanel = $('bomNewEntryPanel');
+    const btnBackHome = $('bomBtnBackHome');
+    let bomInlineContinueOrderId = null; // set while bomContinuePanel is showing a specific order
+
+    function showBomHome() {
+      bomInlineContinueOrderId = null;
+      if (entryView) entryView.style.display = 'none';
+      if (homeView) homeView.style.display = '';
+      bomLoadHomePendingTable();
+    }
+    function showBomEntry() {
+      if (homeView) homeView.style.display = 'none';
+      if (entryView) entryView.style.display = '';
+    }
+    // Fresh "Create BOM" entry: full kit-picker form, Continue Dispatch
+    // panel hidden. Used by both the Home "Create BOM" button and the
+    // entry screen's own "Back"-free default state.
+    function showBomEntryForNewKit() {
+      bomInlineContinueOrderId = null;
+      if (continuePanel) continuePanel.style.display = 'none';
+      if (newEntryPanel) newEntryPanel.style.display = '';
+      const kip = $('bomKitItemsPanel');
+      if (kip) kip.style.display = '';
+      showBomEntry();
+    }
+    if (btnBackHome) btnBackHome.addEventListener('click', showBomHome);
+
+    function bomOverallStatusFromItems(items) {
+      const total = (items || []).reduce((s, it) => s + (it.total || 0), 0);
+      const dispatched = (items || []).reduce((s, it) => s + (it.dispatched || 0), 0);
+      if (dispatched <= 0) return 'Pending';
+      if (dispatched >= total) return 'Dispatched';
+      return 'Partially Dispatched';
+    }
+
+    function bomRenderHomePendingTableHtml(orders) {
+      if (!orders || !orders.length) {
+        return `<p class="note" style="padding:10px 0;"><i class="fa-solid fa-circle-check" style="color:var(--green);"></i> Nothing pending — every BOM order has been fully dispatched.</p>`;
+      }
+      const rows = orders.map((o) => `
+        <tr class="bom-home-row" data-bom-order-id="${o.id}" style="cursor:pointer;" title="Double-click to open">
+          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${bomEsc(o.orderNo)}</td>
+          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${bomEsc((o.header && o.header.customerName) || '-')}</td>
+          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${o.pendingItemCount} item(s) / ${o.pendingQty} unit(s) pending</td>
+          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${bomEsc((o.createdAt || '').slice(0, 10))}</td>
+          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);"><button type="button" class="btn btn-blue bom-mini-btn" data-bom-order-id="${o.id}"><i class="fa-solid fa-truck"></i> Open</button></td>
+        </tr>
+      `).join('');
+      return `
+        <table style="width:100%; border-collapse:collapse;">
+          <thead><tr>
+            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Order No</th>
+            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Customer</th>
+            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Pending</th>
+            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Started</th>
+            <th style="border-bottom:2px solid var(--border, #ddd);"></th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    async function bomLoadHomePendingTable() {
+      const wrap = $('bomHomePendingWrap');
+      if (!wrap) return;
+      wrap.innerHTML = '<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading pending BOM orders...</p>';
+      let orders;
+      try {
+        orders = await window.Api.get('/bom/orders?status=Open', { silent: true });
+      } catch (e) {
+        wrap.innerHTML = `<p class="note" style="color:var(--red);">Could not load pending BOM orders — ${bomEsc((e && e.message) || 'server error')}.</p>`;
+        return;
+      }
+      wrap.innerHTML = bomRenderHomePendingTableHtml(orders);
+      wrap.querySelectorAll('[data-bom-order-id]').forEach((el) => {
+        const id = el.getAttribute('data-bom-order-id');
+        if (el.tagName === 'BUTTON') {
+          el.addEventListener('click', () => bomOpenOrderInline(id));
+        } else {
+          el.addEventListener('dblclick', () => bomOpenOrderInline(id));
+        }
+      });
+    }
+
+    const homeBtnCreate = $('bomHomeBtnCreate');
+    const homeBtnTrack = $('bomHomeBtnTrack');
+    const homeBtnRegister = $('bomHomeBtnRegister');
+    const homeBtnRefresh = $('bomHomeBtnRefresh');
+    if (homeBtnCreate) {
+      homeBtnCreate.addEventListener('click', () => {
+        showBomEntryForNewKit();
+      });
+    }
+    if (homeBtnRefresh) homeBtnRefresh.addEventListener('click', bomLoadHomePendingTable);
+    bomLoadHomePendingTable(); // initial load — BOM tab lands on the Home view
 
     // Open/close for the dedicated Challan modal — mirrors the
     // lockPageScroll/unlockPageScroll + .show/.no-scroll pattern Party
@@ -1043,20 +1199,18 @@ window.PAGES.bom = {
     const bomCurrentRole = window.currentUserRole || 'User';
     const bomIsAdmin = bomCurrentRole === 'SuperAdmin' || bomCurrentRole === 'Admin';
 
-    // ---------------- BOM: Create BOM + Track BOM (new goal, Step 1 — UI
-    // only, no backend wiring yet, per explicit instruction) ----------------
-    // Today a BOM only ever gets a real backend record (`bom_orders`) the
-    // FIRST time it's dispatched (see schema.js's ensureBomOrderSchema
-    // comment) — there is no explicit "Create BOM" action, so a fully
-    // filled-in-but-never-dispatched BOM leaves no trace anywhere. This
-    // adds that missing action as an Admin/SuperAdmin-only button: once
-    // wired to a real endpoint (later step), it will create the BOM
-    // up-front with status 'Pending', which then flips to
-    // 'Partially Dispatched' or 'Dispatched' automatically as trips go out
-    // — exactly the 3-state lifecycle bomTrackStatusPill below renders.
-    // Track BOM (visible to everyone) is the read-only counterpart: look
-    // up any Order No. and see its status + a step-by-step timeline,
-    // styled after the PM Surya Ghar portal's "Track Application" panel.
+    // ---------------- BOM: Create BOM + Track BOM — now REAL, wired to
+    // POST /api/bom/orders and GET /api/bom/orders/by-order-no/:orderNo. ----
+    // Create BOM (Admin/SuperAdmin only) captures the kit's full baseline
+    // (every item's full Quantity) as a bom_orders row up front, before any
+    // dispatch trip — it then shows up in BOM Home / BOM Register as
+    // "Pending" and flips to "Partially Dispatched"/"Dispatched" on its own
+    // as real dispatch trips go out (status is derived from dispatched vs
+    // total each time it's read — see bomOverallStatusFromItems above and
+    // the server's matching helper in bom.routes.js, no separate DB status
+    // needed). Track BOM (visible to everyone) is the read-only counterpart:
+    // look up any Order No. and see its real status + per-item breakdown +
+    // full dispatch-trip history.
     const btnCreateBom = $('bomBtnCreateBom');
     const btnTrackBom = $('bomBtnTrackBom');
     if (btnCreateBom) btnCreateBom.style.display = bomIsAdmin ? '' : 'none';
@@ -1071,59 +1225,85 @@ window.PAGES.bom = {
       return `<span style="display:inline-block; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; color:${c.color}; background:${c.bg};">${bomEsc(status)}</span>`;
     }
 
-    // Sample/mock timeline — shaped exactly like what a real
-    // GET /api/bom/orders/:id/track (or similar, not built yet) will
-    // return: an ordered array of { label, actor, status, timestamp }.
-    // Kept as its own function so swapping this out for a real API
-    // response later is a one-function change.
-    function bomMockTrackSteps(overallStatus) {
-      const dispatchStarted = overallStatus !== 'Pending';
-      const fullyDone = overallStatus === 'Dispatched';
-      return [
-        { label: 'BOM Created', actor: 'Admin', status: 'done', timestamp: '09-08-2026 11:20 am' },
-        { label: 'Verified', actor: 'User', status: 'done', timestamp: '09-08-2026 11:22 am' },
-        { label: 'Challan Generated', actor: 'User', status: 'done', timestamp: '09-08-2026 11:25 am' },
-        { label: 'Dispatch Started', actor: 'User', status: dispatchStarted ? 'done' : 'active', timestamp: dispatchStarted ? '09-08-2026 12:05 pm' : '' },
-        { label: 'Partially Dispatched', actor: 'User', status: fullyDone ? 'done' : (dispatchStarted ? 'active' : 'pending'), timestamp: dispatchStarted ? '09-08-2026 12:05 pm' : '' },
-        { label: 'Fully Dispatched', actor: 'User', status: fullyDone ? 'done' : 'pending', timestamp: fullyDone ? '09-08-2026 3:40 pm' : '' },
-      ];
+    function bomFmtDateTime(v) {
+      if (!v) return '';
+      const d = new Date(v);
+      if (isNaN(d.getTime())) return String(v);
+      return d.toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
     }
 
-    function bomRenderTrackTimelineHtml(orderNo, overallStatus) {
-      const steps = bomMockTrackSteps(overallStatus);
-      const rows = steps.map((s, idx) => {
-        const isLast = idx === steps.length - 1;
-        const iconColor = s.status === 'done' ? '#1a7f37' : (s.status === 'active' ? '#0b5ea8' : 'rgba(255,255,255,0.18)');
-        const icon = s.status === 'done' ? 'fa-check' : (s.status === 'active' ? 'fa-clock' : 'fa-file');
-        const iconGlyphColor = s.status === 'pending' ? 'var(--txt-muted)' : '#fff';
-        const statusLabel = s.status === 'pending' ? 'Pending' : (s.status === 'active' ? 'In Progress' : 'Completed');
-        const statusColor = s.status === 'pending' ? 'var(--txt-muted)' : (s.status === 'active' ? '#4aa3ff' : '#3ecf6e');
-        return `
-          <div style="display:flex; gap:12px;">
-            <div style="display:flex; flex-direction:column; align-items:center;">
-              <div style="width:26px; height:26px; border-radius:50%; background:${iconColor}; color:${iconGlyphColor}; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0;">
-                <i class="fa-solid ${icon}"></i>
+    // Renders the real per-item breakdown + trip-by-trip dispatch history
+    // returned by GET /api/bom/orders/by-order-no/:orderNo. `data.trips` is
+    // ordered oldest-first, so each trip is one visual "step" — a genuine
+    // timeline built from bom_dispatches rows, not a sample/mock one.
+    function bomRenderTrackResultHtml(data) {
+      const itemRows = (data.items || []).map((it) => `
+        <tr>
+          <td style="padding:6px 8px; border-bottom:1px solid var(--border, #eee);">${bomEsc(it.name)}</td>
+          <td style="padding:6px 8px; border-bottom:1px solid var(--border, #eee); text-align:center;">${it.total}</td>
+          <td style="padding:6px 8px; border-bottom:1px solid var(--border, #eee); text-align:center;">${it.dispatched}</td>
+          <td style="padding:6px 8px; border-bottom:1px solid var(--border, #eee); text-align:center; color:${it.remaining > 0 ? 'var(--red, #c0392b)' : 'var(--green, #1a7f37)'};">${it.remaining}</td>
+        </tr>
+      `).join('');
+
+      const trips = data.trips || [];
+      const tripSteps = trips.length
+        ? trips.map((t, idx) => {
+            const isLast = idx === trips.length - 1;
+            const itemsLine = (t.items || []).map((it) => `${bomEsc(it.name)} &times; ${it.qty}`).join(', ') || '—';
+            return `
+              <div style="display:flex; gap:12px;">
+                <div style="display:flex; flex-direction:column; align-items:center;">
+                  <div style="width:26px; height:26px; border-radius:50%; background:#1a7f37; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0;">
+                    <i class="fa-solid fa-truck"></i>
+                  </div>
+                  ${!isLast ? `<div style="width:2px; flex:1; background:#1a7f37; min-height:26px;"></div>` : ''}
+                </div>
+                <div style="padding-bottom:20px;">
+                  <div style="font-weight:600; font-size:13.5px;">Trip ${idx + 1} <span style="font-weight:400; color:var(--txt-muted); font-size:11.5px;">(${bomEsc(t.dispatchedBy || 'Unknown user')})</span></div>
+                  <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">${bomEsc(itemsLine)}</div>
+                  <div style="font-size:11px; color:var(--txt-muted); margin-top:2px;">${bomEsc(bomFmtDateTime(t.dispatchedAt))}</div>
+                </div>
               </div>
-              ${!isLast ? `<div style="width:2px; flex:1; background:${s.status === 'done' ? '#1a7f37' : 'rgba(255,255,255,0.14)'}; min-height:26px;"></div>` : ''}
-            </div>
-            <div style="padding-bottom:20px;">
-              <div style="font-weight:600; font-size:13.5px;">${bomEsc(s.label)} <span style="font-weight:400; color:var(--txt-muted); font-size:11.5px;">(${bomEsc(s.actor)})</span></div>
-              <div style="font-size:12px; color:${statusColor};">${statusLabel}</div>
-              ${s.timestamp ? `<div style="font-size:11px; color:var(--txt-muted); margin-top:2px;">${bomEsc(s.timestamp)}</div>` : ''}
-            </div>
-          </div>
-        `;
-      }).join('');
+            `;
+          }).join('')
+        : `<p class="note"><i class="fa-solid fa-circle-info"></i> No dispatch trips yet — this BOM is created but nothing has gone out.</p>`;
+
       return `
-        <div style="margin-bottom:14px;">
-          <div style="font-weight:700; font-size:15px;">Order No <span style="color:var(--gold, #b8860b);">${bomEsc(orderNo)}</span></div>
-          <div style="margin-top:6px;">${bomTrackStatusPill(overallStatus)}</div>
+        <div style="margin-bottom:14px; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div style="font-weight:700; font-size:15px;">Order No <span style="color:var(--gold, #b8860b);">${bomEsc(data.orderNo)}</span></div>
+            <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">${bomEsc((data.header && data.header.customerName) || '')}</div>
+            <div style="margin-top:6px;">${bomTrackStatusPill(data.status)}</div>
+          </div>
         </div>
-        <div>${rows}</div>
-        <p class="note" style="margin-top:6px;"><i class="fa-solid fa-circle-info"></i> Preview only — sample timeline. Will show real dispatch history once this is wired to the backend.</p>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
+          <thead><tr>
+            <th style="text-align:left; padding:6px 8px; border-bottom:2px solid var(--border, #ddd);">Item</th>
+            <th style="padding:6px 8px; border-bottom:2px solid var(--border, #ddd);">Total</th>
+            <th style="padding:6px 8px; border-bottom:2px solid var(--border, #ddd);">Dispatched</th>
+            <th style="padding:6px 8px; border-bottom:2px solid var(--border, #ddd);">Pending</th>
+          </tr></thead>
+          <tbody>${itemRows}</tbody>
+        </table>
+        <div style="font-weight:600; font-size:13px; margin-bottom:10px;">Dispatch Trips</div>
+        <div>${tripSteps}</div>
       `;
     }
 
+    async function bomFetchAndRenderTrack(orderNo, resultBox) {
+      resultBox.innerHTML = '<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Looking up this BOM...</p>';
+      try {
+        const data = await window.Api.get(`/bom/orders/by-order-no/${encodeURIComponent(orderNo)}`, { silent: true });
+        resultBox.innerHTML = bomRenderTrackResultHtml(data);
+      } catch (e) {
+        const msg = (e && e.message) || 'Could not fetch this BOM.';
+        resultBox.innerHTML = `<p class="note" style="color:var(--red);">${bomEsc(msg)}</p>`;
+      }
+    }
+
+    // Home screen's Track BOM — asks for an Order No. since there's no
+    // "current" BOM in context there.
     function bomOpenTrackModal() {
       window.openModal('Track BOM', `
         <div class="field" style="margin-bottom:12px;">
@@ -1144,29 +1324,75 @@ window.PAGES.bom = {
           if (resultBox) resultBox.innerHTML = '<p class="note" style="color:var(--red);">Enter an Order No. first.</p>';
           return;
         }
-        // Step 1 mock — rotates through the 3 statuses by input length so
-        // every state can be previewed without a backend yet. Replace with
-        // a real GET /api/bom/orders/track?orderNo=... lookup later.
-        const statuses = ['Pending', 'Partially Dispatched', 'Dispatched'];
-        const pick = statuses[orderNo.length % statuses.length];
-        if (resultBox) resultBox.innerHTML = bomRenderTrackTimelineHtml(orderNo, pick);
+        bomFetchAndRenderTrack(orderNo, resultBox);
       }
       if (searchBtn) searchBtn.addEventListener('click', runTrack);
       if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') runTrack(); });
+      if (input) input.focus();
+    }
+
+    // Used wherever the Order No. is already known — the BOM Entry
+    // screen's own Track BOM button, and the Continue Dispatch form's
+    // "Track This BOM" button — so the person never has to retype it.
+    function bomOpenTrackForOrderNo(orderNo) {
+      window.openModal('Track BOM', `<div id="bomTrackResult"></div>`);
+      const resultBox = document.getElementById('bomTrackResult');
+      if (resultBox) bomFetchAndRenderTrack(orderNo, resultBox);
+    }
+
+    // Entry screen's Track BOM: uses whichever Order No. is "current" —
+    // the order being continued via BOM Home/Register, or whatever's typed
+    // into the Order No. field for a fresh kit — no prompt needed.
+    function bomTrackCurrentOrder() {
+      const fromField = ($('bomOrderNo') && $('bomOrderNo').value.trim()) || '';
+      if (!fromField) {
+        window.openModal('Order No. Required', '<p>Enter an <b>Order No.</b> above first, or open an existing order from BOM Home / BOM Register.</p>');
+        return;
+      }
+      bomOpenTrackForOrderNo(fromField);
+    }
+
+    // Create BOM — captures the currently-selected kit's FULL baseline
+    // (every item's full Quantity, not a partial Dispatch Qty) as a real
+    // bom_orders row, before any dispatch trip goes out.
+    function bomCollectItemsForCreate() {
+      const out = [];
+      (currentKitState || []).forEach((sec) => {
+        (sec.items || []).forEach((it) => {
+          const name = (it.name || '').trim();
+          const qty = Number(it.qty) || 0;
+          if (name && qty > 0) out.push({ name, qty });
+        });
+      });
+      return out;
     }
 
     function bomOpenCreateBomModal() {
-      const orderNo = ($('bomOrderNo') && $('bomOrderNo').value) || '';
-      const customer = ($('bomCustomerName') && $('bomCustomerName').value) || '';
+      if (!currentKitState) {
+        window.openModal('Select a Kit', '<p>Please select a BOM Kit before creating a BOM.</p>');
+        return;
+      }
+      const header = getHeaderValues();
+      const orderNo = (header.orderNo || '').trim();
+      if (!orderNo) {
+        window.openModal('Order No. Required', '<p>Please enter an <b>Order No.</b> before creating a BOM.</p>');
+        return;
+      }
+      const items = bomCollectItemsForCreate();
+      if (!items.length) {
+        window.openModal('No Items', '<p>Add at least one item with a quantity before creating a BOM.</p>');
+        return;
+      }
       window.openModal('Create BOM', `
         <p class="note" style="margin-bottom:10px;">
           <i class="fa-solid fa-circle-info"></i> This creates the BOM as a tracked entity — before any dispatch happens.
-          It will land in the <b>Pending BOM Register</b> until the first trip goes out, then move to
+          It will land in <b>BOM Home</b> / the <b>BOM Register</b> as <b>Pending</b> until the first trip goes out, then move to
           <b>Partially Dispatched</b> or <b>Dispatched</b> on its own as dispatch progresses.
         </p>
         <table style="width:100%; border-collapse:collapse; margin-bottom:14px;">
-          <tr><td style="padding:6px 0; color:var(--txt-muted);">Order No.</td><td style="padding:6px 0; font-weight:600;">${bomEsc(orderNo || '—')}</td></tr>
-          <tr><td style="padding:6px 0; color:var(--txt-muted);">Customer</td><td style="padding:6px 0; font-weight:600;">${bomEsc(customer || '—')}</td></tr>
+          <tr><td style="padding:6px 0; color:var(--txt-muted);">Order No.</td><td style="padding:6px 0; font-weight:600;">${bomEsc(orderNo)}</td></tr>
+          <tr><td style="padding:6px 0; color:var(--txt-muted);">Customer</td><td style="padding:6px 0; font-weight:600;">${bomEsc(header.customerName || '—')}</td></tr>
+          <tr><td style="padding:6px 0; color:var(--txt-muted);">Items</td><td style="padding:6px 0; font-weight:600;">${items.length} item(s)</td></tr>
           <tr><td style="padding:6px 0; color:var(--txt-muted);">Initial Status</td><td style="padding:6px 0;">${bomTrackStatusPill('Pending')}</td></tr>
         </table>
         <div class="actions-row">
@@ -1177,19 +1403,29 @@ window.PAGES.bom = {
       const confirmBtn = document.getElementById('bomCreateBomConfirmBtn');
       const cancelBtn = document.getElementById('bomCreateBomCancelBtn');
       if (confirmBtn) {
-        confirmBtn.addEventListener('click', () => {
-          // Step 1 mock — no backend call yet, this only confirms the UI
-          // flow end to end. A real create call + Pending Register refresh
-          // gets wired in the next step.
+        confirmBtn.addEventListener('click', async () => {
+          const originalLabel = confirmBtn.innerHTML;
+          confirmBtn.disabled = true;
+          confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating...';
+          try {
+            await window.Api.post('/bom/orders', { orderNo, header, items });
+          } catch (e) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = originalLabel;
+            window.openModal('Could Not Create BOM', `<p>${bomEsc((e && e.message) || 'Server error. Please try again.')}</p>`);
+            return;
+          }
           window.closeModal();
-          if (window.showToast) window.showToast('BOM created (preview) — will appear in Pending BOM Register once wired to the backend.');
+          if (window.showToast) window.showToast('BOM created — it now appears in BOM Home / BOM Register as Pending.');
+          showBomHome();
         });
       }
       if (cancelBtn) cancelBtn.addEventListener('click', () => window.closeModal());
     }
 
     if (btnCreateBom) btnCreateBom.addEventListener('click', bomOpenCreateBomModal);
-    if (btnTrackBom) btnTrackBom.addEventListener('click', bomOpenTrackModal);
+    if (btnTrackBom) btnTrackBom.addEventListener('click', bomTrackCurrentOrder);
+    if (homeBtnTrack) homeBtnTrack.addEventListener('click', bomOpenTrackModal);
 
     // Item -> category -> Serial No. mandatory lookup. Panels (and any other
     // category with the Serial No. mandatory rule set in Masters > Category)
@@ -2480,10 +2716,13 @@ window.PAGES.bom = {
       });
     }
 
-    function bomRenderContinueFormHtml(order) {
+    // `backLabel`/`showBack` let the same form read right whether it's
+    // sitting inside the Register modal ("Back to list") or inline on the
+    // BOM Home double-click flow ("Back to BOM Home").
+    function bomRenderContinueFormHtml(order, backLabel) {
       const pendingItems = (order.items || []).filter((it) => it.remaining > 0);
       if (!pendingItems.length) {
-        return `<p class="note">Nothing left pending for this order.</p><button type="button" class="btn btn-ghost" id="bomRegisterBackBtn"><i class="fa-solid fa-arrow-left"></i> Back to list</button>`;
+        return `<p class="note">Nothing left pending for this order.</p><button type="button" class="btn btn-ghost" id="bomRegisterBackBtn"><i class="fa-solid fa-arrow-left"></i> ${bomEsc(backLabel)}</button>`;
       }
       // Step 5: each serial-mandatory row gets its own textarea id + a scan
       // icon button (data-cont-scan-target points at that id) so the same
@@ -2509,33 +2748,49 @@ window.PAGES.bom = {
         ${rows}
         <div class="actions-row">
           <button type="button" class="btn btn-green" id="bomRegisterContinueBtn"><i class="fa-solid fa-truck"></i> Continue Dispatch</button>
-          <button type="button" class="btn btn-ghost" id="bomRegisterBackBtn"><i class="fa-solid fa-arrow-left"></i> Back to list</button>
+          <button type="button" class="btn btn-ghost" id="bomRegisterBackBtn"><i class="fa-solid fa-arrow-left"></i> ${bomEsc(backLabel)}</button>
+          <button type="button" class="btn btn-ghost" id="bomRegisterTrackBtn"><i class="fa-solid fa-route"></i> Track This BOM</button>
         </div>
       `;
     }
 
-    async function bomLoadContinueDispatchForm(orderId) {
-      openRegisterModal('<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading order...</p>');
+    // `target` is either 'modal' (Pending/BOM Register overlay, unchanged
+    // behaviour) or 'inline' (renders straight into the BOM Entry screen's
+    // #bomContinuePanel — see bomOpenOrderInline below, used by the BOM
+    // Home table's double-click / Open action).
+    async function bomLoadContinueDispatchForm(orderId, target) {
+      const mode = target === 'inline' ? 'inline' : 'modal';
+      const container = mode === 'inline' ? continueInlineBody : registerModalBody;
+      const setBody = (html) => {
+        if (mode === 'inline') { container.innerHTML = html; }
+        else { openRegisterModal(html); }
+      };
+      const backLabel = mode === 'inline' ? 'Back to BOM Home' : 'Back to list';
+      const goBack = mode === 'inline' ? showBomHome : bomLoadRegisterList;
+
+      setBody('<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading order...</p>');
       let order;
       try {
         order = await window.Api.get(`/bom/orders/${orderId}`);
       } catch (e) {
-        openRegisterModal(`<p class="note" style="color:var(--red);">Could not load this order — ${bomEsc((e && e.message) || 'server error')}.</p>`);
+        setBody(`<p class="note" style="color:var(--red);">Could not load this order — ${bomEsc((e && e.message) || 'server error')}.</p>`);
         return;
       }
-      openRegisterModal(bomRenderContinueFormHtml(order));
+      setBody(bomRenderContinueFormHtml(order, backLabel));
       // Step 5: wire each pending serial item's scan icon button to open
       // the camera scanner targeting that item's own textarea id.
-      registerModalBody.querySelectorAll('[data-cont-scan-target]').forEach((btn) => {
+      container.querySelectorAll('[data-cont-scan-target]').forEach((btn) => {
         btn.addEventListener('click', () => openBomScanner(btn.getAttribute('data-cont-scan-target')));
       });
-      const backBtn = $('bomRegisterBackBtn');
-      if (backBtn) backBtn.addEventListener('click', bomLoadRegisterList);
-      const continueBtn = $('bomRegisterContinueBtn');
+      const backBtn = container.querySelector('#bomRegisterBackBtn');
+      if (backBtn) backBtn.addEventListener('click', goBack);
+      const trackBtn = container.querySelector('#bomRegisterTrackBtn');
+      if (trackBtn) trackBtn.addEventListener('click', () => bomOpenTrackForOrderNo(order.orderNo));
+      const continueBtn = container.querySelector('#bomRegisterContinueBtn');
       if (continueBtn) {
         continueBtn.addEventListener('click', async () => {
           const items = [];
-          registerModalBody.querySelectorAll('[data-cont-name]').forEach((el) => {
+          container.querySelectorAll('[data-cont-name]').forEach((el) => {
             const name = el.getAttribute('data-cont-name');
             const totalQty = Number(el.getAttribute('data-cont-total')) || 0;
             if (el.getAttribute('data-cont-kind') === 'serial') {
@@ -2570,16 +2825,32 @@ window.PAGES.bom = {
           if (window.showToast) window.showToast('Dispatched — stock has been deducted.');
           if (result.orderStatus === 'Completed' || !(result.pending || []).length) {
             window.openModal('Dispatch Complete', `<p>Order No <b>${bomEsc(order.orderNo)}</b> is now fully dispatched.</p>`);
-            bomLoadRegisterList();
+            goBack();
           } else {
             window.openModal('Partial Dispatch Done', `<p>Stock deducted for this trip. Order No <b>${bomEsc(order.orderNo)}</b> still has item(s) pending — reopen it from the register any time to continue.</p>`);
-            bomLoadContinueDispatchForm(orderId);
+            bomLoadContinueDispatchForm(orderId, mode);
           }
         });
       }
     }
 
+    // Opens a pending order directly INSIDE the BOM Entry screen (the
+    // literal "double-click -> redirected inside the BOM" flow) instead of
+    // the Pending BOM Register modal. Kit-selection panel is hidden while
+    // this is showing; "Back to BOM Home" (top of the entry screen) and
+    // the form's own "Back to BOM Home" button both return to the launcher.
+    function bomOpenOrderInline(orderId) {
+      bomInlineContinueOrderId = orderId;
+      showBomEntry();
+      if (newEntryPanel) newEntryPanel.style.display = 'none';
+      const kip = $('bomKitItemsPanel');
+      if (kip) kip.style.display = 'none';
+      if (continuePanel) continuePanel.style.display = '';
+      bomLoadContinueDispatchForm(orderId, 'inline');
+    }
+
     if (btnPendingRegister) btnPendingRegister.addEventListener('click', bomLoadRegisterList);
+    if (homeBtnRegister) homeBtnRegister.addEventListener('click', bomLoadRegisterList);
 
     if (btnChallan) {
       btnChallan.addEventListener('click', async () => {
