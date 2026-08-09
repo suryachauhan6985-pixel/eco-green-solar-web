@@ -1596,6 +1596,291 @@ window.PAGES.bom = {
       updateVerifyButtonState();
     }
 
+    // ---------------- Serial scanner (camera) — Step 5 ----------------
+    // Same "html5-qrcode" engine + .ss-scanner-* overlay markup/CSS already
+    // used by Purchase Inward (js/pages/purchase.js's openPurchaseScanner)
+    // and SCAN To Sheet (js/pages/scansheet.js) — loaded globally via CDN
+    // in index.html, CSS ships site-wide via css/modules/scan-sheet.css.
+    // Generic over `targetId` so ONE set of functions serves both:
+    //   - the main screen's openBomSerialModal() box (#bomSerialModalBox)
+    //   - every per-item serial <textarea> the Continue Dispatch form
+    //     (Step 4's bomRenderContinueFormHtml) renders — one order can have
+    //     several pending serial-mandatory items, each gets its own textarea
+    //     id and its own scan button, all calling openBomScanner(thatId).
+    // Flow mirrors Purchase's exactly: decode -> camera pauses -> result
+    // card with Retry/Done -> Done appends one line to the target textarea
+    // and resumes scanning for the next serial, duplicate scans are
+    // blocked (Done hidden) until Retry'd.
+    //
+    // Deliberately NO separate "Bluetooth scanner mode" toggle: unlike
+    // scansheet.js's single-line inputs (which need one because a BT
+    // wedge-scanner's trailing Enter key would submit/blur a single-line
+    // field), these are multi-line <textareas> that already auto-newline
+    // on any delimiter (see bomSplitSerials + the keydown/paste handlers
+    // below and in the Continue Dispatch form). A Bluetooth scanner just
+    // needs the box focused — it types + Enter like a keyboard, which the
+    // textarea turns into "one serial per line" on its own. Purchase
+    // Inward's identical serial textarea uses this same reasoning and
+    // likewise ships no BT toggle.
+    const bomScanState = {
+      html5QrCode: null,
+      cameras: [],
+      cameraIndex: 0,
+      torchOn: false,
+      overlayEl: null,
+      targetId: null,
+      handledOnce: false,
+      pendingText: null,
+      pendingIsDup: false,
+      addedCount: 0,
+    };
+
+    function bomScanBeep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 1050;
+        gain.gain.setValueAtTime(0.001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.16);
+        osc.onended = () => ctx.close();
+      } catch (e) { /* Web Audio not available — silently skip the beep */ }
+    }
+
+    function bomScanSetStatus(msg) {
+      const el = document.getElementById('bomScanStatus');
+      if (el) el.textContent = msg;
+    }
+
+    function openBomScanner(targetId) {
+      const box = document.getElementById(targetId);
+      if (!box) return;
+      bomScanState.targetId = targetId;
+      bomScanState.torchOn = false;
+      bomScanState.handledOnce = false;
+      bomScanState.pendingText = null;
+      bomScanState.pendingIsDup = false;
+      bomScanState.addedCount = 0;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'ss-scanner-overlay';
+      overlay.innerHTML = `
+        <div class="ss-scanner-topbar">
+          <button type="button" class="ss-icon-btn light" id="bomScanBack" title="Close"><i class="fa-solid fa-arrow-left"></i></button>
+          <div class="ss-scanner-title">Scan Serial Numbers</div>
+          <div class="ss-scanner-topbtns">
+            <button type="button" class="ss-icon-btn light" id="bomScanTorch" title="Flashlight"><i class="fa-solid fa-bolt"></i></button>
+            <button type="button" class="ss-icon-btn light" id="bomScanFlip" title="Flip camera"><i class="fa-solid fa-camera-rotate"></i></button>
+          </div>
+        </div>
+        <div class="ss-scanner-camwrap">
+          <div id="bomScanRegion" class="ss-scanner-camfeed"></div>
+          <div class="ss-scanner-target" id="bomScanTargetBox"></div>
+          <div class="ss-scanner-instruction" id="bomScanStatus">Requesting camera permission&hellip;</div>
+          <div class="ss-scanner-result" id="bomScanResult" style="display:none;">
+            <div class="ss-scanner-result-card" id="bomScanResultCard">
+              <div class="ss-scanner-result-label">Scanned value</div>
+              <div class="ss-scanner-result-value" id="bomScanResultValue"></div>
+              <div class="ss-scanner-result-msg" id="bomScanResultMsg"></div>
+            </div>
+            <div class="ss-scanner-result-actions">
+              <button type="button" class="btn btn-ghost" id="bomScanRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
+              <button type="button" class="btn btn-green" id="bomScanDone2"><i class="fa-solid fa-check"></i> Done</button>
+            </div>
+          </div>
+        </div>
+        <div class="ss-scanner-bottom">
+          <span class="proof-name" id="bomScanCount" style="color:#fff;">0 serial(s) added</span>
+          <button type="button" class="btn btn-red ss-scanner-cancel" id="bomScanCancel"><i class="fa-solid fa-xmark"></i> Close</button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      bomScanState.overlayEl = overlay;
+      document.body.style.overflow = 'hidden';
+
+      overlay.querySelector('#bomScanBack').onclick = closeBomScanner;
+      overlay.querySelector('#bomScanCancel').onclick = closeBomScanner;
+      overlay.querySelector('#bomScanTorch').onclick = toggleBomScanTorch;
+      overlay.querySelector('#bomScanFlip').onclick = flipBomScanCamera;
+      overlay.querySelector('#bomScanRetry').onclick = retryBomScan;
+      overlay.querySelector('#bomScanDone2').onclick = confirmBomScan;
+
+      startBomScanCamera();
+    }
+
+    function startBomScanCamera() {
+      if (!window.Html5Qrcode) {
+        bomScanSetStatus('Scanner library failed to load. Check your connection and try again.');
+        return;
+      }
+      window.Html5Qrcode.getCameras().then((cameras) => {
+        if (!cameras || !cameras.length) { bomScanSetStatus('No camera found on this device.'); return; }
+        bomScanState.cameras = cameras;
+        const backIdx = cameras.findIndex((c) => /back|rear|environment/i.test(c.label || ''));
+        bomScanState.cameraIndex = backIdx !== -1 ? backIdx : 0;
+        launchBomScanCamera();
+      }).catch((err) => {
+        console.warn('Camera permission error', err);
+        bomScanSetStatus('Camera permission denied. Please allow camera access in your browser settings, then tap Close and try again.');
+      });
+    }
+
+    function launchBomScanCamera() {
+      const camera = bomScanState.cameras[bomScanState.cameraIndex];
+      if (!camera) return;
+      bomScanState.handledOnce = false;
+      bomScanSetStatus('Place the serial barcode / QR in the box');
+
+      const config = { fps: 10 };
+      if (window.Html5QrcodeSupportedFormats) {
+        config.formatsToSupport = [
+          window.Html5QrcodeSupportedFormats.QR_CODE,
+          window.Html5QrcodeSupportedFormats.EAN_13,
+          window.Html5QrcodeSupportedFormats.EAN_8,
+          window.Html5QrcodeSupportedFormats.CODE_128,
+          window.Html5QrcodeSupportedFormats.CODE_39,
+          window.Html5QrcodeSupportedFormats.UPC_A,
+          window.Html5QrcodeSupportedFormats.UPC_E,
+          window.Html5QrcodeSupportedFormats.ITF,
+        ];
+      }
+
+      bomScanState.html5QrCode = new window.Html5Qrcode('bomScanRegion', { verbose: false });
+      bomScanState.html5QrCode.start(
+        camera.id,
+        config,
+        onBomScanSuccess,
+        () => { /* per-frame "no code found yet" — expected, ignore */ }
+      ).catch((err) => {
+        console.warn('Camera start error', err);
+        bomScanSetStatus('Could not start the camera. Tap Close and try again.');
+      });
+    }
+
+    // Decoding pauses here (handledOnce guard, exactly like Purchase/
+    // scansheet.js) until the user explicitly taps Retry or Done.
+    function onBomScanSuccess(decodedText) {
+      if (bomScanState.handledOnce) return;
+      bomScanState.handledOnce = true;
+      bomScanBeep();
+      if (navigator.vibrate) { try { navigator.vibrate(180); } catch (e) { /* not supported */ } }
+      showBomScanResult(decodedText);
+    }
+
+    function showBomScanResult(text) {
+      const code = String(text || '').trim();
+      const box = document.getElementById(bomScanState.targetId);
+      const existing = box ? bomSplitSerials(box.value) : [];
+      const dup = !!code && existing.some((s) => s.toLowerCase() === code.toLowerCase());
+
+      bomScanState.pendingText = code;
+      bomScanState.pendingIsDup = dup;
+
+      const panel = document.getElementById('bomScanResult');
+      const card = document.getElementById('bomScanResultCard');
+      const valueEl = document.getElementById('bomScanResultValue');
+      const msgEl = document.getElementById('bomScanResultMsg');
+      const doneBtn = document.getElementById('bomScanDone2');
+      const targetBox = document.getElementById('bomScanTargetBox');
+      if (!panel || !valueEl) return;
+
+      valueEl.textContent = code || '(empty)';
+      if (card) card.classList.toggle('dup', dup);
+      if (msgEl) msgEl.textContent = dup
+        ? 'This serial no. is already in the box. Retry with a different code, or remove the old one first.'
+        : 'Scanned successfully.';
+      if (doneBtn) doneBtn.style.display = dup ? 'none' : '';
+
+      panel.style.display = 'flex';
+      bomScanSetStatus('');
+      if (targetBox) targetBox.style.visibility = 'hidden';
+    }
+
+    function hideBomScanResult() {
+      const panel = document.getElementById('bomScanResult');
+      const targetBox = document.getElementById('bomScanTargetBox');
+      if (panel) panel.style.display = 'none';
+      if (targetBox) targetBox.style.visibility = '';
+      bomScanState.pendingText = null;
+      bomScanState.pendingIsDup = false;
+    }
+
+    function retryBomScan() {
+      hideBomScanResult();
+      bomScanState.handledOnce = false;
+      bomScanSetStatus('Place the serial barcode / QR in the box');
+    }
+
+    // "Done" — commit the scanned value into the target textarea (one per
+    // line, same normalization Purchase's paste handler uses), then resume
+    // scanning so the next serial can be captured right away.
+    function confirmBomScan() {
+      if (bomScanState.pendingIsDup) return; // guard — Done is hidden for dupes anyway
+      const code = bomScanState.pendingText;
+      if (!code) { retryBomScan(); return; }
+
+      const box = document.getElementById(bomScanState.targetId);
+      if (box) {
+        const existing = bomSplitSerials(box.value);
+        existing.push(code);
+        box.value = existing.join('\n') + '\n';
+        box.dispatchEvent(new Event('input', { bubbles: true }));
+        bomScanState.addedCount = existing.length;
+        const countEl = document.getElementById('bomScanCount');
+        if (countEl) countEl.textContent = `${existing.length} serial(s) added`;
+      }
+
+      hideBomScanResult();
+      bomScanState.handledOnce = false;
+      bomScanSetStatus('Added \u2713 — scan the next one');
+    }
+
+    function toggleBomScanTorch() {
+      if (!bomScanState.html5QrCode) return;
+      bomScanState.torchOn = !bomScanState.torchOn;
+      bomScanState.html5QrCode.applyVideoConstraints({ advanced: [{ torch: bomScanState.torchOn }] })
+        .then(() => {
+          const btn = document.getElementById('bomScanTorch');
+          if (btn) btn.classList.toggle('active', bomScanState.torchOn);
+        })
+        .catch(() => { if (window.showToast) window.showToast('Flashlight not supported on this device'); bomScanState.torchOn = false; });
+    }
+
+    function flipBomScanCamera() {
+      if (!bomScanState.cameras.length || bomScanState.cameras.length < 2) { if (window.showToast) window.showToast('Only one camera available'); return; }
+      bomScanState.cameraIndex = (bomScanState.cameraIndex + 1) % bomScanState.cameras.length;
+      const qr = bomScanState.html5QrCode;
+      if (qr) qr.stop().then(launchBomScanCamera).catch(launchBomScanCamera);
+      else launchBomScanCamera();
+    }
+
+    function closeBomScanner() {
+      const qr = bomScanState.html5QrCode;
+      const targetId = bomScanState.targetId;
+      bomScanState.pendingText = null;
+      bomScanState.pendingIsDup = false;
+      const finish = () => {
+        if (bomScanState.overlayEl) { bomScanState.overlayEl.remove(); bomScanState.overlayEl = null; }
+        document.body.style.overflow = '';
+        bomScanState.html5QrCode = null;
+        // Final normalize pass (dedupe/trim), same cleanup Purchase's
+        // blur() handler already does.
+        const box = targetId ? document.getElementById(targetId) : null;
+        if (box) {
+          box.value = bomSplitSerials(box.value).join('\n');
+          box.focus();
+          box.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      };
+      if (qr) qr.stop().then(finish).catch(finish);
+      else finish();
+    }
+
     // Serial No. popup — click the Serial No. button on a serial-mandatory
     // row (Solar Panel, Inverter, etc.) to open the same style of box
     // Purchase/Sale already use: scan-or-type with auto-newline on any
@@ -1616,6 +1901,7 @@ window.PAGES.bom = {
           <div class="actions-row bom-serial-mode-row" style="margin-bottom:10px;">
             <button type="button" class="btn btn-ghost bom-serial-mode-btn active" id="bomSerialModeScan"><i class="fa-solid fa-barcode"></i> Scan Serial No.</button>
             <button type="button" class="btn btn-ghost bom-serial-mode-btn" id="bomSerialModeUpload"><i class="fa-solid fa-file-arrow-up"></i> Upload Serial No. (File)</button>
+            <button type="button" class="btn btn-blue" id="bomSerialCameraBtn"><i class="fa-solid fa-camera"></i> Open Camera</button>
           </div>
           <div id="bomSerialUploadPane" style="display:none; margin-bottom:10px;">
             <input type="file" id="bomSerialFileInput" accept=".txt,.csv">
@@ -1638,7 +1924,12 @@ window.PAGES.bom = {
       const fileInput = document.getElementById('bomSerialFileInput');
       const saveBtn = document.getElementById('bomSerialSaveBtn');
       const cancelBtn = document.getElementById('bomSerialCancelBtn');
+      const cameraBtn = document.getElementById('bomSerialCameraBtn');
       if (!box) return;
+
+      // Step 5: opens the real camera scanner (see openBomScanner above),
+      // appending each Done'd scan straight into this modal's box.
+      if (cameraBtn) cameraBtn.addEventListener('click', () => openBomScanner('bomSerialModalBox'));
 
       function updateCountNote() {
         const count = bomSplitSerials(box.value).length;
@@ -2044,15 +2335,25 @@ window.PAGES.bom = {
       if (!pendingItems.length) {
         return `<p class="note">Nothing left pending for this order.</p><button type="button" class="btn btn-ghost" id="bomRegisterBackBtn"><i class="fa-solid fa-arrow-left"></i> Back to list</button>`;
       }
-      const rows = pendingItems.map((it) => `
+      // Step 5: each serial-mandatory row gets its own textarea id + a scan
+      // icon button (data-cont-scan-target points at that id) so the same
+      // openBomScanner() from the main screen can be reused here too — see
+      // bomLoadContinueDispatchForm below for the click wiring.
+      const rows = pendingItems.map((it, idx) => {
+        const taId = `bomContSerial_${idx}`;
+        return `
         <div class="field" style="margin-bottom:14px;">
           <label>${bomEsc(it.name)} <span class="note">(${bomEsc(it.category || '')} — ${it.remaining} of ${it.total} pending, ${it.dispatched} already dispatched)</span></label>
           ${it.serialMandatory
-            ? `<textarea data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="serial" data-cont-total="${it.total}" rows="2" placeholder="Enter up to ${it.remaining} serial number(s), comma or newline separated"></textarea>`
+            ? `<div style="display:flex; gap:8px; align-items:flex-start;">
+                 <textarea id="${taId}" data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="serial" data-cont-total="${it.total}" rows="2" placeholder="Enter up to ${it.remaining} serial number(s), comma or newline separated" style="flex:1;"></textarea>
+                 <button type="button" class="ss-scan-icon-btn" data-cont-scan-target="${taId}" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
+               </div>`
             : `<input type="number" min="0" max="${it.remaining}" value="${it.remaining}" data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="qty" data-cont-total="${it.total}">`
           }
         </div>
-      `).join('');
+      `;
+      }).join('');
       return `
         <p class="note" style="margin-bottom:10px;">Order No <b>${bomEsc(order.orderNo)}</b> — enter what's going out on THIS trip; leave the rest for a later trip.</p>
         ${rows}
@@ -2073,6 +2374,11 @@ window.PAGES.bom = {
         return;
       }
       openRegisterModal(bomRenderContinueFormHtml(order));
+      // Step 5: wire each pending serial item's scan icon button to open
+      // the camera scanner targeting that item's own textarea id.
+      registerModalBody.querySelectorAll('[data-cont-scan-target]').forEach((btn) => {
+        btn.addEventListener('click', () => openBomScanner(btn.getAttribute('data-cont-scan-target')));
+      });
       const backBtn = $('bomRegisterBackBtn');
       if (backBtn) backBtn.addEventListener('click', bomLoadRegisterList);
       const continueBtn = $('bomRegisterContinueBtn');
