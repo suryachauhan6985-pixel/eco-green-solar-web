@@ -1093,29 +1093,30 @@ window.PAGES.bom = {
       const steps = bomMockTrackSteps(overallStatus);
       const rows = steps.map((s, idx) => {
         const isLast = idx === steps.length - 1;
-        const iconColor = s.status === 'done' ? '#1a7f37' : (s.status === 'active' ? '#0b5ea8' : '#c3c3c3');
+        const iconColor = s.status === 'done' ? '#1a7f37' : (s.status === 'active' ? '#0b5ea8' : 'rgba(255,255,255,0.18)');
         const icon = s.status === 'done' ? 'fa-check' : (s.status === 'active' ? 'fa-clock' : 'fa-file');
+        const iconGlyphColor = s.status === 'pending' ? 'var(--txt-muted)' : '#fff';
         const statusLabel = s.status === 'pending' ? 'Pending' : (s.status === 'active' ? 'In Progress' : 'Completed');
-        const statusColor = s.status === 'pending' ? '#999' : (s.status === 'active' ? '#0b5ea8' : '#1a7f37');
+        const statusColor = s.status === 'pending' ? 'var(--txt-muted)' : (s.status === 'active' ? '#4aa3ff' : '#3ecf6e');
         return `
           <div style="display:flex; gap:12px;">
             <div style="display:flex; flex-direction:column; align-items:center;">
-              <div style="width:26px; height:26px; border-radius:50%; background:${iconColor}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0;">
+              <div style="width:26px; height:26px; border-radius:50%; background:${iconColor}; color:${iconGlyphColor}; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0;">
                 <i class="fa-solid ${icon}"></i>
               </div>
-              ${!isLast ? `<div style="width:2px; flex:1; background:${s.status === 'done' ? '#1a7f37' : '#e6e6e6'}; min-height:26px;"></div>` : ''}
+              ${!isLast ? `<div style="width:2px; flex:1; background:${s.status === 'done' ? '#1a7f37' : 'rgba(255,255,255,0.14)'}; min-height:26px;"></div>` : ''}
             </div>
             <div style="padding-bottom:20px;">
-              <div style="font-weight:600; color:#222; font-size:13.5px;">${bomEsc(s.label)} <span style="font-weight:400; color:#999; font-size:11.5px;">(${bomEsc(s.actor)})</span></div>
+              <div style="font-weight:600; font-size:13.5px;">${bomEsc(s.label)} <span style="font-weight:400; color:var(--txt-muted); font-size:11.5px;">(${bomEsc(s.actor)})</span></div>
               <div style="font-size:12px; color:${statusColor};">${statusLabel}</div>
-              ${s.timestamp ? `<div style="font-size:11px; color:#999; margin-top:2px;">${bomEsc(s.timestamp)}</div>` : ''}
+              ${s.timestamp ? `<div style="font-size:11px; color:var(--txt-muted); margin-top:2px;">${bomEsc(s.timestamp)}</div>` : ''}
             </div>
           </div>
         `;
       }).join('');
       return `
         <div style="margin-bottom:14px;">
-          <div style="font-weight:700; font-size:15px; color:#222;">Order No <span style="color:var(--gold, #b8860b);">${bomEsc(orderNo)}</span></div>
+          <div style="font-weight:700; font-size:15px;">Order No <span style="color:var(--gold, #b8860b);">${bomEsc(orderNo)}</span></div>
           <div style="margin-top:6px;">${bomTrackStatusPill(overallStatus)}</div>
         </div>
         <div>${rows}</div>
@@ -1164,9 +1165,9 @@ window.PAGES.bom = {
           <b>Partially Dispatched</b> or <b>Dispatched</b> on its own as dispatch progresses.
         </p>
         <table style="width:100%; border-collapse:collapse; margin-bottom:14px;">
-          <tr><td style="padding:6px 0; color:#888;">Order No.</td><td style="padding:6px 0; font-weight:600;">${bomEsc(orderNo || '—')}</td></tr>
-          <tr><td style="padding:6px 0; color:#888;">Customer</td><td style="padding:6px 0; font-weight:600;">${bomEsc(customer || '—')}</td></tr>
-          <tr><td style="padding:6px 0; color:#888;">Initial Status</td><td style="padding:6px 0;">${bomTrackStatusPill('Pending')}</td></tr>
+          <tr><td style="padding:6px 0; color:var(--txt-muted);">Order No.</td><td style="padding:6px 0; font-weight:600;">${bomEsc(orderNo || '—')}</td></tr>
+          <tr><td style="padding:6px 0; color:var(--txt-muted);">Customer</td><td style="padding:6px 0; font-weight:600;">${bomEsc(customer || '—')}</td></tr>
+          <tr><td style="padding:6px 0; color:var(--txt-muted);">Initial Status</td><td style="padding:6px 0;">${bomTrackStatusPill('Pending')}</td></tr>
         </table>
         <div class="actions-row">
           <button type="button" class="btn btn-green" id="bomCreateBomConfirmBtn"><i class="fa-solid fa-check"></i> Create BOM</button>
