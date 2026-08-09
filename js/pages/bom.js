@@ -1702,13 +1702,70 @@ window.PAGES.bom = {
       });
     }
 
+    // Flattens currentKitState's sections into the flat { name, qty, serials }
+    // list /api/bom/check-stock expects — same fields the on-screen table
+    // already tracks per item (bomParseQtyNumber/bomSplitSerials mirror
+    // exactly what the Serial No. modal and quantity column already use).
+    function bomCollectItemsForStockCheck() {
+      const out = [];
+      (currentKitState || []).forEach((sec) => {
+        (sec.items || []).forEach((it) => {
+          out.push({
+            name: it.name || '',
+            qty: bomParseQtyNumber(it.qty) || 0,
+            serials: bomSplitSerials(it.serials || ''),
+          });
+        });
+      });
+      return out;
+    }
+
+    // Real, read-only stock check — asks the server whether every item in
+    // this BOM can actually be dispatched right now (item registered in
+    // Masters? enough Available quantity? entered serials real/Available/
+    // matching?) and, if not, exactly why. Nothing is deducted or reserved
+    // here — that's a later step. Returns true only if every item is ok.
+    async function bomRunStockCheck() {
+      const items = bomCollectItemsForStockCheck();
+      let result;
+      try {
+        result = await window.Api.post('/bom/check-stock', { items });
+      } catch (e) {
+        window.openModal('Stock Check Failed', `<p>Could not verify stock — ${bomEsc((e && e.message) || 'server error')}. Please try again.</p>`);
+        return false;
+      }
+      if (result && result.canDispatch) return true;
+
+      const rows = (result && result.items ? result.items : []).filter((r) => !r.ok);
+      const listHtml = rows.map((r) => `
+        <li style="margin-bottom:6px;">
+          <b>${bomEsc(r.name || '(blank)')}</b>${r.category ? ` <span class="note">(${bomEsc(r.category)})</span>` : ''}
+          <br><span style="color:var(--red);">${bomEsc(r.reason || 'Not available.')}</span>
+        </li>
+      `).join('');
+      window.openModal('Dispatch Not Possible', `
+        <p>This BOM cannot be dispatched right now — the following item(s) failed the stock check:</p>
+        <ul style="padding-left:18px; margin-top:10px;">${listHtml || '<li>Unknown error.</li>'}</ul>
+      `);
+      return false;
+    }
+
     if (btnChallan) {
-      btnChallan.addEventListener('click', () => {
+      btnChallan.addEventListener('click', async () => {
         if (!bomVerified) return; // belt-and-braces — button is disabled until verified anyway
         if (!currentKitState) {
           window.openModal('Select a Kit', '<p>Please select a BOM Kit before converting to a challan.</p>');
           return;
         }
+
+        const originalLabel = btnChallan.innerHTML;
+        btnChallan.disabled = true;
+        btnChallan.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking Stock...';
+        const canProceed = await bomRunStockCheck();
+        btnChallan.disabled = false;
+        btnChallan.innerHTML = originalLabel;
+        if (!canProceed) return;
+
         const kw = bomGetAllKits()[kitSelect.value] ? bomGetAllKits()[kitSelect.value].kw : '';
         const kit = { kw, sections: currentKitState };
         const header = getHeaderValues();

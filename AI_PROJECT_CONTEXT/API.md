@@ -1,14 +1,14 @@
 # API Documentation
 
-Total endpoints detected: **88**
+Total endpoints detected: **90**
 
 ## Endpoints by Method
 
 | Method | Count |
 | --- | --- |
-| GET | 37 |
+| GET | 38 |
 | POST | 27 |
-| DELETE | 11 |
+| DELETE | 12 |
 | PUT | 13 |
 
 
@@ -54,6 +54,7 @@ Total endpoints detected: **88**
 | PUT | /api/masters/categories/:name/watt-rule | api/routes/masters.routes.js | No |
 | GET | /api/masters/items | api/routes/masters.routes.js | No |
 | POST | /api/masters/items | api/routes/masters.routes.js | No |
+| DELETE | /api/masters/items/:id | api/routes/masters.routes.js | No |
 | PUT | /api/masters/items/:id | api/routes/masters.routes.js | No |
 | DELETE | /api/masters/subtypes | api/routes/masters.routes.js | No |
 | POST | /api/masters/subtypes | api/routes/masters.routes.js | No |
@@ -77,6 +78,7 @@ Total endpoints detected: **88**
 | GET | /api/purchase/brands/:category | api/routes/purchase.routes.js | No |
 | GET | /api/purchase/check-serials | api/routes/purchase.routes.js | No |
 | GET | /api/purchase/find | api/routes/purchase.routes.js | No |
+| GET | /api/purchase/models | api/routes/purchase.routes.js | No |
 | GET | /api/purchase/register | api/routes/purchase.routes.js | No |
 | GET | /api/purchase/wattages | api/routes/purchase.routes.js | No |
 | GET | /api/reports/master | api/routes/reports.routes.js | No |

@@ -10,7 +10,7 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-08T09:14:32.312Z
+- **Generated:** 2026-08-09T05:46:49.255Z
 
 ## 2. Architecture Overview
 
@@ -104,14 +104,14 @@ sw.js
 - `js/pages/bom.js` — Defines 1 class(es) implementing core logic.
 - `js/pages/dashboard.js` — Defines 18 function(s) implementing supporting logic.
 - `js/pages/lowstock.js` — Defines 12 function(s) implementing supporting logic.
-- `js/pages/masters.js` — Defines 16 function(s) implementing supporting logic.
+- `js/pages/masters.js` — Defines 17 function(s) implementing supporting logic.
 - `js/pages/partyledger.js` — Defines 39 function(s) implementing supporting logic.
-- `js/pages/purchase.js` — Defines 26 function(s) implementing supporting logic.
+- `js/pages/purchase.js` — Defines 45 function(s) implementing supporting logic.
 - `js/pages/purchaseregister.js` — Defines 15 function(s) implementing supporting logic.
 - `js/pages/reports.js` — Defines 14 function(s) implementing supporting logic.
 - `js/pages/returns.js` — Defines 8 function(s) implementing supporting logic.
 - `js/pages/saleregister.js` — Defines 15 function(s) implementing supporting logic.
-- `js/pages/sales.js` — Defines 33 function(s) implementing supporting logic.
+- `js/pages/sales.js` — Defines 1 class(es) implementing core logic.
 - `js/pages/scansheet.js` — Defines 95 function(s) implementing supporting logic.
 - `js/pages/stockassign.js` — Defines 24 function(s) implementing supporting logic.
 - `js/data/sheets-store.js` — Defines 14 function(s) implementing supporting logic.
@@ -132,7 +132,7 @@ sw.js
 - `api/routes/scansheet.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/stockassign.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/db/pool.js` — Supporting source file.
-- `api/db/schema.js` — Defines 11 function(s) implementing supporting logic.
+- `api/db/schema.js` — Defines 13 function(s) implementing supporting logic.
 
 ## 5. Data Flow / Business Logic Entry Points
 
@@ -148,7 +148,7 @@ No route-level authentication middleware detected (verify manually if auth is ex
 
 ## 8. API
 
-88 HTTP endpoint(s) detected. Method breakdown: GET=37, POST=27, DELETE=11, PUT=13.
+90 HTTP endpoint(s) detected. Method breakdown: GET=38, POST=27, DELETE=12, PUT=13.
 
 ## 9. Services & Utilities
 
@@ -163,7 +163,7 @@ Utility/helper files: 2
 
 ## 11. Known Issues / Risk Areas
 
-- 12 file(s) flagged as High complexity: js/app.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, js/pages/stockassign.js, api/services/challanPdf.js, ...
+- 13 file(s) flagged as High complexity: js/app.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, js/pages/stockassign.js, api/services/challanPdf.js, ...
 - Raw SQL string usage found in 35 file(s) — verify parameterization to avoid SQL injection.
 - No routes appear to use recognizable auth middleware — verify whether this API is intentionally public.
 - A real `.env` file exists in the project (.env) — ensure it is excluded from version control.

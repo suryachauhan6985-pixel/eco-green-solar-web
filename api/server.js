@@ -33,6 +33,7 @@ const registerScanSheetRoutes = require('./routes/scansheet.routes');
 const registerReportsRoutes = require('./routes/reports.routes');
 const registerBackupRoutes = require('./routes/backup.routes');
 const registerChallanRoutes = require('./routes/challan.routes');
+const registerBomRoutes = require('./routes/bom.routes');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -55,6 +56,7 @@ registerScanSheetRoutes(app, deps);
 registerReportsRoutes(app, deps);
 const backupTasks = registerBackupRoutes(app, deps);
 registerChallanRoutes(app, deps);
+registerBomRoutes(app, deps);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {

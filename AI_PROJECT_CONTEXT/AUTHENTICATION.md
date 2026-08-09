@@ -14,7 +14,7 @@
 _None detected._
 
 
-## Public Routes (88)
+## Public Routes (90)
 
 | Method | Path | File |
 | --- | --- | --- |
@@ -56,6 +56,7 @@ _None detected._
 | PUT | /api/masters/categories/:name/watt-rule | api/routes/masters.routes.js |
 | GET | /api/masters/items | api/routes/masters.routes.js |
 | POST | /api/masters/items | api/routes/masters.routes.js |
+| DELETE | /api/masters/items/:id | api/routes/masters.routes.js |
 | PUT | /api/masters/items/:id | api/routes/masters.routes.js |
 | DELETE | /api/masters/subtypes | api/routes/masters.routes.js |
 | POST | /api/masters/subtypes | api/routes/masters.routes.js |
@@ -79,6 +80,7 @@ _None detected._
 | GET | /api/purchase/brands/:category | api/routes/purchase.routes.js |
 | GET | /api/purchase/check-serials | api/routes/purchase.routes.js |
 | GET | /api/purchase/find | api/routes/purchase.routes.js |
+| GET | /api/purchase/models | api/routes/purchase.routes.js |
 | GET | /api/purchase/register | api/routes/purchase.routes.js |
 | GET | /api/purchase/wattages | api/routes/purchase.routes.js |
 | GET | /api/reports/master | api/routes/reports.routes.js |

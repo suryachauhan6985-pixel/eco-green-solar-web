@@ -891,7 +891,13 @@
     "type": "file",
     "label": "js/pages/masters.js",
     "file": "js/pages/masters.js",
-    "detail": "Defines 16 function(s) implementing supporting logic."
+    "detail": "Defines 17 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "scrollList",
+    "file": "js/pages/masters.js",
+    "detail": "(items)"
   },
   {
     "type": "function",
@@ -1233,7 +1239,7 @@
     "type": "file",
     "label": "js/pages/purchase.js",
     "file": "js/pages/purchase.js",
-    "detail": "Defines 26 function(s) implementing supporting logic."
+    "detail": "Defines 45 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -1291,6 +1297,12 @@
   },
   {
     "type": "function",
+    "label": "purCategoryNeedsModel",
+    "file": "js/pages/purchase.js",
+    "detail": "(cat)"
+  },
+  {
+    "type": "function",
     "label": "loadPurCategories",
     "file": "js/pages/purchase.js",
     "detail": "()"
@@ -1304,6 +1316,18 @@
   {
     "type": "function",
     "label": "refreshPurWattages",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "refreshPurModels",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "updatePurWattModelVisibility",
     "file": "js/pages/purchase.js",
     "detail": "()"
   },
@@ -1357,6 +1381,84 @@
   },
   {
     "type": "function",
+    "label": "purScanBeep",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "purScanSetStatus",
+    "file": "js/pages/purchase.js",
+    "detail": "(msg)"
+  },
+  {
+    "type": "function",
+    "label": "openPurchaseScanner",
+    "file": "js/pages/purchase.js",
+    "detail": "(targetId)"
+  },
+  {
+    "type": "function",
+    "label": "startPurchaseCamera",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "launchPurchaseCamera",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "onPurchaseScanSuccess",
+    "file": "js/pages/purchase.js",
+    "detail": "(decodedText)"
+  },
+  {
+    "type": "function",
+    "label": "showPurchaseScanResult",
+    "file": "js/pages/purchase.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "hidePurchaseScanResult",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "retryPurchaseScan",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "confirmPurchaseScan",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "togglePurchaseTorch",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "flipPurchaseCamera",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closePurchaseScanner",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "clearPurchaseForm",
     "file": "js/pages/purchase.js",
     "detail": "()"
@@ -1375,6 +1477,18 @@
   },
   {
     "type": "function",
+    "label": "refreshPurEditModels",
+    "file": "js/pages/purchase.js",
+    "detail": "(injectModel)"
+  },
+  {
+    "type": "function",
+    "label": "updatePurEditWattModelVisibility",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "updatePurEditSerialVisibility",
     "file": "js/pages/purchase.js",
     "detail": "()"
@@ -1390,6 +1504,12 @@
     "label": "$",
     "file": "js/pages/purchase.js",
     "detail": "(id)"
+  },
+  {
+    "type": "function",
+    "label": "finish",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
   },
   {
     "type": "file",
@@ -1731,7 +1851,7 @@
     "type": "file",
     "label": "js/pages/sales.js",
     "file": "js/pages/sales.js",
-    "detail": "Defines 33 function(s) implementing supporting logic."
+    "detail": "Defines 1 class(es) implementing core logic."
   },
   {
     "type": "function",
@@ -1760,6 +1880,12 @@
   {
     "type": "function",
     "label": "isSerialMandatory",
+    "file": "js/pages/sales.js",
+    "detail": "(cat)"
+  },
+  {
+    "type": "function",
+    "label": "saleCategoryNeedsModel",
     "file": "js/pages/sales.js",
     "detail": "(cat)"
   },
@@ -1825,6 +1951,12 @@
   },
   {
     "type": "function",
+    "label": "refreshSaleModels",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "refreshSaleType",
     "file": "js/pages/sales.js",
     "detail": "()"
@@ -1837,7 +1969,19 @@
   },
   {
     "type": "function",
+    "label": "updateSaleWattModelVisibility",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "updateSaleEditQtyFieldVisibility",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "updateSaleEditWattModelVisibility",
     "file": "js/pages/sales.js",
     "detail": "()"
   },
@@ -1891,6 +2035,12 @@
   },
   {
     "type": "function",
+    "label": "refreshSaleEditModels",
+    "file": "js/pages/sales.js",
+    "detail": "(injectModel)"
+  },
+  {
+    "type": "function",
     "label": "refreshSaleEditType",
     "file": "js/pages/sales.js",
     "detail": "(injectType)"
@@ -1930,6 +2080,12 @@
     "label": "qtyLineKey",
     "file": "js/pages/sales.js",
     "detail": "(l)"
+  },
+  {
+    "type": "class",
+    "label": "Step",
+    "file": "js/pages/sales.js",
+    "detail": ""
   },
   {
     "type": "file",
@@ -2967,13 +3123,13 @@
     "type": "function",
     "label": "itemNameSlug",
     "file": "api/services/stockHelpers.js",
-    "detail": "(brand, watt, solarType)"
+    "detail": "(brand, watt, solarType, model)"
   },
   {
     "type": "function",
     "label": "getItemId",
     "file": "api/services/stockHelpers.js",
-    "detail": "(runner, category, brand, watt, solarType)"
+    "detail": "(runner, category, brand, watt, solarType, model)"
   },
   {
     "type": "function",
@@ -2985,7 +3141,7 @@
     "type": "function",
     "label": "getOrCreateItem",
     "file": "api/services/stockHelpers.js",
-    "detail": "(conn, category, brand, watt, solarType)"
+    "detail": "(conn, category, brand, watt, solarType, model)"
   },
   {
     "type": "file",
@@ -3210,6 +3366,18 @@
     "detail": "(line)"
   },
   {
+    "type": "class",
+    "label": "Step",
+    "file": "api/routes/sales.routes.js",
+    "detail": ""
+  },
+  {
+    "type": "class",
+    "label": "Step",
+    "file": "api/routes/sales.routes.js",
+    "detail": ""
+  },
+  {
     "type": "file",
     "label": "api/routes/scansheet.routes.js",
     "file": "api/routes/scansheet.routes.js",
@@ -3321,7 +3489,7 @@
     "type": "file",
     "label": "api/db/schema.js",
     "file": "api/db/schema.js",
-    "detail": "Defines 11 function(s) implementing supporting logic."
+    "detail": "Defines 13 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -3386,6 +3554,18 @@
   {
     "type": "function",
     "label": "ensureItemOverrideSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureStockModelSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureWattDecimalSchema",
     "file": "api/db/schema.js",
     "detail": "(pool)"
   },
@@ -3631,6 +3811,12 @@
   },
   {
     "type": "route",
+    "label": "DELETE /api/masters/items/:id",
+    "file": "api/routes/masters.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
     "label": "PUT /api/masters/items/:id",
     "file": "api/routes/masters.routes.js",
     "detail": "public"
@@ -3764,6 +3950,12 @@
   {
     "type": "route",
     "label": "GET /api/purchase/find",
+    "file": "api/routes/purchase.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/purchase/models",
     "file": "api/routes/purchase.routes.js",
     "detail": "public"
   },
