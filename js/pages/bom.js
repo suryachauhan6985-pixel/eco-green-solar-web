@@ -1086,7 +1086,7 @@ window.PAGES.bom = {
         <button class="btn btn-blue" type="button" id="bomBtnVerify" disabled><i class="fa-solid fa-check-double"></i> Verify BOM</button>
         <button class="btn btn-green" type="button" id="bomBtnChallan" disabled><i class="fa-solid fa-file-invoice"></i> Convert into Challan</button>
         <button class="btn btn-green" type="button" id="bomBtnDispatch" disabled><i class="fa-solid fa-truck"></i> Create Dispatch</button>
-        <button class="btn btn-green" type="button" id="bomBtnCreateBom" style="display:none;"><i class="fa-solid fa-plus-circle"></i> Create BOM</button>
+        <button class="btn btn-green" type="button" id="bomBtnCreateBom" style="display:none;"><i class="fa-solid fa-plus-circle"></i> Generate BOM</button>
         <button class="btn btn-ghost" type="button" id="bomBtnTrackBom"><i class="fa-solid fa-route"></i> Track BOM</button>
         <button class="btn btn-ghost" type="button" id="bomBtnPendingRegister"><i class="fa-solid fa-clipboard-list"></i> Pending BOM Register</button>
         <button type="button" class="btn btn-ghost" id="bomBtnNewKit" title="Create a new BOM Kit / Template"><i class="fa-solid fa-plus"></i> New Kit</button>
@@ -1593,21 +1593,21 @@ window.PAGES.bom = {
 
     function bomOpenCreateBomModal() {
       if (!currentKitState) {
-        window.openModal('Select a Kit', '<p>Please select a BOM Kit before creating a BOM.</p>');
+        window.openModal('Select a Kit', '<p>Please select a BOM Kit before generating a BOM.</p>');
         return;
       }
       const header = getHeaderValues();
       const orderNo = (header.orderNo || '').trim();
       if (!orderNo) {
-        window.openModal('Order No. Required', '<p>Please enter an <b>Order No.</b> before creating a BOM.</p>');
+        window.openModal('Order No. Required', '<p>Please enter an <b>Order No.</b> before generating a BOM.</p>');
         return;
       }
       const items = bomCollectItemsForCreate();
       if (!items.length) {
-        window.openModal('No Items', '<p>Add at least one item with a quantity before creating a BOM.</p>');
+        window.openModal('No Items', '<p>Add at least one item with a quantity before generating a BOM.</p>');
         return;
       }
-      window.openModal('Create BOM', `
+      window.openModal('Generate BOM', `
         <p class="note" style="margin-bottom:10px;">
           <i class="fa-solid fa-circle-info"></i> This creates the BOM as a tracked entity — before any dispatch happens.
           It will land in <b>BOM Home</b> / the <b>BOM Register</b> as <b>Pending</b> until the first trip goes out, then move to
@@ -1620,7 +1620,7 @@ window.PAGES.bom = {
           <tr><td style="padding:6px 0; color:var(--txt-muted);">Initial Status</td><td style="padding:6px 0;">${bomTrackStatusPill('Pending')}</td></tr>
         </table>
         <div class="actions-row">
-          <button type="button" class="btn btn-green" id="bomCreateBomConfirmBtn"><i class="fa-solid fa-check"></i> Create BOM</button>
+          <button type="button" class="btn btn-green" id="bomCreateBomConfirmBtn"><i class="fa-solid fa-check"></i> Generate BOM</button>
           <button type="button" class="btn btn-ghost" id="bomCreateBomCancelBtn">Cancel</button>
         </div>
       `);
@@ -1630,17 +1630,17 @@ window.PAGES.bom = {
         confirmBtn.addEventListener('click', async () => {
           const originalLabel = confirmBtn.innerHTML;
           confirmBtn.disabled = true;
-          confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating...';
+          confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
           try {
             await window.Api.post('/bom/orders', { orderNo, header, items });
           } catch (e) {
             confirmBtn.disabled = false;
             confirmBtn.innerHTML = originalLabel;
-            window.openModal('Could Not Create BOM', `<p>${bomEsc((e && e.message) || 'Server error. Please try again.')}</p>`);
+            window.openModal('Could Not Generate BOM', `<p>${bomEsc((e && e.message) || 'Server error. Please try again.')}</p>`);
             return;
           }
           window.closeModal();
-          if (window.showToast) window.showToast('BOM created — it now appears in BOM Home / BOM Register as Pending.');
+          if (window.showToast) window.showToast('BOM generated — it now appears in BOM Home / BOM Register as Pending.');
           showBomHome();
         });
       }
