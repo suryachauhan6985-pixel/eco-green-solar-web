@@ -493,14 +493,25 @@ window.attachColumnFilters = function (table) {
             Enter the 6-digit OTP sent to your email.
           </div>
           <div class="login-field">
-            <label>OTP</label>
-            <input type="text" id="loginOtpInput" placeholder="6-digit OTP" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+            <label>OTP <span style="color:var(--red);">*</span></label>
+            <div class="otp-boxes" id="loginOtpBoxes">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+            </div>
+            <input type="hidden" id="loginOtpInput">
+          </div>
+          <div class="otp-note" id="loginOtpNote">
+            OTP sent successfully, and it is valid for 5 mins.
+            Didn't receive OTP? <button type="button" class="otp-resend-link" id="loginOtpResend">Resend OTP</button>
           </div>
           <div class="login-error" id="loginOtpError"></div>
           <button type="button" class="login-btn" id="loginOtpSubmit">Verify &amp; Sign In</button>
-          <div style="display:flex; justify-content:space-between; margin-top:10px;">
+          <div style="display:flex; justify-content:center; margin-top:10px;">
             <button type="button" class="btn btn-ghost" id="loginOtpBack" style="padding:6px 10px; font-size:12px;">&larr; Back</button>
-            <button type="button" class="btn btn-ghost" id="loginOtpResend" style="padding:6px 10px; font-size:12px;">Resend OTP</button>
           </div>
         </div>
 
@@ -536,14 +547,25 @@ window.attachColumnFilters = function (table) {
             Enter the 6-digit OTP sent to your email to activate your account.
           </div>
           <div class="login-field">
-            <label>OTP</label>
-            <input type="text" id="regOtpInput" placeholder="6-digit OTP" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+            <label>OTP <span style="color:var(--red);">*</span></label>
+            <div class="otp-boxes" id="regOtpBoxes">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+            </div>
+            <input type="hidden" id="regOtpInput">
+          </div>
+          <div class="otp-note" id="regOtpNote">
+            OTP sent successfully, and it is valid for 5 mins.
+            Didn't receive OTP? <button type="button" class="otp-resend-link" id="regOtpResend">Resend OTP</button>
           </div>
           <div class="login-error" id="regOtpError"></div>
           <button type="button" class="login-btn" id="regOtpSubmit">Verify &amp; Continue</button>
-          <div style="display:flex; justify-content:space-between; margin-top:10px;">
+          <div style="display:flex; justify-content:center; margin-top:10px;">
             <button type="button" class="btn btn-ghost" id="regOtpBack" style="padding:6px 10px; font-size:12px;">&larr; Back</button>
-            <button type="button" class="btn btn-ghost" id="regOtpResend" style="padding:6px 10px; font-size:12px;">Resend OTP</button>
           </div>
         </div>
 
@@ -567,8 +589,20 @@ window.attachColumnFilters = function (table) {
             Enter the OTP sent to your email, and choose a new password.
           </div>
           <div class="login-field">
-            <label>OTP</label>
-            <input type="text" id="resetOtpInput" placeholder="6-digit OTP" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+            <label>OTP <span style="color:var(--red);">*</span></label>
+            <div class="otp-boxes" id="resetOtpBoxes">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+            </div>
+            <input type="hidden" id="resetOtpInput">
+          </div>
+          <div class="otp-note" id="resetOtpNote">
+            OTP sent successfully, and it is valid for 5 mins.
+            Didn't receive OTP? <button type="button" class="otp-resend-link" id="resetResend">Resend OTP</button>
           </div>
           <div class="login-field">
             <label>New Password</label>
@@ -579,9 +613,8 @@ window.attachColumnFilters = function (table) {
           </div>
           <div class="login-error" id="resetError"></div>
           <button type="button" class="login-btn" id="resetSubmit">Reset Password &amp; Sign In</button>
-          <div style="display:flex; justify-content:space-between; margin-top:10px;">
+          <div style="display:flex; justify-content:center; margin-top:10px;">
             <button type="button" class="btn btn-ghost" id="resetBack" style="padding:6px 10px; font-size:12px;">&larr; Back</button>
-            <button type="button" class="btn btn-ghost" id="resetResend" style="padding:6px 10px; font-size:12px;">Resend OTP</button>
           </div>
         </div>
       </div>`;
@@ -597,6 +630,7 @@ window.attachColumnFilters = function (table) {
     const submitBtn = loginOverlay.querySelector('#loginSubmit');
 
     const otpHint = loginOverlay.querySelector('#loginOtpHint');
+    const otpBoxes = loginOverlay.querySelector('#loginOtpBoxes');
     const otpInput = loginOverlay.querySelector('#loginOtpInput');
     const otpError = loginOverlay.querySelector('#loginOtpError');
     const otpSubmitBtn = loginOverlay.querySelector('#loginOtpSubmit');
@@ -619,6 +653,7 @@ window.attachColumnFilters = function (table) {
 
     const stepRegisterOtp = loginOverlay.querySelector('#loginStepRegisterOtp');
     const regOtpHint = loginOverlay.querySelector('#regOtpHint');
+    const regOtpBoxes = loginOverlay.querySelector('#regOtpBoxes');
     const regOtpInput = loginOverlay.querySelector('#regOtpInput');
     const regOtpError = loginOverlay.querySelector('#regOtpError');
     const regOtpSubmitBtn = loginOverlay.querySelector('#regOtpSubmit');
@@ -634,6 +669,7 @@ window.attachColumnFilters = function (table) {
 
     const stepReset = loginOverlay.querySelector('#loginStepReset');
     const resetHint = loginOverlay.querySelector('#resetHint');
+    const resetOtpBoxes = loginOverlay.querySelector('#resetOtpBoxes');
     const resetOtpInput = loginOverlay.querySelector('#resetOtpInput');
     const resetNewPassword = loginOverlay.querySelector('#resetNewPassword');
     const resetToggleBtn = loginOverlay.querySelector('#resetTogglePwd');
@@ -641,6 +677,79 @@ window.attachColumnFilters = function (table) {
     const resetSubmitBtn = loginOverlay.querySelector('#resetSubmit');
     const resetBackBtn = loginOverlay.querySelector('#resetBack');
     const resetResendBtn = loginOverlay.querySelector('#resetResend');
+
+    // ---------- OTP boxes: 6 separate single-digit inputs that stay in sync
+    // with one hidden <input> (so the rest of the login code below can keep
+    // reading/writing otpInput.value exactly as before — nothing else has
+    // to change). Handles auto-advance on type, backspace-to-previous, and
+    // pasting a full 6-digit code into any one of the boxes. ----------
+    function wireOtpBoxes(boxesEl, hiddenEl) {
+      if (!boxesEl || !hiddenEl) return { focusFirst() {}, clear() {} };
+      const boxes = Array.from(boxesEl.querySelectorAll('.otp-box'));
+      function sync() { hiddenEl.value = boxes.map((b) => b.value).join(''); }
+      boxes.forEach((box, i) => {
+        box.addEventListener('input', () => {
+          box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
+          if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
+          sync();
+        });
+        box.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !box.value && i > 0) {
+            boxes[i - 1].focus();
+          } else if (e.key === 'ArrowLeft' && i > 0) {
+            boxes[i - 1].focus();
+          } else if (e.key === 'ArrowRight' && i < boxes.length - 1) {
+            boxes[i + 1].focus();
+          }
+        });
+        box.addEventListener('paste', (e) => {
+          const text = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+          if (!text) return;
+          e.preventDefault();
+          text.slice(0, boxes.length).split('').forEach((ch, j) => {
+            if (boxes[i + j]) boxes[i + j].value = ch;
+          });
+          sync();
+          const nextEmpty = boxes.find((b) => !b.value) || boxes[boxes.length - 1];
+          nextEmpty.focus();
+        });
+      });
+      return {
+        focusFirst() { boxes[0].focus(); },
+        clear() { boxes.forEach((b) => { b.value = ''; }); hiddenEl.value = ''; },
+      };
+    }
+    const loginOtpBoxesCtl = wireOtpBoxes(otpBoxes, otpInput);
+    const regOtpBoxesCtl = wireOtpBoxes(regOtpBoxes, regOtpInput);
+    const resetOtpBoxesCtl = wireOtpBoxes(resetOtpBoxes, resetOtpInput);
+
+    // ---------- Resend OTP cooldown: 10 seconds ----------
+    // Disables a resend button/link and counts down "Resend OTP in 10s"
+    // right after an OTP is sent (either the initial send or a resend),
+    // so it can't be spammed. Re-enables itself automatically once the
+    // countdown hits 0.
+    const RESEND_COOLDOWN_SECONDS = 10;
+    const resendTimers = new WeakMap();
+    function startResendCooldown(btn, seconds = RESEND_COOLDOWN_SECONDS) {
+      if (!btn) return;
+      const existing = resendTimers.get(btn);
+      if (existing) clearInterval(existing);
+      let remaining = seconds;
+      btn.disabled = true;
+      btn.textContent = `Resend OTP in ${remaining}s`;
+      const timer = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          clearInterval(timer);
+          resendTimers.delete(btn);
+          btn.disabled = false;
+          btn.textContent = 'Resend OTP';
+          return;
+        }
+        btn.textContent = `Resend OTP in ${remaining}s`;
+      }, 1000);
+      resendTimers.set(btn, timer);
+    }
 
     // Carries the verified username across from step 1 to step 2 (server
     // already confirmed the password by the time we get here).
@@ -670,7 +779,7 @@ window.attachColumnFilters = function (table) {
       window.freshLoginInProgress = false;
       hideAllSteps();
       stepCreds.style.display = '';
-      otpInput.value = '';
+      loginOtpBoxesCtl.clear();
       otpError.classList.remove('show');
       pendingUsername = null;
     }
@@ -683,8 +792,9 @@ window.attachColumnFilters = function (table) {
         ? `Enter the 6-digit OTP sent to ${maskedEmail}.`
         : 'Enter the 6-digit OTP sent to your email.';
       otpError.classList.remove('show');
-      otpInput.value = '';
-      otpInput.focus();
+      loginOtpBoxesCtl.clear();
+      loginOtpBoxesCtl.focusFirst();
+      startResendCooldown(otpResendBtn);
     }
 
     // ---------- Step switching: Register / Forgot Password / Reset ----------
@@ -710,8 +820,9 @@ window.attachColumnFilters = function (table) {
         ? `Enter the 6-digit OTP sent to ${maskedEmail} to activate your account.`
         : 'Enter the 6-digit OTP sent to your email to activate your account.';
       regOtpError.classList.remove('show');
-      regOtpInput.value = '';
-      regOtpInput.focus();
+      regOtpBoxesCtl.clear();
+      regOtpBoxesCtl.focusFirst();
+      startResendCooldown(regOtpResendBtn);
     }
 
     function showForgotStep() {
@@ -729,9 +840,10 @@ window.attachColumnFilters = function (table) {
         ? `Enter the OTP sent to ${maskedEmail}, and choose a new password.`
         : 'Enter the OTP sent to your email, and choose a new password.';
       resetError.classList.remove('show');
-      resetOtpInput.value = '';
+      resetOtpBoxesCtl.clear();
       resetNewPassword.value = '';
-      resetOtpInput.focus();
+      resetOtpBoxesCtl.focusFirst();
+      startResendCooldown(resetResendBtn);
     }
 
     // Finish signing in after the OTP is verified — same completion steps
@@ -752,6 +864,9 @@ window.attachColumnFilters = function (table) {
       showApp();
       startHeartbeat();
       resetIdleTimer();
+      if (typeof window.showToast === 'function') {
+        window.showToast(`Login successful! Welcome, ${data.username}.`);
+      }
     }
 
     async function attemptLogin() {
@@ -847,14 +962,18 @@ window.attachColumnFilters = function (table) {
         if (!res.ok || !data.success) {
           otpError.textContent = data.error || 'Could not resend OTP.';
           otpError.classList.add('show');
+          otpResendBtn.disabled = false;
+          otpResendBtn.textContent = originalLabel;
           return;
         }
         otpHint.textContent = `A new OTP was sent to ${data.maskedEmail}.`;
         otpError.classList.remove('show');
+        loginOtpBoxesCtl.clear();
+        loginOtpBoxesCtl.focusFirst();
+        startResendCooldown(otpResendBtn);
       } catch (e) {
         otpError.textContent = 'Could not reach the server. Please try again.';
         otpError.classList.add('show');
-      } finally {
         otpResendBtn.disabled = false;
         otpResendBtn.textContent = originalLabel;
       }
@@ -957,14 +1076,18 @@ window.attachColumnFilters = function (table) {
         if (!res.ok || !data.success) {
           regOtpError.textContent = data.error || 'Could not resend OTP.';
           regOtpError.classList.add('show');
+          regOtpResendBtn.disabled = false;
+          regOtpResendBtn.textContent = originalLabel;
           return;
         }
         regOtpHint.textContent = `A new OTP was sent to ${data.maskedEmail}.`;
         regOtpError.classList.remove('show');
+        regOtpBoxesCtl.clear();
+        regOtpBoxesCtl.focusFirst();
+        startResendCooldown(regOtpResendBtn);
       } catch (e) {
         regOtpError.textContent = 'Could not reach the server. Please try again.';
         regOtpError.classList.add('show');
-      } finally {
         regOtpResendBtn.disabled = false;
         regOtpResendBtn.textContent = originalLabel;
       }
@@ -1019,14 +1142,18 @@ window.attachColumnFilters = function (table) {
         if (!res.ok || !data.success) {
           resetError.textContent = data.error || 'Could not resend OTP.';
           resetError.classList.add('show');
+          resetResendBtn.disabled = false;
+          resetResendBtn.textContent = originalLabel;
           return;
         }
         resetHint.textContent = `A new OTP was sent to ${data.maskedEmail}.`;
         resetError.classList.remove('show');
+        resetOtpBoxesCtl.clear();
+        resetOtpBoxesCtl.focusFirst();
+        startResendCooldown(resetResendBtn);
       } catch (e) {
         resetError.textContent = 'Could not reach the server. Please try again.';
         resetError.classList.add('show');
-      } finally {
         resetResendBtn.disabled = false;
         resetResendBtn.textContent = originalLabel;
       }

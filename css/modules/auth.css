@@ -49,6 +49,28 @@
 .brand-logo{height:32px; width:auto; object-fit:contain;}
 .login-logo .brand-logo{height:100px;}
 
+/* =================== OTP BOXES (6 separate digit inputs) ===================
+   Used on the Login-OTP, Register-OTP and Reset-Password-OTP steps. Each
+   step keeps a hidden <input> that mirrors the combined 6-digit value, so
+   the verify/resend logic elsewhere in app.js reads it exactly like before. */
+.otp-boxes{display:flex; gap:8px; justify-content:space-between;}
+.otp-box{
+  width:100%; aspect-ratio:1/1; max-width:46px; text-align:center;
+  background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt);
+  border-radius:12px; font-size:18px; font-weight:700; outline:none;
+  box-sizing:border-box; padding:0;
+}
+.otp-box:focus{border-color:var(--blue);}
+.otp-note{
+  font-size:12px; color:var(--txt-muted); margin-top:6px; line-height:1.5;
+}
+.otp-resend-link{
+  background:transparent; border:none; color:var(--blue); font-weight:700;
+  font-size:12px; padding:0; cursor:pointer;
+}
+.otp-resend-link:hover{text-decoration:underline;}
+.otp-resend-link:disabled{color:var(--txt-muted); cursor:default; text-decoration:none;}
+
 
 /* =================== PROFILE MENU (sidebar avatar) ===================
    Clicking .profile-box (avatar + name in sidebar) opens this dropdown,
