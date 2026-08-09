@@ -43,113 +43,14 @@ function bomSetPrintPageSize(cssSizeAndMargin) {
   styleEl.textContent = `@media print { @page { ${cssSizeAndMargin} } }`;
 }
 
-// Standard kit catalogue — keyed by kW so the dropdown is a SINGLE select
-// and everything else (items, models, quantities) auto-fills from here.
-// Only one kit for now (copied 1:1 from the uploaded Excel sample); more
-// kits get added to this object later the same way.
-const BOM_KITS = {
-  '3.3': {
-    label: '3.3 kW — Residential 550 Wp',
-    kw: '3.3',
-    sections: [
-      {
-        title: 'Solar Penal',
-        items: [
-          // categoryDriven: Item Name shows a Category dropdown (defaults
-          // to 'Solar Panel', the Masters > Category this row is pinned
-          // to) instead of a flat item-name list; Model shows the actual
-          // registered item (Brand + Wattage, e.g. "Adani 545") for that
-          // category. See bomBuildCategoryOptionsHtml/
-          // bomBuildCategoryItemOptionsHtml + handleItemFieldEdit's
-          // field === 'category' branch. `name` stays '' until a real
-          // item is picked — it's what actually gets sent to the backend
-          // (must exactly match an items.name row), same as every other
-          // item row.
-          { sr: 1, name: '', model: '', qty: '06 Nos', remarks: 'ADANI 550 Wp', categoryDriven: true, category: 'Solar Panel' },
-        ],
-      },
-      {
-        title: 'Solar Structure',
-        items: [
-          { sr: 2, name: 'GI Structure', model: 'Special', qty: '-', remarks: '' },
-          { sr: 3, name: 'GI PIPE', model: '1.5" X 1.5"', qty: '60 Feet', remarks: '' },
-          { sr: 4, name: 'GI PIPE', model: '2.5" X 1.5"', qty: '55 Feet', remarks: '' },
-          { sr: 5, name: 'GI PIPE', model: '1" X 1"', qty: '-', remarks: '' },
-          { sr: 6, name: 'Base Plate', model: '-', qty: '04 Nos', remarks: '' },
-          { sr: 7, name: 'Base Angle', model: '-', qty: '-', remarks: '' },
-          { sr: 8, name: 'Wall Patti', model: '', qty: '-', remarks: '' },
-          { sr: 9, name: 'LA Patti', model: '', qty: '01 Nos', remarks: '' },
-          { sr: 10, name: 'Anchor Bolt (Pin)', model: '10mm X 125mm', qty: '-', remarks: '' },
-          { sr: 11, name: 'American Bolt', model: '2.5"', qty: '16 Nos', remarks: '' },
-          { sr: 12, name: 'Stud Bolt with Nut & Washer', model: '12mm X 400 mm', qty: '-', remarks: '' },
-          { sr: 13, name: 'Clamps', model: 'With Bolt', qty: '24 Nos', remarks: 'Clamps' },
-          { sr: 14, name: 'U - Bolt with Nut Bolt', model: '(125 x 75 x 125) mm', qty: '-', remarks: '' },
-          { sr: 15, name: 'Nut Bolt - GI 4 Aani X 0.5" Long', model: '0.5"', qty: '02 Nos', remarks: '' },
-          { sr: 16, name: 'Nut Bolt - SS 4 Aani X 1.5" Long', model: '1.5"', qty: '04 Nos', remarks: '' },
-          { sr: 17, name: 'Nut Bolt - SS 4 Aani X 2.5" Long', model: '2.5"', qty: '-', remarks: '' },
-          { sr: 18, name: 'Nut Bolt - SS 5 Aani X 3" Long', model: '3"', qty: '-', remarks: '' },
-          { sr: 19, name: 'Nito Bond Chemical', model: 'White + Black', qty: '300 Ml + 150 Ml', remarks: '' },
-        ],
-      },
-      {
-        title: 'Solar Inverter',
-        items: [
-          // Same categoryDriven pattern as the Solar Panel row above,
-          // pinned to the 'Inverter' category.
-          { sr: 20, name: '', model: '', qty: '1 Nos', remarks: 'DEYE', categoryDriven: true, category: 'Inverter' },
-          { sr: 21, name: 'ACDB Box', model: '1 In 1 Out', qty: '1 Nos', remarks: '' },
-          { sr: 22, name: 'DCDB Box', model: '1 In 1 Out', qty: '1 Nos', remarks: '' },
-          { sr: 23, name: 'MC 4 Connector', model: '', qty: '2 Nos', remarks: '' },
-        ],
-      },
-      {
-        title: 'Solar Earthing Kit',
-        items: [
-          { sr: 24, name: 'Earthing Rod & LA Kit', model: '', qty: '1 Kit', remarks: '' },
-          { sr: 25, name: 'LA Bracket', model: '', qty: '-', remarks: '' },
-        ],
-      },
-      {
-        title: 'Solar Wire',
-        items: [
-          { sr: 26, name: 'DC Wire - Red - Polycab', model: '4 SQ.MM', qty: '25 Mtr', remarks: '' },
-          { sr: 27, name: 'DC Wire - Black - Polycab', model: '4 SQ.MM', qty: '25 Mtr', remarks: '' },
-          { sr: 28, name: 'DC Earthing Wire - Yellow - Polycab', model: '2.5 SQ.MM', qty: '30 Mtr', remarks: '' },
-          { sr: 29, name: 'AC Earthing Wire - Green - Polycab', model: '2.5 SQ.MM', qty: '13 Mtr', remarks: '' },
-          { sr: 30, name: 'LA Earthing Wire - Green (Allu.) - Aircab', model: '16 SQ. MM', qty: '20 Mtr', remarks: '' },
-          { sr: 31, name: 'Lug', model: '4 SQ.MM', qty: '04 Nos', remarks: '' },
-          { sr: 32, name: 'Lug', model: '16 SQ.MM', qty: '02 Nos', remarks: '' },
-          { sr: 33, name: 'AC - 2 Core - Polycab', model: '2.5 SQ.MM', qty: '07 Mtr', remarks: '' },
-          { sr: 34, name: 'AC - 4 Core - Polycab', model: '2.5 SQ.MM', qty: '-', remarks: '' },
-        ],
-      },
-      {
-        title: 'BOS',
-        items: [
-          { sr: 35, name: 'PVC Pipe', model: '19mm DIA', qty: '13 Nos', remarks: '' },
-          { sr: 36, name: 'PVC Albow', model: '19mm DIA', qty: '20 Nos', remarks: '' },
-          { sr: 37, name: 'PVC Bend', model: '19mm DIA', qty: '07 Nos', remarks: '' },
-          { sr: 38, name: 'PVC Tee', model: '19mm DIA', qty: '05 Nos', remarks: '' },
-          { sr: 39, name: 'PVC Coupler', model: '19mm DIA', qty: '03 Nos', remarks: '' },
-          { sr: 40, name: 'Bendable Pipe', model: '19mm DIA', qty: '-', remarks: '' },
-          { sr: 41, name: 'Clamp for Pipe', model: '19mm DIA', qty: '50 Nos', remarks: '' },
-          { sr: 42, name: 'Cable Tie (PVC)', model: '12"', qty: '12 Nos', remarks: '' },
-          { sr: 43, name: 'Cable Tie (S.S)', model: '12"', qty: '06 Nos', remarks: '' },
-          { sr: 44, name: 'Screw + Grip', model: '1.5"', qty: '10 Nos', remarks: '' },
-          { sr: 45, name: 'Sand - Rati', model: '', qty: '4 Tagara', remarks: '' },
-          { sr: 46, name: 'Grit - Kapchi', model: '', qty: '3 Tagara', remarks: '' },
-          { sr: 47, name: 'Cement', model: '', qty: '12 KG', remarks: '' },
-          { sr: 48, name: 'Farma', model: '', qty: '04 Nos', remarks: '' },
-          { sr: 49, name: 'MCB', model: '2Pole / 1 Phase', qty: '01 Nos', remarks: '01 Nos' },
-          { sr: 50, name: 'MCB', model: '4 Pole / 3 Phase', qty: '-', remarks: '' },
-          { sr: 51, name: 'Nozzle Kit', model: '', qty: '-', remarks: '' },
-          { sr: 52, name: 'Zinc Spray', model: '', qty: '01 Nos', remarks: '' },
-          { sr: 53, name: 'Cable Tray', model: '1 Mtr', qty: '01 Nos', remarks: '' },
-        ],
-      },
-    ],
-  },
-};
+// No built-in kits are shipped anymore — every kit (sections + items) is
+// built and saved from this screen via "New Kit" (see the Custom Kit /
+// Template storage right below), which persists into bomLoadCustomKits()/
+// bomSaveCustomKits() the exact same way it already did for a person's own
+// saved templates. bomGetAllKits() below merges this (now always empty)
+// object with whatever's been saved, so the rest of the page — kit
+// dropdown, item table, print sheet — needs no further changes.
+const BOM_KITS = {};
 
 // ---------- Custom Kit / Template storage (localStorage) ----------
 // Lets someone build their own BOM Kit right from this screen (a name +
@@ -313,12 +214,13 @@ function bomSplitSerials(text) {
 let bomItemMasterNames = [];
 
 // Category -> [item master names] and the full category name list, used
-// to drive the Category/Model dropdown pair on rows flagged
-// `categoryDriven` (currently just the Solar Panel and Inverter rows —
-// see BOM_KITS above). Populated by bomLoadSerialMandatoryInfo() in
-// init() (same /masters/items + /masters/categories calls that already
-// build the serial-mandatory lookup), so this never needs its own extra
-// round trip, and is loaded/awaited before the first render.
+// to drive the Category/Model dropdown pair on any section whose title
+// matches a real category name (see bomResolveSectionCategory — e.g. a
+// section titled "Solar Panel" or "Inverter"). Populated by
+// bomLoadSerialMandatoryInfo() in init() (same /masters/items +
+// /masters/categories calls that already build the serial-mandatory
+// lookup), so this never needs its own extra round trip, and is
+// loaded/awaited before the first render.
 let bomCategoryNameList = [];
 let bomItemsByCategory = {};
 
@@ -352,9 +254,19 @@ function bomBuildItemOptionsHtml(selectedName) {
   return `<option value="">-- Select Item --</option>${optionsHtml}`;
 }
 
-// ---------- Category / Category-Item dropdown source (categoryDriven rows) ----------
-// Used only by rows flagged `categoryDriven: true` (Solar Panel / Inverter —
-// see BOM_KITS). The Item Name cell becomes this Category select.
+// ---------- Category / Category-Item dropdown source (category-driven sections) ----------
+// A section is "category-driven" whenever its title exactly matches a real
+// Masters > Category name (case-insensitive) — e.g. a section titled
+// "Solar Panel" or "Inverter". Every item row inside that section then
+// shows the Category/Model dropdown pair below instead of the flat
+// item-name list. Returns the canonical category name (as stored in
+// Masters, for exact matching against bomItemsByCategory) or null.
+function bomResolveSectionCategory(title) {
+  const t = String(title || '').trim().toLowerCase();
+  if (!t) return null;
+  return bomCategoryNameList.find((c) => String(c).trim().toLowerCase() === t) || null;
+}
+
 function bomBuildCategoryOptionsHtml(selectedCategory) {
   const names = new Set(bomCategoryNameList);
   if (selectedCategory) names.add(selectedCategory);
@@ -364,7 +276,7 @@ function bomBuildCategoryOptionsHtml(selectedCategory) {
   return `<option value="">-- Select Category --</option>${optionsHtml}`;
 }
 
-// The Model cell for a categoryDriven row: every registered item (Masters >
+// The Model cell for a category-driven row: every registered item (Masters >
 // Item Registration) under the currently-selected category, e.g. Solar
 // Panel -> "Adani 545". Falls back to keeping the already-selected name in
 // the list even if it's not (yet) found under this category, so a saved
@@ -419,6 +331,7 @@ function bomRenderScreenItemsHtml(state, opts) {
           </div>
         </td>
       </tr>`;
+    const sectionCategory = bomResolveSectionCategory(sec.title);
     const itemRows = sec.items.map((it, ii) => {
       let serialCell;
       if (needsSerial(it.name)) {
@@ -432,16 +345,22 @@ function bomRenderScreenItemsHtml(state, opts) {
       } else {
         serialCell = `<span class="bom-serial-na">—</span>`;
       }
-      // categoryDriven rows (Solar Panel / Inverter): Item Name becomes a
-      // Category select (writes to it.category); Model becomes a select of
-      // the real registered items under that category (writes to it.name —
-      // the value actually sent to the backend for stock matching, same
-      // field every other row's Item Name select already writes to).
-      const nameCell = it.categoryDriven
-        ? `<select class="bom-field-input bom-field-category" data-sec="${si}" data-idx="${ii}" data-field="category">${bomBuildCategoryOptionsHtml(it.category)}</select>`
+      // A row is category-driven whenever its SECTION's title matches a
+      // real Masters > Category name (e.g. a section titled "Solar Panel"
+      // or "Inverter") — every item in that section gets this treatment,
+      // not just a fixed row number. Item Name becomes a Category select
+      // (writes to it.category, defaulting to the section's own category
+      // so a freshly-added row doesn't need it re-picked); Model becomes a
+      // select of the real registered items under that category (writes
+      // to it.name — the value actually sent to the backend for stock
+      // matching, same field every other row's Item Name select already
+      // writes to).
+      const effectiveCategory = it.category || sectionCategory;
+      const nameCell = sectionCategory
+        ? `<select class="bom-field-input bom-field-category" data-sec="${si}" data-idx="${ii}" data-field="category">${bomBuildCategoryOptionsHtml(effectiveCategory)}</select>`
         : `<select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(it.name)}</select>`;
-      const modelCell = it.categoryDriven
-        ? `<select class="bom-field-input bom-field-modelitem" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildCategoryItemOptionsHtml(it.category, it.name)}</select>`
+      const modelCell = sectionCategory
+        ? `<select class="bom-field-input bom-field-modelitem" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildCategoryItemOptionsHtml(effectiveCategory, it.name)}</select>`
         : `<input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="model" value="${bomEscAttr(it.model)}">`;
       return `
       <tr>
@@ -483,11 +402,12 @@ function bomRenderPrintSheetHtml(kit, header) {
   const h = header;
   const rows = kit.sections.map((sec) => {
     const catRow = `<tr class="bom-cat-row"><td colspan="6">${sec.title}</td></tr>`;
+    const sectionCategory = bomResolveSectionCategory(sec.title);
     const itemRows = sec.items.map((it) => `
       <tr>
         <td class="bom-c-sr">${it.sr}</td>
-        <td class="bom-c-name">${it.categoryDriven ? (it.category || '') : it.name}</td>
-        <td class="bom-c-model">${it.categoryDriven ? (it.name || '') : (it.model || '')}</td>
+        <td class="bom-c-name">${sectionCategory ? (it.category || sectionCategory) : it.name}</td>
+        <td class="bom-c-model">${sectionCategory ? (it.name || '') : (it.model || '')}</td>
         <td class="bom-c-qty">${it.qty}</td>
         <td class="bom-c-checked"></td>
         <td class="bom-c-remarks">${it.remarks || ''}</td>
@@ -1740,7 +1660,7 @@ window.PAGES.bom = {
         });
       } catch (e) {
         // API/DB not reachable in this preview — no item is treated as serial-mandatory,
-        // and the Category/Model dropdowns on categoryDriven rows fall back to empty lists.
+        // and the Category/Model dropdowns on category-driven sections fall back to empty lists.
       }
     }
     function bomItemNeedsSerial(name) {
@@ -2210,6 +2130,13 @@ window.PAGES.bom = {
       if (field === 'sectitle') {
         currentKitState[si].title = el.value;
         setVerified(false);
+        // A section title can change which real Category it matches (see
+        // bomResolveSectionCategory) — re-render on 'change' (blur/Enter)
+        // only, not on every keystroke, so every item row in this section
+        // switches to/from the Category+Model dropdown pair as soon as the
+        // person finishes typing, without the table jumping around while
+        // they're still mid-edit.
+        if (e.type === 'change') rerenderItemsPreview();
         return;
       }
       const ii = Number(el.dataset.idx);
@@ -2240,10 +2167,12 @@ window.PAGES.bom = {
         return;
       }
 
-      // Category select on a categoryDriven row (Solar Panel / Inverter —
-      // see BOM_KITS). Changing the category invalidates whichever real
-      // item (it.name) was picked for the old category — force a re-pick
-      // and refresh the Model dropdown's option list for the new category.
+      // Category select on a category-driven row (any section whose title
+      // matches a real Masters > Category name, e.g. "Solar Panel" or
+      // "Inverter" — see bomResolveSectionCategory). Changing the category
+      // invalidates whichever real item (it.name) was picked under the old
+      // category — force a re-pick and refresh the Model dropdown's option
+      // list for the new category.
       if (field === 'category') {
         item.category = el.value;
         item.name = '';
