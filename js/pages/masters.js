@@ -173,10 +173,10 @@ window.PAGES.masters = {
       <div class="grid-2">
          <div class="panel">
           <h3><i class="fa-solid fa-user-lock"></i> Create / Update Authorization Account
-            <button type="button" class="info-btn" data-info="To change a password: enter the existing username with the new password, then click Update Password. The Role dropdown is only used when creating a new user."><i class="fa-solid fa-circle-info"></i></button>
+            <button type="button" class="info-btn" data-info="To change a password: click the user's row in the Access Control Ledger to safely fill in their exact username (avoids typos), enter the new password, then click Update Password — you'll be asked to confirm the username before it's applied. The Role dropdown is only used when creating a new user."><i class="fa-solid fa-circle-info"></i></button>
           </h3>
           <div class="form-grid">
-            <div class="field"><label>Username *</label><input id="mUserNameInput" placeholder="e.g. amit"></div>
+            <div class="field"><label>Username *</label><input id="mUserNameInput" placeholder="e.g. amit" list="mExistingUsers" autocomplete="off"><datalist id="mExistingUsers"></datalist></div>
             <div class="field"><label>Password / PIN *</label><input type="password" id="mUserPassInput" placeholder="••••••••"></div>
             <div class="field"><label>Email (for OTP Login) *</label><input type="email" id="mUserEmailInput" placeholder="e.g. amit@example.com"></div>
             <div class="field"><label>System Privilege</label>
@@ -305,7 +305,9 @@ window.PAGES.masters = {
       </tr>
     `).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--txt-muted);">No warehouses yet.</td></tr>`;
 
-        $('mastersUsersBody').innerHTML = users.map(u => `<tr><td>${u.username}</td><td>${u.email || '<span style="color:var(--txt-muted); font-style:italic;">Not set</span>'}</td><td>${u.role}</td></tr>`).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--txt-muted);">No users yet.</td></tr>`;
+        $('mastersUsersBody').innerHTML = users.map(u => `<tr class="m-user-row" data-username="${u.username}" style="cursor:pointer;" title="Click to select this username for password/email update"><td>${u.username}</td><td>${u.email || '<span style="color:var(--txt-muted); font-style:italic;">Not set</span>'}</td><td>${u.role}</td></tr>`).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--txt-muted);">No users yet.</td></tr>`;
+        const existingUsersList = $('mExistingUsers');
+        if (existingUsersList) existingUsersList.innerHTML = users.map(u => `<option value="${u.username}">`).join('');
 
         $('mastersBrandBody').innerHTML = brands.map(b => `<tr><td class="gold-txt">${b.brand_name}</td><td>${b.item_count}</td></tr>`).join('') || `<tr><td colspan="2" style="text-align:center;color:var(--txt-muted);">No brands registered yet.</td></tr>`;
 
@@ -1183,6 +1185,13 @@ window.PAGES.masters = {
       }
     });
 
+    $('mastersUsersBody').addEventListener('click', (e) => {
+      const row = e.target.closest('.m-user-row');
+      if (!row) return;
+      $('mUserNameInput').value = row.dataset.username;
+      window.showToast(`Selected user: ${row.dataset.username}`);
+    });
+
     $("mBtnAddUser").addEventListener("click", async () => {
       const username = $("mUserNameInput").value.trim();
       const password = $("mUserPassInput").value.trim();
@@ -1217,6 +1226,12 @@ window.PAGES.masters = {
         window.openModal("Validation Error", "<p>Provide username and new password.</p>");
         return;
       }
+      const ok = await window.confirmDialog(
+        "Confirm Password Update",
+        `Update the password for user "${username}"? Double-check this is the right account before continuing.`,
+        { kind: "warning", okLabel: "Yes, Update" }
+      );
+      if (!ok) return;
       try {
         const res = await fetch(`${API_BASE}/masters/users/password`, {
           method: "PUT",
@@ -1225,7 +1240,7 @@ window.PAGES.masters = {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "User configuration profile not found.");
-        window.showToast("Password updated successfully!");
+        window.showToast(`Password updated for '${username}'.`);
         $("mUserNameInput").value = "";
         $("mUserPassInput").value = "";
       } catch (err) {
@@ -1240,6 +1255,12 @@ window.PAGES.masters = {
         window.openModal("Validation Error", "<p>Provide username and the new email.</p>");
         return;
       }
+      const ok = await window.confirmDialog(
+        "Confirm Email Update",
+        `Update the OTP-login email for user "${username}" to "${email}"?`,
+        { kind: "warning", okLabel: "Yes, Update" }
+      );
+      if (!ok) return;
       try {
         const res = await fetch(`${API_BASE}/masters/users/email`, {
           method: "PUT",
@@ -1248,7 +1269,7 @@ window.PAGES.masters = {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "User configuration profile not found.");
-        window.showToast("Email updated successfully!");
+        window.showToast(`Email updated for '${username}'.`);
         $("mUserEmailInput").value = "";
         loadMastersSystemEngine();
       } catch (err) {
