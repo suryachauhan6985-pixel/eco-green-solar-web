@@ -43,7 +43,7 @@ Database
 | File | Purpose |
 | --- | --- |
 | api/db/pool.js | Supporting source file. |
-| api/db/schema.js | Defines 14 function(s) implementing supporting logic. |
+| api/db/schema.js | Defines 16 function(s) implementing supporting logic. |
 
 ### `api/middleware`
 

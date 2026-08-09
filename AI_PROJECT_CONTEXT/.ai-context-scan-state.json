@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-09T07:58:09.034Z",
+  "generatedAt": "2026-08-09T12:29:09.583Z",
   "files": {
     ".env": {
       "hash": "fbf93500e5313e2f01018668de228b174a039bbf",
@@ -12,9 +12,9 @@
       "mtimeMs": 1785760530681.6638
     },
     "index.html": {
-      "hash": "b4569b04b18102a342c2660ded5780c618a5030d",
+      "hash": "49460f2dd118d8be6f50c0ae6f747d4fcb6cbcfa",
       "size": 7811,
-      "mtimeMs": 1786258110322.3835
+      "mtimeMs": 1786278312560.6467
     },
     "manifest.webmanifest": {
       "hash": "1a394524a536e053f78cdd82bfedeb87443475ae",
@@ -32,14 +32,14 @@
       "mtimeMs": 1786187114574.225
     },
     "sw.js": {
-      "hash": "24ceb0c710911d0efe00e5540144a1fb3fedd11b",
-      "size": 4481,
-      "mtimeMs": 1786194192283.2358
+      "hash": "30a77607d0361357d54985c2933cec5a3e2b46c4",
+      "size": 4482,
+      "mtimeMs": 1786278320136.5166
     },
     "js/app.js": {
-      "hash": "635206561dbcd2a23ea040fff8af311dcdcd48b5",
-      "size": 66434,
-      "mtimeMs": 1785757438193.869
+      "hash": "c46e82fc762c827e89c4b9de282c88d6c2a44982",
+      "size": 72709,
+      "mtimeMs": 1786277467850.282
     },
     "js/pages/backup.js": {
       "hash": "15f5b22b9fcb33d1b29b73bcd9a2d38abdadb104",
@@ -47,9 +47,9 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/bom.js": {
-      "hash": "fdee9b1e27e7c7d0ff06270f1975042ca15c0f0b",
-      "size": 115525,
-      "mtimeMs": 1786261472292.5066
+      "hash": "914f1ef81c4b07c37dd02c85f6640209892119f9",
+      "size": 181578,
+      "mtimeMs": 1786275947121.567
     },
     "js/pages/dashboard.js": {
       "hash": "af49b335f2d4a08a7e0871848e53f3a03428b7cb",
@@ -62,9 +62,9 @@
       "mtimeMs": 1785996191731.5178
     },
     "js/pages/masters.js": {
-      "hash": "48f800eb1a56ca25e2b105a60ff712367d088231",
-      "size": 60850,
-      "mtimeMs": 1786189681102.9475
+      "hash": "d737bb9b4310028785c589f50f91ef54d410b677",
+      "size": 62177,
+      "mtimeMs": 1786277714507.0503
     },
     "js/pages/partyledger.js": {
       "hash": "1648db6f2544ae217d146320ecfd348698448507",
@@ -97,9 +97,9 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/sales.js": {
-      "hash": "cbb9bf6dc5d114915b8474162eee50844103bf7c",
-      "size": 60868,
-      "mtimeMs": 1786185728354.4688
+      "hash": "b37a5368b8e5e43e7bfd42b28a52ee41c23ad6a0",
+      "size": 73951,
+      "mtimeMs": 1786278292195.5283
     },
     "js/pages/scansheet.js": {
       "hash": "8fa99e1e75299b9422d10b0dbd83d9b52de8b598",
@@ -137,9 +137,9 @@
       "mtimeMs": 1785235534626.1204
     },
     "css/modules/auth.css": {
-      "hash": "9ee0c1968973de201ca4219fa0cd9a0e3d5d17c9",
-      "size": 3947,
-      "mtimeMs": 1785235534624.119
+      "hash": "fd95f280663a2e441d854898c36c183bbd58476a",
+      "size": 5002,
+      "mtimeMs": 1786277470216.9724
     },
     "css/modules/base.css": {
       "hash": "41a57fae38184baa4edfab69c8c9f91f563e8519",
@@ -232,14 +232,14 @@
       "mtimeMs": 1785235629252.7383
     },
     "api/routes/bom.routes.js": {
-      "hash": "855a2752e383af42978f219f7e8698bedd9b15ea",
-      "size": 11761,
-      "mtimeMs": 1786258069378.9675
+      "hash": "fd836cf4614a533a297ca7a9c0fb3f8791ae9202",
+      "size": 25733,
+      "mtimeMs": 1786272394349.804
     },
     "api/routes/challan.routes.js": {
-      "hash": "494d57968bbc47177d1f77d2cdecc41eea58424b",
-      "size": 3242,
-      "mtimeMs": 1785759726001.5159
+      "hash": "7031b36605edf710cfb19bf611b53a99e53eceb8",
+      "size": 7223,
+      "mtimeMs": 1786275283989.1921
     },
     "api/routes/health.js": {
       "hash": "7463337414b429c191095dfd1b8cbea450c9ba46",
@@ -297,9 +297,9 @@
       "mtimeMs": 1785235534568.3574
     },
     "api/db/schema.js": {
-      "hash": "6cab37c7c05658aa97e39059dc51509c5cd5e8b5",
-      "size": 11194,
-      "mtimeMs": 1786258078329.5588
+      "hash": "f3d7f69b5ede9e3abba9229cf9fd56f8a7454d8e",
+      "size": 16919,
+      "mtimeMs": 1786275273588.9568
     },
     "api/config/cors.js": {
       "hash": "44ceee6de7c0d263b0fffe1a4b70d15c459ac96b",

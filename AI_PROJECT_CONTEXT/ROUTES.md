@@ -20,10 +20,16 @@
 | GET | /api/backup/status | api/routes/backup.routes.js |
 | POST | /api/bom/check-stock | api/routes/bom.routes.js |
 | POST | /api/bom/dispatch | api/routes/bom.routes.js |
+| GET | /api/bom/orders | api/routes/bom.routes.js |
+| POST | /api/bom/orders | api/routes/bom.routes.js |
+| GET | /api/bom/orders/:id | api/routes/bom.routes.js |
+| GET | /api/bom/orders/by-order-no/:orderNo | api/routes/bom.routes.js |
 | GET | /api/challan | api/routes/challan.routes.js |
 | POST | /api/challan | api/routes/challan.routes.js |
 | GET | /api/challan/:id | api/routes/challan.routes.js |
 | GET | /api/challan/:id/pdf | api/routes/challan.routes.js |
+| GET | /api/challan/category-map | api/routes/challan.routes.js |
+| PUT | /api/challan/category-map | api/routes/challan.routes.js |
 | GET | /api/dashboard/summary | api/routes/health.js |
 | GET | /api/health | api/routes/health.js |
 | GET | /api/ledgers | api/routes/ledgers.routes.js |

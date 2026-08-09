@@ -139,6 +139,24 @@
   },
   {
     "type": "function",
+    "label": "wireOtpBoxes",
+    "file": "js/app.js",
+    "detail": "(boxesEl, hiddenEl)"
+  },
+  {
+    "type": "function",
+    "label": "sync",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "startResendCooldown",
+    "file": "js/app.js",
+    "detail": "(btn, seconds = RESEND_COOLDOWN_SECONDS)"
+  },
+  {
+    "type": "function",
     "label": "showCredsStep",
     "file": "js/app.js",
     "detail": "()"
@@ -445,6 +463,36 @@
   },
   {
     "type": "function",
+    "label": "bomLoadChallanCategoryMap",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomGiPipeFeetToPieces",
+    "file": "js/pages/bom.js",
+    "detail": "(totalFeet)"
+  },
+  {
+    "type": "function",
+    "label": "bomGiPipeModelSr",
+    "file": "js/pages/bom.js",
+    "detail": "(modelText)"
+  },
+  {
+    "type": "function",
+    "label": "bomComputeChallanAutoQty",
+    "file": "js/pages/bom.js",
+    "detail": "(sections)"
+  },
+  {
+    "type": "function",
+    "label": "bomApplyChallanAutoQty",
+    "file": "js/pages/bom.js",
+    "detail": "(sections)"
+  },
+  {
+    "type": "function",
     "label": "bomRenderChallanTemplateItemsHtml",
     "file": "js/pages/bom.js",
     "detail": "(template)"
@@ -505,6 +553,48 @@
   },
   {
     "type": "function",
+    "label": "bomRenderHomeViewHtml",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "showBomHome",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "showBomEntry",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "showBomEntryForNewKit",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomOverallStatusFromItems",
+    "file": "js/pages/bom.js",
+    "detail": "(items)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderHomePendingTableHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(orders)"
+  },
+  {
+    "type": "function",
+    "label": "bomLoadHomePendingTable",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "openChallanModal",
     "file": "js/pages/bom.js",
     "detail": "(bodyHtml)"
@@ -512,6 +602,96 @@
   {
     "type": "function",
     "label": "closeChallanModal",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomCollectAllKitItemNamesForMapping",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderChallanMapModalHtml",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomOpenChallanMapModal",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "openRegisterModal",
+    "file": "js/pages/bom.js",
+    "detail": "(bodyHtml)"
+  },
+  {
+    "type": "function",
+    "label": "closeRegisterModal",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomTrackStatusPill",
+    "file": "js/pages/bom.js",
+    "detail": "(status)"
+  },
+  {
+    "type": "function",
+    "label": "bomFmtDateTime",
+    "file": "js/pages/bom.js",
+    "detail": "(v)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderTrackResultHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(data)"
+  },
+  {
+    "type": "function",
+    "label": "bomFetchAndRenderTrack",
+    "file": "js/pages/bom.js",
+    "detail": "(orderNo, resultBox)"
+  },
+  {
+    "type": "function",
+    "label": "bomOpenTrackModal",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "runTrack",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomOpenTrackForOrderNo",
+    "file": "js/pages/bom.js",
+    "detail": "(orderNo)"
+  },
+  {
+    "type": "function",
+    "label": "bomTrackCurrentOrder",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomCollectItemsForCreate",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomOpenCreateBomModal",
     "file": "js/pages/bom.js",
     "detail": "()"
   },
@@ -625,6 +805,84 @@
   },
   {
     "type": "function",
+    "label": "bomScanBeep",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomScanSetStatus",
+    "file": "js/pages/bom.js",
+    "detail": "(msg)"
+  },
+  {
+    "type": "function",
+    "label": "openBomScanner",
+    "file": "js/pages/bom.js",
+    "detail": "(targetId)"
+  },
+  {
+    "type": "function",
+    "label": "startBomScanCamera",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "launchBomScanCamera",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "onBomScanSuccess",
+    "file": "js/pages/bom.js",
+    "detail": "(decodedText)"
+  },
+  {
+    "type": "function",
+    "label": "showBomScanResult",
+    "file": "js/pages/bom.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "hideBomScanResult",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "retryBomScan",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "confirmBomScan",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "toggleBomScanTorch",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "flipBomScanCamera",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closeBomScanner",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "openBomSerialModal",
     "file": "js/pages/bom.js",
     "detail": "(si, ii)"
@@ -649,6 +907,12 @@
   },
   {
     "type": "function",
+    "label": "bomCollectItemsForDispatch",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "bomShowStockIssuesModal",
     "file": "js/pages/bom.js",
     "detail": "(title, intro, rows)"
@@ -664,6 +928,42 @@
     "label": "bomRunDispatch",
     "file": "js/pages/bom.js",
     "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomParseBlockedRows",
+    "file": "js/pages/bom.js",
+    "detail": "(msg)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderRegisterListHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(orders)"
+  },
+  {
+    "type": "function",
+    "label": "bomLoadRegisterList",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderContinueFormHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(order, backLabel)"
+  },
+  {
+    "type": "function",
+    "label": "bomLoadContinueDispatchForm",
+    "file": "js/pages/bom.js",
+    "detail": "(orderId, target)"
+  },
+  {
+    "type": "function",
+    "label": "bomOpenOrderInline",
+    "file": "js/pages/bom.js",
+    "detail": "(orderId)"
   },
   {
     "type": "function",
@@ -721,9 +1021,27 @@
   },
   {
     "type": "function",
+    "label": "categoryOptions",
+    "file": "js/pages/bom.js",
+    "detail": "(selected)"
+  },
+  {
+    "type": "function",
     "label": "blankItem",
     "file": "js/pages/bom.js",
     "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "finish",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "setBody",
+    "file": "js/pages/bom.js",
+    "detail": "(html)"
   },
   {
     "type": "class",
@@ -1939,6 +2257,84 @@
   },
   {
     "type": "function",
+    "label": "saleScanBeep",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "saleScanSetStatus",
+    "file": "js/pages/sales.js",
+    "detail": "(msg)"
+  },
+  {
+    "type": "function",
+    "label": "openSaleScanner",
+    "file": "js/pages/sales.js",
+    "detail": "(targetId)"
+  },
+  {
+    "type": "function",
+    "label": "startSaleCamera",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "launchSaleCamera",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "onSaleScanSuccess",
+    "file": "js/pages/sales.js",
+    "detail": "(decodedText)"
+  },
+  {
+    "type": "function",
+    "label": "showSaleScanResult",
+    "file": "js/pages/sales.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "hideSaleScanResult",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "retrySaleScan",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "confirmSaleScan",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "toggleSaleTorch",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "flipSaleCamera",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closeSaleScanner",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "renderLineList",
     "file": "js/pages/sales.js",
     "detail": "(container, lines, emptyText)"
@@ -2110,6 +2506,12 @@
     "label": "$",
     "file": "js/pages/sales.js",
     "detail": "(id)"
+  },
+  {
+    "type": "function",
+    "label": "finish",
+    "file": "js/pages/sales.js",
+    "detail": "()"
   },
   {
     "type": "function",
@@ -3301,6 +3703,24 @@
   },
   {
     "type": "function",
+    "label": "getOrCreateBomOrder",
+    "file": "api/routes/bom.routes.js",
+    "detail": "(conn, orderNo, items, header, username)"
+  },
+  {
+    "type": "function",
+    "label": "dispatchedSoFarByName",
+    "file": "api/routes/bom.routes.js",
+    "detail": "(conn, bomOrderId)"
+  },
+  {
+    "type": "function",
+    "label": "pendingForOrder",
+    "file": "api/routes/bom.routes.js",
+    "detail": "(runner, order, withItemInfo)"
+  },
+  {
+    "type": "function",
     "label": "fifoConsumeQtyForBom",
     "file": "api/routes/bom.routes.js",
     "detail": "(conn, item, qtyNeeded, dispatchId)"
@@ -3561,7 +3981,7 @@
     "type": "file",
     "label": "api/db/schema.js",
     "file": "api/db/schema.js",
-    "detail": "Defines 14 function(s) implementing supporting logic."
+    "detail": "Defines 16 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -3644,6 +4064,18 @@
   {
     "type": "function",
     "label": "ensureBomDispatchSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureBomOrderSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureChallanCategoryMapSchema",
     "file": "api/db/schema.js",
     "detail": "(pool)"
   },
@@ -3769,6 +4201,30 @@
   },
   {
     "type": "route",
+    "label": "GET /api/bom/orders",
+    "file": "api/routes/bom.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "POST /api/bom/orders",
+    "file": "api/routes/bom.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/bom/orders/:id",
+    "file": "api/routes/bom.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/bom/orders/by-order-no/:orderNo",
+    "file": "api/routes/bom.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
     "label": "GET /api/challan",
     "file": "api/routes/challan.routes.js",
     "detail": "public"
@@ -3788,6 +4244,18 @@
   {
     "type": "route",
     "label": "GET /api/challan/:id/pdf",
+    "file": "api/routes/challan.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/challan/category-map",
+    "file": "api/routes/challan.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/challan/category-map",
     "file": "api/routes/challan.routes.js",
     "detail": "public"
   },
@@ -4250,6 +4718,18 @@
   {
     "type": "table",
     "label": "bom_dispatches",
+    "file": "api/db/schema.js",
+    "detail": "SQL table"
+  },
+  {
+    "type": "table",
+    "label": "bom_orders",
+    "file": "api/db/schema.js",
+    "detail": "SQL table"
+  },
+  {
+    "type": "table",
+    "label": "challan_category_map",
     "file": "api/db/schema.js",
     "detail": "SQL table"
   }

@@ -55,14 +55,14 @@ Deep analysis of every important source file.
 ## `js/app.js`
 
 - **Purpose:** Application entry point / bootstrap file.
-- **Lines of code:** 1419
-- **Complexity:** High (heuristic score: 255)
+- **Lines of code:** 1546
+- **Complexity:** High (heuristic score: 278)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** showLoader(), hideLoader(), applyGlobalTableSearch(query), applyAllFilters(), closeMenu(), positionMenu(menu, btn), openMenuFor(btn), updateProfileDisplay(username, role), showApp(), saveSession(username, role, persist, token), loadSession(), clearSession(), startHeartbeat(), stopHeartbeat(), resetIdleTimer(), stopIdleTimer(), notifyServerLogout(), showLoginOverlay(message), buildLoginOverlay(), showCredsStep(), showOtpStep(maskedEmail), hideAllSteps(), showRegisterStep(), showRegisterOtpStep(maskedEmail), showForgotStep(), showResetStep(maskedEmail), finishLogin(data), attemptLogin(), attemptVerifyOtp(), attemptResendOtp(), attemptRegister(), attemptVerifyRegisterOtp(), attemptResendRegisterOtp(), attemptForgotPassword(), attemptResendForgotOtp(), attemptResetPassword(), closeProfileMenu(), endSessionAndShowLogin(), openProfileMenu(), go(id), closeConfirmDialog(result), guardField(el), guardAllFields(root), getRows(), cellValue(row, idx), uniqueValues(idx), itemCbs(), ping()
+- **Functions:** showLoader(), hideLoader(), applyGlobalTableSearch(query), applyAllFilters(), closeMenu(), positionMenu(menu, btn), openMenuFor(btn), updateProfileDisplay(username, role), showApp(), saveSession(username, role, persist, token), loadSession(), clearSession(), startHeartbeat(), stopHeartbeat(), resetIdleTimer(), stopIdleTimer(), notifyServerLogout(), showLoginOverlay(message), buildLoginOverlay(), wireOtpBoxes(boxesEl, hiddenEl), sync(), startResendCooldown(btn, seconds = RESEND_COOLDOWN_SECONDS), showCredsStep(), showOtpStep(maskedEmail), hideAllSteps(), showRegisterStep(), showRegisterOtpStep(maskedEmail), showForgotStep(), showResetStep(maskedEmail), finishLogin(data), attemptLogin(), attemptVerifyOtp(), attemptResendOtp(), attemptRegister(), attemptVerifyRegisterOtp(), attemptResendRegisterOtp(), attemptForgotPassword(), attemptResendForgotOtp(), attemptResetPassword(), closeProfileMenu(), endSessionAndShowLogin(), openProfileMenu(), go(id), closeConfirmDialog(result), guardField(el), guardAllFields(root), getRows(), cellValue(row, idx), uniqueValues(idx), itemCbs(), ping()
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (3 statement keywords: SELECT, JOIN, UPDATE)
+- **Database usage:** Raw SQL detected (4 statement keywords: SELECT, JOIN, UPDATE)
 - **Environment variables used:** None
 - **Potential improvements:**
   - File defines a large number of functions — consider splitting into smaller modules.
@@ -91,14 +91,14 @@ Deep analysis of every important source file.
 ## `js/pages/bom.js`
 
 - **Purpose:** Defines 1 class(es) implementing core logic.
-- **Lines of code:** 2210
-- **Complexity:** High (heuristic score: 343)
+- **Lines of code:** 3446
+- **Complexity:** High (heuristic score: 601)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** bomSetPrintPageSize(cssSizeAndMargin), bomLoadCustomKits(), bomSaveCustomKits(obj), bomGetAllKits(), bomIsCustomKitKey(key), bomSlugify(label), bomRenumberAll(sections), bomDefaultSectionsTemplate(), bomParseQtyNumber(qtyStr), bomEffectiveQty(it), bomNormalizeDispatchQty(state), bomSplitSerials(text), bomCollectKitItemNames(), bomLoadItemMasterNames(), bomBuildItemOptionsHtml(selectedName), bomRenderScreenItemsHtml(state, opts), bomRenderPrintSheetHtml(kit, header), bomRenderChallanTemplateItemsHtml(template), bomRenderChallanEntryModalHtml(header, kit), bomCollectChallanTemplateValues(), bomChallanBuildRowGroups(template), bomRenderChallanBodyRowsHtml(groups, values), bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy), bomRenderChallanTableHeadRowHtml(), bomRenderChallanFooterRowsHtml(header), bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy), bomRenderChallanPrintSheetHtml(header, kit, templateValues), openChallanModal(bodyHtml), closeChallanModal(), bomLoadSerialMandatoryInfo(), bomItemNeedsSerial(name), searchBomCustomerLedgers(q), searchBomCustomerShortCodes(q), fillBomCustomerDatalist(listEl, ledgers, key), wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), wireBomPartyTypeAutocomplete(inputEl, listEl, ledgerType), search(q), fillList(ledgers), setVerified(isVerified), allItemsChecked(), updateVerifyButtonState(), populateKitDropdown(selectKey), refreshItemsPreview(), renderKitBuilderSections(), handleBuilderFieldEdit(e), handleItemFieldEdit(e), rerenderItemsPreview(), openBomSerialModal(si, ii), updateCountNote(), getHeaderValues(), bomCollectItemsForStockCheck(), bomShowStockIssuesModal(title, intro, rows), bomRunStockCheck(), bomRunDispatch(), computeAndApplyFitZoom(), bomEsc(s), bomEscAttr(s), qtyInput(sr, sizeLabel), descInput(sr), setVal(key, patch), getQty(sr, size), getDesc(sr), $(id), blankItem()
+- **Functions:** bomSetPrintPageSize(cssSizeAndMargin), bomLoadCustomKits(), bomSaveCustomKits(obj), bomGetAllKits(), bomIsCustomKitKey(key), bomSlugify(label), bomRenumberAll(sections), bomDefaultSectionsTemplate(), bomParseQtyNumber(qtyStr), bomEffectiveQty(it), bomNormalizeDispatchQty(state), bomSplitSerials(text), bomCollectKitItemNames(), bomLoadItemMasterNames(), bomBuildItemOptionsHtml(selectedName), bomRenderScreenItemsHtml(state, opts), bomRenderPrintSheetHtml(kit, header), bomLoadChallanCategoryMap(), bomGiPipeFeetToPieces(totalFeet), bomGiPipeModelSr(modelText), bomComputeChallanAutoQty(sections), bomApplyChallanAutoQty(sections), bomRenderChallanTemplateItemsHtml(template), bomRenderChallanEntryModalHtml(header, kit), bomCollectChallanTemplateValues(), bomChallanBuildRowGroups(template), bomRenderChallanBodyRowsHtml(groups, values), bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy), bomRenderChallanTableHeadRowHtml(), bomRenderChallanFooterRowsHtml(header), bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy), bomRenderChallanPrintSheetHtml(header, kit, templateValues), bomRenderHomeViewHtml(), showBomHome(), showBomEntry(), showBomEntryForNewKit(), bomOverallStatusFromItems(items), bomRenderHomePendingTableHtml(orders), bomLoadHomePendingTable(), openChallanModal(bodyHtml), closeChallanModal(), bomCollectAllKitItemNamesForMapping(), bomRenderChallanMapModalHtml(), bomOpenChallanMapModal(), openRegisterModal(bodyHtml), closeRegisterModal(), bomTrackStatusPill(status), bomFmtDateTime(v), bomRenderTrackResultHtml(data), bomFetchAndRenderTrack(orderNo, resultBox), bomOpenTrackModal(), runTrack(), bomOpenTrackForOrderNo(orderNo), bomTrackCurrentOrder(), bomCollectItemsForCreate(), bomOpenCreateBomModal(), bomLoadSerialMandatoryInfo(), bomItemNeedsSerial(name), searchBomCustomerLedgers(q), searchBomCustomerShortCodes(q), fillBomCustomerDatalist(listEl, ledgers, key), wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), wireBomPartyTypeAutocomplete(inputEl, listEl, ledgerType), search(q), fillList(ledgers), setVerified(isVerified), allItemsChecked(), updateVerifyButtonState(), populateKitDropdown(selectKey), refreshItemsPreview(), renderKitBuilderSections(), handleBuilderFieldEdit(e), handleItemFieldEdit(e), rerenderItemsPreview(), bomScanBeep(), bomScanSetStatus(msg), openBomScanner(targetId), startBomScanCamera(), launchBomScanCamera(), onBomScanSuccess(decodedText), showBomScanResult(text), hideBomScanResult(), retryBomScan(), confirmBomScan(), toggleBomScanTorch(), flipBomScanCamera(), closeBomScanner(), openBomSerialModal(si, ii), updateCountNote(), getHeaderValues(), bomCollectItemsForStockCheck(), bomCollectItemsForDispatch(), bomShowStockIssuesModal(title, intro, rows), bomRunStockCheck(), bomRunDispatch(), bomParseBlockedRows(msg), bomRenderRegisterListHtml(orders), bomLoadRegisterList(), bomRenderContinueFormHtml(order, backLabel), bomLoadContinueDispatchForm(orderId, target), bomOpenOrderInline(orderId), computeAndApplyFitZoom(), bomEsc(s), bomEscAttr(s), qtyInput(sr, sizeLabel), descInput(sr), setVal(key, patch), getQty(sr, size), getDesc(sr), $(id), categoryOptions(selected), blankItem(), finish(), setBody(html)
 - **Classes:** in
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (42 statement keywords: SELECT, JOIN)
+- **Database usage:** Raw SQL detected (59 statement keywords: SELECT, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - File defines a large number of functions — consider splitting into smaller modules.
@@ -146,14 +146,14 @@ Deep analysis of every important source file.
 ## `js/pages/masters.js`
 
 - **Purpose:** Defines 17 function(s) implementing supporting logic.
-- **Lines of code:** 1261
-- **Complexity:** High (heuristic score: 185)
+- **Lines of code:** 1282
+- **Complexity:** High (heuristic score: 194)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** scrollList(items), loadMastersSystemEngine(), syncWattMandatoryUI(clearIfHidden), renderSubtypeInfo(catName), resetItemFormState(), downloadCsvGeneric(filename, rows), normalizeHeaderRow(header), parseItemsCsv(text), parseItemsWorkbook(arrayBuffer), valueFromRow(row, keys, def = ''), parseOverrideFlag(raw), loadSubtypesForCategory(cat), resetSubForm(), resetUomForm(), resetWhForm(), $(id), splitLine(line)
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (39 statement keywords: SELECT, UPDATE, JOIN)
+- **Database usage:** Raw SQL detected (48 statement keywords: SELECT, UPDATE, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - File defines a large number of functions — consider splitting into smaller modules.
@@ -271,14 +271,14 @@ Deep analysis of every important source file.
 ## `js/pages/sales.js`
 
 - **Purpose:** Defines 1 class(es) implementing core logic.
-- **Lines of code:** 1116
-- **Complexity:** High (heuristic score: 186)
+- **Lines of code:** 1399
+- **Complexity:** High (heuristic score: 254)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** fillSelect(selectEl, items, placeholder), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadCategoryWattRules(), isWattMandatory(cat), isSerialMandatory(cat), saleCategoryNeedsModel(cat), splitSerials(text), wireSerialBox(el), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), loadSaleCategories(), refreshSaleBrandsAndWatt(), refreshSaleWattage(), refreshSaleModels(), refreshSaleType(), updateSaleSerialFieldVisibility(), updateSaleWattModelVisibility(), updateSaleEditQtyFieldVisibility(), updateSaleEditWattModelVisibility(), searchCustomerLedgers(q), searchCustomerShortCodes(q), fillCustomerDatalist(listEl, ledgers, key), applyLedgerToCustomerFields(l), wireCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), clearSalesForm(), refreshSaleEditBrandsAndWatt(injectBrand, injectWatt), refreshSaleEditWattage(injectWatt), refreshSaleEditModels(injectModel), refreshSaleEditType(injectType), loadEditCascadeForLine(line), clearEditPanel(), findSalesOrderForEditing(term), prefillFromAssign(customerName, orderNo, mobile, address, lines), $(id), qtyLineKey(l)
+- **Functions:** fillSelect(selectEl, items, placeholder), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadCategoryWattRules(), isWattMandatory(cat), isSerialMandatory(cat), saleCategoryNeedsModel(cat), splitSerials(text), wireSerialBox(el), saleScanBeep(), saleScanSetStatus(msg), openSaleScanner(targetId), startSaleCamera(), launchSaleCamera(), onSaleScanSuccess(decodedText), showSaleScanResult(text), hideSaleScanResult(), retrySaleScan(), confirmSaleScan(), toggleSaleTorch(), flipSaleCamera(), closeSaleScanner(), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), loadSaleCategories(), refreshSaleBrandsAndWatt(), refreshSaleWattage(), refreshSaleModels(), refreshSaleType(), updateSaleSerialFieldVisibility(), updateSaleWattModelVisibility(), updateSaleEditQtyFieldVisibility(), updateSaleEditWattModelVisibility(), searchCustomerLedgers(q), searchCustomerShortCodes(q), fillCustomerDatalist(listEl, ledgers, key), applyLedgerToCustomerFields(l), wireCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), clearSalesForm(), refreshSaleEditBrandsAndWatt(injectBrand, injectWatt), refreshSaleEditWattage(injectWatt), refreshSaleEditModels(injectModel), refreshSaleEditType(injectType), loadEditCascadeForLine(line), clearEditPanel(), findSalesOrderForEditing(term), prefillFromAssign(customerName, orderNo, mobile, address, lines), $(id), finish(), qtyLineKey(l)
 - **Classes:** Step
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (54 statement keywords: SELECT, JOIN)
+- **Database usage:** Raw SQL detected (56 statement keywords: SELECT, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - File defines a large number of functions — consider splitting into smaller modules.
@@ -576,16 +576,17 @@ Deep analysis of every important source file.
 ## `api/routes/bom.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 243
-- **Complexity:** Medium (heuristic score: 38)
+- **Lines of code:** 533
+- **Complexity:** High (heuristic score: 101)
 - **Imports:** None
 - **Exports:** module.exports
-- **Functions:** registerBomRoutes(app, deps), findItemByName(runner, name), availableQtyForItem(runner, itemId, forUpdate), checkItems(runner, items, forUpdate), fifoConsumeQtyForBom(conn, item, qtyNeeded, dispatchId)
+- **Functions:** registerBomRoutes(app, deps), findItemByName(runner, name), availableQtyForItem(runner, itemId, forUpdate), checkItems(runner, items, forUpdate), getOrCreateBomOrder(conn, orderNo, items, header, username), dispatchedSoFarByName(conn, bomOrderId), pendingForOrder(runner, order, withItemInfo), fifoConsumeQtyForBom(conn, item, qtyNeeded, dispatchId)
 - **Classes:** None
-- **API endpoints:** POST /api/bom/check-stock, POST /api/bom/dispatch
-- **Database usage:** Raw SQL detected (16 statement keywords: SELECT, JOIN, UPDATE, INSERT INTO)
+- **API endpoints:** POST /api/bom/check-stock, GET /api/bom/orders, POST /api/bom/orders, GET /api/bom/orders/by-order-no/:orderNo, GET /api/bom/orders/:id, POST /api/bom/dispatch
+- **Database usage:** Raw SQL detected (31 statement keywords: SELECT, JOIN, UPDATE, INSERT INTO)
 - **Environment variables used:** None
 - **Potential improvements:**
+  - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 
 ---
@@ -593,14 +594,14 @@ Deep analysis of every important source file.
 ## `api/routes/challan.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 67
-- **Complexity:** Low (heuristic score: 7)
+- **Lines of code:** 133
+- **Complexity:** Low (heuristic score: 13)
 - **Imports:** ../services/challanPdf
 - **Exports:** module.exports
 - **Functions:** registerChallanRoutes(app, deps)
 - **Classes:** None
-- **API endpoints:** POST /api/challan, GET /api/challan, GET /api/challan/:id, GET /api/challan/:id/pdf
-- **Database usage:** Raw SQL detected (4 statement keywords: INSERT INTO, SELECT)
+- **API endpoints:** POST /api/challan, GET /api/challan, GET /api/challan/:id, GET /api/challan/:id/pdf, GET /api/challan/category-map, PUT /api/challan/category-map
+- **Database usage:** Raw SQL detected (8 statement keywords: INSERT INTO, SELECT, DELETE FROM, UPDATE)
 - **Environment variables used:** None
 - **Potential improvements:**
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
@@ -800,17 +801,19 @@ Deep analysis of every important source file.
 
 ## `api/db/schema.js`
 
-- **Purpose:** Defines 14 function(s) implementing supporting logic.
-- **Lines of code:** 178
-- **Complexity:** Medium (heuristic score: 50)
+- **Purpose:** Defines 16 function(s) implementing supporting logic.
+- **Lines of code:** 297
+- **Complexity:** High (heuristic score: 62)
 - **Imports:** None
 - **Exports:** module.exports
-- **Functions:** ensureStartupSchema(pool), ensureSessionSchema(pool), ensureSerialRuleSchema(pool), ensureLedgerTypeSchema(pool), ensureAuthOtpSchema(pool), ensureEmailRoleUniqueSchema(pool), ensureAttachmentsSchema(pool), ensureScanSheetSchema(pool), ensureBomChallanSchema(pool), ensureStockQuantitySchema(pool), ensureItemOverrideSchema(pool), ensureStockModelSchema(pool), ensureWattDecimalSchema(pool), ensureBomDispatchSchema(pool)
+- **Functions:** ensureStartupSchema(pool), ensureSessionSchema(pool), ensureSerialRuleSchema(pool), ensureLedgerTypeSchema(pool), ensureAuthOtpSchema(pool), ensureEmailRoleUniqueSchema(pool), ensureAttachmentsSchema(pool), ensureScanSheetSchema(pool), ensureBomChallanSchema(pool), ensureStockQuantitySchema(pool), ensureItemOverrideSchema(pool), ensureStockModelSchema(pool), ensureWattDecimalSchema(pool), ensureBomDispatchSchema(pool), ensureBomOrderSchema(pool), ensureChallanCategoryMapSchema(pool)
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (25 statement keywords: ALTER TABLE, CREATE TABLE, SELECT, UPDATE)
+- **Database usage:** Raw SQL detected (29 statement keywords: ALTER TABLE, CREATE TABLE, SELECT, UPDATE)
 - **Environment variables used:** None
 - **Potential improvements:**
+  - File defines a large number of functions — consider splitting into smaller modules.
+  - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 
 ---

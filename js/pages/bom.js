@@ -55,7 +55,17 @@ const BOM_KITS = {
       {
         title: 'Solar Penal',
         items: [
-          { sr: 1, name: 'DCR Solar Penal', model: '550 Watts', qty: '06 Nos', remarks: 'ADANI 550 Wp' },
+          // categoryDriven: Item Name shows a Category dropdown (defaults
+          // to 'Solar Panel', the Masters > Category this row is pinned
+          // to) instead of a flat item-name list; Model shows the actual
+          // registered item (Brand + Wattage, e.g. "Adani 545") for that
+          // category. See bomBuildCategoryOptionsHtml/
+          // bomBuildCategoryItemOptionsHtml + handleItemFieldEdit's
+          // field === 'category' branch. `name` stays '' until a real
+          // item is picked — it's what actually gets sent to the backend
+          // (must exactly match an items.name row), same as every other
+          // item row.
+          { sr: 1, name: '', model: '', qty: '06 Nos', remarks: 'ADANI 550 Wp', categoryDriven: true, category: 'Solar Panel' },
         ],
       },
       {
@@ -84,7 +94,9 @@ const BOM_KITS = {
       {
         title: 'Solar Inverter',
         items: [
-          { sr: 20, name: 'Solar Inverter - DEYE', model: '3.3 kW', qty: '1 Nos', remarks: 'DEYE' },
+          // Same categoryDriven pattern as the Solar Panel row above,
+          // pinned to the 'Inverter' category.
+          { sr: 20, name: '', model: '', qty: '1 Nos', remarks: 'DEYE', categoryDriven: true, category: 'Inverter' },
           { sr: 21, name: 'ACDB Box', model: '1 In 1 Out', qty: '1 Nos', remarks: '' },
           { sr: 22, name: 'DCDB Box', model: '1 In 1 Out', qty: '1 Nos', remarks: '' },
           { sr: 23, name: 'MC 4 Connector', model: '', qty: '2 Nos', remarks: '' },
@@ -300,6 +312,16 @@ function bomSplitSerials(text) {
 // static label — regardless of backend availability.
 let bomItemMasterNames = [];
 
+// Category -> [item master names] and the full category name list, used
+// to drive the Category/Model dropdown pair on rows flagged
+// `categoryDriven` (currently just the Solar Panel and Inverter rows —
+// see BOM_KITS above). Populated by bomLoadSerialMandatoryInfo() in
+// init() (same /masters/items + /masters/categories calls that already
+// build the serial-mandatory lookup), so this never needs its own extra
+// round trip, and is loaded/awaited before the first render.
+let bomCategoryNameList = [];
+let bomItemsByCategory = {};
+
 function bomCollectKitItemNames() {
   const set = new Set();
   Object.values(BOM_KITS).forEach((kit) => {
@@ -323,6 +345,33 @@ async function bomLoadItemMasterNames() {
 
 function bomBuildItemOptionsHtml(selectedName) {
   const names = new Set(bomItemMasterNames);
+  if (selectedName) names.add(selectedName);
+  const optionsHtml = Array.from(names).map((n) => `
+    <option value="${bomEscAttr(n)}" ${n === selectedName ? 'selected' : ''}>${bomEsc(n)}</option>
+  `).join('');
+  return `<option value="">-- Select Item --</option>${optionsHtml}`;
+}
+
+// ---------- Category / Category-Item dropdown source (categoryDriven rows) ----------
+// Used only by rows flagged `categoryDriven: true` (Solar Panel / Inverter —
+// see BOM_KITS). The Item Name cell becomes this Category select.
+function bomBuildCategoryOptionsHtml(selectedCategory) {
+  const names = new Set(bomCategoryNameList);
+  if (selectedCategory) names.add(selectedCategory);
+  const optionsHtml = Array.from(names).map((n) => `
+    <option value="${bomEscAttr(n)}" ${n === selectedCategory ? 'selected' : ''}>${bomEsc(n)}</option>
+  `).join('');
+  return `<option value="">-- Select Category --</option>${optionsHtml}`;
+}
+
+// The Model cell for a categoryDriven row: every registered item (Masters >
+// Item Registration) under the currently-selected category, e.g. Solar
+// Panel -> "Adani 545". Falls back to keeping the already-selected name in
+// the list even if it's not (yet) found under this category, so a saved
+// value never silently disappears while data is loading.
+function bomBuildCategoryItemOptionsHtml(category, selectedName) {
+  const list = (category && bomItemsByCategory[category]) || [];
+  const names = new Set(list);
   if (selectedName) names.add(selectedName);
   const optionsHtml = Array.from(names).map((n) => `
     <option value="${bomEscAttr(n)}" ${n === selectedName ? 'selected' : ''}>${bomEsc(n)}</option>
@@ -383,11 +432,22 @@ function bomRenderScreenItemsHtml(state, opts) {
       } else {
         serialCell = `<span class="bom-serial-na">—</span>`;
       }
+      // categoryDriven rows (Solar Panel / Inverter): Item Name becomes a
+      // Category select (writes to it.category); Model becomes a select of
+      // the real registered items under that category (writes to it.name —
+      // the value actually sent to the backend for stock matching, same
+      // field every other row's Item Name select already writes to).
+      const nameCell = it.categoryDriven
+        ? `<select class="bom-field-input bom-field-category" data-sec="${si}" data-idx="${ii}" data-field="category">${bomBuildCategoryOptionsHtml(it.category)}</select>`
+        : `<select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(it.name)}</select>`;
+      const modelCell = it.categoryDriven
+        ? `<select class="bom-field-input bom-field-modelitem" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildCategoryItemOptionsHtml(it.category, it.name)}</select>`
+        : `<input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="model" value="${bomEscAttr(it.model)}">`;
       return `
       <tr>
         <td><input type="text" class="bom-field-input bom-field-sr" data-sec="${si}" data-idx="${ii}" data-field="sr" value="${bomEscAttr(it.sr)}"></td>
-        <td><select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(it.name)}</select></td>
-        <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="model" value="${bomEscAttr(it.model)}"></td>
+        <td>${nameCell}</td>
+        <td>${modelCell}</td>
         <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="qty" value="${bomEscAttr(it.qty)}" ${isAdmin ? '' : 'disabled title="Set by whoever created this BOM — not editable here."'}></td>
         ${isAdmin ? '' : `<td><input type="number" min="0" class="bom-field-input bom-field-dispatchqty" data-sec="${si}" data-idx="${ii}" data-field="dispatchQty" value="${bomEscAttr(it.dispatchQty)}" title="How many of this item you are dispatching right now (can be less than Quantity for a partial dispatch)."></td>`}
         <td class="bom-serial-cell">${serialCell}</td>
@@ -426,8 +486,8 @@ function bomRenderPrintSheetHtml(kit, header) {
     const itemRows = sec.items.map((it) => `
       <tr>
         <td class="bom-c-sr">${it.sr}</td>
-        <td class="bom-c-name">${it.name}</td>
-        <td class="bom-c-model">${it.model || ''}</td>
+        <td class="bom-c-name">${it.categoryDriven ? (it.category || '') : it.name}</td>
+        <td class="bom-c-model">${it.categoryDriven ? (it.name || '') : (it.model || '')}</td>
         <td class="bom-c-qty">${it.qty}</td>
         <td class="bom-c-checked"></td>
         <td class="bom-c-remarks">${it.remarks || ''}</td>
@@ -1070,9 +1130,9 @@ window.PAGES.bom = {
             <button type="button" class="btn btn-red" id="bomBtnDeleteKit" style="display:none; padding:9px 12px;" title="Delete this saved template"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>
-        <div class="field"><label>Order No</label><input id="bomOrderNo" placeholder="Order no. / Customer short code" list="bomOrderNoList" autocomplete="off"><datalist id="bomOrderNoList"></datalist></div>
+        <div class="field"><label>Order No <span class="req">*</span></label><input id="bomOrderNo" placeholder="Order no. / Customer short code" list="bomOrderNoList" autocomplete="off"><datalist id="bomOrderNoList"></datalist></div>
 
-        <div class="field"><label>Customer Name</label><input id="bomCustomerName" placeholder="Customer / Party" list="bomCustNameList" autocomplete="off"><datalist id="bomCustNameList"></datalist></div>
+        <div class="field"><label>Customer Name <span class="req">*</span></label><input id="bomCustomerName" placeholder="Customer / Party" list="bomCustNameList" autocomplete="off"><datalist id="bomCustNameList"></datalist></div>
         <div class="field"><label>Dealer Name</label><input id="bomDealerName" placeholder="Dealer name or short name" list="bomDealerList" autocomplete="off"><datalist id="bomDealerList"></datalist></div>
 
         <div class="field"><label>Installer Name</label><input id="bomInstallerName" placeholder="Installer name or short name" list="bomInstallerList" autocomplete="off"><datalist id="bomInstallerList"></datalist></div>
@@ -1602,6 +1662,10 @@ window.PAGES.bom = {
         window.openModal('Order No. Required', '<p>Please enter an <b>Order No.</b> before generating a BOM.</p>');
         return;
       }
+      if (!(header.customerName || '').trim()) {
+        window.openModal('Customer Name Required', '<p>Please enter a <b>Customer Name</b> before generating a BOM.</p>');
+        return;
+      }
       const items = bomCollectItemsForCreate();
       if (!items.length) {
         window.openModal('No Items', '<p>Add at least one item with a quantity before generating a BOM.</p>');
@@ -1664,10 +1728,19 @@ window.PAGES.bom = {
           window.Api.get('/masters/items'),
           window.Api.get('/masters/categories'),
         ]);
+        bomCategoryNameList = (cats || []).map((c) => c.name).filter(Boolean);
+        bomItemsByCategory = {};
         (cats || []).forEach((c) => { bomCategorySerialMandatory[c.name] = !!c.serial_mandatory; });
-        (items || []).forEach((it) => { if (it.name) bomItemCategoryByName[it.name] = it.category; });
+        (items || []).forEach((it) => {
+          if (!it.name) return;
+          bomItemCategoryByName[it.name] = it.category;
+          if (!it.category) return;
+          if (!bomItemsByCategory[it.category]) bomItemsByCategory[it.category] = [];
+          bomItemsByCategory[it.category].push(it.name);
+        });
       } catch (e) {
-        // API/DB not reachable in this preview — no item is treated as serial-mandatory.
+        // API/DB not reachable in this preview — no item is treated as serial-mandatory,
+        // and the Category/Model dropdowns on categoryDriven rows fall back to empty lists.
       }
     }
     function bomItemNeedsSerial(name) {
@@ -2164,6 +2237,20 @@ window.PAGES.bom = {
         }
         item.checked = el.checked;
         updateVerifyButtonState();
+        return;
+      }
+
+      // Category select on a categoryDriven row (Solar Panel / Inverter —
+      // see BOM_KITS). Changing the category invalidates whichever real
+      // item (it.name) was picked for the old category — force a re-pick
+      // and refresh the Model dropdown's option list for the new category.
+      if (field === 'category') {
+        item.category = el.value;
+        item.name = '';
+        item.checked = false;
+        setVerified(false);
+        updateVerifyButtonState();
+        rerenderItemsPreview();
         return;
       }
 
@@ -2859,6 +2946,10 @@ window.PAGES.bom = {
       // never needed it.
       if (!header.orderNo || !header.orderNo.trim()) {
         window.openModal('Order No. Required', '<p>Please enter an <b>Order No.</b> before creating a dispatch — it\'s how partial dispatches for this BOM get tracked together.</p>');
+        return false;
+      }
+      if (!header.customerName || !header.customerName.trim()) {
+        window.openModal('Customer Name Required', '<p>Please enter a <b>Customer Name</b> before creating a dispatch.</p>');
         return false;
       }
       const items = bomCollectItemsForDispatch();

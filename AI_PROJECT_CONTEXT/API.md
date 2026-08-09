@@ -1,15 +1,15 @@
 # API Documentation
 
-Total endpoints detected: **92**
+Total endpoints detected: **98**
 
 ## Endpoints by Method
 
 | Method | Count |
 | --- | --- |
-| GET | 38 |
-| POST | 29 |
+| GET | 42 |
+| POST | 30 |
 | DELETE | 12 |
-| PUT | 13 |
+| PUT | 14 |
 
 
 ## All Endpoints
@@ -34,10 +34,16 @@ Total endpoints detected: **92**
 | GET | /api/backup/status | api/routes/backup.routes.js | No |
 | POST | /api/bom/check-stock | api/routes/bom.routes.js | No |
 | POST | /api/bom/dispatch | api/routes/bom.routes.js | No |
+| GET | /api/bom/orders | api/routes/bom.routes.js | No |
+| POST | /api/bom/orders | api/routes/bom.routes.js | No |
+| GET | /api/bom/orders/:id | api/routes/bom.routes.js | No |
+| GET | /api/bom/orders/by-order-no/:orderNo | api/routes/bom.routes.js | No |
 | GET | /api/challan | api/routes/challan.routes.js | No |
 | POST | /api/challan | api/routes/challan.routes.js | No |
 | GET | /api/challan/:id | api/routes/challan.routes.js | No |
 | GET | /api/challan/:id/pdf | api/routes/challan.routes.js | No |
+| GET | /api/challan/category-map | api/routes/challan.routes.js | No |
+| PUT | /api/challan/category-map | api/routes/challan.routes.js | No |
 | GET | /api/dashboard/summary | api/routes/health.js | No |
 | GET | /api/health | api/routes/health.js | No |
 | GET | /api/ledgers | api/routes/ledgers.routes.js | No |

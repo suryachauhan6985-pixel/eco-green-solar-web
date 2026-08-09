@@ -10,7 +10,7 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-09T07:58:09.027Z
+- **Generated:** 2026-08-09T12:29:09.575Z
 
 ## 2. Architecture Overview
 
@@ -134,7 +134,7 @@ sw.js
 - `api/routes/scansheet.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/stockassign.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/db/pool.js` — Supporting source file.
-- `api/db/schema.js` — Defines 14 function(s) implementing supporting logic.
+- `api/db/schema.js` — Defines 16 function(s) implementing supporting logic.
 
 ## 5. Data Flow / Business Logic Entry Points
 
@@ -146,11 +146,11 @@ No route-level authentication middleware detected (verify manually if auth is ex
 
 ## 7. Database
 
-7 SQL table(s): backup_log, otp_codes, attachments, scan_sheets, scan_sheet_entries, bom_challans, bom_dispatches
+9 SQL table(s): backup_log, otp_codes, attachments, scan_sheets, scan_sheet_entries, bom_challans, bom_dispatches, bom_orders, challan_category_map
 
 ## 8. API
 
-92 HTTP endpoint(s) detected. Method breakdown: GET=38, POST=29, DELETE=12, PUT=13.
+98 HTTP endpoint(s) detected. Method breakdown: GET=42, POST=30, DELETE=12, PUT=14.
 
 ## 9. Services & Utilities
 
@@ -165,7 +165,7 @@ Utility/helper files: 2
 
 ## 11. Known Issues / Risk Areas
 
-- 13 file(s) flagged as High complexity: js/app.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, js/pages/stockassign.js, api/services/challanPdf.js, ...
+- 15 file(s) flagged as High complexity: js/app.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, js/pages/stockassign.js, api/services/challanPdf.js, ...
 - Raw SQL string usage found in 36 file(s) — verify parameterization to avoid SQL injection.
 - No routes appear to use recognizable auth middleware — verify whether this API is intentionally public.
 - A real `.env` file exists in the project (.env) — ensure it is excluded from version control.
