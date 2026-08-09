@@ -202,6 +202,80 @@ module.exports = function registerBomRoutes(app, deps) {
     return totals;
   }
 
+  // Step 4: computes, for one bom_orders row, every baseline item's
+  // dispatched-so-far and remaining qty. `withItemInfo` additionally joins
+  // each item name back to `items`/`categories` (category + effective
+  // serial_mandatory) — needed by the Continue Dispatch form so it knows
+  // whether to render a qty box or a serial textarea for each pending
+  // item; the list view doesn't need it, so it's skipped there to avoid
+  // an extra query per item per order.
+  async function pendingForOrder(runner, order, withItemInfo) {
+    const baseline = JSON.parse(order.items_json || '{}');
+    const dispatchedSoFar = await dispatchedSoFarByName(runner, order.id);
+    const items = [];
+    let pendingItemCount = 0;
+    let pendingQty = 0;
+    for (const name of Object.keys(baseline)) {
+      const total = baseline[name] || 0;
+      const dispatched = dispatchedSoFar[name] || 0;
+      const remaining = Math.max(0, total - dispatched);
+      if (remaining > 0) { pendingItemCount += 1; pendingQty += remaining; }
+      const row = { name, total, dispatched, remaining };
+      if (withItemInfo) {
+        const item = await findItemByName(runner, name);
+        row.category = item ? item.category : null;
+        row.serialMandatory = item ? !!item.serial_mandatory : false;
+      }
+      items.push(row);
+    }
+    return { items, pendingItemCount, pendingQty };
+  }
+
+  // GET /api/bom/orders?status=Open|Completed|all — Step 4 register list.
+  // Defaults to 'Open' (what the Pending BOM Register tab shows).
+  app.get('/api/bom/orders', route(async (req, res) => {
+    const status = String(req.query.status || 'Open').trim();
+    const rows = status.toLowerCase() === 'all'
+      ? (await pool.query(`SELECT * FROM bom_orders ORDER BY created_at DESC`))[0]
+      : (await pool.query(`SELECT * FROM bom_orders WHERE status=? ORDER BY created_at DESC`, [status]))[0];
+
+    const out = [];
+    for (const row of rows) {
+      const { pendingItemCount, pendingQty } = await pendingForOrder(pool, row, false);
+      out.push({
+        id: row.id,
+        orderNo: row.order_no,
+        header: JSON.parse(row.header_json || '{}'),
+        status: row.status,
+        createdBy: row.created_by,
+        createdAt: row.created_at,
+        pendingItemCount,
+        pendingQty,
+      });
+    }
+    res.json(out);
+  }));
+
+  // GET /api/bom/orders/:id — Step 4 Continue Dispatch form data. Full
+  // per-item breakdown (category/serialMandatory included) for every
+  // baseline item, not just the pending ones — the frontend filters to
+  // remaining>0 itself, but keeping the full list here makes this
+  // endpoint equally useful for a future "order history" view.
+  app.get('/api/bom/orders/:id', route(async (req, res) => {
+    const [[row]] = await pool.query(`SELECT * FROM bom_orders WHERE id=?`, [req.params.id]);
+    if (!row) return res.status(404).json({ error: 'BOM order not found.' });
+    const { items } = await pendingForOrder(pool, row, true);
+    res.json({
+      id: row.id,
+      orderNo: row.order_no,
+      header: JSON.parse(row.header_json || '{}'),
+      status: row.status,
+      createdBy: row.created_by,
+      createdAt: row.created_at,
+      items,
+    });
+  }));
+
   // FIFO-consume `qtyNeeded` quantity-tracked units for one item, tagging
   // every unit BOM_DISPATCH_STATUS + this dispatch's id. Mirrors
   // sales.routes.js's fifoConsumeQty / stockassign.routes.js's

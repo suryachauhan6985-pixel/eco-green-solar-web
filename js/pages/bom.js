@@ -885,6 +885,7 @@ window.PAGES.bom = {
         <button class="btn btn-blue" type="button" id="bomBtnVerify" disabled><i class="fa-solid fa-check-double"></i> Verify BOM</button>
         <button class="btn btn-green" type="button" id="bomBtnChallan" disabled><i class="fa-solid fa-file-invoice"></i> Convert into Challan</button>
         <button class="btn btn-green" type="button" id="bomBtnDispatch" disabled><i class="fa-solid fa-truck"></i> Create Dispatch</button>
+        <button class="btn btn-ghost" type="button" id="bomBtnPendingRegister"><i class="fa-solid fa-clipboard-list"></i> Pending BOM Register</button>
         <button type="button" class="btn btn-ghost" id="bomBtnNewKit" title="Create a new BOM Kit / Template"><i class="fa-solid fa-plus"></i> New Kit</button>
       </div>
       <p class="note" id="bomVerifyStatus" style="margin-top:8px;">
@@ -940,6 +941,22 @@ window.PAGES.bom = {
       </div>
     </div>
 
+    <!-- Step 4: Pending BOM Register — lists every bom_orders row still
+         Open (some item still pending) and lets you continue dispatching
+         the remainder, from any session, without re-picking the kit or
+         retyping what's already gone out. Same modal-fullscreen pattern
+         as #bomChallanOverlay above; one overlay, body swapped between a
+         "list" view and a "continue this order" view. -->
+    <div class="modal-overlay modal-fullscreen" id="bomRegisterOverlay">
+      <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-head">
+          <h3><i class="fa-solid fa-clipboard-list"></i> Pending BOM Register</h3>
+          <button class="modal-close" id="bomRegisterCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" id="bomRegisterModalBody"></div>
+      </div>
+    </div>
+
     <!-- PRINT-ONLY: exact Excel replica. Hidden on screen (see .bom-print-only
          in style.css); (re)built from the form fields above right before
          printing, then never shown on-screen at all — this is what fixes
@@ -988,6 +1005,31 @@ window.PAGES.bom = {
     if (challanOverlay) {
       challanOverlay.addEventListener('click', (e) => {
         if (e.target === challanOverlay) closeChallanModal(); // backdrop click only
+      });
+    }
+
+    // Step 4: Pending BOM Register modal — same open/close pattern as the
+    // Challan modal above, kept as its own overlay/functions so neither
+    // modal's state ever leaks into the other.
+    const registerOverlay = $('bomRegisterOverlay');
+    const registerModalBody = $('bomRegisterModalBody');
+    const registerCloseBtn = $('bomRegisterCloseBtn');
+    const btnPendingRegister = $('bomBtnPendingRegister');
+    function openRegisterModal(bodyHtml) {
+      if (!registerOverlay || !registerModalBody) return;
+      registerModalBody.innerHTML = bodyHtml;
+      registerOverlay.classList.add('show');
+      document.body.classList.add('no-scroll');
+    }
+    function closeRegisterModal() {
+      if (!registerOverlay) return;
+      registerOverlay.classList.remove('show');
+      document.body.classList.remove('no-scroll');
+    }
+    if (registerCloseBtn) registerCloseBtn.addEventListener('click', closeRegisterModal);
+    if (registerOverlay) {
+      registerOverlay.addEventListener('click', (e) => {
+        if (e.target === registerOverlay) closeRegisterModal(); // backdrop click only
       });
     }
 
@@ -1931,6 +1973,157 @@ window.PAGES.bom = {
       }
       return result;
     }
+
+    // ------------------------------------------------------------------
+    // Step 4: Pending BOM Register — list every Open bom_orders row
+    // (server-computed remaining-per-item) and let a partial order be
+    // continued from ANY session, not just the one that started it,
+    // without re-picking the kit or retyping what already went out.
+    // Deliberately its own small form (not a reload into currentKitState/
+    // the multi-section kit editor) — bom_orders only ever stored a flat
+    // { itemName: totalQty } baseline (see Step 3), it never captured
+    // section layout, so there's nothing to rebuild a full kit screen
+    // from. This form only needs name/category/remaining per item, which
+    // GET /api/bom/orders/:id provides directly.
+    // ------------------------------------------------------------------
+
+    // Same "DISPATCH BLOCKED:\n<item>: <reason>\n..." convention the
+    // server uses everywhere else — shared parsing so this modal shows
+    // the same itemized failure list bomRunDispatch's own errors do.
+    function bomParseBlockedRows(msg) {
+      return String(msg || '').split('\n').slice(1).map((line) => {
+        const idx = line.indexOf(': ');
+        return idx === -1 ? { name: line, reason: '' } : { name: line.slice(0, idx), reason: line.slice(idx + 2) };
+      });
+    }
+
+    function bomRenderRegisterListHtml(orders) {
+      if (!orders || !orders.length) {
+        return `<p class="note" style="padding:20px 0;"><i class="fa-solid fa-circle-check" style="color:var(--green);"></i> Nothing pending — every BOM order has been fully dispatched.</p>`;
+      }
+      const rows = orders.map((o) => `
+        <tr>
+          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${bomEsc(o.orderNo)}</td>
+          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${bomEsc((o.header && o.header.customerName) || '-')}</td>
+          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${o.pendingItemCount} item(s) / ${o.pendingQty} unit(s) pending</td>
+          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${bomEsc((o.createdAt || '').slice(0, 10))}</td>
+          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);"><button type="button" class="btn btn-blue bom-mini-btn" data-bom-order-id="${o.id}"><i class="fa-solid fa-truck"></i> Continue Dispatch</button></td>
+        </tr>
+      `).join('');
+      return `
+        <table style="width:100%; border-collapse:collapse;">
+          <thead><tr>
+            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Order No</th>
+            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Customer</th>
+            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Pending</th>
+            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Started</th>
+            <th style="border-bottom:2px solid var(--border, #ddd);"></th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    async function bomLoadRegisterList() {
+      openRegisterModal('<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading pending BOM orders...</p>');
+      let orders;
+      try {
+        orders = await window.Api.get('/bom/orders?status=Open');
+      } catch (e) {
+        openRegisterModal(`<p class="note" style="color:var(--red);">Could not load the register — ${bomEsc((e && e.message) || 'server error')}.</p>`);
+        return;
+      }
+      openRegisterModal(bomRenderRegisterListHtml(orders));
+      registerModalBody.querySelectorAll('[data-bom-order-id]').forEach((btn) => {
+        btn.addEventListener('click', () => bomLoadContinueDispatchForm(btn.getAttribute('data-bom-order-id')));
+      });
+    }
+
+    function bomRenderContinueFormHtml(order) {
+      const pendingItems = (order.items || []).filter((it) => it.remaining > 0);
+      if (!pendingItems.length) {
+        return `<p class="note">Nothing left pending for this order.</p><button type="button" class="btn btn-ghost" id="bomRegisterBackBtn"><i class="fa-solid fa-arrow-left"></i> Back to list</button>`;
+      }
+      const rows = pendingItems.map((it) => `
+        <div class="field" style="margin-bottom:14px;">
+          <label>${bomEsc(it.name)} <span class="note">(${bomEsc(it.category || '')} — ${it.remaining} of ${it.total} pending, ${it.dispatched} already dispatched)</span></label>
+          ${it.serialMandatory
+            ? `<textarea data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="serial" data-cont-total="${it.total}" rows="2" placeholder="Enter up to ${it.remaining} serial number(s), comma or newline separated"></textarea>`
+            : `<input type="number" min="0" max="${it.remaining}" value="${it.remaining}" data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="qty" data-cont-total="${it.total}">`
+          }
+        </div>
+      `).join('');
+      return `
+        <p class="note" style="margin-bottom:10px;">Order No <b>${bomEsc(order.orderNo)}</b> — enter what's going out on THIS trip; leave the rest for a later trip.</p>
+        ${rows}
+        <div class="actions-row">
+          <button type="button" class="btn btn-green" id="bomRegisterContinueBtn"><i class="fa-solid fa-truck"></i> Continue Dispatch</button>
+          <button type="button" class="btn btn-ghost" id="bomRegisterBackBtn"><i class="fa-solid fa-arrow-left"></i> Back to list</button>
+        </div>
+      `;
+    }
+
+    async function bomLoadContinueDispatchForm(orderId) {
+      openRegisterModal('<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading order...</p>');
+      let order;
+      try {
+        order = await window.Api.get(`/bom/orders/${orderId}`);
+      } catch (e) {
+        openRegisterModal(`<p class="note" style="color:var(--red);">Could not load this order — ${bomEsc((e && e.message) || 'server error')}.</p>`);
+        return;
+      }
+      openRegisterModal(bomRenderContinueFormHtml(order));
+      const backBtn = $('bomRegisterBackBtn');
+      if (backBtn) backBtn.addEventListener('click', bomLoadRegisterList);
+      const continueBtn = $('bomRegisterContinueBtn');
+      if (continueBtn) {
+        continueBtn.addEventListener('click', async () => {
+          const items = [];
+          registerModalBody.querySelectorAll('[data-cont-name]').forEach((el) => {
+            const name = el.getAttribute('data-cont-name');
+            const totalQty = Number(el.getAttribute('data-cont-total')) || 0;
+            if (el.getAttribute('data-cont-kind') === 'serial') {
+              const serials = bomSplitSerials(el.value || '');
+              if (serials.length) items.push({ name, qty: serials.length, totalQty, serials });
+            } else {
+              const qty = Number(el.value) || 0;
+              if (qty > 0) items.push({ name, qty, totalQty, serials: [] });
+            }
+          });
+          if (!items.length) {
+            window.openModal('Nothing to Dispatch', '<p>Enter a quantity or serial number(s) for at least one item.</p>');
+            return;
+          }
+          const originalLabel = continueBtn.innerHTML;
+          continueBtn.disabled = true;
+          continueBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Dispatching...';
+          let result;
+          try {
+            result = await window.Api.post('/bom/dispatch', { orderNo: order.orderNo, header: order.header, items });
+          } catch (e) {
+            continueBtn.disabled = false;
+            continueBtn.innerHTML = originalLabel;
+            const msg = (e && e.message) || '';
+            if (msg.startsWith('DISPATCH BLOCKED')) {
+              bomShowStockIssuesModal('Dispatch Not Possible', "This trip could not be dispatched — the following item(s) failed:", bomParseBlockedRows(msg));
+            } else {
+              window.openModal('Dispatch Failed', `<p>${bomEsc(msg || 'Could not dispatch this order. Please try again.')}</p>`);
+            }
+            return;
+          }
+          if (window.showToast) window.showToast('Dispatched — stock has been deducted.');
+          if (result.orderStatus === 'Completed' || !(result.pending || []).length) {
+            window.openModal('Dispatch Complete', `<p>Order No <b>${bomEsc(order.orderNo)}</b> is now fully dispatched.</p>`);
+            bomLoadRegisterList();
+          } else {
+            window.openModal('Partial Dispatch Done', `<p>Stock deducted for this trip. Order No <b>${bomEsc(order.orderNo)}</b> still has item(s) pending — reopen it from the register any time to continue.</p>`);
+            bomLoadContinueDispatchForm(orderId);
+          }
+        });
+      }
+    }
+
+    if (btnPendingRegister) btnPendingRegister.addEventListener('click', bomLoadRegisterList);
 
     if (btnChallan) {
       btnChallan.addEventListener('click', async () => {
