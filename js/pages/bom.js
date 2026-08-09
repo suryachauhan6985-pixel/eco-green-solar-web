@@ -236,16 +236,20 @@ function bomParseQtyNumber(qtyStr) {
 // Admin/SuperAdmin CREATE a BOM — they set the full "Quantity" per item
 // (e.g. "06 Nos"), same as before. A plain User does not create BOMs; they
 // only DISPATCH from one, and may only send PART of the allocated qty in
-// one go (partial dispatch). "Dispatch Qty" is that new, separate column:
+// one go (partial dispatch). "Dispatch Qty" is that new, separate column —
+// it is ONLY RENDERED for a plain User (see bomRenderScreenItemsHtml —
+// Admin's table has no such column at all, keeping Admin's screen and the
+// print/Challan output exactly as before, unchanged):
 //   - Admin/SuperAdmin: Quantity stays editable (unchanged); Dispatch Qty
-//     is disabled and always mirrors Quantity's numeric value (kept in
-//     sync automatically whenever Admin edits Quantity — see
-//     handleItemFieldEdit's 'qty' branch) — Admin isn't doing a partial
-//     split, so there's nothing separate for them to enter here.
+//     column doesn't exist on their screen at all. Internally,
+//     item.dispatchQty is still kept in sync with Quantity's numeric value
+//     under the hood (see handleItemFieldEdit's 'qty' branch), purely so
+//     bomEffectiveQty() below behaves the same as before for Admin (full
+//     Quantity) — nothing user-facing changes for Admin.
 //   - User: Quantity becomes read-only (locked to whatever Admin set, so
 //     the original BOM allocation is preserved and never accidentally
-//     overwritten by whoever is dispatching it); Dispatch Qty is the ONLY
-//     editable qty field for them, auto-filled from Quantity by default,
+//     overwritten by whoever is dispatching it); Dispatch Qty is a new,
+//     visible, editable column — auto-filled from Quantity by default,
 //     and clamped so it can never exceed the original allocation.
 // bomEffectiveQty() is THE single source of truth for "how many units are
 // actually being sent right now" — used everywhere serial-count
@@ -253,6 +257,10 @@ function bomParseQtyNumber(qtyStr) {
 // the Serial No. modal/button, and the check-stock/dispatch API payload),
 // so a partial Dispatch Qty of e.g. 4 (out of an allocated 6) only ever
 // asks for 4 serials and only ever checks/deducts 4 units of stock.
+// NOTE: the print sheet (bomRenderPrintSheetHtml) and the Challan
+// Excel/PDF template (bomCollectChallanTemplateValues / challanPdf.js) are
+// UNTOUCHED by this — they still read straight from Quantity, exactly as
+// before, regardless of who's logged in or what Dispatch Qty is set to.
 function bomEffectiveQty(it) {
   if (it && it.dispatchQty !== undefined && it.dispatchQty !== null && String(it.dispatchQty).trim() !== '') {
     const n = Number(it.dispatchQty);
@@ -351,7 +359,7 @@ function bomRenderScreenItemsHtml(state, opts) {
   const rows = state.map((sec, si) => {
     const catRow = `
       <tr class="bom-screen-cat">
-        <td colspan="8">
+        <td colspan="${isAdmin ? 7 : 8}">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
             <input type="text" class="bom-field-input bom-section-title-input" data-sec="${si}" data-field="sectitle" value="${bomEscAttr(sec.title)}">
             ${isAdmin ? `
@@ -381,7 +389,7 @@ function bomRenderScreenItemsHtml(state, opts) {
         <td><select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(it.name)}</select></td>
         <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="model" value="${bomEscAttr(it.model)}"></td>
         <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="qty" value="${bomEscAttr(it.qty)}" ${isAdmin ? '' : 'disabled title="Set by whoever created this BOM — not editable here."'}></td>
-        <td><input type="number" min="0" class="bom-field-input bom-field-dispatchqty" data-sec="${si}" data-idx="${ii}" data-field="dispatchQty" value="${bomEscAttr(it.dispatchQty)}" ${isAdmin ? 'disabled title="Mirrors Quantity — Admin dispatches the full allocated amount."' : 'title="How many of this item you are dispatching right now (can be less than Quantity for a partial dispatch)."'}></td>
+        ${isAdmin ? '' : `<td><input type="number" min="0" class="bom-field-input bom-field-dispatchqty" data-sec="${si}" data-idx="${ii}" data-field="dispatchQty" value="${bomEscAttr(it.dispatchQty)}" title="How many of this item you are dispatching right now (can be less than Quantity for a partial dispatch)."></td>`}
         <td class="bom-serial-cell">${serialCell}</td>
         <td style="white-space:nowrap;">
           <input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="remarks" value="${bomEscAttr(it.remarks)}" style="width:calc(100% - ${isAdmin ? '60px' : '0px'}); display:inline-block;">
@@ -400,7 +408,7 @@ function bomRenderScreenItemsHtml(state, opts) {
   return `
     <div class="table-wrap">
       <table class="bom-items-form-table">
-        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th><th>Dispatch Qty</th><th>Serial No.</th><th>Remarks</th><th>Check</th></tr></thead>
+        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th>${isAdmin ? '' : '<th>Dispatch Qty</th>'}<th>Serial No.</th><th>Remarks</th><th>Check</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
