@@ -1705,6 +1705,19 @@ window.PAGES.bom = {
       addedCount: 0,
     };
 
+    // "BT Scan" toggle for the Serial No. modal (openBomSerialModal below).
+    // Chrome has no API to ask the OS "is a Bluetooth barcode scanner
+    // paired right now" — same limitation SCAN To Sheet (scansheet.js)
+    // already works around with its own bluetoothScanMode toggle. A BT
+    // scanner types like a fast keyboard, so it doesn't strictly need this
+    // (the textarea already turns any delimiter into a newline — see the
+    // big comment above openBomScanner), but the toggle still (a) disables
+    // the camera button so it can't be tapped by mistake while a physical
+    // scanner is in use, and (b) keeps the mobile soft keyboard from
+    // popping up over the box. Persists for as long as this BOM page stays
+    // mounted, same as scansheet's ST.bluetoothScanMode.
+    let bomSerialBtMode = false;
+
     function bomScanBeep() {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1970,13 +1983,14 @@ window.PAGES.bom = {
           </p>
           <div class="actions-row bom-serial-mode-row" style="margin-bottom:10px;">
             <button type="button" class="btn btn-ghost bom-serial-mode-btn" id="bomSerialModeUpload"><i class="fa-solid fa-file-arrow-up"></i> Upload Serial No. (File)</button>
-            <button type="button" class="btn btn-blue" id="bomSerialCameraBtn"><i class="fa-solid fa-barcode"></i> Scan Serial No.</button>
+            <button type="button" class="btn btn-blue" id="bomSerialCameraBtn" ${bomSerialBtMode ? 'disabled aria-disabled="true"' : ''} title="${bomSerialBtMode ? 'Camera disabled in Bluetooth scanner mode' : 'Scan barcode / QR'}"><i class="fa-solid fa-barcode"></i> Scan Serial No.</button>
+            <button type="button" class="btn ${bomSerialBtMode ? 'btn-blue active' : 'btn-ghost'} bom-serial-bt-btn" id="bomSerialBtBtn" title="Bluetooth scanner mode — disables the camera and keeps this box ready for a BT scanner"><i class="fa-brands fa-bluetooth-b"></i> ${bomSerialBtMode ? 'BT Scan: ON' : 'BT Scan'}</button>
           </div>
           <div id="bomSerialUploadPane" style="display:none; margin-bottom:10px;">
             <input type="file" id="bomSerialFileInput" accept=".txt,.csv">
             <p class="note" style="margin-top:6px;">Pick a .txt or .csv file — one serial per line, or comma/space separated. It loads into the box below so you can review before saving.</p>
           </div>
-          <textarea id="bomSerialModalBox" rows="8" placeholder="Scan or type serial numbers — one per line...">${bomEsc(item.serials || '')}</textarea>
+          <textarea id="bomSerialModalBox" rows="8" ${bomSerialBtMode ? 'inputmode="none"' : 'inputmode="text"'} placeholder="Scan or type serial numbers — one per line...">${bomEsc(item.serials || '')}</textarea>
           <p class="note" id="bomSerialCountNote" style="margin-top:8px;"></p>
           <div class="actions-row" style="margin-top:12px;">
             <button type="button" class="btn btn-blue" id="bomSerialSaveBtn"><i class="fa-solid fa-check"></i> Save</button>
@@ -1993,7 +2007,65 @@ window.PAGES.bom = {
       const saveBtn = document.getElementById('bomSerialSaveBtn');
       const cancelBtn = document.getElementById('bomSerialCancelBtn');
       const cameraBtn = document.getElementById('bomSerialCameraBtn');
+      const btBtn = document.getElementById('bomSerialBtBtn');
       if (!box) return;
+
+      // Focuses the box the same way it normally gets the cursor when this
+      // modal opens. In BT mode the field is briefly marked readonly first
+      // — that stops the mobile soft keyboard from popping up (a BT
+      // scanner is a hardware keyboard, it doesn't need the on-screen
+      // one) — then released a moment later so the caret is sitting in
+      // the box, ready for the scanner's next scan, exactly like the plain
+      // type/scan box already does outside BT mode.
+      function focusSerialBox() {
+        if (bomSerialBtMode) {
+          box.setAttribute('readonly', 'readonly');
+          box.focus({ preventScroll: true });
+          window.setTimeout(() => {
+            box.removeAttribute('readonly');
+            const len = box.value.length;
+            if (typeof box.setSelectionRange === 'function') box.setSelectionRange(len, len);
+            box.focus({ preventScroll: true });
+          }, 450);
+        } else {
+          box.focus({ preventScroll: true });
+        }
+      }
+
+      // Reflects bomSerialBtMode onto the modal's buttons + textarea
+      // without rebuilding the modal (so whatever's already typed/scanned
+      // in the box is never lost when the toggle is flipped).
+      function applyBomSerialBtModeUi() {
+        if (btBtn) {
+          btBtn.classList.toggle('active', bomSerialBtMode);
+          btBtn.classList.toggle('btn-blue', bomSerialBtMode);
+          btBtn.classList.toggle('btn-ghost', !bomSerialBtMode);
+          btBtn.innerHTML = `<i class="fa-brands fa-bluetooth-b"></i> ${bomSerialBtMode ? 'BT Scan: ON' : 'BT Scan'}`;
+        }
+        if (cameraBtn) {
+          cameraBtn.disabled = bomSerialBtMode;
+          cameraBtn.classList.toggle('ss-disabled', bomSerialBtMode);
+          cameraBtn.title = bomSerialBtMode ? 'Camera disabled in Bluetooth scanner mode' : 'Scan barcode / QR';
+        }
+        box.setAttribute('inputmode', bomSerialBtMode ? 'none' : 'text');
+      }
+
+      if (btBtn) {
+        btBtn.addEventListener('click', () => {
+          bomSerialBtMode = !bomSerialBtMode;
+          applyBomSerialBtModeUi();
+          if (bomSerialBtMode) {
+            backToTypeMode(); // BT mode always uses the box, never the Upload pane
+            if (window.showToast) window.showToast('Bluetooth scanner mode ON — camera disabled, box ready for the scanner.');
+          } else if (window.showToast) {
+            window.showToast('Bluetooth scanner mode OFF — camera scan available again.');
+          }
+          focusSerialBox();
+        });
+      }
+
+      // Auto-focus on open, same as a fresh scan/type box normally gets.
+      focusSerialBox();
 
       // Hides the Upload pane and returns focus to the type/scan box —
       // replaces the old "Scan Serial No." mode-toggle button, which was
