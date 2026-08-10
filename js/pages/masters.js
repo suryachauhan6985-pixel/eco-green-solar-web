@@ -338,11 +338,11 @@ window.PAGES.masters = {
         <tr class="m-item-row" data-id="${it.id}" style="cursor:pointer;">
           <td>${it.category}</td>
           <td class="gold-txt" style="font-weight:600;">${it.brand_name}</td>
-          <td>${it.watt ? mFormatWatt(it.watt) + (it.watt_unit || 'W') : (it.model ? it.model : '-')}</td>
+          <td>${Number(it.watt) > 0 ? mFormatWatt(it.watt) + (it.watt_unit || 'W') : (it.model ? it.model : '-')}</td>
           <td>${it.solar_type || '-'}</td>
           <td style="color:var(--orange); font-weight:600;">${it.minimum_stock || 0} ${it.uom || 'Nos'}</td>
           <td>${it.uom || 'Nos'}</td>
-          <td><button class="btn btn-red m-item-delete" data-id="${it.id}" data-label="${it.brand_name}${it.watt ? ' ' + mFormatWatt(it.watt) + (it.watt_unit || 'W') : (it.model ? ' ' + it.model : '')}" style="padding:6px 10px; font-size:11px;" title="Delete item"><i class="fa-solid fa-trash"></i></button></td>
+          <td><button class="btn btn-red m-item-delete" data-id="${it.id}" data-label="${it.brand_name}${Number(it.watt) > 0 ? ' ' + mFormatWatt(it.watt) + (it.watt_unit || 'W') : (it.model ? ' ' + it.model : '')}" style="padding:6px 10px; font-size:11px;" title="Delete item"><i class="fa-solid fa-trash"></i></button></td>
         </tr>
       `).join('');
         }
@@ -858,7 +858,7 @@ window.PAGES.masters = {
       editingItemSolarType = match.solar_type || "-";
       $("mItemCatDropdown").value = match.category;
       $("mItemBrandInput").value = match.brand_name;
-      $("mItemWattInput").value = match.watt ? mFormatWatt(match.watt) : "";
+      $("mItemWattInput").value = Number(match.watt) > 0 ? mFormatWatt(match.watt) : "";
       $("mItemWattUnitDropdown").value = match.watt_unit || "W";
       $("mItemModelInput").value = match.model || "";
       $("mItemUomDropdown").value = match.uom || "Nos";
