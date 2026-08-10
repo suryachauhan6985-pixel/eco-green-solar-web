@@ -434,61 +434,51 @@ function bomBuildCategoryItemOptionsHtml(category, selectedName) {
 // inward's serial-based tracking. The Check column is the on-screen
 // equivalent of the print sheet's blank "Checked" box: ticking every item
 // here is what unlocks the Verify BOM button (see updateVerifyButtonState).
-function bomRenderScreenItemsHtml(state, opts) {
+// Renders ONE item row (<tr>). Pulled out of bomRenderScreenItemsHtml so a
+// single field edit (Name/Category select, Serial No. save) can re-render
+// just this one <tr> in place — see bomRerenderItemRow — instead of
+// rebuilding the entire table and losing scroll position on a long BOM.
+// The <tr> itself carries data-row-sec/data-row-idx so that lookup can find
+// it directly.
+function bomRenderScreenItemRowHtml(sec, si, it, ii, opts) {
   const isAdmin = !!(opts && opts.isAdmin);
   const needsSerial = (opts && opts.needsSerial) || (() => false);
-  if (!state) return '<div class="empty">Select a BOM Kit above to load its item list.</div>';
-  const rows = state.map((sec, si) => {
-    const catRow = `
-      <tr class="bom-screen-cat">
-        <td colspan="${isAdmin ? 7 : 8}">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-            <input type="text" class="bom-field-input bom-section-title-input" data-sec="${si}" data-field="sectitle" value="${bomEscAttr(sec.title)}">
-            ${isAdmin ? `
-            <span style="white-space:nowrap;">
-              <button type="button" class="btn btn-ghost bom-mini-btn" data-sec-add-item="${si}" title="Add item to this section"><i class="fa-solid fa-plus"></i> Add Item</button>
-              <button type="button" class="btn btn-red bom-mini-btn" data-sec-remove="${si}" title="Remove this section"><i class="fa-solid fa-trash"></i></button>
-            </span>` : ''}
-          </div>
-        </td>
-      </tr>`;
-    const sectionCategory = bomResolveSectionCategory(sec.title);
-    const itemRows = sec.items.map((it, ii) => {
-      let serialCell;
-      if (needsSerial(it.name)) {
-        const required = bomEffectiveQty(it);
-        const entered = bomSplitSerials(it.serials).length;
-        const isComplete = required != null && entered === required;
-        const btnClass = isComplete ? 'btn-green' : (entered > 0 ? 'btn-ghost' : 'btn-red');
-        serialCell = `<button type="button" class="btn ${btnClass} bom-serial-btn" data-sec="${si}" data-idx="${ii}" title="Enter Serial No.">
-          <i class="fa-solid fa-barcode"></i> ${entered}/${required != null ? required : '?'}
-        </button>`;
-      } else {
-        serialCell = `<span class="bom-serial-na">—</span>`;
-      }
-      // A row is category-driven whenever its SECTION's title matches a
-      // real Masters > Category name (e.g. a section titled "Solar Panel"
-      // or "Inverter") AND it's the FIRST row (ii === 0) of that section —
-      // only that lead row gets the Category/Model-item dropdown pair.
-      // Item Name becomes a Category select (writes to it.category,
-      // defaulting to the section's own category so a freshly-added row
-      // doesn't need it re-picked); Model becomes a select of the real
-      // registered items under that category (writes to it.name — the
-      // value actually sent to the backend for stock matching, same field
-      // every other row's Item Name select already writes to). Every
-      // OTHER row in a category-driven section (ii > 0) falls back to the
-      // normal flat Item Name dropdown + free-text Model input, same as
-      // any non-category-driven section.
-      const isCategoryDrivenRow = !!sectionCategory && ii === 0;
-      const effectiveCategory = it.category || sectionCategory;
-      const nameCell = isCategoryDrivenRow
-        ? `<select class="bom-field-input bom-field-category" data-sec="${si}" data-idx="${ii}" data-field="category">${bomBuildCategoryOptionsHtml(effectiveCategory)}</select>`
-        : `<select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(bomRowBrand(it))}</select>`;
-      const modelCell = isCategoryDrivenRow
-        ? `<select class="bom-field-input bom-field-modelitem" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildCategoryItemOptionsHtml(effectiveCategory, it.name)}</select>`
-        : `<input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="model" value="${bomEscAttr(it.model)}">`;
-      return `
-      <tr>
+  let serialCell;
+  if (needsSerial(it.name)) {
+    const required = bomEffectiveQty(it);
+    const entered = bomSplitSerials(it.serials).length;
+    const isComplete = required != null && entered === required;
+    const btnClass = isComplete ? 'btn-green' : (entered > 0 ? 'btn-ghost' : 'btn-red');
+    serialCell = `<button type="button" class="btn ${btnClass} bom-serial-btn" data-sec="${si}" data-idx="${ii}" title="Enter Serial No.">
+      <i class="fa-solid fa-barcode"></i> ${entered}/${required != null ? required : '?'}
+    </button>`;
+  } else {
+    serialCell = `<span class="bom-serial-na">—</span>`;
+  }
+  // A row is category-driven whenever its SECTION's title matches a
+  // real Masters > Category name (e.g. a section titled "Solar Panel"
+  // or "Inverter") AND it's the FIRST row (ii === 0) of that section —
+  // only that lead row gets the Category/Model-item dropdown pair.
+  // Item Name becomes a Category select (writes to it.category,
+  // defaulting to the section's own category so a freshly-added row
+  // doesn't need it re-picked); Model becomes a select of the real
+  // registered items under that category (writes to it.name — the
+  // value actually sent to the backend for stock matching, same field
+  // every other row's Item Name select already writes to). Every
+  // OTHER row in a category-driven section (ii > 0) falls back to the
+  // normal flat Item Name dropdown + free-text Model input, same as
+  // any non-category-driven section.
+  const sectionCategory = bomResolveSectionCategory(sec.title);
+  const isCategoryDrivenRow = !!sectionCategory && ii === 0;
+  const effectiveCategory = it.category || sectionCategory;
+  const nameCell = isCategoryDrivenRow
+    ? `<select class="bom-field-input bom-field-category" data-sec="${si}" data-idx="${ii}" data-field="category">${bomBuildCategoryOptionsHtml(effectiveCategory)}</select>`
+    : `<select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(bomRowBrand(it))}</select>`;
+  const modelCell = isCategoryDrivenRow
+    ? `<select class="bom-field-input bom-field-modelitem" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildCategoryItemOptionsHtml(effectiveCategory, it.name)}</select>`
+    : `<input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="model" value="${bomEscAttr(it.model)}">`;
+  return `
+      <tr data-row-sec="${si}" data-row-idx="${ii}">
         <td><input type="text" class="bom-field-input bom-field-sr" data-sec="${si}" data-idx="${ii}" data-field="sr" value="${bomEscAttr(it.sr)}"></td>
         <td>${nameCell}</td>
         <td>${modelCell}</td>
@@ -505,7 +495,26 @@ function bomRenderScreenItemsHtml(state, opts) {
           <input type="checkbox" class="bom-field-check" data-sec="${si}" data-idx="${ii}" data-field="checked" ${it.checked ? 'checked' : ''} title="Tick once this item is verified">
         </td>
       </tr>`;
-    }).join('');
+}
+
+function bomRenderScreenItemsHtml(state, opts) {
+  const isAdmin = !!(opts && opts.isAdmin);
+  if (!state) return '<div class="empty">Select a BOM Kit above to load its item list.</div>';
+  const rows = state.map((sec, si) => {
+    const catRow = `
+      <tr class="bom-screen-cat">
+        <td colspan="${isAdmin ? 7 : 8}">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+            <input type="text" class="bom-field-input bom-section-title-input" data-sec="${si}" data-field="sectitle" value="${bomEscAttr(sec.title)}">
+            ${isAdmin ? `
+            <span style="white-space:nowrap;">
+              <button type="button" class="btn btn-ghost bom-mini-btn" data-sec-add-item="${si}" title="Add item to this section"><i class="fa-solid fa-plus"></i> Add Item</button>
+              <button type="button" class="btn btn-red bom-mini-btn" data-sec-remove="${si}" title="Remove this section"><i class="fa-solid fa-trash"></i></button>
+            </span>` : ''}
+          </div>
+        </td>
+      </tr>`;
+    const itemRows = sec.items.map((it, ii) => bomRenderScreenItemRowHtml(sec, si, it, ii, opts)).join('');
     return catRow + itemRows;
   }).join('');
 
@@ -2531,14 +2540,20 @@ window.PAGES.bom = {
         item.checked = false;
         setVerified(false);
         updateVerifyButtonState();
-        rerenderItemsPreview();
+        bomRerenderItemRow(si, ii);
         return;
       }
 
       // Quantity (Admin/SuperAdmin only — disabled for a plain User, see
-      // bomRenderScreenItemsHtml). Admin's Dispatch Qty column is disabled
-      // and always mirrors Quantity, so keep it in sync here — Admin isn't
-      // doing a partial split, that's the User's job on their own copy.
+      // bomRenderScreenItemRowHtml). By default this loads pre-filled from
+      // the selected kit template, and Admin/SuperAdmin — the only roles
+      // that can actually generate a BOM (see btnCreateBom's bomIsAdmin
+      // gate) — can freely change it at generation time. Admin's own
+      // Dispatch Qty column is disabled and always mirrors Quantity, so
+      // keep it in sync here — a User doing a partial dispatch uses their
+      // own separate Dispatch Qty column instead, Quantity itself stays
+      // locked for them since it was already set by whoever generated
+      // this BOM.
       if (field === 'qty') {
         item.qty = el.value;
         if (bomIsAdmin) {
@@ -2591,7 +2606,7 @@ window.PAGES.bom = {
         item.checked = false;
         setVerified(false);
         updateVerifyButtonState();
-        rerenderItemsPreview(); // item changed — refresh the Serial No. column for this row
+        bomRerenderItemRow(si, ii); // item changed — refresh the Serial No. column for this row
         return;
       }
 
@@ -2641,6 +2656,28 @@ window.PAGES.bom = {
       const scrollTop = scrollParent.scrollTop;
       itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState, { isAdmin: bomIsAdmin, needsSerial: bomItemNeedsSerial });
       scrollParent.scrollTop = scrollTop;
+      setVerified(false);
+      updateVerifyButtonState();
+    }
+
+    // Re-renders ONLY the one <tr> for (si, ii) — used for a Name/Category
+    // dropdown pick or a Serial No. save, where only that single row's
+    // markup actually changes. Swapping just that <tr> instead of the whole
+    // table means the browser never touches anything else on the page, so
+    // there is nothing to "jump" — editing item 25 keeps item 25 exactly
+    // where it is, unlike the old full-table rerenderItemsPreview() call
+    // this replaces (which relied on a scroll-restore hack that could land
+    // back at the top, especially right after a modal like Serial No. closes).
+    // Falls back to a full rerenderItemsPreview() if the row can't be found,
+    // so this can never silently no-op.
+    function bomRerenderItemRow(si, ii) {
+      if (!currentKitState || !currentKitState[si] || !currentKitState[si].items[ii]) return;
+      const rowEl = itemsPreview.querySelector(`tr[data-row-sec="${si}"][data-row-idx="${ii}"]`);
+      if (!rowEl) { rerenderItemsPreview(); return; }
+      const html = bomRenderScreenItemRowHtml(currentKitState[si], si, currentKitState[si].items[ii], ii, { isAdmin: bomIsAdmin, needsSerial: bomItemNeedsSerial });
+      const tmp = document.createElement('tbody');
+      tmp.innerHTML = html;
+      rowEl.replaceWith(tmp.firstElementChild);
       setVerified(false);
       updateVerifyButtonState();
     }
@@ -3074,7 +3111,7 @@ window.PAGES.bom = {
         item.checked = false; // any serial change invalidates this row's tick
         setVerified(false);
         window.closeModal();
-        rerenderItemsPreview();
+        bomRerenderItemRow(si, ii);
         if (window.showToast) window.showToast('Serial numbers saved.');
       });
 
