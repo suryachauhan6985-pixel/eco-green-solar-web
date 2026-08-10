@@ -34,8 +34,8 @@ const APP_SHELL = [
   '/js/pages/partyledger.js?v=2',
   '/js/pages/lowstock.js?v=3',
   '/js/pages/backup.js?v=2',
-  '/js/pages/bom.js?v=7',
-  '/js/app.js?v=4'
+  '/js/pages/bom.js?v=8',
+  '/js/app.js?v=5'
 ];
 
 self.addEventListener('install', (event) => {

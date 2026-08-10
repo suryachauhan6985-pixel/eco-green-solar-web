@@ -239,12 +239,27 @@ function bomCollectKitItemNames() {
   return Array.from(set);
 }
 
+// name -> { brand_name, model } for every real Masters > Item Registration
+// row, keyed by the same composite `name` value used as bomItemMasterNames'
+// entries/option values. Lets the flat Item Name dropdown show a clean
+// Brand-only label (instead of the stored Brand+Model composite) while the
+// underlying <option value> stays the real unique name — nothing that
+// matches/saves against item.name elsewhere breaks. Also used to auto-fill
+// the row's separate Model field the moment an item is picked, instead of
+// leaving Model as a totally independent dropdown that just repeats
+// whatever the (now-hidden) composite name already implied.
+let bomItemMasterMeta = {};
+
 async function bomLoadItemMasterNames() {
   try {
     const rows = await window.Api.get('/masters/items');
     if (Array.isArray(rows) && rows.length) {
       bomItemMasterNames = rows.map((r) => r.name).filter(Boolean);
       bomItemMasterModels = Array.from(new Set(rows.map((r) => r.model).filter(Boolean)));
+      bomItemMasterMeta = {};
+      rows.forEach((r) => {
+        if (r.name) bomItemMasterMeta[r.name] = { brand_name: r.brand_name || r.name, model: r.model || '' };
+      });
       return;
     }
   } catch (e) {
@@ -252,14 +267,17 @@ async function bomLoadItemMasterNames() {
   }
   bomItemMasterNames = bomCollectKitItemNames();
   bomItemMasterModels = [];
+  bomItemMasterMeta = {};
 }
 
 function bomBuildItemOptionsHtml(selectedName) {
   const names = new Set(bomItemMasterNames);
   if (selectedName) names.add(selectedName);
-  const optionsHtml = Array.from(names).map((n) => `
-    <option value="${bomEscAttr(n)}" ${n === selectedName ? 'selected' : ''}>${bomEsc(n)}</option>
-  `).join('');
+  const optionsHtml = Array.from(names).map((n) => {
+    const meta = bomItemMasterMeta[n];
+    const label = meta ? meta.brand_name : n; // clean Brand Name only — Model shows in its own column
+    return `<option value="${bomEscAttr(n)}" ${n === selectedName ? 'selected' : ''}>${bomEsc(label)}</option>`;
+  }).join('');
   return `<option value="">-- Select Item --</option>${optionsHtml}`;
 }
 
@@ -2442,7 +2460,11 @@ window.PAGES.bom = {
       item.checked = false; // any content edit invalidates this row's tick
       setVerified(false); // any edit after verifying means it needs re-verifying
       updateVerifyButtonState();
-      if (field === 'name') rerenderItemsPreview(); // item changed — refresh the Serial No. column for this row
+      if (field === 'name') {
+        const meta = bomItemMasterMeta[el.value];
+        if (meta && meta.model) item.model = meta.model; // keep Model in sync with the picked item
+        rerenderItemsPreview(); // item changed — refresh the Serial No. column for this row
+      }
     }
 
     // Re-renders the item table in place (after a dropdown/field edit,

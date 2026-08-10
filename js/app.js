@@ -1416,7 +1416,13 @@ window.attachColumnFilters = function (table) {
     card.style.setProperty('--confirm-accent', style.color);
     document.getElementById('confirmIcon').innerHTML = `<i class="fa-solid ${style.icon}"></i>`;
     document.getElementById('confirmTitle').textContent = title || 'Please Confirm';
-    document.getElementById('confirmMsg').textContent = message || '';
+    const msgEl = document.getElementById('confirmMsg');
+    msgEl.innerHTML = message || '';
+    // Safety net: even if some caller passes long content without its own
+    // scrollList()-style wrapper, the dialog itself never grows past this —
+    // it scrolls internally instead of stretching the whole card/page.
+    msgEl.style.maxHeight = '55vh';
+    msgEl.style.overflowY = 'auto';
     const okBtn = document.getElementById('confirmBtnOk');
     const cancelBtn = document.getElementById('confirmBtnCancel');
     okBtn.textContent = opts.okLabel || 'Yes';
