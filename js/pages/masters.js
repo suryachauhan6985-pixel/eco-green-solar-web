@@ -563,10 +563,11 @@ window.PAGES.masters = {
     $('mBtnDownloadItemTemplate').addEventListener('click', () => {
       const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       downloadCsvGeneric(`Item_Registration_Template_${stamp}.csv`, [
-        ['category', 'brand_name', 'watt', 'model', 'wattage_mandatory', 'serial_mandatory', 'uom', 'minimum_stock'],
-        ['Solar Panel', 'Adani', '545', '', 'Yes', 'No', 'Nos', '5'],
-        ['Cable', 'Polycab', '', '', 'No', 'No', 'Meters', '20'],
-        ['Pipe', 'Astral', '', '2 Inch', 'No', 'No', 'Nos', '10'],
+        ['category', 'brand_name', 'watt', 'watt_unit', 'model', 'wattage_mandatory', 'serial_mandatory', 'uom', 'minimum_stock'],
+        ['Solar Panel', 'Adani', '545', 'W', '', 'Yes', 'No', 'Nos', '5'],
+        ['Cable', 'Polycab', '', '', '', 'No', 'No', 'Meters', '20'],
+        ['Pipe', 'Astral', '', '', '2 Inch', 'No', 'No', 'Nos', '10'],
+        ['Inverter', 'Deye', '5.5', 'kW', '', 'Yes', 'No', 'Nos', '10'],
       ]);
       window.showToast('Item import template downloaded.');
     });
@@ -688,6 +689,8 @@ window.PAGES.masters = {
         const categoryInput = valueFromRow(row, ['category', 'category_name']);
         const brand = valueFromRow(row, ['brand_name', 'brand', 'name']);
         const wattRaw = valueFromRow(row, ['watt', 'wattage', 'capacity']);
+        const wattUnitRaw = valueFromRow(row, ['watt_unit', 'wattage_unit', 'unit'], 'W');
+        const wattUnit = String(wattUnitRaw || 'W').trim().toLowerCase() === 'kw' ? 'kW' : 'W';
         const model = valueFromRow(row, ['model', 'model_no', 'model_number', 'size']);
         const uom = valueFromRow(row, ['uom', 'unit'], 'Nos');
         const minStock = parseInt(valueFromRow(row, ['minimum_stock', 'min_stock', 'alert_stock']), 10) || 0;
@@ -732,6 +735,7 @@ window.PAGES.masters = {
             category: catMatch.name,
             brand_name: brand,
             watt,
+            watt_unit: wattUnit,
             model: model || null,
             watt_mandatory: wattOverride,
             serial_mandatory: serialOverride,
