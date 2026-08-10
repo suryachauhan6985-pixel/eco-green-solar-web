@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-10T06:04:57.385Z",
+  "generatedAt": "2026-08-10T10:20:40.807Z",
   "files": {
     ".env": {
       "hash": "fbf93500e5313e2f01018668de228b174a039bbf",
@@ -12,9 +12,9 @@
       "mtimeMs": 1785760530681.6638
     },
     "index.html": {
-      "hash": "49460f2dd118d8be6f50c0ae6f747d4fcb6cbcfa",
-      "size": 7811,
-      "mtimeMs": 1786278312560.6467
+      "hash": "bb09894e8c7433320391234a45a86734fc4d7f2c",
+      "size": 8055,
+      "mtimeMs": 1786357151792.562
     },
     "manifest.webmanifest": {
       "hash": "1a394524a536e053f78cdd82bfedeb87443475ae",
@@ -32,24 +32,34 @@
       "mtimeMs": 1786187114574.225
     },
     "sw.js": {
-      "hash": "30a77607d0361357d54985c2933cec5a3e2b46c4",
-      "size": 4482,
-      "mtimeMs": 1786278320136.5166
+      "hash": "26391d401b3e17139758720302b4cba090854db6",
+      "size": 4554,
+      "mtimeMs": 1786357154694.8687
     },
     "js/app.js": {
-      "hash": "c46e82fc762c827e89c4b9de282c88d6c2a44982",
-      "size": 72709,
-      "mtimeMs": 1786277467850.282
+      "hash": "cfd232dd7b4dd23114ed012966080ab0129a1ddc",
+      "size": 73030,
+      "mtimeMs": 1786348243878.738
     },
     "js/pages/backup.js": {
       "hash": "15f5b22b9fcb33d1b29b73bcd9a2d38abdadb104",
       "size": 6833,
       "mtimeMs": 1784943992000
     },
+    "js/pages/bom-challan.js": {
+      "hash": "a381d5d8b619f22e2ff3201763d7f6962fd10262",
+      "size": 27119,
+      "mtimeMs": 1786357143842.0635
+    },
+    "js/pages/bom-kit-helpers.js": {
+      "hash": "9cee2f09247fc5672ce08a0c939a84b913beb437",
+      "size": 32286,
+      "mtimeMs": 1786357141840.526
+    },
     "js/pages/bom.js": {
-      "hash": "318e908970aa554959038ca8c4aa709ff31a57b4",
-      "size": 197122,
-      "mtimeMs": 1786339586847.126
+      "hash": "084b644c9d16911d5a81e6a0ab92c0dacff044cf",
+      "size": 150684,
+      "mtimeMs": 1786357149576.2312
     },
     "js/pages/dashboard.js": {
       "hash": "af49b335f2d4a08a7e0871848e53f3a03428b7cb",
@@ -57,14 +67,14 @@
       "mtimeMs": 1785757447598.934
     },
     "js/pages/lowstock.js": {
-      "hash": "ceb1744fe019cc011bac370f042291d2c2b5e6f5",
-      "size": 11848,
-      "mtimeMs": 1785996191731.5178
+      "hash": "dac0d2bb38caa3f0d8783ec1e322b70b7489e827",
+      "size": 11881,
+      "mtimeMs": 1786342745285.729
     },
     "js/pages/masters.js": {
-      "hash": "3fb2497af3346f310c2327cbd41d9cf28c5eac99",
-      "size": 63566,
-      "mtimeMs": 1786341352635.2139
+      "hash": "992bae1848742c7f97eeae495a83182c058e8c2a",
+      "size": 63921,
+      "mtimeMs": 1786347529534.9375
     },
     "js/pages/partyledger.js": {
       "hash": "1648db6f2544ae217d146320ecfd348698448507",
@@ -242,9 +252,9 @@
       "mtimeMs": 1786275283989.1921
     },
     "api/routes/health.js": {
-      "hash": "7463337414b429c191095dfd1b8cbea450c9ba46",
-      "size": 3607,
-      "mtimeMs": 1785235629234.0254
+      "hash": "8002d2724a45cf6da7ddb86c481ebffcc8260823",
+      "size": 3633,
+      "mtimeMs": 1786342736216.9797
     },
     "api/routes/ledgers.routes.js": {
       "hash": "e3952a6d5bfdee08ad1e1df53f8d17fcaecb5d03",

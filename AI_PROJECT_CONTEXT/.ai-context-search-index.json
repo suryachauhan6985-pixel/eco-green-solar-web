@@ -355,225 +355,297 @@
   },
   {
     "type": "file",
-    "label": "js/pages/bom.js",
-    "file": "js/pages/bom.js",
-    "detail": "Defines 2 class(es) implementing core logic."
-  },
-  {
-    "type": "function",
-    "label": "bomSetPrintPageSize",
-    "file": "js/pages/bom.js",
-    "detail": "(cssSizeAndMargin)"
-  },
-  {
-    "type": "function",
-    "label": "bomLoadCustomKits",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomSaveCustomKits",
-    "file": "js/pages/bom.js",
-    "detail": "(obj)"
-  },
-  {
-    "type": "function",
-    "label": "bomGetAllKits",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomIsCustomKitKey",
-    "file": "js/pages/bom.js",
-    "detail": "(key)"
-  },
-  {
-    "type": "function",
-    "label": "bomSlugify",
-    "file": "js/pages/bom.js",
-    "detail": "(label)"
-  },
-  {
-    "type": "function",
-    "label": "bomRenumberAll",
-    "file": "js/pages/bom.js",
-    "detail": "(sections)"
-  },
-  {
-    "type": "function",
-    "label": "bomDefaultSectionsTemplate",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomParseQtyNumber",
-    "file": "js/pages/bom.js",
-    "detail": "(qtyStr)"
-  },
-  {
-    "type": "function",
-    "label": "bomEffectiveQty",
-    "file": "js/pages/bom.js",
-    "detail": "(it)"
-  },
-  {
-    "type": "function",
-    "label": "bomNormalizeDispatchQty",
-    "file": "js/pages/bom.js",
-    "detail": "(state)"
-  },
-  {
-    "type": "function",
-    "label": "bomSplitSerials",
-    "file": "js/pages/bom.js",
-    "detail": "(text)"
-  },
-  {
-    "type": "function",
-    "label": "bomCollectKitItemNames",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomLoadItemMasterNames",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomBuildItemOptionsHtml",
-    "file": "js/pages/bom.js",
-    "detail": "(selectedName)"
-  },
-  {
-    "type": "function",
-    "label": "bomBuildModelOptionsHtml",
-    "file": "js/pages/bom.js",
-    "detail": "(selectedModel)"
-  },
-  {
-    "type": "function",
-    "label": "bomResolveSectionCategory",
-    "file": "js/pages/bom.js",
-    "detail": "(title)"
-  },
-  {
-    "type": "function",
-    "label": "bomBuildCategoryOptionsHtml",
-    "file": "js/pages/bom.js",
-    "detail": "(selectedCategory)"
-  },
-  {
-    "type": "function",
-    "label": "bomBuildCategoryItemOptionsHtml",
-    "file": "js/pages/bom.js",
-    "detail": "(category, selectedName)"
-  },
-  {
-    "type": "function",
-    "label": "bomRenderScreenItemsHtml",
-    "file": "js/pages/bom.js",
-    "detail": "(state, opts)"
-  },
-  {
-    "type": "function",
-    "label": "bomRenderPrintSheetHtml",
-    "file": "js/pages/bom.js",
-    "detail": "(kit, header)"
+    "label": "js/pages/bom-challan.js",
+    "file": "js/pages/bom-challan.js",
+    "detail": "Defines 20 function(s) implementing supporting logic."
   },
   {
     "type": "function",
     "label": "bomLoadChallanCategoryMap",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "()"
   },
   {
     "type": "function",
     "label": "bomGiPipeFeetToPieces",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "(totalFeet)"
   },
   {
     "type": "function",
     "label": "bomGiPipeModelSr",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "(modelText)"
   },
   {
     "type": "function",
     "label": "bomComputeChallanAutoQty",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "(sections)"
   },
   {
     "type": "function",
     "label": "bomApplyChallanAutoQty",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "(sections)"
   },
   {
     "type": "function",
     "label": "bomRenderChallanTemplateItemsHtml",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "(template)"
   },
   {
     "type": "function",
     "label": "bomRenderChallanEntryModalHtml",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "(header, kit)"
   },
   {
     "type": "function",
     "label": "bomCollectChallanTemplateValues",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "()"
   },
   {
     "type": "function",
     "label": "bomChallanBuildRowGroups",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "(template)"
   },
   {
     "type": "function",
     "label": "bomRenderChallanBodyRowsHtml",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "(groups, values)"
   },
   {
     "type": "function",
     "label": "bomRenderChallanHeaderRowsHtml",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "(header, kit, copyLabel, isCompanyCopy)"
   },
   {
     "type": "function",
     "label": "bomRenderChallanTableHeadRowHtml",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "()"
   },
   {
     "type": "function",
     "label": "bomRenderChallanFooterRowsHtml",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "(header)"
   },
   {
     "type": "function",
     "label": "bomRenderChallanPrintSheetHalfHtml",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "(header, kit, copyLabel, templateValues, isCompanyCopy)"
   },
   {
     "type": "function",
     "label": "bomRenderChallanPrintSheetHtml",
-    "file": "js/pages/bom.js",
+    "file": "js/pages/bom-challan.js",
     "detail": "(header, kit, templateValues)"
+  },
+  {
+    "type": "function",
+    "label": "qtyInput",
+    "file": "js/pages/bom-challan.js",
+    "detail": "(sr, sizeLabel)"
+  },
+  {
+    "type": "function",
+    "label": "descInput",
+    "file": "js/pages/bom-challan.js",
+    "detail": "(sr)"
+  },
+  {
+    "type": "function",
+    "label": "setVal",
+    "file": "js/pages/bom-challan.js",
+    "detail": "(key, patch)"
+  },
+  {
+    "type": "function",
+    "label": "getQty",
+    "file": "js/pages/bom-challan.js",
+    "detail": "(sr, size)"
+  },
+  {
+    "type": "function",
+    "label": "getDesc",
+    "file": "js/pages/bom-challan.js",
+    "detail": "(sr)"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/bom-kit-helpers.js",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "Defines 26 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "bomSetPrintPageSize",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(cssSizeAndMargin)"
+  },
+  {
+    "type": "function",
+    "label": "bomLoadCustomKits",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomSaveCustomKits",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(obj)"
+  },
+  {
+    "type": "function",
+    "label": "bomGetAllKits",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomIsCustomKitKey",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(key)"
+  },
+  {
+    "type": "function",
+    "label": "bomSlugify",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(label)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenumberAll",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(sections)"
+  },
+  {
+    "type": "function",
+    "label": "bomDefaultSectionsTemplate",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomParseQtyNumber",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(qtyStr)"
+  },
+  {
+    "type": "function",
+    "label": "bomEffectiveQty",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(it)"
+  },
+  {
+    "type": "function",
+    "label": "bomNormalizeDispatchQty",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(state)"
+  },
+  {
+    "type": "function",
+    "label": "bomSplitSerials",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "bomCollectKitItemNames",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomLoadItemMasterNames",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomResolveItemName",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(brand, model)"
+  },
+  {
+    "type": "function",
+    "label": "bomRowBrand",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(it)"
+  },
+  {
+    "type": "function",
+    "label": "bomBuildItemOptionsHtml",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(selectedBrand)"
+  },
+  {
+    "type": "function",
+    "label": "bomBuildModelOptionsHtml",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(selectedModel, brandName)"
+  },
+  {
+    "type": "function",
+    "label": "bomResolveSectionCategory",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(title)"
+  },
+  {
+    "type": "function",
+    "label": "bomBuildCategoryOptionsHtml",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(selectedCategory)"
+  },
+  {
+    "type": "function",
+    "label": "bomBuildCategoryItemOptionsHtml",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(category, selectedName)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderScreenItemRowHtml",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(sec, si, it, ii, opts)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderScreenItemsHtml",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(state, opts)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderPrintSheetHtml",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(kit, header)"
+  },
+  {
+    "type": "function",
+    "label": "bomEsc",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(s)"
+  },
+  {
+    "type": "function",
+    "label": "bomEscAttr",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(s)"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/bom.js",
+    "file": "js/pages/bom.js",
+    "detail": "Defines 2 class(es) implementing core logic."
   },
   {
     "type": "function",
@@ -847,6 +919,12 @@
   },
   {
     "type": "function",
+    "label": "bomRerenderItemRow",
+    "file": "js/pages/bom.js",
+    "detail": "(si, ii)"
+  },
+  {
+    "type": "function",
     "label": "bomScanBeep",
     "file": "js/pages/bom.js",
     "detail": "()"
@@ -1012,48 +1090,6 @@
     "label": "computeAndApplyFitZoom",
     "file": "js/pages/bom.js",
     "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomEsc",
-    "file": "js/pages/bom.js",
-    "detail": "(s)"
-  },
-  {
-    "type": "function",
-    "label": "bomEscAttr",
-    "file": "js/pages/bom.js",
-    "detail": "(s)"
-  },
-  {
-    "type": "function",
-    "label": "qtyInput",
-    "file": "js/pages/bom.js",
-    "detail": "(sr, sizeLabel)"
-  },
-  {
-    "type": "function",
-    "label": "descInput",
-    "file": "js/pages/bom.js",
-    "detail": "(sr)"
-  },
-  {
-    "type": "function",
-    "label": "setVal",
-    "file": "js/pages/bom.js",
-    "detail": "(key, patch)"
-  },
-  {
-    "type": "function",
-    "label": "getQty",
-    "file": "js/pages/bom.js",
-    "detail": "(sr, size)"
-  },
-  {
-    "type": "function",
-    "label": "getDesc",
-    "file": "js/pages/bom.js",
-    "detail": "(sr)"
   },
   {
     "type": "function",

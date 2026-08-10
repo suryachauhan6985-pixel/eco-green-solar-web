@@ -288,7 +288,12 @@ async function bomLoadItemMasterNames() {
       bomModelsByBrand = {};
       bomRowsByBrand = {};
       rows.forEach((r) => {
-        if (r.name) bomItemMasterMeta[r.name] = { brand_name: r.brand_name || r.name, model: r.model || '' };
+        // `uom` — the UOM picked for this item back in Masters > Item
+        // Registration (e.g. "Nos", "Mtr", "Kg" — see GET /api/masters/items
+        // in masters.routes.js, column `i.uom`). Kept here so the live
+        // Quantity cell (bomRenderScreenItemRowHtml) can show it as a
+        // fixed, non-typeable suffix instead of a separate column.
+        if (r.name) bomItemMasterMeta[r.name] = { brand_name: r.brand_name || r.name, model: r.model || '', unit: r.uom || '' };
         const brand = r.brand_name || r.name;
         if (brand && r.name) {
           if (!bomRowsByBrand[brand]) bomRowsByBrand[brand] = [];
@@ -485,15 +490,31 @@ function bomRenderScreenItemRowHtml(sec, si, it, ii, opts) {
   const nameCell = isCategoryDrivenRow
     ? `<select class="bom-field-input bom-field-category" data-sec="${si}" data-idx="${ii}" data-field="category">${bomBuildCategoryOptionsHtml(effectiveCategory)}</select>`
     : `<select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(bomRowBrand(it))}</select>`;
+  // Model select — same brand-filtered dropdown used by the Kit Builder
+  // (renderKitBuilderSections/bomBuildModelOptionsHtml) so a normal row's
+  // Model is never a free-typed value here; only a category-driven lead
+  // row (Solar Panel/Inverter's first row) keeps the Model-item select.
   const modelCell = isCategoryDrivenRow
-    ? `<select class="bom-field-input bom-field-modelitem" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildCategoryItemOptionsHtml(effectiveCategory, it.name)}</select>`
-    : `<input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="model" value="${bomEscAttr(it.model)}">`;
+    ? `<select class="bom-field-input bom-field-modelitem" data-sec="${si}" data-idx="${ii}" data-field="modelitem">${bomBuildCategoryItemOptionsHtml(effectiveCategory, it.name)}</select>`
+    : `<select class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="model">${bomBuildModelOptionsHtml(it.model, bomRowBrand(it))}</select>`;
+  // UOM suffix — shown INSIDE the same Quantity field (not a separate
+  // column), sourced from whatever unit was picked for this item back in
+  // Masters > Item Registration (bomItemMasterMeta[...].unit). It's a
+  // plain non-interactive <span> layered over the input via padding, so
+  // it can never be typed over/edited — only the numeric qty itself is.
+  const itemUnit = (it.name && bomItemMasterMeta[it.name] && bomItemMasterMeta[it.name].unit) || '';
+  const qtyCell = itemUnit
+    ? `<div class="bom-qty-field-wrap" style="position:relative;">
+         <input type="text" class="bom-field-input bom-qty-has-unit" data-sec="${si}" data-idx="${ii}" data-field="qty" value="${bomEscAttr(it.qty)}" style="width:100%; padding-right:44px; box-sizing:border-box;" ${isAdmin ? '' : 'disabled title="Set by whoever created this BOM — not editable here."'}>
+         <span class="bom-qty-unit-suffix" title="Unit set in Item Master — not editable here" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); pointer-events:none; opacity:0.65; font-size:12px;">${bomEsc(itemUnit)}</span>
+       </div>`
+    : `<input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="qty" value="${bomEscAttr(it.qty)}" ${isAdmin ? '' : 'disabled title="Set by whoever created this BOM — not editable here."'}>`;
   return `
       <tr data-row-sec="${si}" data-row-idx="${ii}">
         <td><input type="text" class="bom-field-input bom-field-sr" data-sec="${si}" data-idx="${ii}" data-field="sr" value="${bomEscAttr(it.sr)}"></td>
         <td>${nameCell}</td>
         <td>${modelCell}</td>
-        <td><input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="qty" value="${bomEscAttr(it.qty)}" ${isAdmin ? '' : 'disabled title="Set by whoever created this BOM — not editable here."'}></td>
+        <td>${qtyCell}</td>
         ${isAdmin ? '' : `<td><input type="number" min="0" class="bom-field-input bom-field-dispatchqty" data-sec="${si}" data-idx="${ii}" data-field="dispatchQty" value="${bomEscAttr(it.dispatchQty)}" title="How many of this item you are dispatching right now (can be less than Quantity for a partial dispatch)."></td>`}
         <td class="bom-serial-cell">${serialCell}</td>
         <td style="white-space:nowrap;">
@@ -613,4 +634,3 @@ function bomRenderPrintSheetHtml(kit, header) {
     </div>
   `;
 }
-

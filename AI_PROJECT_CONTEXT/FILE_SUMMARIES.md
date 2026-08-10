@@ -38,7 +38,7 @@ Deep analysis of every important source file.
 ## `sw.js`
 
 - **Purpose:** Supporting source file.
-- **Lines of code:** 128
+- **Lines of code:** 130
 - **Complexity:** Low (heuristic score: 11)
 - **Imports:** None
 - **Exports:** None
@@ -55,8 +55,8 @@ Deep analysis of every important source file.
 ## `js/app.js`
 
 - **Purpose:** Application entry point / bootstrap file.
-- **Lines of code:** 1546
-- **Complexity:** High (heuristic score: 278)
+- **Lines of code:** 1552
+- **Complexity:** High (heuristic score: 279)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** showLoader(), hideLoader(), applyGlobalTableSearch(query), applyAllFilters(), closeMenu(), positionMenu(menu, btn), openMenuFor(btn), updateProfileDisplay(username, role), showApp(), saveSession(username, role, persist, token), loadSession(), clearSession(), startHeartbeat(), stopHeartbeat(), resetIdleTimer(), stopIdleTimer(), notifyServerLogout(), showLoginOverlay(message), buildLoginOverlay(), wireOtpBoxes(boxesEl, hiddenEl), sync(), startResendCooldown(btn, seconds = RESEND_COOLDOWN_SECONDS), showCredsStep(), showOtpStep(maskedEmail), hideAllSteps(), showRegisterStep(), showRegisterOtpStep(maskedEmail), showForgotStep(), showResetStep(maskedEmail), finishLogin(data), attemptLogin(), attemptVerifyOtp(), attemptResendOtp(), attemptRegister(), attemptVerifyRegisterOtp(), attemptResendRegisterOtp(), attemptForgotPassword(), attemptResendForgotOtp(), attemptResetPassword(), closeProfileMenu(), endSessionAndShowLogin(), openProfileMenu(), go(id), closeConfirmDialog(result), guardField(el), guardAllFields(root), getRows(), cellValue(row, idx), uniqueValues(idx), itemCbs(), ping()
@@ -88,17 +88,55 @@ Deep analysis of every important source file.
 
 ---
 
+## `js/pages/bom-challan.js`
+
+- **Purpose:** Defines 20 function(s) implementing supporting logic.
+- **Lines of code:** 536
+- **Complexity:** High (heuristic score: 75)
+- **Imports:** None
+- **Exports:** None
+- **Functions:** bomLoadChallanCategoryMap(), bomGiPipeFeetToPieces(totalFeet), bomGiPipeModelSr(modelText), bomComputeChallanAutoQty(sections), bomApplyChallanAutoQty(sections), bomRenderChallanTemplateItemsHtml(template), bomRenderChallanEntryModalHtml(header, kit), bomCollectChallanTemplateValues(), bomChallanBuildRowGroups(template), bomRenderChallanBodyRowsHtml(groups, values), bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy), bomRenderChallanTableHeadRowHtml(), bomRenderChallanFooterRowsHtml(header), bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy), bomRenderChallanPrintSheetHtml(header, kit, templateValues), qtyInput(sr, sizeLabel), descInput(sr), setVal(key, patch), getQty(sr, size), getDesc(sr)
+- **Classes:** None
+- **API endpoints:** None
+- **Database usage:** Raw SQL detected (4 statement keywords: JOIN)
+- **Environment variables used:** None
+- **Potential improvements:**
+  - File defines a large number of functions — consider splitting into smaller modules.
+  - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+
+---
+
+## `js/pages/bom-kit-helpers.js`
+
+- **Purpose:** Defines 26 function(s) implementing supporting logic.
+- **Lines of code:** 617
+- **Complexity:** High (heuristic score: 105)
+- **Imports:** None
+- **Exports:** None
+- **Functions:** bomSetPrintPageSize(cssSizeAndMargin), bomLoadCustomKits(), bomSaveCustomKits(obj), bomGetAllKits(), bomIsCustomKitKey(key), bomSlugify(label), bomRenumberAll(sections), bomDefaultSectionsTemplate(), bomParseQtyNumber(qtyStr), bomEffectiveQty(it), bomNormalizeDispatchQty(state), bomSplitSerials(text), bomCollectKitItemNames(), bomLoadItemMasterNames(), bomResolveItemName(brand, model), bomRowBrand(it), bomBuildItemOptionsHtml(selectedBrand), bomBuildModelOptionsHtml(selectedModel, brandName), bomResolveSectionCategory(title), bomBuildCategoryOptionsHtml(selectedCategory), bomBuildCategoryItemOptionsHtml(category, selectedName), bomRenderScreenItemRowHtml(sec, si, it, ii, opts), bomRenderScreenItemsHtml(state, opts), bomRenderPrintSheetHtml(kit, header), bomEsc(s), bomEscAttr(s)
+- **Classes:** None
+- **API endpoints:** None
+- **Database usage:** Raw SQL detected (25 statement keywords: SELECT, JOIN)
+- **Environment variables used:** None
+- **Potential improvements:**
+  - File defines a large number of functions — consider splitting into smaller modules.
+  - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+
+---
+
 ## `js/pages/bom.js`
 
 - **Purpose:** Defines 2 class(es) implementing core logic.
-- **Lines of code:** 3714
-- **Complexity:** High (heuristic score: 662)
+- **Lines of code:** 2804
+- **Complexity:** High (heuristic score: 525)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** bomSetPrintPageSize(cssSizeAndMargin), bomLoadCustomKits(), bomSaveCustomKits(obj), bomGetAllKits(), bomIsCustomKitKey(key), bomSlugify(label), bomRenumberAll(sections), bomDefaultSectionsTemplate(), bomParseQtyNumber(qtyStr), bomEffectiveQty(it), bomNormalizeDispatchQty(state), bomSplitSerials(text), bomCollectKitItemNames(), bomLoadItemMasterNames(), bomBuildItemOptionsHtml(selectedName), bomBuildModelOptionsHtml(selectedModel), bomResolveSectionCategory(title), bomBuildCategoryOptionsHtml(selectedCategory), bomBuildCategoryItemOptionsHtml(category, selectedName), bomRenderScreenItemsHtml(state, opts), bomRenderPrintSheetHtml(kit, header), bomLoadChallanCategoryMap(), bomGiPipeFeetToPieces(totalFeet), bomGiPipeModelSr(modelText), bomComputeChallanAutoQty(sections), bomApplyChallanAutoQty(sections), bomRenderChallanTemplateItemsHtml(template), bomRenderChallanEntryModalHtml(header, kit), bomCollectChallanTemplateValues(), bomChallanBuildRowGroups(template), bomRenderChallanBodyRowsHtml(groups, values), bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy), bomRenderChallanTableHeadRowHtml(), bomRenderChallanFooterRowsHtml(header), bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy), bomRenderChallanPrintSheetHtml(header, kit, templateValues), bomRenderHomeViewHtml(), showBomHome(), showBomEntry(), showBomEntryForNewKit(), bomOverallStatusFromItems(items), bomRenderHomePendingTableHtml(orders), bomLoadHomePendingTable(), openChallanModal(bodyHtml), closeChallanModal(), bomCollectUsedItemNamesForMapping(), bomRenderChallanMapModalHtml(names), bomOpenChallanMapModal(), openRegisterModal(bodyHtml), closeRegisterModal(), bomTrackStatusPill(status), bomFmtDateTime(v), bomRenderTrackResultHtml(data), bomFetchAndRenderTrack(orderNo, resultBox), bomOpenTrackModal(), runTrack(), bomOpenTrackForOrderNo(orderNo), bomTrackCurrentOrder(), bomCollectItemsForCreate(), bomOpenCreateBomModal(), bomLoadSerialMandatoryInfo(), bomItemNeedsSerial(name), searchBomCustomerLedgers(q), searchBomCustomerShortCodes(q), fillBomCustomerDatalist(listEl, ledgers, key), wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), wireBomPartyTypeAutocomplete(inputEl, listEl, ledgerType), search(q), fillList(ledgers), setVerified(isVerified), allItemsChecked(), updateVerifyButtonState(), updateKitActionButtons(), populateKitDropdown(selectKey), refreshItemsPreview(), setKitBuilderMode(isEdit), renderKitBuilderSections(), handleBuilderFieldEdit(e), handleItemFieldEdit(e), bomFindScrollParent(el), rerenderItemsPreview(), bomScanBeep(), bomScanSetStatus(msg), openBomScanner(targetId), startBomScanCamera(), launchBomScanCamera(), onBomScanSuccess(decodedText), showBomScanResult(text), hideBomScanResult(), retryBomScan(), confirmBomScan(), toggleBomScanTorch(), flipBomScanCamera(), closeBomScanner(), openBomSerialModal(si, ii), updateCountNote(), getHeaderValues(), bomCollectItemsForStockCheck(), bomCollectItemsForDispatch(), bomShowStockIssuesModal(title, intro, rows), bomRunStockCheck(), bomRunDispatch(), bomParseBlockedRows(msg), bomRenderRegisterListHtml(orders), bomLoadRegisterList(), bomRenderContinueFormHtml(order, backLabel), bomLoadContinueDispatchForm(orderId, target), bomOpenOrderInline(orderId), computeAndApplyFitZoom(), bomEsc(s), bomEscAttr(s), qtyInput(sr, sizeLabel), descInput(sr), setVal(key, patch), getQty(sr, size), getDesc(sr), $(id), categoryOptions(selected), blankItem(), finish(), setBody(html)
+- **Functions:** bomRenderHomeViewHtml(), showBomHome(), showBomEntry(), showBomEntryForNewKit(), bomOverallStatusFromItems(items), bomRenderHomePendingTableHtml(orders), bomLoadHomePendingTable(), openChallanModal(bodyHtml), closeChallanModal(), bomCollectUsedItemNamesForMapping(), bomRenderChallanMapModalHtml(names), bomOpenChallanMapModal(), openRegisterModal(bodyHtml), closeRegisterModal(), bomTrackStatusPill(status), bomFmtDateTime(v), bomRenderTrackResultHtml(data), bomFetchAndRenderTrack(orderNo, resultBox), bomOpenTrackModal(), runTrack(), bomOpenTrackForOrderNo(orderNo), bomTrackCurrentOrder(), bomCollectItemsForCreate(), bomOpenCreateBomModal(), bomLoadSerialMandatoryInfo(), bomItemNeedsSerial(name), searchBomCustomerLedgers(q), searchBomCustomerShortCodes(q), fillBomCustomerDatalist(listEl, ledgers, key), wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), wireBomPartyTypeAutocomplete(inputEl, listEl, ledgerType), search(q), fillList(ledgers), setVerified(isVerified), allItemsChecked(), updateVerifyButtonState(), updateKitActionButtons(), populateKitDropdown(selectKey), refreshItemsPreview(), setKitBuilderMode(isEdit), renderKitBuilderSections(), handleBuilderFieldEdit(e), handleItemFieldEdit(e), bomFindScrollParent(el), rerenderItemsPreview(), bomRerenderItemRow(si, ii), bomScanBeep(), bomScanSetStatus(msg), openBomScanner(targetId), startBomScanCamera(), launchBomScanCamera(), onBomScanSuccess(decodedText), showBomScanResult(text), hideBomScanResult(), retryBomScan(), confirmBomScan(), toggleBomScanTorch(), flipBomScanCamera(), closeBomScanner(), openBomSerialModal(si, ii), updateCountNote(), getHeaderValues(), bomCollectItemsForStockCheck(), bomCollectItemsForDispatch(), bomShowStockIssuesModal(title, intro, rows), bomRunStockCheck(), bomRunDispatch(), bomParseBlockedRows(msg), bomRenderRegisterListHtml(orders), bomLoadRegisterList(), bomRenderContinueFormHtml(order, backLabel), bomLoadContinueDispatchForm(orderId, target), bomOpenOrderInline(orderId), computeAndApplyFitZoom(), $(id), categoryOptions(selected), blankItem(), finish(), setBody(html)
 - **Classes:** was, in
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (84 statement keywords: JOIN, SELECT, UPDATE)
+- **Database usage:** Raw SQL detected (62 statement keywords: SELECT, JOIN, UPDATE)
 - **Environment variables used:** None
 - **Potential improvements:**
   - File defines a large number of functions — consider splitting into smaller modules.
@@ -146,7 +184,7 @@ Deep analysis of every important source file.
 ## `js/pages/masters.js`
 
 - **Purpose:** Defines 18 function(s) implementing supporting logic.
-- **Lines of code:** 1308
+- **Lines of code:** 1312
 - **Complexity:** High (heuristic score: 197)
 - **Imports:** None
 - **Exports:** None

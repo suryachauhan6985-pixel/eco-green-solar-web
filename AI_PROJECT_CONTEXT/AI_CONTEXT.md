@@ -10,13 +10,13 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-10T06:04:57.378Z
+- **Generated:** 2026-08-10T10:20:40.798Z
 
 ## 2. Architecture Overview
 
 - **Detected technologies:** Node.js (runtime), Express (backend framework), MySQL (database), JWT Authentication (auth), HTML (markup), JavaScript (language), CSS (styling), PWA (platform)
-- **Total files (post-ignore):** 61
-- **Deeply analyzed files:** 48
+- **Total files (post-ignore):** 63
+- **Deeply analyzed files:** 50
 - **Typical request flow (heuristic):** Browser → Routes → Controller → Service → Database
 
 ## 3. Folder Structure
@@ -74,6 +74,8 @@ js/
         sheets-store.js
     pages/
         backup.js
+        bom-challan.js
+        bom-kit-helpers.js
         bom.js
         dashboard.js
         lowstock.js
@@ -102,6 +104,8 @@ sw.js
 - `Dockerfile` — Supporting source file.
 - `js/app.js` — Application entry point / bootstrap file.
 - `js/pages/backup.js` — Defines 3 function(s) implementing supporting logic.
+- `js/pages/bom-challan.js` — Defines 20 function(s) implementing supporting logic.
+- `js/pages/bom-kit-helpers.js` — Defines 26 function(s) implementing supporting logic.
 - `js/pages/bom.js` — Defines 2 class(es) implementing core logic.
 - `js/pages/dashboard.js` — Defines 18 function(s) implementing supporting logic.
 - `js/pages/lowstock.js` — Defines 12 function(s) implementing supporting logic.
@@ -161,12 +165,12 @@ Utility/helper files: 2
 
 - Project appears to be plain JavaScript (no TypeScript detected).
 - File naming leans camelCase.
-- 41 of 48 analyzed files define at least one function.
+- 43 of 50 analyzed files define at least one function.
 
 ## 11. Known Issues / Risk Areas
 
-- 15 file(s) flagged as High complexity: js/app.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, js/pages/stockassign.js, api/services/challanPdf.js, ...
-- Raw SQL string usage found in 36 file(s) — verify parameterization to avoid SQL injection.
+- 17 file(s) flagged as High complexity: js/app.js, js/pages/bom-challan.js, js/pages/bom-kit-helpers.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, ...
+- Raw SQL string usage found in 38 file(s) — verify parameterization to avoid SQL injection.
 - No routes appear to use recognizable auth middleware — verify whether this API is intentionally public.
 - A real `.env` file exists in the project (.env) — ensure it is excluded from version control.
 
@@ -179,6 +183,12 @@ Utility/helper files: 2
 - js/app.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
 - js/app.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 - js/pages/backup.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+- js/pages/bom-challan.js: File defines a large number of functions — consider splitting into smaller modules.
+- js/pages/bom-challan.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
+- js/pages/bom-challan.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+- js/pages/bom-kit-helpers.js: File defines a large number of functions — consider splitting into smaller modules.
+- js/pages/bom-kit-helpers.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
+- js/pages/bom-kit-helpers.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 - js/pages/bom.js: File defines a large number of functions — consider splitting into smaller modules.
 - js/pages/bom.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
 - js/pages/bom.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
@@ -191,12 +201,6 @@ Utility/helper files: 2
 - js/pages/masters.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 - js/pages/partyledger.js: File defines a large number of functions — consider splitting into smaller modules.
 - js/pages/partyledger.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
-- js/pages/partyledger.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
-- js/pages/purchase.js: File defines a large number of functions — consider splitting into smaller modules.
-- js/pages/purchase.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
-- js/pages/purchase.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
-- js/pages/purchaseregister.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
-- js/pages/reports.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 
 ---
 

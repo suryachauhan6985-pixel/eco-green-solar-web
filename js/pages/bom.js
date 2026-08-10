@@ -1,4 +1,3 @@
-
 // js/pages/bom.js
 // -----------------------------------------------------------------------------
 // PART 3 of 3 — trimmed from the original 3921-line bom.js. This file now
@@ -1468,13 +1467,31 @@ window.PAGES.bom = {
         return;
       }
 
+      // Model-item select on a category-driven row's lead item (Solar
+      // Panel/Inverter's first row — see bomRenderScreenItemRowHtml). Its
+      // value IS already the real registered item name
+      // (bomBuildCategoryItemOptionsHtml), so it must be written straight
+      // to item.name — routing it through the brand-resolution logic below
+      // (meant for the normal Item Name select) is what was making a
+      // freshly-picked item snap back to "-- Select Item --": that brand
+      // lookup always failed for a full item name, silently clearing
+      // item.name back to ''.
+      if (field === 'modelitem') {
+        item.name = el.value;
+        item.checked = false;
+        setVerified(false);
+        updateVerifyButtonState();
+        bomRerenderItemRow(si, ii); // item changed — refresh the Serial No. column for this row
+        return;
+      }
+
       // Category select (unchanged) is handled above and returns early.
       // Item Name select on a normal (non-category-driven) row now offers
       // one entry per BRAND (bomBuildItemOptionsHtml) — the value picked
       // here is a brand, not the final registered item name. Remember it
       // in item.brand, then resolve the real name via bomResolveItemName:
       // instantly for a brand with only one registered item, or as soon
-      // as a matching Model is also typed for a brand with several (see
+      // as a matching Model is also picked for a brand with several (see
       // the 'model'-adjacent branch below).
       if (field === 'name') {
         item.brand = el.value;
@@ -1492,18 +1509,20 @@ window.PAGES.bom = {
         return;
       }
 
-      // Model free-text field on a normal (non-category-driven) row —
-      // once a brand has already been picked (item.brand), re-resolve
-      // item.name the moment the typed model matches one of that brand's
-      // real registered models (e.g. brand "Lug" + typing "16" resolves
-      // to the real "Lug_16"). Left unresolved (name stays '') until it
-      // matches, so a half-typed model never silently saves the wrong item.
+      // Model select on a normal (non-category-driven) row — now a
+      // dropdown (bomBuildModelOptionsHtml) instead of free text, same as
+      // the Kit Builder. Once a brand has already been picked (item.brand),
+      // resolve item.name the moment a matching Model is selected (e.g.
+      // brand "Lug" + model "16" resolves to the real "Lug_16"). Left
+      // unresolved (name stays '') until it matches, so a half-picked row
+      // never silently saves the wrong item.
       if (field === 'model' && item.brand) {
         item.model = el.value;
         item.name = bomResolveItemName(item.brand, item.model);
         item.checked = false;
         setVerified(false);
         updateVerifyButtonState();
+        bomRerenderItemRow(si, ii); // item changed — refresh the Serial No. column for this row
         return;
       }
 
@@ -1867,9 +1886,8 @@ window.PAGES.bom = {
             &nbsp;—&nbsp; Quantity required: <b>${required != null ? required : '—'}</b> serial number(s)
           </p>
           <div class="actions-row bom-serial-mode-row" style="margin-bottom:10px;">
-            <button type="button" class="btn btn-ghost bom-serial-mode-btn active" id="bomSerialModeScan"><i class="fa-solid fa-barcode"></i> Scan Serial No.</button>
             <button type="button" class="btn btn-ghost bom-serial-mode-btn" id="bomSerialModeUpload"><i class="fa-solid fa-file-arrow-up"></i> Upload Serial No. (File)</button>
-            <button type="button" class="btn btn-blue" id="bomSerialCameraBtn"><i class="fa-solid fa-camera"></i> Open Camera</button>
+            <button type="button" class="btn btn-blue" id="bomSerialCameraBtn"><i class="fa-solid fa-barcode"></i> Scan Serial No.</button>
           </div>
           <div id="bomSerialUploadPane" style="display:none; margin-bottom:10px;">
             <input type="file" id="bomSerialFileInput" accept=".txt,.csv">
@@ -1886,7 +1904,6 @@ window.PAGES.bom = {
 
       const box = document.getElementById('bomSerialModalBox');
       const countNote = document.getElementById('bomSerialCountNote');
-      const modeScanBtn = document.getElementById('bomSerialModeScan');
       const modeUploadBtn = document.getElementById('bomSerialModeUpload');
       const uploadPane = document.getElementById('bomSerialUploadPane');
       const fileInput = document.getElementById('bomSerialFileInput');
@@ -1895,8 +1912,19 @@ window.PAGES.bom = {
       const cameraBtn = document.getElementById('bomSerialCameraBtn');
       if (!box) return;
 
-      // Step 5: opens the real camera scanner (see openBomScanner above),
-      // appending each Done'd scan straight into this modal's box.
+      // Hides the Upload pane and returns focus to the type/scan box —
+      // replaces the old "Scan Serial No." mode-toggle button, which was
+      // removed (the box is the default/active mode already, so a
+      // separate button just to switch back to it was redundant).
+      function backToTypeMode() {
+        modeUploadBtn.classList.remove('active');
+        uploadPane.style.display = 'none';
+        box.focus();
+      }
+
+      // The real camera scanner (see openBomScanner above) — appending
+      // each Done'd scan straight into this modal's box. Labeled "Scan
+      // Serial No." since it's the only actual scan entry point now.
       if (cameraBtn) cameraBtn.addEventListener('click', () => openBomScanner('bomSerialModalBox'));
 
       function updateCountNote() {
@@ -1941,15 +1969,10 @@ window.PAGES.bom = {
         updateCountNote();
       });
 
-      modeScanBtn.addEventListener('click', () => {
-        modeScanBtn.classList.add('active');
-        modeUploadBtn.classList.remove('active');
-        uploadPane.style.display = 'none';
-        box.focus();
-      });
       modeUploadBtn.addEventListener('click', () => {
+        const isOpen = uploadPane.style.display !== 'none' && uploadPane.style.display !== '';
+        if (isOpen) { backToTypeMode(); return; }
         modeUploadBtn.classList.add('active');
-        modeScanBtn.classList.remove('active');
         uploadPane.style.display = '';
       });
       fileInput.addEventListener('change', () => {
@@ -1961,7 +1984,7 @@ window.PAGES.bom = {
           const merged = bomSplitSerials(box.value).concat(parsed);
           box.value = merged.join('\n');
           updateCountNote();
-          modeScanBtn.click(); // back to the box so it can be reviewed/edited before Save
+          backToTypeMode(); // back to the box so it can be reviewed/edited before Save
           if (window.showToast) window.showToast(`${parsed.length} serial number(s) loaded from file.`);
         };
         reader.onerror = () => window.openModal('File Read Error', '<p>Could not read that file. Please try a plain .txt or .csv file.</p>');

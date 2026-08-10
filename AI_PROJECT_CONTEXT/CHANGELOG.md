@@ -1,9 +1,9 @@
 # Changelog (Since Last Scan)
 
-Scan performed: 2026-08-10T06:04:57.380Z
+Scan performed: 2026-08-10T10:20:40.799Z
 First scan for this project: Yes
 
-## Added Files (61)
+## Added Files (63)
 
 - .env
 - Dockerfile
@@ -14,6 +14,8 @@ First scan for this project: Yes
 - sw.js
 - js/app.js
 - js/pages/backup.js
+- js/pages/bom-challan.js
+- js/pages/bom-kit-helpers.js
 - js/pages/bom.js
 - js/pages/dashboard.js
 - js/pages/lowstock.js

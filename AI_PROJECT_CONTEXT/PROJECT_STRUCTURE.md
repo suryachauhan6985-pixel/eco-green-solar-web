@@ -56,6 +56,8 @@ js/
         sheets-store.js
     pages/
         backup.js
+        bom-challan.js
+        bom-kit-helpers.js
         bom.js
         dashboard.js
         lowstock.js
