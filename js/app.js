@@ -50,6 +50,75 @@ window.hideLoader = function hideLoader() {
   }
 };
 
+// ---------------------------------------------------------------------------
+// window.focusInvalidField(el) — generic "missing required field" UX used
+// across every page's forms (BOM, Sales, Purchase, Masters, ...): instead of
+// (or alongside) an openModal() popup, this scrolls the actual offending
+// field into view, focuses it, and gives it a red outline + a brief shake so
+// it's unmistakable which field still needs filling in — same pattern any
+// normal web form uses for client-side validation. The red outline clears
+// itself the moment the person starts fixing that field (input/change/
+// focus), and also auto-clears after a few seconds so it never gets stuck
+// highlighted if they go fix it some other way (e.g. picking a datalist
+// suggestion that doesn't fire 'input' in every browser).
+// `el` can be an <input>/<select>/<textarea>, OR a non-field wrapper (e.g. a
+// custom dropdown trigger) — either way it just needs to be a real element
+// already in the DOM. Safe to call with a null/missing element (no-ops).
+// ---------------------------------------------------------------------------
+window.focusInvalidField = function focusInvalidField(el) {
+  if (!el || !el.scrollIntoView) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const doFocus = () => { if (el.focus) el.focus({ preventScroll: true }); };
+  // Give the smooth-scroll a beat to land before focusing/highlighting —
+  // focusing mid-scroll on some mobile browsers cancels the scroll early.
+  setTimeout(doFocus, 220);
+
+  el.classList.remove('egs-field-invalid'); // restart the shake if already flagged
+  // eslint-disable-next-line no-unused-expressions
+  void el.offsetWidth; // force reflow so re-adding the class replays the CSS animation
+  el.classList.add('egs-field-invalid');
+
+  let cleared = false;
+  const clear = () => {
+    if (cleared) return;
+    cleared = true;
+    el.classList.remove('egs-field-invalid');
+    el.removeEventListener('input', clear);
+    el.removeEventListener('change', clear);
+  };
+  el.addEventListener('input', clear);
+  el.addEventListener('change', clear);
+  setTimeout(clear, 4000); // safety auto-clear, e.g. for datalist picks that skip 'input'
+};
+
+// Injects the red-outline/shake styling for window.focusInvalidField() once.
+// Self-contained here (rather than in css/modules/*.css, which weren't
+// available when this was added) — safe to move into an actual CSS file
+// later, the class name (egs-field-invalid) is what matters, not where the
+// rule lives.
+(function injectInvalidFieldStyles() {
+  if (document.getElementById('egsInvalidFieldStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'egsInvalidFieldStyles';
+  style.textContent = `
+    .egs-field-invalid {
+      outline: 2px solid #e5484d !important;
+      outline-offset: 1px !important;
+      border-color: #e5484d !important;
+      box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.25) !important;
+      animation: egsFieldShake 0.35s ease-in-out;
+    }
+    @keyframes egsFieldShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(5px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(3px); }
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
 (function () {
   const originalFetch = window.fetch.bind(window);
   window.fetch = function (input, init) {

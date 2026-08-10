@@ -654,16 +654,19 @@ window.PAGES.bom = {
     function bomOpenCreateBomModal() {
       if (!currentKitState) {
         window.openModal('Select a Kit', '<p>Please select a BOM Kit before generating a BOM.</p>');
+        if (window.focusInvalidField) window.focusInvalidField($('bomKitSelect'));
         return;
       }
       const header = getHeaderValues();
       const orderNo = (header.orderNo || '').trim();
       if (!orderNo) {
         window.openModal('Order No. Required', '<p>Please enter an <b>Order No.</b> before generating a BOM.</p>');
+        if (window.focusInvalidField) window.focusInvalidField($('bomOrderNo'));
         return;
       }
       if (!(header.customerName || '').trim()) {
         window.openModal('Customer Name Required', '<p>Please enter a <b>Customer Name</b> before generating a BOM.</p>');
+        if (window.focusInvalidField) window.focusInvalidField($('bomCustomerName'));
         return;
       }
       const items = bomCollectItemsForCreate();
@@ -1298,6 +1301,7 @@ window.PAGES.bom = {
         const label = newKitLabelInput.value.trim();
         if (!label) {
           window.openModal('Validation Error', '<p>Kit Name is required.</p>');
+          if (window.focusInvalidField) window.focusInvalidField(newKitLabelInput);
           return;
         }
         // Drop any item left with a blank name, and any section left with
@@ -1397,11 +1401,13 @@ window.PAGES.bom = {
           if (!entered) {
             el.checked = false;
             window.openModal('Serial No. Required', '<p>Please enter Serial No. first.</p>');
+            if (window.focusInvalidField) window.focusInvalidField(document.querySelector(`.bom-serial-btn[data-sec="${si}"][data-idx="${ii}"]`));
             return;
           }
           if (required != null && entered !== required) {
             el.checked = false;
             window.openModal('Serial No. Required', `<p>Please enter Serial No. first — <strong>${bomEsc(item.name || 'this item')}</strong> needs exactly ${required} serial number(s), but ${entered} ${entered === 1 ? 'is' : 'are'} entered.</p>`);
+            if (window.focusInvalidField) window.focusInvalidField(document.querySelector(`.bom-serial-btn[data-sec="${si}"][data-idx="${ii}"]`));
             return;
           }
         }
@@ -2231,10 +2237,12 @@ window.PAGES.bom = {
       // never needed it.
       if (!header.orderNo || !header.orderNo.trim()) {
         window.openModal('Order No. Required', '<p>Please enter an <b>Order No.</b> before creating a dispatch — it\'s how partial dispatches for this BOM get tracked together.</p>');
+        if (window.focusInvalidField) window.focusInvalidField($('bomOrderNo'));
         return false;
       }
       if (!header.customerName || !header.customerName.trim()) {
         window.openModal('Customer Name Required', '<p>Please enter a <b>Customer Name</b> before creating a dispatch.</p>');
+        if (window.focusInvalidField) window.focusInvalidField($('bomCustomerName'));
         return false;
       }
       const items = bomCollectItemsForDispatch();
