@@ -370,31 +370,82 @@ window.PAGES.bom = {
     // item can only ever get used in a BOM/Kit Template AFTER it's mapped
     // here, so gating this list on "already used in a BOM" made it
     // impossible to map a brand-new item before its first use.
+    //
+    // Display grouping: items.name in the DB is a concatenated
+    // "<Brand> <Model/Watt>" string (see masters.routes.js item
+    // create/update), which reads badly in a mapping list (e.g. "DC
+    // Earthing Wire - Yellow - Polycab 4 SQ.MM"). Split it based on
+    // whether the item's effective rule (its own override, or its
+    // Category's default — watt_mandatory_effective / serial_mandatory_effective,
+    // same fields Masters > Categories sets) actually needs the Model to
+    // tell two rows apart:
+    //   - Serial/Watt-mandatory items (Solar Panel, Inverter, ...) — each
+    //     Model IS effectively its own product, so one mapping row per
+    //     distinct Model, labelled by Model alone.
+    //   - Everything else (wires, clamps, cement, bags, ...) — the Model
+    //     suffix (e.g. "4 SQ.MM", "19mm DIA") makes no difference to which
+    //     Challan line the item folds into, so every Model under the same
+    //     Brand collapses into ONE row, labelled by Brand alone.
+    // Either way this is purely a DISPLAY + bulk-save convenience — saving
+    // one row still writes a mapping for every real items.name it
+    // represents, because Convert-into-Challan's compress logic
+    // (bomComputeChallanAutoQty) matches strictly on the real per-item
+    // name (bomChallanCategoryMap[it.name]).
     // "Save Mapping" bulk-PUTs the whole set. This is the ONLY place
-    // bomChallanCategoryMap changes — the Convert-into-Challan compress
-    // logic (bomComputeChallanAutoQty) only ever reads it.
-    async function bomCollectAllItemNamesForMapping() {
+    // bomChallanCategoryMap changes.
+    async function bomCollectItemGroupsForMapping() {
       try {
         const rows = await window.Api.get('/masters/items');
-        const names = (Array.isArray(rows) ? rows : []).map((r) => r.name).filter(Boolean);
-        return Array.from(new Set(names)).sort((a, b) =>
-          String(a).localeCompare(String(b), undefined, { sensitivity: 'base', numeric: true })
+        const list = Array.isArray(rows) ? rows : [];
+        const byBrand = {}; // brand -> { label, itemNames: [] }
+        const variantGroups = []; // one per distinct Model, itemNames: [fullName]
+        list.forEach((r) => {
+          const fullName = (r.name || '').trim();
+          if (!fullName) return;
+          const brand = (r.brand_name || fullName).trim();
+          const model = (r.model || '').trim();
+          const isMandatory = !!(r.watt_mandatory_effective || r.serial_mandatory_effective);
+          if (isMandatory) {
+            variantGroups.push({ label: model || fullName, itemNames: [fullName] });
+          } else {
+            if (!byBrand[brand]) byBrand[brand] = { label: brand, itemNames: [] };
+            byBrand[brand].itemNames.push(fullName);
+          }
+        });
+        const groups = Object.values(byBrand).concat(variantGroups);
+        groups.sort((a, b) =>
+          String(a.label).localeCompare(String(b.label), undefined, { sensitivity: 'base', numeric: true })
         );
+        return groups;
       } catch (e) {
-        console.warn('bom: could not load item master names for Challan mapping', e);
+        console.warn('bom: could not load item master rows for Challan mapping', e);
         return [];
       }
     }
 
-    function bomRenderChallanMapModalHtml(names) {
+    // Set fresh every time the modal (re)renders — index -> { label,
+    // itemNames }. The rendered <select>'s data-row-index looks this up on
+    // Save, so the bulk-write below can expand one visible row back out to
+    // every real item name it represents.
+    let bomChallanMapGroups = [];
+
+    function bomRenderChallanMapModalHtml(groups) {
+      bomChallanMapGroups = groups;
       const categoryOptions = (selected) =>
         `<option value="">-- Unmapped --</option>` +
         bomChallanCategoryList.map((c) => `<option value="${bomEscAttr(c)}" ${c === selected ? 'selected' : ''}>${bomEsc(c)}</option>`).join('');
-      const rows = names.map((name) => `
+      const rows = groups.map((g, gi) => {
+        // If every real item this row represents already shares the same
+        // saved category, pre-select it; otherwise (mixed/none) start on
+        // "-- Unmapped --" rather than guessing.
+        const savedCats = Array.from(new Set(g.itemNames.map((n) => bomChallanCategoryMap[n] || '')));
+        const selected = savedCats.length === 1 ? savedCats[0] : '';
+        return `
         <tr>
-          <td>${bomEsc(name)}</td>
-          <td><select class="bom-field-input bom-challanmap-select" data-item-name="${bomEscAttr(name)}">${categoryOptions(bomChallanCategoryMap[name] || '')}</select></td>
-        </tr>`).join('');
+          <td>${bomEsc(g.label)}</td>
+          <td><select class="bom-field-input bom-challanmap-select" data-row-index="${gi}">${categoryOptions(selected)}</select></td>
+        </tr>`;
+      }).join('');
       return `
         <div id="bomChallanMapModalRoot">
           <p class="note" style="margin-bottom:12px;">
@@ -426,16 +477,21 @@ window.PAGES.bom = {
       // bomChallanCategoryList permanently empty for the rest of the
       // session, which is why every dropdown only ever showed
       // "-- Unmapped --" with no real categories to pick from).
-      const [, names] = await Promise.all([bomLoadChallanCategoryMap(), bomCollectAllItemNamesForMapping()]);
-      openChallanModal(bomRenderChallanMapModalHtml(names));
+      const [, groups] = await Promise.all([bomLoadChallanCategoryMap(), bomCollectItemGroupsForMapping()]);
+      openChallanModal(bomRenderChallanMapModalHtml(groups));
       if (modalTitleEl) modalTitleEl.innerHTML = '<i class="fa-solid fa-sitemap"></i> Challan Category Mapping';
       const saveBtn = document.getElementById('bomChallanMapSaveBtn');
       if (saveBtn) {
         saveBtn.addEventListener('click', async () => {
-          const mappings = Array.from(document.querySelectorAll('.bom-challanmap-select')).map((sel) => ({
-            itemName: sel.getAttribute('data-item-name'),
-            category: sel.value,
-          }));
+          // Expand each visible row back out to every real item name it
+          // represents — a brand-collapsed row (e.g. "Polycab") writes the
+          // same category for every model under that brand in one go.
+          const mappings = [];
+          document.querySelectorAll('.bom-challanmap-select').forEach((sel) => {
+            const group = bomChallanMapGroups[Number(sel.dataset.rowIndex)];
+            if (!group) return;
+            group.itemNames.forEach((itemName) => mappings.push({ itemName, category: sel.value }));
+          });
           saveBtn.disabled = true;
           try {
             await window.Api.put('/challan/category-map', { mappings });
