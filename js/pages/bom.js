@@ -1108,10 +1108,12 @@ window.PAGES.bom = {
         <button class="btn btn-green" type="button" id="bomBtnDispatch" disabled><i class="fa-solid fa-truck"></i> Create Dispatch</button>
         <button class="btn btn-green" type="button" id="bomBtnCreateBom" style="display:none;"><i class="fa-solid fa-plus-circle"></i> Generate BOM</button>
         <button class="btn btn-ghost" type="button" id="bomBtnTrackBom"><i class="fa-solid fa-route"></i> Track BOM</button>
-        <button class="btn btn-ghost" type="button" id="bomBtnPendingRegister"><i class="fa-solid fa-clipboard-list"></i> Pending BOM Register</button>
         <button type="button" class="btn btn-ghost" id="bomBtnNewKit" title="Create a new BOM Kit / Template"><i class="fa-solid fa-plus"></i> New Kit</button>
-        <button type="button" class="btn btn-ghost" id="bomBtnChallanMap" style="display:none;" title="Decide which BOM item folds into which Challan line"><i class="fa-solid fa-sitemap"></i> Challan Category Mapping</button>
       </div>
+      <!-- "Pending BOM Register" and "Challan Category Mapping" used to be
+           duplicated here AND on the BOM Home launcher screen
+           (bomHomeBtnRegister / bomHomeBtnChallanMap) — kept ONLY on Home
+           now, per instruction, so each action lives in exactly one place. -->
       <p class="note" id="bomVerifyStatus" style="margin-top:8px;">
         <i class="fa-solid fa-circle-info"></i> Tick every item in the <b>Check</b> column below, then click <b>Verify BOM</b>. "Create Dispatch" stays locked until then.
       </p>
@@ -1466,7 +1468,6 @@ window.PAGES.bom = {
     const registerOverlay = $('bomRegisterOverlay');
     const registerModalBody = $('bomRegisterModalBody');
     const registerCloseBtn = $('bomRegisterCloseBtn');
-    const btnPendingRegister = $('bomBtnPendingRegister');
     function openRegisterModal(bodyHtml) {
       if (!registerOverlay || !registerModalBody) return;
       registerModalBody.innerHTML = bodyHtml;
@@ -2032,16 +2033,11 @@ window.PAGES.bom = {
 
     // "Challan Category Mapping" — same Admin/SuperAdmin gate as New Kit:
     // this decides which BOM item's quantity feeds which Challan summary
-    // line, same trust level as editing an Item Master rule. Wired on BOTH
-    // the Entry screen's own button AND the BOM Home launcher's button
-    // (bomHomeBtnChallanMap) — same modal, same handler, just two entry
-    // points so it doesn't require opening/creating a BOM first.
-    const btnChallanMap = $('bomBtnChallanMap');
+    // line, same trust level as editing an Item Master rule. Lives ONLY on
+    // the BOM Home launcher screen now (bomHomeBtnChallanMap) — the Entry
+    // screen's own copy of this button was removed per instruction so the
+    // action exists in exactly one place.
     const homeBtnChallanMap = $('bomHomeBtnChallanMap');
-    if (btnChallanMap) {
-      btnChallanMap.style.display = bomIsAdmin ? '' : 'none';
-      btnChallanMap.addEventListener('click', bomOpenChallanMapModal);
-    }
     if (homeBtnChallanMap) {
       homeBtnChallanMap.style.display = bomIsAdmin ? '' : 'none';
       homeBtnChallanMap.addEventListener('click', bomOpenChallanMapModal);
@@ -3349,7 +3345,6 @@ window.PAGES.bom = {
       bomLoadContinueDispatchForm(orderId, 'inline');
     }
 
-    if (btnPendingRegister) btnPendingRegister.addEventListener('click', bomLoadRegisterList);
     if (homeBtnRegister) homeBtnRegister.addEventListener('click', bomLoadRegisterList);
 
     if (btnChallan) {
