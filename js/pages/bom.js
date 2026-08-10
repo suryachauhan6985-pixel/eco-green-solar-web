@@ -527,14 +527,17 @@ let bomChallanCategoryList = [];
 
 async function bomLoadChallanCategoryMap() {
   try {
-    const res = await fetch('/api/challan/category-map', { credentials: 'include' });
-    if (!res.ok) return;
-    const data = await res.json();
+    // window.Api.get (not a raw fetch) — goes through the same wrapper
+    // (auth header / base URL / error parsing) every other API call in
+    // this app uses, so this can't silently diverge from them and come
+    // back empty for a reason none of the other calls would hit.
+    const data = await window.Api.get('/challan/category-map');
     bomChallanCategoryMap = (data && data.map) || {};
     bomChallanCategoryList = (data && data.categories) || [];
   } catch (e) {
     // offline/first-load race — Convert into Challan still works, just
-    // without auto-fill until the next page load succeeds.
+    // without auto-fill until the next successful load.
+    console.warn('bom: could not load Challan category map', e);
   }
 }
 
@@ -1018,6 +1021,7 @@ function bomRenderHomeViewHtml() {
           <button type="button" class="btn btn-green" id="bomHomeBtnCreate"><i class="fa-solid fa-plus-circle"></i> Create BOM</button>
           <button type="button" class="btn btn-ghost" id="bomHomeBtnTrack"><i class="fa-solid fa-route"></i> Track BOM</button>
           <button type="button" class="btn btn-ghost" id="bomHomeBtnRegister"><i class="fa-solid fa-clipboard-list"></i> BOM Register</button>
+          <button type="button" class="btn btn-ghost" id="bomHomeBtnChallanMap" style="display:none;" title="Decide which BOM item folds into which Challan line"><i class="fa-solid fa-sitemap"></i> Challan Category Mapping</button>
         </div>
       </div>
       <div class="panel">
@@ -1128,16 +1132,6 @@ window.PAGES.bom = {
          Ledger's "Create/Edit Ledger" and "Ledger Account Statement"
          dialogs (css/modules/party-ledger.css) — genuinely maximized on
          desktop, fully responsive on mobile, no new CSS needed at all. -->
-    <div class="modal-overlay modal-fullscreen" id="bomChallanOverlay">
-      <div class="modal-box" onclick="event.stopPropagation()">
-        <div class="modal-head">
-          <h3><i class="fa-solid fa-file-invoice"></i> Convert into Challan</h3>
-          <button class="modal-close" id="bomChallanCloseBtn"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="modal-body" id="bomChallanModalBody"></div>
-      </div>
-    </div>
-
     <!-- PRINT-ONLY: exact Excel replica. Hidden on screen (see .bom-print-only
          in style.css); (re)built from the form fields above right before
          printing, then never shown on-screen at all — this is what fixes
@@ -1154,6 +1148,29 @@ window.PAGES.bom = {
          the existing BOM print is never touched by this. -->
     <div class="bom-print-only" id="bomChallanPrintRoot"></div>
     </div><!-- /bomEntryView -->
+
+    <!-- "Convert into Challan" / "Challan Category Mapping" — its OWN
+         fullscreen modal (NOT the shared window.openModal/#modalOverlay
+         small dialog, which is capped at max-width:480px in
+         css/modules/components.css — far too narrow for this form + item
+         table). Reuses the exact same .modal-overlay.modal-fullscreen
+         pattern already used by Party Ledger's "Create/Edit Ledger" and
+         "Ledger Account Statement" dialogs (css/modules/party-ledger.css)
+         — genuinely maximized on desktop, fully responsive on mobile, no
+         new CSS needed at all.
+         IMPORTANT: kept OUTSIDE #bomEntryView on purpose, same reasoning
+         as #bomRegisterOverlay below — the BOM Home screen's own "Challan
+         Category Mapping" button opens this same overlay, and
+         #bomEntryView is display:none while Home is showing. -->
+    <div class="modal-overlay modal-fullscreen" id="bomChallanOverlay">
+      <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-head">
+          <h3 id="bomChallanModalTitle"><i class="fa-solid fa-file-invoice"></i> Convert into Challan</h3>
+          <button class="modal-close" id="bomChallanCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" id="bomChallanModalBody"></div>
+      </div>
+    </div>
 
     <!-- Step 4: Pending BOM Register — lists every bom_orders row still
          Open (some item still pending) and lets you continue dispatching
@@ -1333,22 +1350,29 @@ window.PAGES.bom = {
     // ---------- Challan Category Mapping — admin editor (Goal 5) ----------
     // Reuses the same fullscreen Challan overlay/body (openChallanModal
     // above) — it's already a generic "big scrollable panel" host, no need
-    // for a second modal shell. Lists every distinct item name seen across
-    // every kit (built-in + saved custom templates) with a dropdown to
-    // (re)assign its Challan category; "Save Mapping" bulk-PUTs the whole
-    // set. This is the ONLY place bomChallanCategoryMap changes — the
-    // Convert-into-Challan compress logic (bomComputeChallanAutoQty) only
-    // ever reads it.
-    function bomCollectAllKitItemNamesForMapping() {
-      const set = new Set();
-      Object.values(bomGetAllKits()).forEach((kit) => {
-        kit.sections.forEach((sec) => sec.items.forEach((it) => { if (it.name) set.add(it.name); }));
-      });
-      return Array.from(set).sort((a, b) => a.localeCompare(b));
+    // for a second modal shell. Lists every distinct item name that has
+    // actually been used in at least one real BOM (GET
+    // /api/bom/used-item-names — any bom_orders row, Open or Completed),
+    // NOT every item listed in a Kit Template — a kit can carry items that
+    // have never actually gone out under any Order No. yet, and mapping
+    // those just clutters the editor. With "and even if there are 10
+    // registers, only the items that appear across ALL of them show up
+    // here" — the backend already de-duplicates across every bom_orders
+    // row, so this only ever fetches, never merges anything client-side.
+    // "Save Mapping" bulk-PUTs the whole set. This is the ONLY place
+    // bomChallanCategoryMap changes — the Convert-into-Challan compress
+    // logic (bomComputeChallanAutoQty) only ever reads it.
+    async function bomCollectUsedItemNamesForMapping() {
+      try {
+        const data = await window.Api.get('/bom/used-item-names');
+        return (data && Array.isArray(data.names)) ? data.names : [];
+      } catch (e) {
+        console.warn('bom: could not load used item names for Challan mapping', e);
+        return [];
+      }
     }
 
-    function bomRenderChallanMapModalHtml() {
-      const names = bomCollectAllKitItemNamesForMapping();
+    function bomRenderChallanMapModalHtml(names) {
       const categoryOptions = (selected) =>
         `<option value="">-- Unmapped --</option>` +
         bomChallanCategoryList.map((c) => `<option value="${bomEscAttr(c)}" ${c === selected ? 'selected' : ''}>${bomEsc(c)}</option>`).join('');
@@ -1362,12 +1386,13 @@ window.PAGES.bom = {
           <p class="note" style="margin-bottom:12px;">
             <i class="fa-solid fa-circle-info"></i> Decide which Challan line each BOM item's quantity folds into.
             "GI Pipe" items are handled automatically (feet &rarr; 20/15/10/5-Feet pieces) &mdash; you only need to tag
-            them "GI Pipe" here so they're excluded from every other category's count.
+            them "GI Pipe" here so they're excluded from every other category's count. Only items actually used in
+            at least one BOM so far are listed below.
           </p>
           <div class="table-wrap" style="max-height:60vh;overflow:auto;">
             <table class="bom-items-form-table">
               <thead><tr><th>Item Name</th><th>Challan Category</th></tr></thead>
-              <tbody>${rows || '<tr><td colspan="2">No items found across any kit yet.</td></tr>'}</tbody>
+              <tbody>${rows || '<tr><td colspan="2">No items used in any BOM yet.</td></tr>'}</tbody>
             </table>
           </div>
           <div class="actions-row" style="margin-top:14px;">
@@ -1377,8 +1402,19 @@ window.PAGES.bom = {
       `;
     }
 
-    function bomOpenChallanMapModal() {
-      openChallanModal(bomRenderChallanMapModalHtml());
+    async function bomOpenChallanMapModal() {
+      openChallanModal('<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading items used across every BOM...</p>');
+      const modalTitleEl = document.getElementById('bomChallanModalTitle');
+      if (modalTitleEl) modalTitleEl.innerHTML = '<i class="fa-solid fa-sitemap"></i> Challan Category Mapping';
+      // Re-fetch BOTH the category list and the used-item list fresh every
+      // time this opens — never rely solely on init()'s one-time load
+      // having succeeded (a slow/failed first-load fetch used to leave
+      // bomChallanCategoryList permanently empty for the rest of the
+      // session, which is why every dropdown only ever showed
+      // "-- Unmapped --" with no real categories to pick from).
+      const [, names] = await Promise.all([bomLoadChallanCategoryMap(), bomCollectUsedItemNamesForMapping()]);
+      openChallanModal(bomRenderChallanMapModalHtml(names));
+      if (modalTitleEl) modalTitleEl.innerHTML = '<i class="fa-solid fa-sitemap"></i> Challan Category Mapping';
       const saveBtn = document.getElementById('bomChallanMapSaveBtn');
       if (saveBtn) {
         saveBtn.addEventListener('click', async () => {
@@ -1973,11 +2009,19 @@ window.PAGES.bom = {
 
     // "Challan Category Mapping" — same Admin/SuperAdmin gate as New Kit:
     // this decides which BOM item's quantity feeds which Challan summary
-    // line, same trust level as editing an Item Master rule.
+    // line, same trust level as editing an Item Master rule. Wired on BOTH
+    // the Entry screen's own button AND the BOM Home launcher's button
+    // (bomHomeBtnChallanMap) — same modal, same handler, just two entry
+    // points so it doesn't require opening/creating a BOM first.
     const btnChallanMap = $('bomBtnChallanMap');
+    const homeBtnChallanMap = $('bomHomeBtnChallanMap');
     if (btnChallanMap) {
       btnChallanMap.style.display = bomIsAdmin ? '' : 'none';
       btnChallanMap.addEventListener('click', bomOpenChallanMapModal);
+    }
+    if (homeBtnChallanMap) {
+      homeBtnChallanMap.style.display = bomIsAdmin ? '' : 'none';
+      homeBtnChallanMap.addEventListener('click', bomOpenChallanMapModal);
     }
 
     // Live, mutable working copy of the kit being built — same
@@ -3262,6 +3306,8 @@ window.PAGES.bom = {
         const kit = { kw, sections: currentKitState };
         const header = getHeaderValues();
 
+        const challanModalTitleEl = document.getElementById('bomChallanModalTitle');
+        if (challanModalTitleEl) challanModalTitleEl.innerHTML = '<i class="fa-solid fa-file-invoice"></i> Convert into Challan';
         openChallanModal(bomRenderChallanEntryModalHtml(header, kit));
         // Auto-fill Qty from the actual on-screen kit items (respecting any
         // partial Dispatch Qty) via the item->category mapping — see

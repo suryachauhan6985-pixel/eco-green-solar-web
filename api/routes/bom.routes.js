@@ -316,6 +316,28 @@ module.exports = function registerBomRoutes(app, deps) {
     }
   }));
 
+  // GET /api/bom/used-item-names — every distinct item name that has
+  // actually been used in at least one REAL BOM (any bom_orders row,
+  // Open or Completed — "used in a BOM" means it was part of an order's
+  // baseline, not whether it's still pending). Powers the Challan
+  // Category Mapping editor's item list (see bom.js's
+  // bomOpenChallanMapModal) — deliberately DB-driven from real orders
+  // instead of every Kit Template's full item list, since a kit can list
+  // items that have never actually been dispatched under any Order No.
+  // yet, and mapping those clutters the editor with items nobody needs
+  // categorized yet.
+  app.get('/api/bom/used-item-names', route(async (req, res) => {
+    const [rows] = await pool.query(`SELECT items_json FROM bom_orders`);
+    const set = new Set();
+    for (const row of rows) {
+      let baseline;
+      try { baseline = JSON.parse(row.items_json || '{}'); } catch (e) { baseline = {}; }
+      Object.keys(baseline).forEach((name) => { if (name) set.add(name); });
+    }
+    const names = Array.from(set).sort((a, b) => a.localeCompare(b));
+    res.json({ names });
+  }));
+
   // GET /api/bom/orders/by-order-no/:orderNo — the real Track BOM lookup.
   // Registered BEFORE GET /api/bom/orders/:id below so "by-order-no" is
   // never swallowed as a numeric :id. Same per-item breakdown as GET
@@ -364,8 +386,7 @@ module.exports = function registerBomRoutes(app, deps) {
   // baseline item, not just the pending ones — the frontend filters to
   // remaining>0 itself, but keeping the full list here makes this
   // endpoint equally useful for a future "order history" view.
-  app.get('/api/bom/orders/:id', route(async (req, res) => {
-    const [[row]] = await pool.query(`SELECT * FROM bom_orders WHERE id=?`, [req.params.id]);
+  app.get('/api/bom/orders/:id', route(async (req, res) => {    const [[row]] = await pool.query(`SELECT * FROM bom_orders WHERE id=?`, [req.params.id]);
     if (!row) return res.status(404).json({ error: 'BOM order not found.' });
     const { items } = await pendingForOrder(pool, row, true);
     res.json({
