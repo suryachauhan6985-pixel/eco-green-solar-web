@@ -347,19 +347,23 @@ function bomRenderScreenItemsHtml(state, opts) {
       }
       // A row is category-driven whenever its SECTION's title matches a
       // real Masters > Category name (e.g. a section titled "Solar Panel"
-      // or "Inverter") — every item in that section gets this treatment,
-      // not just a fixed row number. Item Name becomes a Category select
-      // (writes to it.category, defaulting to the section's own category
-      // so a freshly-added row doesn't need it re-picked); Model becomes a
-      // select of the real registered items under that category (writes
-      // to it.name — the value actually sent to the backend for stock
-      // matching, same field every other row's Item Name select already
-      // writes to).
+      // or "Inverter") AND it's the FIRST row (ii === 0) of that section —
+      // only that lead row gets the Category/Model-item dropdown pair.
+      // Item Name becomes a Category select (writes to it.category,
+      // defaulting to the section's own category so a freshly-added row
+      // doesn't need it re-picked); Model becomes a select of the real
+      // registered items under that category (writes to it.name — the
+      // value actually sent to the backend for stock matching, same field
+      // every other row's Item Name select already writes to). Every
+      // OTHER row in a category-driven section (ii > 0) falls back to the
+      // normal flat Item Name dropdown + free-text Model input, same as
+      // any non-category-driven section.
+      const isCategoryDrivenRow = !!sectionCategory && ii === 0;
       const effectiveCategory = it.category || sectionCategory;
-      const nameCell = sectionCategory
+      const nameCell = isCategoryDrivenRow
         ? `<select class="bom-field-input bom-field-category" data-sec="${si}" data-idx="${ii}" data-field="category">${bomBuildCategoryOptionsHtml(effectiveCategory)}</select>`
         : `<select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(it.name)}</select>`;
-      const modelCell = sectionCategory
+      const modelCell = isCategoryDrivenRow
         ? `<select class="bom-field-input bom-field-modelitem" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildCategoryItemOptionsHtml(effectiveCategory, it.name)}</select>`
         : `<input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="model" value="${bomEscAttr(it.model)}">`;
       return `
@@ -403,15 +407,23 @@ function bomRenderPrintSheetHtml(kit, header) {
   const rows = kit.sections.map((sec) => {
     const catRow = `<tr class="bom-cat-row"><td colspan="6">${sec.title}</td></tr>`;
     const sectionCategory = bomResolveSectionCategory(sec.title);
-    const itemRows = sec.items.map((it) => `
+    // Mirrors the on-screen rule (bomRenderScreenItemsHtml): only the
+    // FIRST row of a category-driven section (e.g. Solar Panel, Inverter)
+    // was ever entered via the Category/Model-item dropdown pair — every
+    // other row in that section was a normal Item Name + Model row, so it
+    // must print it.name/it.model directly like any other row.
+    const itemRows = sec.items.map((it, idx) => {
+      const isCategoryDrivenRow = !!sectionCategory && idx === 0;
+      return `
       <tr>
         <td class="bom-c-sr">${it.sr}</td>
-        <td class="bom-c-name">${sectionCategory ? (it.category || sectionCategory) : it.name}</td>
-        <td class="bom-c-model">${sectionCategory ? (it.name || '') : (it.model || '')}</td>
+        <td class="bom-c-name">${isCategoryDrivenRow ? (it.category || sectionCategory) : it.name}</td>
+        <td class="bom-c-model">${isCategoryDrivenRow ? (it.name || '') : (it.model || '')}</td>
         <td class="bom-c-qty">${it.qty}</td>
         <td class="bom-c-checked"></td>
         <td class="bom-c-remarks">${it.remarks || ''}</td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
     return catRow + itemRows;
   }).join('');
 
@@ -1047,6 +1059,7 @@ window.PAGES.bom = {
             <select id="bomKitSelect" style="flex:1;">
               <option value="">-- Select Kit --</option>
             </select>
+            <button type="button" class="btn btn-ghost" id="bomBtnEditKit" style="display:none; padding:9px 12px;" title="Edit this saved template"><i class="fa-solid fa-pen"></i></button>
             <button type="button" class="btn btn-red" id="bomBtnDeleteKit" style="display:none; padding:9px 12px;" title="Delete this saved template"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>
@@ -1078,18 +1091,18 @@ window.PAGES.bom = {
     </div>
 
     <div class="panel" id="bomKitBuilderPanel" style="display:none;">
-      <h3><i class="fa-solid fa-layer-group"></i> Create / Save New BOM Kit &amp; Template</h3>
+      <h3 id="bomKitBuilderTitle"><i class="fa-solid fa-layer-group"></i> Create / Save New BOM Kit &amp; Template</h3>
       <div class="form-grid cols-2">
         <div class="field"><label>Kit Name <span class="req">*</span></label><input id="bomNewKitLabel" placeholder="e.g. 5 kW — Commercial 550 Wp"></div>
         <div class="field"><label>Capacity (kW)</label><input id="bomNewKitKw" placeholder="e.g. 5"></div>
       </div>
-      <p class="note" style="margin:6px 0 14px;">
+      <p class="note" style="margin:6px 0 14px;" id="bomKitBuilderHint">
         <i class="fa-solid fa-circle-info"></i> Starts pre-filled with the standard section/item format below — Model, Quantity &amp; Remarks are left blank for you to fill in. Add or remove sections/items freely, and item names can be renamed too.
       </p>
       <div id="bomNewKitSections"></div>
       <div class="actions-row" style="margin-top:10px;">
         <button class="btn btn-ghost" type="button" id="bomBtnAddKitSection"><i class="fa-solid fa-layer-group"></i> Add Section</button>
-        <button class="btn btn-blue" type="button" id="bomBtnSaveKitTemplate"><i class="fa-solid fa-floppy-disk"></i> Save Kit Template</button>
+        <button class="btn btn-blue" type="button" id="bomBtnSaveKitTemplate"><i class="fa-solid fa-floppy-disk"></i> <span id="bomBtnSaveKitTemplateLabel">Save Kit Template</span></button>
         <button class="btn btn-ghost" type="button" id="bomBtnCancelKitBuilder">Cancel</button>
       </div>
     </div>
@@ -1125,22 +1138,6 @@ window.PAGES.bom = {
       </div>
     </div>
 
-    <!-- Step 4: Pending BOM Register — lists every bom_orders row still
-         Open (some item still pending) and lets you continue dispatching
-         the remainder, from any session, without re-picking the kit or
-         retyping what's already gone out. Same modal-fullscreen pattern
-         as #bomChallanOverlay above; one overlay, body swapped between a
-         "list" view and a "continue this order" view. -->
-    <div class="modal-overlay modal-fullscreen" id="bomRegisterOverlay">
-      <div class="modal-box" onclick="event.stopPropagation()">
-        <div class="modal-head">
-          <h3><i class="fa-solid fa-clipboard-list"></i> Pending BOM Register</h3>
-          <button class="modal-close" id="bomRegisterCloseBtn"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="modal-body" id="bomRegisterModalBody"></div>
-      </div>
-    </div>
-
     <!-- PRINT-ONLY: exact Excel replica. Hidden on screen (see .bom-print-only
          in style.css); (re)built from the form fields above right before
          printing, then never shown on-screen at all — this is what fixes
@@ -1157,6 +1154,30 @@ window.PAGES.bom = {
          the existing BOM print is never touched by this. -->
     <div class="bom-print-only" id="bomChallanPrintRoot"></div>
     </div><!-- /bomEntryView -->
+
+    <!-- Step 4: Pending BOM Register — lists every bom_orders row still
+         Open (some item still pending) and lets you continue dispatching
+         the remainder, from any session, without re-picking the kit or
+         retyping what's already gone out. Same modal-fullscreen pattern
+         as #bomChallanOverlay above; one overlay, body swapped between a
+         "list" view and a "continue this order" view.
+         IMPORTANT: kept OUTSIDE #bomEntryView on purpose — the BOM Home
+         screen's own "BOM Register" button opens this same overlay, and
+         #bomEntryView is display:none while Home is showing. Nesting this
+         overlay inside #bomEntryView meant the overlay's own .show class
+         was powerless against its hidden ancestor: clicking "BOM Register"
+         from Home silently did nothing (overlay had .show but its parent
+         was still display:none), and it would only actually appear once
+         #bomEntryView itself became visible (e.g. after "Create BOM"). -->
+    <div class="modal-overlay modal-fullscreen" id="bomRegisterOverlay">
+      <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-head">
+          <h3><i class="fa-solid fa-clipboard-list"></i> Pending BOM Register</h3>
+          <button class="modal-close" id="bomRegisterCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" id="bomRegisterModalBody"></div>
+      </div>
+    </div>
   `,
 
   async init() {
@@ -1254,7 +1275,17 @@ window.PAGES.bom = {
         wrap.innerHTML = `<p class="note" style="color:var(--red);">Could not load pending BOM orders — ${bomEsc((e && e.message) || 'server error')}.</p>`;
         return;
       }
-      wrap.innerHTML = bomRenderHomePendingTableHtml(orders);
+      // BOM Home's own "Pending BOM Orders" list is deliberately narrower
+      // than the full BOM Register: it only shows Open orders that are
+      // still completely untouched — created (Admin/SuperAdmin only, so
+      // every row here is already admin-created) but with zero dispatch
+      // trips against them yet (isUntouched, from GET /api/bom/orders —
+      // see bom.routes.js's pendingForOrder). The moment even one item
+      // gets partially dispatched, it drops off THIS list but keeps
+      // showing in the full BOM Register (bomLoadRegisterList below,
+      // which intentionally does NOT apply this filter).
+      const untouched = (orders || []).filter((o) => o.isUntouched !== false);
+      wrap.innerHTML = bomRenderHomePendingTableHtml(untouched);
       wrap.querySelectorAll('[data-bom-order-id]').forEach((el) => {
         const id = el.getAttribute('data-bom-order-id');
         if (el.tagName === 'BUTTON') {
@@ -1855,6 +1886,18 @@ window.PAGES.bom = {
     await bomLoadChallanCategoryMap();
 
     const btnDeleteKit = $('bomBtnDeleteKit');
+    const btnEditKit = $('bomBtnEditKit');
+
+    // Both Edit and Delete only make sense for a saved custom template
+    // (built-in kits don't exist anymore per BOM_KITS being empty, but the
+    // bomIsCustomKitKey guard is kept so this stays correct either way),
+    // and — same as "New Kit" — restructuring a kit template is an
+    // Admin/SuperAdmin-only action.
+    function updateKitActionButtons() {
+      const showActions = bomIsAdmin && bomIsCustomKitKey(kitSelect.value);
+      if (btnDeleteKit) btnDeleteKit.style.display = showActions ? '' : 'none';
+      if (btnEditKit) btnEditKit.style.display = showActions ? '' : 'none';
+    }
 
     // Populate the kW dropdown from BOM_KITS + any saved custom templates.
     // Pulled into its own function since saving/deleting a template needs
@@ -1876,7 +1919,7 @@ window.PAGES.bom = {
         // Only one kit exists right now — auto-select it so the preview isn't empty.
         kitSelect.value = keys[0];
       }
-      if (btnDeleteKit) btnDeleteKit.style.display = bomIsCustomKitKey(kitSelect.value) ? '' : 'none';
+      updateKitActionButtons();
     }
     populateKitDropdown();
 
@@ -1888,7 +1931,7 @@ window.PAGES.bom = {
       itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState, { isAdmin: bomIsAdmin, needsSerial: bomItemNeedsSerial });
       setVerified(false); // changing the kit invalidates any prior verification
       updateVerifyButtonState(); // fresh kit — nothing ticked yet, Verify stays disabled
-      if (btnDeleteKit) btnDeleteKit.style.display = bomIsCustomKitKey(kitSelect.value) ? '' : 'none';
+      updateKitActionButtons();
     }
     kitSelect.addEventListener('change', refreshItemsPreview);
     refreshItemsPreview();
@@ -1941,6 +1984,35 @@ window.PAGES.bom = {
     // {title, items:[{sr,name,model,qty,remarks}]} shape as any real kit's
     // `sections`, so it saves straight into the same catalogue format.
     let newKitSections = [];
+
+    // Set to the kit's storage key (e.g. "custom_5-kw-commercial-550-wp")
+    // while editing an EXISTING saved template via the pencil/"Edit Kit"
+    // button, and back to null for a brand new kit ("New Kit"). This is
+    // the only thing that tells Save whether to overwrite that same key
+    // in place or mint a fresh one — see btnSaveKitTemplate below.
+    let editingKitKey = null;
+
+    const kitBuilderTitleEl = $('bomKitBuilderTitle');
+    const kitBuilderHintEl = $('bomKitBuilderHint');
+    const saveKitTemplateLabelEl = $('bomBtnSaveKitTemplateLabel');
+
+    // Swaps the builder's heading/hint/save-button text between "creating
+    // a brand new kit" and "editing an existing one" — purely cosmetic,
+    // but stops someone editing "3.3 kW" from mistakenly thinking they're
+    // about to create a whole new template.
+    function setKitBuilderMode(isEdit) {
+      if (kitBuilderTitleEl) {
+        kitBuilderTitleEl.innerHTML = isEdit
+          ? '<i class="fa-solid fa-pen"></i> Edit BOM Kit &amp; Template'
+          : '<i class="fa-solid fa-layer-group"></i> Create / Save New BOM Kit &amp; Template';
+      }
+      if (kitBuilderHintEl) {
+        kitBuilderHintEl.innerHTML = isEdit
+          ? '<i class="fa-solid fa-circle-info"></i> Editing the saved template selected in the BOM Kit dropdown. Change anything below, then click Update — every BOM created from this kit AFTER saving will use the new list (BOMs already created keep their own frozen item list).'
+          : '<i class="fa-solid fa-circle-info"></i> Starts pre-filled with the standard section/item format below — Model, Quantity &amp; Remarks are left blank for you to fill in. Add or remove sections/items freely, and item names can be renamed too.';
+      }
+      if (saveKitTemplateLabelEl) saveKitTemplateLabelEl.textContent = isEdit ? 'Update Kit Template' : 'Save Kit Template';
+    }
 
     function renderKitBuilderSections() {
       bomRenumberAll(newKitSections);
@@ -2037,6 +2109,8 @@ window.PAGES.bom = {
 
     if (btnNewKit) {
       btnNewKit.addEventListener('click', () => {
+        editingKitKey = null;
+        setKitBuilderMode(false);
         // Pre-fill with the standard section/item format (names only,
         // Model/Quantity/Remarks blank) — the person only needs to fill in
         // values and add/remove items/sections where this kit differs.
@@ -2055,8 +2129,40 @@ window.PAGES.bom = {
         newKitLabelInput.focus();
       });
     }
+
+    // ---------- Edit an existing saved Kit Template ----------
+    // Opens the SAME builder panel as "New Kit", but pre-filled with the
+    // currently-selected custom kit's real sections/items (deep-cloned, so
+    // Cancel never mutates the saved template) instead of the blank
+    // default — and Save (now "Update Kit Template") overwrites that same
+    // saved key rather than minting a new one. Only ever visible for a
+    // saved custom kit (see updateKitActionButtons), same Admin/SuperAdmin
+    // gate as New Kit/Delete Kit.
+    if (btnEditKit) {
+      btnEditKit.addEventListener('click', () => {
+        const key = kitSelect.value;
+        if (!bomIsCustomKitKey(key)) return;
+        const custom = bomLoadCustomKits();
+        const kit = custom[key];
+        if (!kit) return;
+
+        editingKitKey = key;
+        setKitBuilderMode(true);
+        newKitSections = JSON.parse(JSON.stringify(kit.sections || []));
+        if (!newKitSections.length) newKitSections = bomDefaultSectionsTemplate();
+        newKitLabelInput.value = kit.label || '';
+        newKitKwInput.value = kit.kw || '';
+        renderKitBuilderSections();
+        kitBuilderPanel.style.display = '';
+        if (kitItemsPanel) kitItemsPanel.style.display = 'none';
+        kitBuilderPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        newKitLabelInput.focus();
+      });
+    }
+
     if (btnCancelKitBuilder) {
       btnCancelKitBuilder.addEventListener('click', () => {
+        editingKitKey = null;
         kitBuilderPanel.style.display = 'none';
         if (kitItemsPanel) kitItemsPanel.style.display = '';
       });
@@ -2092,12 +2198,22 @@ window.PAGES.bom = {
         bomRenumberAll(sectionsToSave);
 
         const custom = bomLoadCustomKits();
-        // Unique key: slugified name, de-duplicated if that slug is already taken.
-        let key = 'custom_' + bomSlugify(label);
-        let n = 2;
-        while (custom[key] && custom[key].label !== label) {
-          key = 'custom_' + bomSlugify(label) + '-' + n;
-          n += 1;
+        let key;
+        if (editingKitKey && custom[editingKitKey]) {
+          // Editing an existing template — keep the SAME key regardless of
+          // whether the label changed, so the dropdown selection, any
+          // in-flight BOM's kit reference, and Delete/Edit all keep
+          // pointing at the one saved entry instead of leaving behind an
+          // orphaned old key + a brand new one.
+          key = editingKitKey;
+        } else {
+          // Unique key: slugified name, de-duplicated if that slug is already taken.
+          key = 'custom_' + bomSlugify(label);
+          let n = 2;
+          while (custom[key] && custom[key].label !== label) {
+            key = 'custom_' + bomSlugify(label) + '-' + n;
+            n += 1;
+          }
         }
         custom[key] = {
           label,
@@ -2105,12 +2221,14 @@ window.PAGES.bom = {
           sections: sectionsToSave,
         };
         bomSaveCustomKits(custom);
+        const wasEditing = !!editingKitKey;
+        editingKitKey = null;
 
         kitBuilderPanel.style.display = 'none';
         if (kitItemsPanel) kitItemsPanel.style.display = '';
-        populateKitDropdown(key); // auto-select the newly saved kit
+        populateKitDropdown(key); // auto-select the newly saved/updated kit
         refreshItemsPreview();
-        if (window.showToast) window.showToast('Kit template saved — it now auto-fills from the dropdown.');
+        if (window.showToast) window.showToast(wasEditing ? 'Kit template updated.' : 'Kit template saved — it now auto-fills from the dropdown.');
       });
     }
 

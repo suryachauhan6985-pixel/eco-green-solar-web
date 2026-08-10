@@ -451,6 +451,24 @@
   },
   {
     "type": "function",
+    "label": "bomResolveSectionCategory",
+    "file": "js/pages/bom.js",
+    "detail": "(title)"
+  },
+  {
+    "type": "function",
+    "label": "bomBuildCategoryOptionsHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(selectedCategory)"
+  },
+  {
+    "type": "function",
+    "label": "bomBuildCategoryItemOptionsHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(category, selectedName)"
+  },
+  {
+    "type": "function",
     "label": "bomRenderScreenItemsHtml",
     "file": "js/pages/bom.js",
     "detail": "(state, opts)"
@@ -796,6 +814,12 @@
     "label": "handleItemFieldEdit",
     "file": "js/pages/bom.js",
     "detail": "(e)"
+  },
+  {
+    "type": "function",
+    "label": "bomFindScrollParent",
+    "file": "js/pages/bom.js",
+    "detail": "(el)"
   },
   {
     "type": "function",

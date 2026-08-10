@@ -215,10 +215,14 @@ module.exports = function registerBomRoutes(app, deps) {
     const items = [];
     let pendingItemCount = 0;
     let pendingQty = 0;
+    let totalQty = 0;
+    let dispatchedQty = 0;
     for (const name of Object.keys(baseline)) {
       const total = baseline[name] || 0;
       const dispatched = dispatchedSoFar[name] || 0;
       const remaining = Math.max(0, total - dispatched);
+      totalQty += total;
+      dispatchedQty += dispatched;
       if (remaining > 0) { pendingItemCount += 1; pendingQty += remaining; }
       const row = { name, total, dispatched, remaining };
       if (withItemInfo) {
@@ -228,7 +232,7 @@ module.exports = function registerBomRoutes(app, deps) {
       }
       items.push(row);
     }
-    return { items, pendingItemCount, pendingQty };
+    return { items, pendingItemCount, pendingQty, totalQty, dispatchedQty };
   }
 
   // GET /api/bom/orders?status=Open|Completed|all — Step 4 register list.
@@ -241,7 +245,7 @@ module.exports = function registerBomRoutes(app, deps) {
 
     const out = [];
     for (const row of rows) {
-      const { pendingItemCount, pendingQty } = await pendingForOrder(pool, row, false);
+      const { pendingItemCount, pendingQty, totalQty, dispatchedQty } = await pendingForOrder(pool, row, false);
       out.push({
         id: row.id,
         orderNo: row.order_no,
@@ -251,6 +255,14 @@ module.exports = function registerBomRoutes(app, deps) {
         createdAt: row.created_at,
         pendingItemCount,
         pendingQty,
+        totalQty,
+        dispatchedQty,
+        // true once even a single unit has gone out on any trip — the BOM
+        // Home "Pending BOM Orders" list uses this to show only BOMs
+        // nobody has started working on yet (see bom.js's
+        // bomLoadHomePendingTable); the full BOM Register (same endpoint,
+        // no client-side filter) still shows every Open order regardless.
+        isUntouched: dispatchedQty <= 0,
       });
     }
     res.json(out);
