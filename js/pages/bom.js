@@ -363,24 +363,25 @@ window.PAGES.bom = {
     // ---------- Challan Category Mapping — admin editor (Goal 5) ----------
     // Reuses the same fullscreen Challan overlay/body (openChallanModal
     // above) — it's already a generic "big scrollable panel" host, no need
-    // for a second modal shell. Lists every distinct item name that has
-    // actually been used in at least one real BOM (GET
-    // /api/bom/used-item-names — any bom_orders row, Open or Completed),
-    // NOT every item listed in a Kit Template — a kit can carry items that
-    // have never actually gone out under any Order No. yet, and mapping
-    // those just clutters the editor. With "and even if there are 10
-    // registers, only the items that appear across ALL of them show up
-    // here" — the backend already de-duplicates across every bom_orders
-    // row, so this only ever fetches, never merges anything client-side.
+    // for a second modal shell. Lists EVERY item registered in Masters >
+    // Item Registration (GET /api/masters/items — same source
+    // bomLoadItemMasterNames() uses for the BOM Kit dropdowns), not just
+    // items that have already gone out under a real BOM order: a fresh
+    // item can only ever get used in a BOM/Kit Template AFTER it's mapped
+    // here, so gating this list on "already used in a BOM" made it
+    // impossible to map a brand-new item before its first use.
     // "Save Mapping" bulk-PUTs the whole set. This is the ONLY place
     // bomChallanCategoryMap changes — the Convert-into-Challan compress
     // logic (bomComputeChallanAutoQty) only ever reads it.
-    async function bomCollectUsedItemNamesForMapping() {
+    async function bomCollectAllItemNamesForMapping() {
       try {
-        const data = await window.Api.get('/bom/used-item-names');
-        return (data && Array.isArray(data.names)) ? data.names : [];
+        const rows = await window.Api.get('/masters/items');
+        const names = (Array.isArray(rows) ? rows : []).map((r) => r.name).filter(Boolean);
+        return Array.from(new Set(names)).sort((a, b) =>
+          String(a).localeCompare(String(b), undefined, { sensitivity: 'base', numeric: true })
+        );
       } catch (e) {
-        console.warn('bom: could not load used item names for Challan mapping', e);
+        console.warn('bom: could not load item master names for Challan mapping', e);
         return [];
       }
     }
@@ -397,15 +398,15 @@ window.PAGES.bom = {
       return `
         <div id="bomChallanMapModalRoot">
           <p class="note" style="margin-bottom:12px;">
-            <i class="fa-solid fa-circle-info"></i> Decide which Challan line each BOM item's quantity folds into.
+            <i class="fa-solid fa-circle-info"></i> Decide which Challan line each item's quantity folds into.
             "GI Pipe" items are handled automatically (feet &rarr; 20/15/10/5-Feet pieces) &mdash; you only need to tag
-            them "GI Pipe" here so they're excluded from every other category's count. Only items actually used in
-            at least one BOM so far are listed below.
+            them "GI Pipe" here so they're excluded from every other category's count. Every item registered in
+            Item Master is listed below (${bomChallanCategoryList.length} Challan categories available).
           </p>
           <div class="table-wrap" style="max-height:60vh;overflow:auto;">
             <table class="bom-items-form-table">
               <thead><tr><th>Item Name</th><th>Challan Category</th></tr></thead>
-              <tbody>${rows || '<tr><td colspan="2">No items used in any BOM yet.</td></tr>'}</tbody>
+              <tbody>${rows || '<tr><td colspan="2">No items registered in Item Master yet.</td></tr>'}</tbody>
             </table>
           </div>
           <div class="actions-row" style="margin-top:14px;">
@@ -416,16 +417,16 @@ window.PAGES.bom = {
     }
 
     async function bomOpenChallanMapModal() {
-      openChallanModal('<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading items used across every BOM...</p>');
+      openChallanModal('<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading items from Item Master...</p>');
       const modalTitleEl = document.getElementById('bomChallanModalTitle');
       if (modalTitleEl) modalTitleEl.innerHTML = '<i class="fa-solid fa-sitemap"></i> Challan Category Mapping';
-      // Re-fetch BOTH the category list and the used-item list fresh every
-      // time this opens — never rely solely on init()'s one-time load
-      // having succeeded (a slow/failed first-load fetch used to leave
+      // Re-fetch BOTH the category list and the item list fresh every time
+      // this opens — never rely solely on init()'s one-time load having
+      // succeeded (a slow/failed first-load fetch used to leave
       // bomChallanCategoryList permanently empty for the rest of the
       // session, which is why every dropdown only ever showed
       // "-- Unmapped --" with no real categories to pick from).
-      const [, names] = await Promise.all([bomLoadChallanCategoryMap(), bomCollectUsedItemNamesForMapping()]);
+      const [, names] = await Promise.all([bomLoadChallanCategoryMap(), bomCollectAllItemNamesForMapping()]);
       openChallanModal(bomRenderChallanMapModalHtml(names));
       if (modalTitleEl) modalTitleEl.innerHTML = '<i class="fa-solid fa-sitemap"></i> Challan Category Mapping';
       const saveBtn = document.getElementById('bomChallanMapSaveBtn');
