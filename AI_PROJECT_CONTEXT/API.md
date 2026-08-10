@@ -1,12 +1,12 @@
 # API Documentation
 
-Total endpoints detected: **98**
+Total endpoints detected: **99**
 
 ## Endpoints by Method
 
 | Method | Count |
 | --- | --- |
-| GET | 42 |
+| GET | 43 |
 | POST | 30 |
 | DELETE | 12 |
 | PUT | 14 |
@@ -38,6 +38,7 @@ Total endpoints detected: **98**
 | POST | /api/bom/orders | api/routes/bom.routes.js | No |
 | GET | /api/bom/orders/:id | api/routes/bom.routes.js | No |
 | GET | /api/bom/orders/by-order-no/:orderNo | api/routes/bom.routes.js | No |
+| GET | /api/bom/used-item-names | api/routes/bom.routes.js | No |
 | GET | /api/challan | api/routes/challan.routes.js | No |
 | POST | /api/challan | api/routes/challan.routes.js | No |
 | GET | /api/challan/:id | api/routes/challan.routes.js | No |

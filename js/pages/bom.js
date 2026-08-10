@@ -213,6 +213,13 @@ function bomSplitSerials(text) {
 // static label — regardless of backend availability.
 let bomItemMasterNames = [];
 
+// Every distinct Model value registered anywhere in Masters > Item
+// Registration (e.g. "2 Inch", "20 Feet") — drives the free-standing
+// Model dropdown on a normal (non-category-driven) kit-builder row, same
+// "always list every known value" approach as bomItemMasterNames above.
+// Populated alongside it in bomLoadItemMasterNames().
+let bomItemMasterModels = [];
+
 // Category -> [item master names] and the full category name list, used
 // to drive the Category/Model dropdown pair on any section whose title
 // matches a real category name (see bomResolveSectionCategory — e.g. a
@@ -237,12 +244,14 @@ async function bomLoadItemMasterNames() {
     const rows = await window.Api.get('/masters/items');
     if (Array.isArray(rows) && rows.length) {
       bomItemMasterNames = rows.map((r) => r.name).filter(Boolean);
+      bomItemMasterModels = Array.from(new Set(rows.map((r) => r.model).filter(Boolean)));
       return;
     }
   } catch (e) {
     // API/DB not reachable in this preview — fall back to kit-derived names below.
   }
   bomItemMasterNames = bomCollectKitItemNames();
+  bomItemMasterModels = [];
 }
 
 function bomBuildItemOptionsHtml(selectedName) {
@@ -252,6 +261,20 @@ function bomBuildItemOptionsHtml(selectedName) {
     <option value="${bomEscAttr(n)}" ${n === selectedName ? 'selected' : ''}>${bomEsc(n)}</option>
   `).join('');
   return `<option value="">-- Select Item --</option>${optionsHtml}`;
+}
+
+// The free-standing Model dropdown for a normal (non-category-driven) kit
+// row — every distinct Model value registered in Masters > Item
+// Registration. Falls back to keeping whatever value is already saved even
+// if it's not (yet) in the list, so an older free-typed value never
+// silently disappears the moment this becomes a dropdown.
+function bomBuildModelOptionsHtml(selectedModel) {
+  const models = new Set(bomItemMasterModels);
+  if (selectedModel) models.add(selectedModel);
+  const optionsHtml = Array.from(models).map((n) => `
+    <option value="${bomEscAttr(n)}" ${n === selectedModel ? 'selected' : ''}>${bomEsc(n)}</option>
+  `).join('');
+  return `<option value="">-- Select Model --</option>${optionsHtml}`;
 }
 
 // ---------- Category / Category-Item dropdown source (category-driven sections) ----------
@@ -2060,7 +2083,39 @@ window.PAGES.bom = {
 
     function renderKitBuilderSections() {
       bomRenumberAll(newKitSections);
-      kitBuilderSectionsEl.innerHTML = newKitSections.map((sec, si) => `
+      kitBuilderSectionsEl.innerHTML = newKitSections.map((sec, si) => {
+        // Same "Category on top, real item under Model" rule as the live
+        // Kit Items table (bomRenderScreenItemsHtml/bomResolveSectionCategory):
+        // only the FIRST row of a section whose title matches a real
+        // Masters > Category name (e.g. "Solar Panel", "Inverter") gets the
+        // Category / Model-item dropdown pair. Every other row — including
+        // every other row of that same section — gets the normal Item Name
+        // dropdown + Model dropdown pair, both sourced from Masters > Item
+        // Registration.
+        const sectionCategory = bomResolveSectionCategory(sec.title);
+        const itemRowsHtml = sec.items.map((it, ii) => {
+          const isCategoryDrivenRow = !!sectionCategory && ii === 0;
+          const effectiveCategory = it.category || sectionCategory;
+          const nameCell = isCategoryDrivenRow
+            ? `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="category">${bomBuildCategoryOptionsHtml(effectiveCategory)}</select>`
+            : `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="name">${bomBuildItemOptionsHtml(it.name)}</select>`;
+          const modelCell = isCategoryDrivenRow
+            ? `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="name">${bomBuildCategoryItemOptionsHtml(effectiveCategory, it.name)}</select>`
+            : `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="model">${bomBuildModelOptionsHtml(it.model)}</select>`;
+          return `
+                  <tr>
+                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="sr" value="${bomEscAttr(it.sr)}"></td>
+                    <td>${nameCell}</td>
+                    <td>${modelCell}</td>
+                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="qty" placeholder="Quantity" value="${bomEscAttr(it.qty)}"></td>
+                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="remarks" placeholder="Remarks" value="${bomEscAttr(it.remarks)}"></td>
+                    <td style="white-space:nowrap;">
+                      <button type="button" class="btn btn-ghost bom-mini-btn" data-binsert-sec="${si}" data-binsert-idx="${ii}" title="Insert item below"><i class="fa-solid fa-plus"></i></button>
+                      <button type="button" class="btn btn-red bom-mini-btn" data-bremove-sec="${si}" data-bremove-idx="${ii}" title="Remove item"><i class="fa-solid fa-xmark"></i></button>
+                    </td>
+                  </tr>`;
+        }).join('');
+        return `
         <div class="panel" style="margin-bottom:14px; background:rgba(255,255,255,0.02);">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
             <input type="text" class="bom-field-input" data-bsec="${si}" data-bfield="sectitle" value="${bomEscAttr(sec.title)}" style="max-width:280px; font-weight:700;">
@@ -2069,25 +2124,12 @@ window.PAGES.bom = {
           <div class="table-wrap">
             <table class="bom-items-form-table">
               <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th><th>Remarks</th><th></th></tr></thead>
-              <tbody>
-                ${sec.items.map((it, ii) => `
-                  <tr>
-                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="sr" value="${bomEscAttr(it.sr)}"></td>
-                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="name" placeholder="Item name" value="${bomEscAttr(it.name)}"></td>
-                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="model" placeholder="Model" value="${bomEscAttr(it.model)}"></td>
-                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="qty" placeholder="Quantity" value="${bomEscAttr(it.qty)}"></td>
-                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="remarks" placeholder="Remarks" value="${bomEscAttr(it.remarks)}"></td>
-                    <td style="white-space:nowrap;">
-                      <button type="button" class="btn btn-ghost bom-mini-btn" data-binsert-sec="${si}" data-binsert-idx="${ii}" title="Insert item below"><i class="fa-solid fa-plus"></i></button>
-                      <button type="button" class="btn btn-red bom-mini-btn" data-bremove-sec="${si}" data-bremove-idx="${ii}" title="Remove item"><i class="fa-solid fa-xmark"></i></button>
-                    </td>
-                  </tr>`).join('')}
-              </tbody>
+              <tbody>${itemRowsHtml}</tbody>
             </table>
           </div>
           <button type="button" class="btn btn-ghost bom-mini-btn" data-bsec-add-item="${si}" style="margin-top:8px;"><i class="fa-solid fa-plus"></i> Add Item to this Section</button>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
     }
 
     // Field edits (section title, sr, name, model, qty, remarks) write
@@ -2105,11 +2147,30 @@ window.PAGES.bom = {
       if (!newKitSections[si]) return;
       if (field === 'sectitle') {
         newKitSections[si].title = el.value;
+        // A section title can change which real Category it matches (see
+        // bomResolveSectionCategory) — re-render on 'change' (blur/Enter)
+        // only, not on every keystroke, so the first row's Item Name/Model
+        // cells switch to/from the Category dropdown pair as soon as the
+        // person finishes typing, without the table jumping around mid-edit.
+        if (e.type === 'change') renderKitBuilderSections();
         return;
       }
       const ii = Number(el.dataset.bidx);
       if (!newKitSections[si].items[ii]) return;
-      newKitSections[si].items[ii][field] = el.value;
+      const item = newKitSections[si].items[ii];
+
+      // Category select on a category-driven row's first item (see
+      // renderKitBuilderSections). Changing it invalidates whichever real
+      // item (item.name) was picked under the old category — clear it and
+      // refresh the Model dropdown's option list for the new category.
+      if (field === 'category') {
+        item.category = el.value;
+        item.name = '';
+        renderKitBuilderSections();
+        return;
+      }
+
+      item[field] = el.value;
     }
 
     // Structural changes (insert/remove item, add/remove section) — every

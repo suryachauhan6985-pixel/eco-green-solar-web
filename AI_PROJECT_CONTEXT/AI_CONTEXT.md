@@ -10,7 +10,7 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-10T04:40:26.750Z
+- **Generated:** 2026-08-10T05:12:30.808Z
 
 ## 2. Architecture Overview
 
@@ -102,7 +102,7 @@ sw.js
 - `Dockerfile` — Supporting source file.
 - `js/app.js` — Application entry point / bootstrap file.
 - `js/pages/backup.js` — Defines 3 function(s) implementing supporting logic.
-- `js/pages/bom.js` — Defines 1 class(es) implementing core logic.
+- `js/pages/bom.js` — Defines 2 class(es) implementing core logic.
 - `js/pages/dashboard.js` — Defines 18 function(s) implementing supporting logic.
 - `js/pages/lowstock.js` — Defines 12 function(s) implementing supporting logic.
 - `js/pages/masters.js` — Defines 17 function(s) implementing supporting logic.
@@ -150,7 +150,7 @@ No route-level authentication middleware detected (verify manually if auth is ex
 
 ## 8. API
 
-98 HTTP endpoint(s) detected. Method breakdown: GET=42, POST=30, DELETE=12, PUT=14.
+99 HTTP endpoint(s) detected. Method breakdown: GET=43, POST=30, DELETE=12, PUT=14.
 
 ## 9. Services & Utilities
 

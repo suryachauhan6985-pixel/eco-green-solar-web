@@ -357,7 +357,7 @@
     "type": "file",
     "label": "js/pages/bom.js",
     "file": "js/pages/bom.js",
-    "detail": "Defines 1 class(es) implementing core logic."
+    "detail": "Defines 2 class(es) implementing core logic."
   },
   {
     "type": "function",
@@ -625,7 +625,7 @@
   },
   {
     "type": "function",
-    "label": "bomCollectAllKitItemNamesForMapping",
+    "label": "bomCollectUsedItemNamesForMapping",
     "file": "js/pages/bom.js",
     "detail": "()"
   },
@@ -633,7 +633,7 @@
     "type": "function",
     "label": "bomRenderChallanMapModalHtml",
     "file": "js/pages/bom.js",
-    "detail": "()"
+    "detail": "(names)"
   },
   {
     "type": "function",
@@ -787,6 +787,12 @@
   },
   {
     "type": "function",
+    "label": "updateKitActionButtons",
+    "file": "js/pages/bom.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "populateKitDropdown",
     "file": "js/pages/bom.js",
     "detail": "(selectKey)"
@@ -796,6 +802,12 @@
     "label": "refreshItemsPreview",
     "file": "js/pages/bom.js",
     "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "setKitBuilderMode",
+    "file": "js/pages/bom.js",
+    "detail": "(isEdit)"
   },
   {
     "type": "function",
@@ -1066,6 +1078,12 @@
     "label": "setBody",
     "file": "js/pages/bom.js",
     "detail": "(html)"
+  },
+  {
+    "type": "class",
+    "label": "was",
+    "file": "js/pages/bom.js",
+    "detail": ""
   },
   {
     "type": "class",
@@ -4244,6 +4262,12 @@
   {
     "type": "route",
     "label": "GET /api/bom/orders/by-order-no/:orderNo",
+    "file": "api/routes/bom.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/bom/used-item-names",
     "file": "api/routes/bom.routes.js",
     "detail": "public"
   },

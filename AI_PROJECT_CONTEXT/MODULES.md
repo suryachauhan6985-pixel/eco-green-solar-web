@@ -106,7 +106,7 @@ Database
 | File | Purpose |
 | --- | --- |
 | js/pages/backup.js | Defines 3 function(s) implementing supporting logic. |
-| js/pages/bom.js | Defines 1 class(es) implementing core logic. |
+| js/pages/bom.js | Defines 2 class(es) implementing core logic. |
 | js/pages/dashboard.js | Defines 18 function(s) implementing supporting logic. |
 | js/pages/lowstock.js | Defines 12 function(s) implementing supporting logic. |
 | js/pages/masters.js | Defines 17 function(s) implementing supporting logic. |

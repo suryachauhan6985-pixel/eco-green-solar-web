@@ -14,7 +14,7 @@
 _None detected._
 
 
-## Public Routes (98)
+## Public Routes (99)
 
 | Method | Path | File |
 | --- | --- | --- |
@@ -40,6 +40,7 @@ _None detected._
 | POST | /api/bom/orders | api/routes/bom.routes.js |
 | GET | /api/bom/orders/:id | api/routes/bom.routes.js |
 | GET | /api/bom/orders/by-order-no/:orderNo | api/routes/bom.routes.js |
+| GET | /api/bom/used-item-names | api/routes/bom.routes.js |
 | GET | /api/challan | api/routes/challan.routes.js |
 | POST | /api/challan | api/routes/challan.routes.js |
 | GET | /api/challan/:id | api/routes/challan.routes.js |

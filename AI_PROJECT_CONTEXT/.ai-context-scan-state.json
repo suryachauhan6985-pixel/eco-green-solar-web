@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-10T04:40:26.762Z",
+  "generatedAt": "2026-08-10T05:12:30.814Z",
   "files": {
     ".env": {
       "hash": "fbf93500e5313e2f01018668de228b174a039bbf",
@@ -47,9 +47,9 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/bom.js": {
-      "hash": "0755f6dda5ba46dc8353f1c073c7e7ab2561333b",
-      "size": 183753,
-      "mtimeMs": 1786281959433.266
+      "hash": "c710a87e523554cbc8edb6057c09774edcd3ef79",
+      "size": 194169,
+      "mtimeMs": 1786338199068.8083
     },
     "js/pages/dashboard.js": {
       "hash": "af49b335f2d4a08a7e0871848e53f3a03428b7cb",
@@ -232,9 +232,9 @@
       "mtimeMs": 1785235629252.7383
     },
     "api/routes/bom.routes.js": {
-      "hash": "fd836cf4614a533a297ca7a9c0fb3f8791ae9202",
-      "size": 25733,
-      "mtimeMs": 1786272394349.804
+      "hash": "e3ae915125558c550eec380382baa1df96a6396e",
+      "size": 27474,
+      "mtimeMs": 1786338214317.2104
     },
     "api/routes/challan.routes.js": {
       "hash": "7031b36605edf710cfb19bf611b53a99e53eceb8",
