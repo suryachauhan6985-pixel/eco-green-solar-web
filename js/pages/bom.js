@@ -250,6 +250,14 @@ function bomCollectKitItemNames() {
 // whatever the (now-hidden) composite name already implied.
 let bomItemMasterMeta = {};
 
+// brand_name -> [models] for every real Masters > Item Registration row
+// under that brand. Drives the Model dropdown so it only ever lists the
+// models that actually belong to whichever brand is picked in the Item
+// Name column, instead of every model registered anywhere (bomItemMasterModels,
+// still kept around as the "no brand picked yet" fallback). Populated
+// alongside everything else in bomLoadItemMasterNames().
+let bomModelsByBrand = {};
+
 async function bomLoadItemMasterNames() {
   try {
     const rows = await window.Api.get('/masters/items');
@@ -257,8 +265,13 @@ async function bomLoadItemMasterNames() {
       bomItemMasterNames = rows.map((r) => r.name).filter(Boolean);
       bomItemMasterModels = Array.from(new Set(rows.map((r) => r.model).filter(Boolean)));
       bomItemMasterMeta = {};
+      bomModelsByBrand = {};
       rows.forEach((r) => {
         if (r.name) bomItemMasterMeta[r.name] = { brand_name: r.brand_name || r.name, model: r.model || '' };
+        if (r.brand_name && r.model) {
+          if (!bomModelsByBrand[r.brand_name]) bomModelsByBrand[r.brand_name] = [];
+          if (!bomModelsByBrand[r.brand_name].includes(r.model)) bomModelsByBrand[r.brand_name].push(r.model);
+        }
       });
       return;
     }
@@ -268,6 +281,7 @@ async function bomLoadItemMasterNames() {
   bomItemMasterNames = bomCollectKitItemNames();
   bomItemMasterModels = [];
   bomItemMasterMeta = {};
+  bomModelsByBrand = {};
 }
 
 function bomBuildItemOptionsHtml(selectedName) {
@@ -282,12 +296,20 @@ function bomBuildItemOptionsHtml(selectedName) {
 }
 
 // The free-standing Model dropdown for a normal (non-category-driven) kit
-// row — every distinct Model value registered in Masters > Item
-// Registration. Falls back to keeping whatever value is already saved even
-// if it's not (yet) in the list, so an older free-typed value never
-// silently disappears the moment this becomes a dropdown.
-function bomBuildModelOptionsHtml(selectedModel) {
-  const models = new Set(bomItemMasterModels);
+// row — restricted to the models registered under whichever brand is
+// currently picked in that row's Item Name column (bomModelsByBrand), so
+// picking e.g. "PVCBrand" only shows PVCBrand's own models (2 Inch, 3
+// Inch, ...) instead of every model registered across every brand. If no
+// item is selected yet (brandName empty/unknown) it falls back to the
+// full master list so the dropdown is never empty before a brand is
+// chosen. Falls back to keeping whatever value is already saved even if
+// it's not (yet) in the list, so an older free-typed value never silently
+// disappears the moment this becomes a dropdown.
+function bomBuildModelOptionsHtml(selectedModel, brandName) {
+  // brandName given -> show only that brand's models (possibly none).
+  // brandName omitted/empty (no item picked yet) -> fall back to every
+  // model, same as before this change.
+  const models = new Set(brandName ? (bomModelsByBrand[brandName] || []) : bomItemMasterModels);
   if (selectedModel) models.add(selectedModel);
   const optionsHtml = Array.from(models).map((n) => `
     <option value="${bomEscAttr(n)}" ${n === selectedModel ? 'selected' : ''}>${bomEsc(n)}</option>
@@ -2113,9 +2135,10 @@ window.PAGES.bom = {
           const nameCell = isCategoryDrivenRow
             ? `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="category">${bomBuildCategoryOptionsHtml(effectiveCategory)}</select>`
             : `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="name">${bomBuildItemOptionsHtml(it.name)}</select>`;
+          const rowBrand = (bomItemMasterMeta[it.name] && bomItemMasterMeta[it.name].brand_name) || '';
           const modelCell = isCategoryDrivenRow
             ? `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="name">${bomBuildCategoryItemOptionsHtml(effectiveCategory, it.name)}</select>`
-            : `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="model">${bomBuildModelOptionsHtml(it.model)}</select>`;
+            : `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="model">${bomBuildModelOptionsHtml(it.model, rowBrand)}</select>`;
           return `
                   <tr>
                     <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="sr" value="${bomEscAttr(it.sr)}"></td>
@@ -2180,6 +2203,18 @@ window.PAGES.bom = {
       if (field === 'category') {
         item.category = el.value;
         item.name = '';
+        renderKitBuilderSections();
+        return;
+      }
+
+      // Item Name picked on a normal (non-category-driven) row — the Model
+      // dropdown is scoped to whichever brand this item belongs to
+      // (bomModelsByBrand), so the old Model value may no longer apply.
+      // Clear it and re-render so the Model select rebuilds against the
+      // new brand's own model list only.
+      if (field === 'name') {
+        item.name = el.value;
+        item.model = '';
         renderKitBuilderSections();
         return;
       }
