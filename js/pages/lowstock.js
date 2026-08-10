@@ -58,7 +58,7 @@ window.PAGES.lowstock = {
     let refreshTimer = null;
 
     function rowToValues(r) {
-      return [r.category, r.brand, r.watt, r.type, String(r.currentStock), String(r.minimumStock)];
+      return [r.category, r.brand, r.watt, r.type, String(r.currentStock), `${r.minimumStock} ${r.uom || 'Nos'}`];
     }
 
     function matchesSearch(values) {
@@ -104,7 +104,7 @@ window.PAGES.lowstock = {
           <td data-label="Wattage">${r.watt}</td>
           <td data-label="Type">${r.type}</td>
           <td data-label="Current Stock" style="color:${Number(r.currentStock) <= 0 ? 'var(--red)' : 'var(--orange)'};">${r.currentStock}</td>
-          <td data-label="Minimum Stock">${r.minimumStock}</td>
+          <td data-label="Minimum Stock">${r.minimumStock} ${r.uom || 'Nos'}</td>
         </tr>`).join('');
     }
 

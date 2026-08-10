@@ -451,6 +451,12 @@
   },
   {
     "type": "function",
+    "label": "bomBuildModelOptionsHtml",
+    "file": "js/pages/bom.js",
+    "detail": "(selectedModel)"
+  },
+  {
+    "type": "function",
     "label": "bomResolveSectionCategory",
     "file": "js/pages/bom.js",
     "detail": "(title)"
@@ -1287,13 +1293,19 @@
     "type": "file",
     "label": "js/pages/masters.js",
     "file": "js/pages/masters.js",
-    "detail": "Defines 17 function(s) implementing supporting logic."
+    "detail": "Defines 18 function(s) implementing supporting logic."
   },
   {
     "type": "function",
     "label": "scrollList",
     "file": "js/pages/masters.js",
     "detail": "(items)"
+  },
+  {
+    "type": "function",
+    "label": "mFormatWatt",
+    "file": "js/pages/masters.js",
+    "detail": "(v)"
   },
   {
     "type": "function",
@@ -3823,6 +3835,12 @@
   },
   {
     "type": "function",
+    "label": "normalizeWattUnit",
+    "file": "api/routes/masters.routes.js",
+    "detail": "(val)"
+  },
+  {
+    "type": "function",
     "label": "normalizeOverrideFlag",
     "file": "api/routes/masters.routes.js",
     "detail": "(val)"
@@ -4023,7 +4041,7 @@
     "type": "file",
     "label": "api/db/schema.js",
     "file": "api/db/schema.js",
-    "detail": "Defines 16 function(s) implementing supporting logic."
+    "detail": "Defines 17 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -4100,6 +4118,12 @@
   {
     "type": "function",
     "label": "ensureWattDecimalSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureWattUnitSchema",
     "file": "api/db/schema.js",
     "detail": "(pool)"
   },

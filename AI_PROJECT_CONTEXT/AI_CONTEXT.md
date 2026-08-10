@@ -10,7 +10,7 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-10T05:12:30.808Z
+- **Generated:** 2026-08-10T06:04:57.378Z
 
 ## 2. Architecture Overview
 
@@ -105,7 +105,7 @@ sw.js
 - `js/pages/bom.js` — Defines 2 class(es) implementing core logic.
 - `js/pages/dashboard.js` — Defines 18 function(s) implementing supporting logic.
 - `js/pages/lowstock.js` — Defines 12 function(s) implementing supporting logic.
-- `js/pages/masters.js` — Defines 17 function(s) implementing supporting logic.
+- `js/pages/masters.js` — Defines 18 function(s) implementing supporting logic.
 - `js/pages/partyledger.js` — Defines 39 function(s) implementing supporting logic.
 - `js/pages/purchase.js` — Defines 45 function(s) implementing supporting logic.
 - `js/pages/purchaseregister.js` — Defines 15 function(s) implementing supporting logic.
@@ -134,7 +134,7 @@ sw.js
 - `api/routes/scansheet.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/stockassign.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/db/pool.js` — Supporting source file.
-- `api/db/schema.js` — Defines 16 function(s) implementing supporting logic.
+- `api/db/schema.js` — Defines 17 function(s) implementing supporting logic.
 
 ## 5. Data Flow / Business Logic Entry Points
 

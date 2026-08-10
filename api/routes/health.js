@@ -79,6 +79,7 @@ module.exports = function registerHealthRoutes(app, deps) {
       type: r.solar_type || 'Others',
       currentStock: r.current_stock,
       minimumStock: r.minimum_stock,
+      uom: r.uom || 'Nos',
     })));
   }));
 
