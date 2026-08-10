@@ -57,26 +57,39 @@ function bomSetPrintPageSize(cssSizeAndMargin) {
 // No built-in kits are shipped anymore — every kit (sections + items) is
 // built and saved from this screen via "New Kit" (see the Custom Kit /
 // Template storage right below), which persists into bomLoadCustomKits()/
-// bomSaveCustomKits() the exact same way it already did for a person's own
+// bomUpsertCustomKit() the exact same way it already did for a person's own
 // saved templates. bomGetAllKits() below merges this (now always empty)
 // object with whatever's been saved, so the rest of the page — kit
 // dropdown, item table, print sheet — needs no further changes.
 const BOM_KITS = {};
 
-// ---------- Custom Kit / Template storage (localStorage) ----------
-// Lets someone build their own BOM Kit right from this screen (a name +
-// its item list) and save it as a reusable template. Next time they pick
-// that same name from the "BOM Kit" dropdown, every item/model/qty/
-// remarks row below auto-fills exactly as saved — same behaviour as the
-// built-in kits above. Stored per-browser in localStorage since this app
-// has no backend BOM-kit table yet (see the STAGE 1 note at the top of
-// this file); keys are always prefixed "custom_" so they can never
-// collide with a built-in kW key like "3.3".
-const BOM_CUSTOM_KITS_KEY = 'egs_bom_custom_kits';
+// ---------- Custom Kit / Template storage ----------
+// Kit templates are now a shared, database-backed catalogue (the
+// bom_kit_templates table via GET/PUT/DELETE /api/bom/kits — see
+// api/routes/bom_kits.routes.js) instead of being stuck in one browser's
+// localStorage. A kit created/edited on one device (Admin/SuperAdmin only)
+// is now visible from every device/login, including mobile — a kit saved
+// on desktop used to never show up on mobile under the same account,
+// because localStorage never leaves the browser it was written in.
+//
+// Architecture mirrors js/data/sheets-store.js: an in-memory cache gives
+// every existing call site (populateKitDropdown, refreshItemsPreview, etc.)
+// the same SYNCHRONOUS bomGetAllKits()/bomLoadCustomKits() object it always
+// got — nothing else on the page needs to change. A localStorage mirror is
+// kept purely as an OFFLINE FALLBACK so the dropdown still shows the
+// last-known kits if the network/API is unreachable; it is never written
+// to directly by a save/delete, only kept in sync as a read cache — the
+// server is always the source of truth.
+let bomCustomKitsCache = {};
+const BOM_CUSTOM_KITS_LOCAL_CACHE_KEY = 'egs_bom_custom_kits_cache_v1';
 
-function bomLoadCustomKits() {
+function bomPersistCustomKitsLocalCache() {
+  try { localStorage.setItem(BOM_CUSTOM_KITS_LOCAL_CACHE_KEY, JSON.stringify(bomCustomKitsCache)); } catch (e) { /* ignore */ }
+}
+
+function bomLoadCustomKitsLocalCache() {
   try {
-    const raw = localStorage.getItem(BOM_CUSTOM_KITS_KEY);
+    const raw = localStorage.getItem(BOM_CUSTOM_KITS_LOCAL_CACHE_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
     return parsed && typeof parsed === 'object' ? parsed : {};
   } catch (e) {
@@ -84,16 +97,51 @@ function bomLoadCustomKits() {
   }
 }
 
-function bomSaveCustomKits(obj) {
+// Call once during bom.js's init() — pulls the real catalogue down from the
+// server before the kit dropdown is first populated. Seeds from the
+// last-known local cache immediately (in case the app was used offline, or
+// the API is briefly unreachable), so the dropdown never shows a false
+// "no kits yet" flash while the network request is in flight.
+async function bomHydrateCustomKits() {
+  bomCustomKitsCache = bomLoadCustomKitsLocalCache();
   try {
-    localStorage.setItem(BOM_CUSTOM_KITS_KEY, JSON.stringify(obj));
+    const kits = await window.Api.get('/bom/kits');
+    bomCustomKitsCache = (kits && typeof kits === 'object') ? kits : {};
+    bomPersistCustomKitsLocalCache();
   } catch (e) {
-    // storage unavailable/full — saving silently no-ops rather than crashing the page
+    console.warn('bom: could not load kit templates from the server, showing last-known kits', e);
+    if (window.showToast) window.showToast('Could not reach the server — showing last-saved kit templates.', 3500);
   }
+  return bomCustomKitsCache;
+}
+
+// Synchronous getter — every existing call site keeps working unchanged.
+function bomLoadCustomKits() {
+  return bomCustomKitsCache;
+}
+
+// Create or update ONE kit template. Saves to the server FIRST; the local
+// cache only updates once the server confirms, so a failed save (offline,
+// validation error, no permission) never leaves the in-memory catalogue
+// (or the dropdown built from it) out of sync with what's actually stored.
+// Throws on failure — callers catch this and show the server's message.
+async function bomUpsertCustomKit(key, kit) {
+  await window.Api.put(`/bom/kits/${encodeURIComponent(key)}`, kit);
+  bomCustomKitsCache = { ...bomCustomKitsCache, [key]: kit };
+  bomPersistCustomKitsLocalCache();
+}
+
+// Delete ONE kit template — same server-first-then-cache ordering as above.
+async function bomDeleteCustomKit(key) {
+  await window.Api.delete(`/bom/kits/${encodeURIComponent(key)}`);
+  const next = { ...bomCustomKitsCache };
+  delete next[key];
+  bomCustomKitsCache = next;
+  bomPersistCustomKitsLocalCache();
 }
 
 // Combined catalogue used everywhere a kit needs to be looked up: built-in
-// BOM_KITS plus whatever templates the person has saved.
+// BOM_KITS plus whatever templates have been saved (server-backed cache above).
 function bomGetAllKits() {
   return { ...BOM_KITS, ...bomLoadCustomKits() };
 }

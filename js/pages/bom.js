@@ -992,6 +992,10 @@ window.PAGES.bom = {
     await bomLoadItemMasterNames();
     await bomLoadSerialMandatoryInfo();
     await bomLoadChallanCategoryMap();
+    // Kit templates ("New Kit" / "Edit Kit") — now database-backed (see
+    // bom-kit-helpers.js) so a kit saved on one device shows up on every
+    // device/login instead of being stuck in that browser's localStorage.
+    await bomHydrateCustomKits();
 
     const btnDeleteKit = $('bomBtnDeleteKit');
     const btnEditKit = $('bomBtnEditKit');
@@ -1055,8 +1059,15 @@ window.PAGES.bom = {
           `Delete the saved template "${kitLabel}"? This cannot be undone.`,
         );
         if (!confirmed) return;
-        delete custom[key];
-        bomSaveCustomKits(custom);
+        btnDeleteKit.disabled = true;
+        try {
+          await bomDeleteCustomKit(key); // server first — cache only updates once this succeeds
+        } catch (e) {
+          window.openModal('Delete Failed', `<p>${bomEsc((e && e.message) || 'Could not delete this kit template. Please try again.')}</p>`);
+          return;
+        } finally {
+          btnDeleteKit.disabled = false;
+        }
         populateKitDropdown('');
         refreshItemsPreview();
         if (window.showToast) window.showToast('Kit template deleted.');
@@ -1353,7 +1364,7 @@ window.PAGES.bom = {
     }
 
     if (btnSaveKitTemplate) {
-      btnSaveKitTemplate.addEventListener('click', () => {
+      btnSaveKitTemplate.addEventListener('click', async () => {
         const label = newKitLabelInput.value.trim();
         if (!label) {
           window.openModal('Validation Error', '<p>Kit Name is required.</p>');
@@ -1400,12 +1411,21 @@ window.PAGES.bom = {
             n += 1;
           }
         }
-        custom[key] = {
+        const kitPayload = {
           label,
           kw: newKitKwInput.value.trim(),
           sections: sectionsToSave,
         };
-        bomSaveCustomKits(custom);
+
+        btnSaveKitTemplate.disabled = true;
+        try {
+          await bomUpsertCustomKit(key, kitPayload); // server first — cache (and every device/login) only updates once this succeeds
+        } catch (e) {
+          window.openModal('Save Failed', `<p>${bomEsc((e && e.message) || 'Could not save this kit template. Please try again.')}</p>`);
+          return;
+        } finally {
+          btnSaveKitTemplate.disabled = false;
+        }
         const wasEditing = !!editingKitKey;
         editingKitKey = null;
 
@@ -1413,7 +1433,7 @@ window.PAGES.bom = {
         if (kitItemsPanel) kitItemsPanel.style.display = '';
         populateKitDropdown(key); // auto-select the newly saved/updated kit
         refreshItemsPreview();
-        if (window.showToast) window.showToast(wasEditing ? 'Kit template updated.' : 'Kit template saved — it now auto-fills from the dropdown.');
+        if (window.showToast) window.showToast(wasEditing ? 'Kit template updated.' : 'Kit template saved — it now auto-fills from the dropdown, on every device.');
       });
     }
 
@@ -1931,58 +1951,6 @@ window.PAGES.bom = {
       else finish();
     }
 
-    // ---------------- Serial scanner (USB / Bluetooth hardware scanner) ----
-    // A USB/Bluetooth barcode scanner behaves like a keyboard: it just needs
-    // the target field focused, then it "types" the code followed by Enter.
-    // Because every serial box here is a <textarea> (not a single-line
-    // input like scansheet.js's fields), the browser's native "Enter adds a
-    // newline" behaviour already gives "one serial per line" for free — no
-    // custom keydown/paste burst-buffering is needed the way scansheet.js
-    // needs it for its single-line inputs. All this needs to do is:
-    //   - focus the box so scanned keystrokes land in the right place
-    //   - on mobile, briefly mark it readonly then release (same trick
-    //     scansheet.js's Bluetooth mode uses) so the on-screen keyboard
-    //     doesn't pop up and cover the field while a physical scanner is
-    //     being used
-    //   - show a small status note so the flow is discoverable, matching
-    //     scansheet.js's "BT scanner mode" box
-    function bomFocusForHardwareScan(box) {
-      if (!box) return;
-      if (document.activeElement && document.activeElement !== box && document.activeElement.blur) {
-        document.activeElement.blur();
-      }
-      box.setAttribute('readonly', 'readonly'); // keeps mobile's soft keyboard from popping up
-      box.focus({ preventScroll: true });
-      window.setTimeout(() => {
-        box.removeAttribute('readonly');
-        const len = String(box.value || '').length;
-        if (typeof box.setSelectionRange === 'function') box.setSelectionRange(len, len);
-      }, 450);
-    }
-
-    // Wires an "USB/BT Scanner" toggle button next to a serial textarea.
-    // `statusEl` (optional) shows/hides an instruction note while active —
-    // pass null where there's no room for one (e.g. the compact Continue
-    // Dispatch rows), in which case the button just focuses the box once
-    // per click instead of toggling a persistent mode.
-    function bomWireHardwareScanButton(box, btn, statusEl) {
-      if (!box || !btn) return;
-      if (!statusEl) {
-        btn.addEventListener('click', () => bomFocusForHardwareScan(box));
-        return;
-      }
-      let active = false;
-      btn.addEventListener('click', () => {
-        active = !active;
-        btn.classList.toggle('active', active);
-        statusEl.style.display = active ? '' : 'none';
-        if (active) {
-          statusEl.textContent = 'USB/BT scanner mode ON — tap the box, wait half a second for the keyboard to hide, then scan. Each scan adds a new line automatically.';
-          bomFocusForHardwareScan(box);
-        }
-      });
-    }
-
     // Serial No. popup — click the Serial No. button on a serial-mandatory
     // row (Solar Panel, Inverter, etc.) to open the same style of box
     // Purchase/Sale already use: scan-or-type with auto-newline on any
@@ -2003,13 +1971,11 @@ window.PAGES.bom = {
           <div class="actions-row bom-serial-mode-row" style="margin-bottom:10px;">
             <button type="button" class="btn btn-ghost bom-serial-mode-btn" id="bomSerialModeUpload"><i class="fa-solid fa-file-arrow-up"></i> Upload Serial No. (File)</button>
             <button type="button" class="btn btn-blue" id="bomSerialCameraBtn"><i class="fa-solid fa-barcode"></i> Scan Serial No.</button>
-            <button type="button" class="btn btn-ghost bom-serial-mode-btn" id="bomSerialHwScanBtn"><i class="fa-brands fa-bluetooth-b"></i> USB/BT Scanner</button>
           </div>
           <div id="bomSerialUploadPane" style="display:none; margin-bottom:10px;">
             <input type="file" id="bomSerialFileInput" accept=".txt,.csv">
             <p class="note" style="margin-top:6px;">Pick a .txt or .csv file — one serial per line, or comma/space separated. It loads into the box below so you can review before saving.</p>
           </div>
-          <p class="note ss-direct-scanner-status" id="bomSerialHwScanNote" style="display:none; margin-bottom:8px;"></p>
           <textarea id="bomSerialModalBox" rows="8" placeholder="Scan or type serial numbers — one per line...">${bomEsc(item.serials || '')}</textarea>
           <p class="note" id="bomSerialCountNote" style="margin-top:8px;"></p>
           <div class="actions-row" style="margin-top:12px;">
@@ -2043,13 +2009,6 @@ window.PAGES.bom = {
       // each Done'd scan straight into this modal's box. Labeled "Scan
       // Serial No." since it's the only actual scan entry point now.
       if (cameraBtn) cameraBtn.addEventListener('click', () => openBomScanner('bomSerialModalBox'));
-
-      // "USB/BT Scanner" — same textarea, no camera. Toggle focuses the box
-      // and (on mobile) hides the soft keyboard so a physical scanner's
-      // keystrokes land straight in, exactly like scansheet.js's BT mode.
-      const hwScanBtn = document.getElementById('bomSerialHwScanBtn');
-      const hwScanNote = document.getElementById('bomSerialHwScanNote');
-      bomWireHardwareScanButton(box, hwScanBtn, hwScanNote);
 
       function updateCountNote() {
         const count = bomSplitSerials(box.value).length;
@@ -2471,8 +2430,7 @@ window.PAGES.bom = {
           ${it.serialMandatory
             ? `<div style="display:flex; gap:8px; align-items:flex-start;">
                  <textarea id="${taId}" data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="serial" data-cont-total="${it.total}" rows="2" placeholder="Enter up to ${it.remaining} serial number(s), comma or newline separated" style="flex:1;"></textarea>
-                 <button type="button" class="ss-scan-icon-btn" data-cont-scan-target="${taId}" title="Scan barcode / QR (camera)"><i class="fa-solid fa-barcode"></i></button>
-                 <button type="button" class="ss-scan-icon-btn" data-cont-hwscan-target="${taId}" title="Use USB/Bluetooth scanner"><i class="fa-brands fa-bluetooth-b"></i></button>
+                 <button type="button" class="ss-scan-icon-btn" data-cont-scan-target="${taId}" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
                </div>`
             : `<input type="number" min="0" max="${it.remaining}" value="${it.remaining}" data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="qty" data-cont-total="${it.total}">`
           }
@@ -2517,13 +2475,6 @@ window.PAGES.bom = {
       // the camera scanner targeting that item's own textarea id.
       container.querySelectorAll('[data-cont-scan-target]').forEach((btn) => {
         btn.addEventListener('click', () => openBomScanner(btn.getAttribute('data-cont-scan-target')));
-      });
-      // USB/BT scanner icon per row — no camera, just focuses that row's
-      // textarea (and hides the mobile keyboard briefly) so a physical
-      // scanner's keystrokes land straight in.
-      container.querySelectorAll('[data-cont-hwscan-target]').forEach((btn) => {
-        const box = document.getElementById(btn.getAttribute('data-cont-hwscan-target'));
-        bomWireHardwareScanButton(box, btn, null);
       });
       const backBtn = container.querySelector('#bomRegisterBackBtn');
       if (backBtn) backBtn.addEventListener('click', goBack);
