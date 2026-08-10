@@ -23,6 +23,15 @@
 //                                                    data, no code deploy
 //                                                    needed when item names
 //                                                    change.
+//
+// IMPORTANT - route order: '/category-map' MUST be registered BEFORE
+// '/:id' (and '/:id/pdf'). Express's `:id` is a plain string param, NOT
+// numeric-only, so a request for GET /api/challan/category-map WILL match
+// an earlier-registered GET /api/challan/:id route (with id="category-map")
+// instead of ever reaching the category-map handler below. That earlier bug
+// made the category-map endpoint unreachable - it always 404'd via the :id
+// handler ("Challan not found"), so the frontend's category dropdown stayed
+// empty ("0 Challan categories available"). Keep the static route first.
 // -----------------------------------------------------------------------------
 const { fillTemplateAndConvertToPdf } = require('../services/challanPdf');
 
@@ -67,36 +76,9 @@ module.exports = function registerChallanRoutes(app, deps) {
     res.json(rows);
   }));
 
-  app.get('/api/challan/:id', route(async (req, res) => {
-    const [[row]] = await pool.query(`SELECT * FROM bom_challans WHERE id=?`, [req.params.id]);
-    if (!row) return res.status(404).json({ error: 'Challan not found.' });
-    res.json({ ...row, items: JSON.parse(row.items_json || '{}') });
-  }));
-
-  app.get('/api/challan/:id/pdf', route(async (req, res) => {
-    const [[row]] = await pool.query(`SELECT * FROM bom_challans WHERE id=?`, [req.params.id]);
-    if (!row) return res.status(404).json({ error: 'Challan not found.' });
-    const record = { ...row, items: JSON.parse(row.items_json || '{}') };
-
-    const { pdfBuffer, cleanup } = await fillTemplateAndConvertToPdf(record);
-    try {
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="Challan_${row.challan_no}.pdf"`);
-      // Without this, browsers (esp. installed PWAs) may heuristically cache
-      // this GET response and keep re-serving an old/blank PDF for the same
-      // challan id even after the record's data changes.
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-      res.send(pdfBuffer);
-    } finally {
-      await cleanup();
-    }
-  }));
-
   // Returns the fixed category list + every currently-known item_name ->
-  // category mapping. Registered BEFORE '/api/challan/:id' would matter if
-  // it shared a prefix depth with it, but 'category-map' can never collide
-  // with a numeric :id anyway — kept here purely for readability, grouped
-  // with the other challan endpoints.
+  // category mapping. MUST be registered before GET '/api/challan/:id'
+  // (see route-order note at top of file) — otherwise this never gets hit.
   app.get('/api/challan/category-map', route(async (req, res) => {
     const [rows] = await pool.query(`SELECT item_name, challan_category FROM challan_category_map`);
     const map = {};
@@ -129,5 +111,32 @@ module.exports = function registerChallanRoutes(app, deps) {
       );
     }
     res.json({ success: true });
+  }));
+
+  // Single record (for reprint). Registered AFTER '/category-map' so the
+  // static route above always wins that match.
+  app.get('/api/challan/:id', route(async (req, res) => {
+    const [[row]] = await pool.query(`SELECT * FROM bom_challans WHERE id=?`, [req.params.id]);
+    if (!row) return res.status(404).json({ error: 'Challan not found.' });
+    res.json({ ...row, items: JSON.parse(row.items_json || '{}') });
+  }));
+
+  app.get('/api/challan/:id/pdf', route(async (req, res) => {
+    const [[row]] = await pool.query(`SELECT * FROM bom_challans WHERE id=?`, [req.params.id]);
+    if (!row) return res.status(404).json({ error: 'Challan not found.' });
+    const record = { ...row, items: JSON.parse(row.items_json || '{}') };
+
+    const { pdfBuffer, cleanup } = await fillTemplateAndConvertToPdf(record);
+    try {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="Challan_${row.challan_no}.pdf"`);
+      // Without this, browsers (esp. installed PWAs) may heuristically cache
+      // this GET response and keep re-serving an old/blank PDF for the same
+      // challan id even after the record's data changes.
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.send(pdfBuffer);
+    } finally {
+      await cleanup();
+    }
   }));
 };
