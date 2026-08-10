@@ -258,6 +258,15 @@ let bomItemMasterMeta = {};
 // alongside everything else in bomLoadItemMasterNames().
 let bomModelsByBrand = {};
 
+// brand_name -> [{ model, name }] for every real Masters > Item
+// Registration row under that brand — lets us go from "brand picked in
+// Item Name" + "model picked in Model" back to the exact registered
+// `name` (e.g. brand "Lug" + model "16" -> "Lug_16"), which is the only
+// value the backend actually matches against (see findItemByName in
+// bom.routes.js). Populated alongside everything else in
+// bomLoadItemMasterNames().
+let bomRowsByBrand = {};
+
 async function bomLoadItemMasterNames() {
   try {
     const rows = await window.Api.get('/masters/items');
@@ -266,8 +275,14 @@ async function bomLoadItemMasterNames() {
       bomItemMasterModels = Array.from(new Set(rows.map((r) => r.model).filter(Boolean)));
       bomItemMasterMeta = {};
       bomModelsByBrand = {};
+      bomRowsByBrand = {};
       rows.forEach((r) => {
         if (r.name) bomItemMasterMeta[r.name] = { brand_name: r.brand_name || r.name, model: r.model || '' };
+        const brand = r.brand_name || r.name;
+        if (brand && r.name) {
+          if (!bomRowsByBrand[brand]) bomRowsByBrand[brand] = [];
+          bomRowsByBrand[brand].push({ model: r.model || '', name: r.name });
+        }
         if (r.brand_name && r.model) {
           if (!bomModelsByBrand[r.brand_name]) bomModelsByBrand[r.brand_name] = [];
           if (!bomModelsByBrand[r.brand_name].includes(r.model)) bomModelsByBrand[r.brand_name].push(r.model);
@@ -282,16 +297,59 @@ async function bomLoadItemMasterNames() {
   bomItemMasterModels = [];
   bomItemMasterMeta = {};
   bomModelsByBrand = {};
+  bomRowsByBrand = {};
 }
 
-function bomBuildItemOptionsHtml(selectedName) {
-  const names = new Set(bomItemMasterNames);
-  if (selectedName) names.add(selectedName);
-  const optionsHtml = Array.from(names).map((n) => {
+// Resolves the exact Masters > Item Registration `name` for a brand +
+// model pair — the real value that must be sent to the backend (it does
+// an exact `items.name` match, see findItemByName in bom.routes.js).
+// A brand with only ONE registered row (no real model choice to make,
+// e.g. "GI Structure") resolves as soon as the brand is picked, without
+// needing a model at all. A brand with several rows (e.g. "Lug" with
+// models 4 and 16) only resolves once the matching model is also picked;
+// returns '' until then so a half-picked row never silently saves the
+// wrong item.
+function bomResolveItemName(brand, model) {
+  const rows = bomRowsByBrand[brand];
+  if (!rows || !rows.length) return '';
+  if (rows.length === 1) return rows[0].name;
+  const m = String(model || '').trim().toLowerCase();
+  if (!m) return '';
+  const hit = rows.find((r) => String(r.model || '').trim().toLowerCase() === m);
+  return hit ? hit.name : '';
+}
+
+// A row's current brand, for both the Name select's "selected" state and
+// the Model dropdown's filter. Prefers the new item.brand field (set the
+// moment someone picks from the deduped Name list); falls back to
+// resolving it from item.name for rows saved before this change (old
+// kits/templates that still store the full composite name directly).
+function bomRowBrand(it) {
+  if (it.brand) return it.brand;
+  const meta = it.name ? bomItemMasterMeta[it.name] : null;
+  return meta ? meta.brand_name : (it.name || '');
+}
+
+// Item Name dropdown — ONE entry per brand (e.g. "Lug" once, not once per
+// Lug model), sorted A-Z. The specific model is picked afterward in the
+// Model column (bomBuildModelOptionsHtml), same two-step pattern already
+// used by the Category-driven Solar Panel/Inverter rows. `selectedBrand`
+// is the row's current brand (callers derive this from item.brand, or —
+// for older rows saved before this change — from item.name via
+// bomItemMasterMeta).
+function bomBuildItemOptionsHtml(selectedBrand) {
+  const brands = new Set();
+  bomItemMasterNames.forEach((n) => {
     const meta = bomItemMasterMeta[n];
-    const label = meta ? meta.brand_name : n; // clean Brand Name only — Model shows in its own column
-    return `<option value="${bomEscAttr(n)}" ${n === selectedName ? 'selected' : ''}>${bomEsc(label)}</option>`;
-  }).join('');
+    brands.add(meta ? meta.brand_name : n);
+  });
+  if (selectedBrand) brands.add(selectedBrand);
+  const sorted = Array.from(brands).sort((a, b) =>
+    String(a).localeCompare(String(b), undefined, { sensitivity: 'base', numeric: true })
+  );
+  const optionsHtml = sorted.map((b) =>
+    `<option value="${bomEscAttr(b)}" ${b === selectedBrand ? 'selected' : ''}>${bomEsc(b)}</option>`
+  ).join('');
   return `<option value="">-- Select Item --</option>${optionsHtml}`;
 }
 
@@ -425,7 +483,7 @@ function bomRenderScreenItemsHtml(state, opts) {
       const effectiveCategory = it.category || sectionCategory;
       const nameCell = isCategoryDrivenRow
         ? `<select class="bom-field-input bom-field-category" data-sec="${si}" data-idx="${ii}" data-field="category">${bomBuildCategoryOptionsHtml(effectiveCategory)}</select>`
-        : `<select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(it.name)}</select>`;
+        : `<select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(bomRowBrand(it))}</select>`;
       const modelCell = isCategoryDrivenRow
         ? `<select class="bom-field-input bom-field-modelitem" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildCategoryItemOptionsHtml(effectiveCategory, it.name)}</select>`
         : `<input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="model" value="${bomEscAttr(it.model)}">`;
@@ -2132,10 +2190,10 @@ window.PAGES.bom = {
         const itemRowsHtml = sec.items.map((it, ii) => {
           const isCategoryDrivenRow = !!sectionCategory && ii === 0;
           const effectiveCategory = it.category || sectionCategory;
+          const rowBrand = bomRowBrand(it);
           const nameCell = isCategoryDrivenRow
             ? `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="category">${bomBuildCategoryOptionsHtml(effectiveCategory)}</select>`
-            : `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="name">${bomBuildItemOptionsHtml(it.name)}</select>`;
-          const rowBrand = (bomItemMasterMeta[it.name] && bomItemMasterMeta[it.name].brand_name) || '';
+            : `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="name">${bomBuildItemOptionsHtml(rowBrand)}</select>`;
           const modelCell = isCategoryDrivenRow
             ? `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="name">${bomBuildCategoryItemOptionsHtml(effectiveCategory, it.name)}</select>`
             : `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="model">${bomBuildModelOptionsHtml(it.model, rowBrand)}</select>`;
@@ -2207,15 +2265,37 @@ window.PAGES.bom = {
         return;
       }
 
-      // Item Name picked on a normal (non-category-driven) row — the Model
-      // dropdown is scoped to whichever brand this item belongs to
-      // (bomModelsByBrand), so the old Model value may no longer apply.
-      // Clear it and re-render so the Model select rebuilds against the
-      // new brand's own model list only.
+      // field 'name' is shared by two different selects depending on the
+      // row type (see renderKitBuilderSections):
+      //  - category-driven lead row's Model-item select — its value IS
+      //    already the real registered item name (bomBuildCategoryItemOptionsHtml).
+      //  - normal row's Item Name select — now a deduped BRAND picker
+      //    (bomBuildItemOptionsHtml), so its value must be resolved
+      //    through bomResolveItemName before it becomes item.name.
       if (field === 'name') {
-        item.name = el.value;
+        const sectionCategory = bomResolveSectionCategory(newKitSections[si].title);
+        const isCategoryDrivenRow = !!sectionCategory && ii === 0;
+        if (isCategoryDrivenRow) {
+          item.name = el.value;
+          return;
+        }
+        item.brand = el.value;
         item.model = '';
+        const resolved = bomResolveItemName(item.brand, item.model);
+        item.name = resolved;
+        if (resolved) {
+          const meta = bomItemMasterMeta[resolved];
+          if (meta && meta.model) item.model = meta.model; // brand had exactly one item — keep Model in sync
+        }
         renderKitBuilderSections();
+        return;
+      }
+
+      // Model select on a normal row — resolve the real item.name now
+      // that both brand (item.brand) and model are known.
+      if (field === 'model' && item.brand) {
+        item.model = el.value;
+        item.name = bomResolveItemName(item.brand, item.model);
         return;
       }
 
@@ -2491,15 +2571,49 @@ window.PAGES.bom = {
         return;
       }
 
+      // Category select (unchanged) is handled above and returns early.
+      // Item Name select on a normal (non-category-driven) row now offers
+      // one entry per BRAND (bomBuildItemOptionsHtml) — the value picked
+      // here is a brand, not the final registered item name. Remember it
+      // in item.brand, then resolve the real name via bomResolveItemName:
+      // instantly for a brand with only one registered item, or as soon
+      // as a matching Model is also typed for a brand with several (see
+      // the 'model'-adjacent branch below).
+      if (field === 'name') {
+        item.brand = el.value;
+        item.model = '';
+        const resolved = bomResolveItemName(item.brand, item.model);
+        item.name = resolved;
+        if (resolved) {
+          const meta = bomItemMasterMeta[resolved];
+          if (meta && meta.model) item.model = meta.model; // keep Model in sync with the resolved item
+        }
+        item.checked = false;
+        setVerified(false);
+        updateVerifyButtonState();
+        rerenderItemsPreview(); // item changed — refresh the Serial No. column for this row
+        return;
+      }
+
+      // Model free-text field on a normal (non-category-driven) row —
+      // once a brand has already been picked (item.brand), re-resolve
+      // item.name the moment the typed model matches one of that brand's
+      // real registered models (e.g. brand "Lug" + typing "16" resolves
+      // to the real "Lug_16"). Left unresolved (name stays '') until it
+      // matches, so a half-typed model never silently saves the wrong item.
+      if (field === 'model' && item.brand) {
+        item.model = el.value;
+        item.name = bomResolveItemName(item.brand, item.model);
+        item.checked = false;
+        setVerified(false);
+        updateVerifyButtonState();
+        return;
+      }
+
       item[field] = el.value;
       item.checked = false; // any content edit invalidates this row's tick
       setVerified(false); // any edit after verifying means it needs re-verifying
       updateVerifyButtonState();
-      if (field === 'name') {
-        const meta = bomItemMasterMeta[el.value];
-        if (meta && meta.model) item.model = meta.model; // keep Model in sync with the picked item
-        rerenderItemsPreview(); // item changed — refresh the Serial No. column for this row
-      }
     }
 
     // Re-renders the item table in place (after a dropdown/field edit,
