@@ -126,7 +126,7 @@ module.exports = function registerMastersRoutes(app, deps) {
   // look at watt/category still work unchanged.
   app.get('/api/masters/items', route(async (req, res) => {
     const [rows] = await pool.query(`
-      SELECT i.id, i.name, i.brand_name, i.watt, i.solar_type, i.category, i.uom, i.minimum_stock,
+      SELECT i.id, i.name, i.brand_name, i.watt, i.watt_unit, i.solar_type, i.category, i.uom, i.minimum_stock,
              i.model, i.watt_mandatory, i.serial_mandatory,
              COALESCE(i.watt_mandatory, c.watt_mandatory, 0) AS watt_mandatory_effective,
              COALESCE(i.serial_mandatory, c.serial_mandatory, 0) AS serial_mandatory_effective
@@ -136,6 +136,14 @@ module.exports = function registerMastersRoutes(app, deps) {
     `);
     res.json(rows);
   }));
+
+  // Normalizes an incoming Wattage unit into exactly 'W' or 'kW' — anything
+  // else (blank, garbage, omitted) falls back to 'W', same "W unless kW is
+  // explicitly chosen" rule the Item Registration form itself follows.
+  function normalizeWattUnit(val) {
+    const s = String(val || '').trim().toLowerCase();
+    return s === 'kw' ? 'kW' : 'W';
+  }
 
   // Normalizes an incoming override value into: true / false / null.
   // null means "not specified — inherit Category Master's rule". Accepts
@@ -197,30 +205,30 @@ module.exports = function registerMastersRoutes(app, deps) {
   }
 
   app.post('/api/masters/items', route(async (req, res) => {
-    const { name, brand_name, watt, solar_type, category, uom, minimum_stock, model, watt_mandatory, serial_mandatory } = req.body;
+    const { name, brand_name, watt, watt_unit, solar_type, category, uom, minimum_stock, model, watt_mandatory, serial_mandatory } = req.body;
     const wattOverride = normalizeOverrideFlag(watt_mandatory);
     const serialOverride = normalizeOverrideFlag(serial_mandatory);
     const errMsg = await validateItemPayload({ brand_name, watt, category, model, watt_mandatory: wattOverride, serial_mandatory: serialOverride });
     if (errMsg) return res.status(400).json({ error: errMsg });
     await pool.query(`
-      INSERT INTO items (name, brand_name, watt, solar_type, category, uom, minimum_stock, model, watt_mandatory, serial_mandatory) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [name || `${brand_name} ${watt || model || ''}`.trim(), brand_name, watt || 0, solar_type || '-', category, uom || 'Nos', minimum_stock || 0, model ? String(model).trim() : null, wattOverride, serialOverride]);
+      INSERT INTO items (name, brand_name, watt, watt_unit, solar_type, category, uom, minimum_stock, model, watt_mandatory, serial_mandatory) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [name || `${brand_name} ${watt || model || ''}`.trim(), brand_name, watt || 0, normalizeWattUnit(watt_unit), solar_type || '-', category, uom || 'Nos', minimum_stock || 0, model ? String(model).trim() : null, wattOverride, serialOverride]);
     res.json({ success: true });
   }));
 
   app.put('/api/masters/items/:id', route(async (req, res) => {
     const { id } = req.params;
-    const { name, brand_name, watt, solar_type, category, uom, minimum_stock, model, watt_mandatory, serial_mandatory } = req.body;
+    const { name, brand_name, watt, watt_unit, solar_type, category, uom, minimum_stock, model, watt_mandatory, serial_mandatory } = req.body;
     const wattOverride = normalizeOverrideFlag(watt_mandatory);
     const serialOverride = normalizeOverrideFlag(serial_mandatory);
     const errMsg = await validateItemPayload({ brand_name, watt, category, model, watt_mandatory: wattOverride, serial_mandatory: serialOverride, editingId: id });
     if (errMsg) return res.status(400).json({ error: errMsg });
     await pool.query(`
       UPDATE items 
-      SET name = ?, brand_name = ?, watt = ?, solar_type = ?, category = ?, uom = ?, minimum_stock = ?, model = ?, watt_mandatory = ?, serial_mandatory = ?
+      SET name = ?, brand_name = ?, watt = ?, watt_unit = ?, solar_type = ?, category = ?, uom = ?, minimum_stock = ?, model = ?, watt_mandatory = ?, serial_mandatory = ?
       WHERE id = ?
-    `, [name || `${brand_name} ${watt || model || ''}`.trim(), brand_name, watt || 0, solar_type || '-', category, uom || 'Nos', minimum_stock || 0, model ? String(model).trim() : null, wattOverride, serialOverride, id]);
+    `, [name || `${brand_name} ${watt || model || ''}`.trim(), brand_name, watt || 0, normalizeWattUnit(watt_unit), solar_type || '-', category, uom || 'Nos', minimum_stock || 0, model ? String(model).trim() : null, wattOverride, serialOverride, id]);
     res.json({ success: true });
   }));
 

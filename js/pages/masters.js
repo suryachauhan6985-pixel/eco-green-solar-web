@@ -51,7 +51,14 @@ window.PAGES.masters = {
               <div class="field"><label>Brand Name <span class="req">*</span></label>
                 <input id="mItemBrandInput" placeholder="e.g. Adani"></div>
               <div class="field" id="mItemWattField"><label>Wattage / Capacity <span class="req" id="mItemWattReq" style="display:none;">*</span></label>
-                <input id="mItemWattInput" placeholder="e.g. 545"></div>
+                <div style="display:flex; gap:8px;">
+                  <input id="mItemWattInput" placeholder="e.g. 545" style="flex:1;">
+                  <select id="mItemWattUnitDropdown" style="width:88px;" title="Unit shown after the value (W or kW)">
+                    <option value="W" selected>W</option>
+                    <option value="kW">kW</option>
+                  </select>
+                </div>
+              </div>
               <div class="field" id="mItemModelField" style="display:none;"><label>Model <span class="req" id="mItemModelReq">*</span></label>
                 <input id="mItemModelInput" placeholder="e.g. 2 Inch"></div>
               <div class="field"><label>UOM (Unit of Measure)</label>
@@ -210,6 +217,18 @@ window.PAGES.masters = {
     function scrollList(items) {
       return `<div style="max-height:260px; overflow-y:auto; margin-top:8px; padding:8px 10px; border:1px solid rgba(255,255,255,0.12); border-radius:6px; font-size:12.5px; line-height:1.6;">${items.join('<br>')}</div>`;
     }
+
+    // The `watt` column is stored as DECIMAL(8,2) so it can hold values
+    // like 3.3 or 0.5 — mysql2 returns decimal columns as fixed-2-place
+    // STRINGS ("545.00", "3.30"), not numbers, so displaying the raw value
+    // anywhere always padded it with trailing zeros. Number(...) + string
+    // coercion drops that padding so a value always shows exactly as it
+    // was typed: "545" stays "545", "3" stays "3", "3.3" stays "3.3".
+    function mFormatWatt(v) {
+      if (v === null || v === undefined || v === '') return '';
+      const n = Number(v);
+      return Number.isFinite(n) ? String(n) : String(v);
+    }
     const API_BASE = window.API_BASE || "http://192.168.0.123:5000/api";
 
     let cachedItems = [];
@@ -319,11 +338,11 @@ window.PAGES.masters = {
         <tr class="m-item-row" data-id="${it.id}" style="cursor:pointer;">
           <td>${it.category}</td>
           <td class="gold-txt" style="font-weight:600;">${it.brand_name}</td>
-          <td>${it.watt ? it.watt + 'W' : (it.model ? it.model : '-')}</td>
+          <td>${it.watt ? mFormatWatt(it.watt) + (it.watt_unit || 'W') : (it.model ? it.model : '-')}</td>
           <td>${it.solar_type || '-'}</td>
-          <td style="color:var(--orange); font-weight:600;">${it.minimum_stock || 0}</td>
+          <td style="color:var(--orange); font-weight:600;">${it.minimum_stock || 0} ${it.uom || 'Nos'}</td>
           <td>${it.uom || 'Nos'}</td>
-          <td><button class="btn btn-red m-item-delete" data-id="${it.id}" data-label="${it.brand_name}${it.watt ? ' ' + it.watt + 'W' : (it.model ? ' ' + it.model : '')}" style="padding:6px 10px; font-size:11px;" title="Delete item"><i class="fa-solid fa-trash"></i></button></td>
+          <td><button class="btn btn-red m-item-delete" data-id="${it.id}" data-label="${it.brand_name}${it.watt ? ' ' + mFormatWatt(it.watt) + (it.watt_unit || 'W') : (it.model ? ' ' + it.model : '')}" style="padding:6px 10px; font-size:11px;" title="Delete item"><i class="fa-solid fa-trash"></i></button></td>
         </tr>
       `).join('');
         }
@@ -362,7 +381,10 @@ window.PAGES.masters = {
       const wattReq = $('mItemWattReq');
       if (wattField) wattField.style.display = wattMandatory ? '' : 'none';
       if (wattReq) wattReq.style.display = wattMandatory ? '' : 'none';
-      if (!wattMandatory && clearIfHidden) $('mItemWattInput').value = '';
+      if (!wattMandatory && clearIfHidden) {
+        $('mItemWattInput').value = '';
+        $('mItemWattUnitDropdown').value = 'W';
+      }
 
       // Goal: when NEITHER Wattage nor Serial No. applies to this category,
       // Wattage is replaced by a mandatory free-text Model field (e.g. PVC
@@ -404,6 +426,7 @@ window.PAGES.masters = {
       editingItemSolarType = null;
       $("mItemBrandInput").value = "";
       $("mItemWattInput").value = "";
+      $("mItemWattUnitDropdown").value = "W";
       $("mItemModelInput").value = "";
       $("mItemMinStockInput").value = "0";
       $("mItemFormHeading").innerHTML =
@@ -419,6 +442,7 @@ window.PAGES.masters = {
       const category = $("mItemCatDropdown").value;
       const brand = $("mItemBrandInput").value.trim();
       const watt = parseFloat($("mItemWattInput").value.trim()) || 0;
+      const wattUnit = ($("mItemWattUnitDropdown") && $("mItemWattUnitDropdown").value) || "W";
       const model = $("mItemModelInput").value.trim();
       const uom = $("mItemUomDropdown").value;
       const minStock = parseInt($("mItemMinStockInput").value.trim()) || 0;
@@ -462,6 +486,7 @@ window.PAGES.masters = {
         category,
         brand_name: brand,
         watt,
+        watt_unit: wattUnit,
         model: model || null,
         solar_type: finalSolarType,
         uom,
@@ -829,7 +854,8 @@ window.PAGES.masters = {
       editingItemSolarType = match.solar_type || "-";
       $("mItemCatDropdown").value = match.category;
       $("mItemBrandInput").value = match.brand_name;
-      $("mItemWattInput").value = match.watt ? match.watt : "";
+      $("mItemWattInput").value = match.watt ? mFormatWatt(match.watt) : "";
+      $("mItemWattUnitDropdown").value = match.watt_unit || "W";
       $("mItemModelInput").value = match.model || "";
       $("mItemUomDropdown").value = match.uom || "Nos";
       $("mItemMinStockInput").value = match.minimum_stock || 0;

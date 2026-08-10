@@ -11,6 +11,7 @@ async function ensureStartupSchema(pool) {
   await ensureItemOverrideSchema(pool);
   await ensureStockModelSchema(pool);
   await ensureWattDecimalSchema(pool);
+  await ensureWattUnitSchema(pool);
   await ensureBomDispatchSchema(pool);
   await ensureBomOrderSchema(pool);
   await ensureChallanCategoryMapSchema(pool);
@@ -141,6 +142,17 @@ async function ensureWattDecimalSchema(pool) {
     await pool.query(`ALTER TABLE items MODIFY COLUMN watt DECIMAL(8,2) NOT NULL DEFAULT 0`);
     await pool.query(`ALTER TABLE stock_ledger MODIFY COLUMN watt DECIMAL(8,2) NOT NULL DEFAULT 0`);
   } catch (e) { console.warn('[Watt decimal schema] Could not widen watt column to DECIMAL(8,2) (will retry lazily on first use):', e.message); }
+}
+
+// Goal: let Item Registration record whether a Wattage/Capacity value
+// should display with a "W" or "kW" suffix (e.g. "545W" vs "5.5kW"),
+// instead of always hardcoding "W". Nullable-free with a 'W' default so
+// every existing item (registered before this column existed) keeps
+// showing exactly as before.
+async function ensureWattUnitSchema(pool) {
+  try {
+    await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS watt_unit VARCHAR(4) NOT NULL DEFAULT 'W'`);
+  } catch (e) { console.warn('[Watt unit schema] Could not ensure watt_unit column on items (will retry lazily on first use):', e.message); }
 }
 
 module.exports = { ensureStartupSchema };
