@@ -1956,12 +1956,100 @@ window.PAGES.bom = {
         const box = targetId ? document.getElementById(targetId) : null;
         if (box) {
           box.value = bomSplitSerials(box.value).join('\n');
-          box.focus();
+          // Same readonly-then-release trick openBomSerialModal's
+          // focusSerialBox() uses in BT mode — a plain box.focus() here
+          // pops the mobile soft keyboard right over a physical BT
+          // scanner's target field, which is exactly what BT mode exists
+          // to avoid.
+          if (bomSerialBtMode) {
+            box.setAttribute('readonly', 'readonly');
+            box.focus({ preventScroll: true });
+            window.setTimeout(() => {
+              box.removeAttribute('readonly');
+              const len = box.value.length;
+              if (typeof box.setSelectionRange === 'function') box.setSelectionRange(len, len);
+              box.focus({ preventScroll: true });
+            }, 450);
+          } else {
+            box.focus();
+          }
           box.dispatchEvent(new Event('input', { bubbles: true }));
         }
       };
       if (qr) qr.stop().then(finish).catch(finish);
       else finish();
+    }
+
+    // Bluetooth-scanner result card — same Retry/Done + duplicate-check
+    // card the camera scanner shows (reuses showBomScanResult/confirmBomScan
+    // verbatim, since those only look up elements by id and don't care
+    // whether they're sitting inside a live camera overlay or this
+    // camera-less "paused" one). Previously a BT scan's Enter just landed
+    // straight in the textarea with no confirmation step at all — this
+    // gives BT scans the same pause-and-confirm card the camera already
+    // has, per scansheet.js's Bluetooth Scan overlay pattern.
+    function openBomBtScanResult(targetId, code) {
+      bomScanState.targetId = targetId;
+      bomScanState.handledOnce = true;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'ss-scanner-overlay ss-bt-result-overlay';
+      overlay.innerHTML = `
+        <div class="ss-scanner-topbar">
+          <button type="button" class="ss-icon-btn light" id="bomScanBack" title="Close"><i class="fa-solid fa-arrow-left"></i></button>
+          <div class="ss-scanner-title">Bluetooth Scan</div>
+          <div class="ss-scanner-topbtns"></div>
+        </div>
+        <div class="ss-scanner-camwrap">
+          <div class="ss-bt-result-blank">
+            <i class="fa-brands fa-bluetooth-b"></i>
+            <span>Scanner paused</span>
+          </div>
+          <div class="ss-scanner-instruction" id="bomScanStatus"></div>
+          <div class="ss-scanner-result" id="bomScanResult" style="display:none;">
+            <div class="ss-scanner-result-card" id="bomScanResultCard">
+              <div class="ss-scanner-result-label">Scanned value</div>
+              <div class="ss-scanner-result-value" id="bomScanResultValue"></div>
+              <div class="ss-scanner-result-msg" id="bomScanResultMsg"></div>
+            </div>
+            <div class="ss-scanner-result-actions">
+              <button type="button" class="btn btn-ghost" id="bomScanRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
+              <button type="button" class="btn btn-green" id="bomScanDone2"><i class="fa-solid fa-check"></i> Done</button>
+            </div>
+          </div>
+        </div>
+        <div class="ss-scanner-bottom">
+          <span class="proof-name" id="bomScanCount" style="color:#fff;">0 serial(s) added</span>
+          <button type="button" class="btn btn-red ss-scanner-cancel" id="bomScanCancel"><i class="fa-solid fa-xmark"></i> Close</button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      bomScanState.overlayEl = overlay;
+      document.body.style.overflow = 'hidden';
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+
+      overlay.querySelector('#bomScanBack').onclick = closeBomScanner;
+      overlay.querySelector('#bomScanCancel').onclick = closeBomScanner;
+      // "Retry" for a BT scan just discards this reading and closes back to
+      // the (readonly-released) box, ready for the next physical scan —
+      // there's no live decode loop to resume like the camera has.
+      overlay.querySelector('#bomScanRetry').onclick = closeBomScanner;
+      overlay.querySelector('#bomScanDone2').onclick = confirmBomBtScan;
+
+      const targetBox = document.getElementById(targetId);
+      const existingCount = targetBox ? bomSplitSerials(targetBox.value).length : 0;
+      const countEl = document.getElementById('bomScanCount');
+      if (countEl) countEl.textContent = `${existingCount} serial(s) added`;
+
+      showBomScanResult(code);
+    }
+
+    // Same as confirmBomScan (appends the pending value to the target
+    // textarea) but also closes the BT result overlay afterwards, since a
+    // BT scan has no camera feed running behind the card to return to.
+    function confirmBomBtScan() {
+      confirmBomScan();
+      closeBomScanner();
     }
 
     // Serial No. popup — click the Serial No. button on a serial-mandatory
@@ -2010,6 +2098,12 @@ window.PAGES.bom = {
       const btBtn = document.getElementById('bomSerialBtBtn');
       if (!box) return;
 
+      // Buffers a physical BT scanner's keystrokes ourselves in BT mode
+      // (see the keydown listener below) instead of letting them land
+      // directly in the box — Enter/Tab then pops the same Retry/Done
+      // result card the camera scanner shows, via openBomBtScanResult.
+      let bomBtBuffer = '';
+
       // Focuses the box the same way it normally gets the cursor when this
       // modal opens. In BT mode the field is briefly marked readonly first
       // — that stops the mobile soft keyboard from popping up (a BT
@@ -2053,6 +2147,7 @@ window.PAGES.bom = {
       if (btBtn) {
         btBtn.addEventListener('click', () => {
           bomSerialBtMode = !bomSerialBtMode;
+          bomBtBuffer = '';
           applyBomSerialBtModeUi();
           if (bomSerialBtMode) {
             backToTypeMode(); // BT mode always uses the box, never the Upload pane
@@ -2096,7 +2191,28 @@ window.PAGES.bom = {
 
       // Auto-newline on delimiter + paste normalization — identical logic
       // to Purchase/Sale's serial box (splitSerials there === bomSplitSerials here).
+      // In BT mode this branches instead: a physical scanner's keystrokes
+      // are buffered ourselves (never inserted directly) so Enter/Tab can
+      // pop the same Retry/Done result card the camera scanner shows —
+      // previously BT mode just let the scanner type straight into the
+      // box with no confirmation card and no per-scan duplicate check.
       box.addEventListener('keydown', (e) => {
+        if (bomSerialBtMode) {
+          if (e.ctrlKey || e.altKey || e.metaKey) return;
+          if (e.key === 'Enter' || e.key === 'Tab') {
+            e.preventDefault();
+            const code = bomBtBuffer.trim();
+            bomBtBuffer = '';
+            if (code) openBomBtScanResult('bomSerialModalBox', code);
+            return;
+          }
+          if (e.key === 'Escape') { bomBtBuffer = ''; return; }
+          if (e.key.length === 1) {
+            e.preventDefault();
+            bomBtBuffer += e.key;
+          }
+          return;
+        }
         if ([',', ' ', '|', ';', 'Tab'].includes(e.key)) {
           e.preventDefault();
           const before = box.value.slice(0, box.selectionStart);
@@ -2503,7 +2619,8 @@ window.PAGES.bom = {
             ? `<div style="display:flex; gap:8px; align-items:flex-start;">
                  <textarea id="${taId}" data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="serial" data-cont-total="${it.total}" rows="2" placeholder="Enter up to ${it.remaining} serial number(s), comma or newline separated" style="flex:1;"></textarea>
                  <button type="button" class="ss-scan-icon-btn" data-cont-scan-target="${taId}" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
-               </div>`
+               </div>
+               <p class="note" id="${taId}Note" style="margin-top:6px;"></p>`
             : `<input type="number" min="0" max="${it.remaining}" value="${it.remaining}" data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="qty" data-cont-total="${it.total}">`
           }
         </div>
@@ -2518,6 +2635,78 @@ window.PAGES.bom = {
           <button type="button" class="btn btn-ghost" id="bomRegisterTrackBtn"><i class="fa-solid fa-route"></i> Track This BOM</button>
         </div>
       `;
+    }
+
+    // The Continue Dispatch form's per-item serial textarea used to be
+    // "half-done" compared to the main Serial No. modal (openBomSerialModal
+    // above): typing/pasting here did no delimiter normalization and no
+    // duplicate check, so a repeated serial (typed twice, or the same
+    // barcode scanned twice) would silently sail through into the dispatch
+    // request. This gives it the same auto-newline-on-delimiter, paste
+    // normalization, and live duplicate warning the main modal already has
+    // — bomEsc/bomSplitSerials are the same helpers reused everywhere else.
+    function bomContSerialDupes(text) {
+      const serials = bomSplitSerials(text);
+      const seen = new Set();
+      const dupes = new Set();
+      serials.forEach((s) => {
+        const key = s.toLowerCase();
+        if (seen.has(key)) dupes.add(s);
+        seen.add(key);
+      });
+      return { serials, dupes: [...dupes] };
+    }
+
+    function bomUpdateContSerialNote(box) {
+      const note = document.getElementById(`${box.id}Note`);
+      if (!note) return;
+      const { serials, dupes } = bomContSerialDupes(box.value);
+      if (dupes.length) {
+        note.style.color = 'var(--red)';
+        note.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Duplicate serial number(s): ${dupes.map(bomEsc).join(', ')}`;
+      } else if (serials.length) {
+        note.style.color = 'var(--green)';
+        note.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${serials.length} serial number(s) entered.`;
+      } else {
+        note.style.color = '';
+        note.innerHTML = '';
+      }
+    }
+
+    // Same keydown/paste/blur wiring as the main Serial No. modal's box
+    // (see openBomSerialModal above) — any delimiter becomes a newline as
+    // you type/scan, a paste gets normalized the same way, and every
+    // change refreshes the duplicate note live (this also covers a camera
+    // scan's "Done", since confirmBomScan dispatches an 'input' event on
+    // the target textarea).
+    function bomWireContSerialTextarea(box) {
+      box.addEventListener('keydown', (e) => {
+        if ([',', ' ', '|', ';', 'Tab'].includes(e.key)) {
+          e.preventDefault();
+          const before = box.value.slice(0, box.selectionStart);
+          const after = box.value.slice(box.selectionEnd);
+          const needsNewline = before && !before.endsWith('\n');
+          box.value = before + (needsNewline ? '\n' : '') + after;
+          const pos = before.length + (needsNewline ? 1 : 0);
+          box.setSelectionRange(pos, pos);
+        }
+        bomUpdateContSerialNote(box);
+      });
+      box.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pasted = (e.clipboardData || window.clipboardData).getData('text');
+        const normalized = bomSplitSerials(pasted).join('\n');
+        const before = box.value.slice(0, box.selectionStart);
+        const after = box.value.slice(box.selectionEnd);
+        const prefix = before && !before.endsWith('\n') ? '\n' : '';
+        box.value = before + prefix + normalized + '\n' + after;
+        bomUpdateContSerialNote(box);
+      });
+      box.addEventListener('input', () => bomUpdateContSerialNote(box));
+      box.addEventListener('blur', () => {
+        box.value = bomSplitSerials(box.value).join('\n');
+        bomUpdateContSerialNote(box);
+      });
     }
 
     // `target` is either 'modal' (Pending/BOM Register overlay, unchanged
@@ -2548,6 +2737,10 @@ window.PAGES.bom = {
       container.querySelectorAll('[data-cont-scan-target]').forEach((btn) => {
         btn.addEventListener('click', () => openBomScanner(btn.getAttribute('data-cont-scan-target')));
       });
+      // Wire normalization + live duplicate note on every serial textarea
+      // (covers both manual typing/paste AND a camera scan's "Done", since
+      // that dispatches its own 'input' event on the same box).
+      container.querySelectorAll('textarea[data-cont-kind="serial"]').forEach((box) => bomWireContSerialTextarea(box));
       const backBtn = container.querySelector('#bomRegisterBackBtn');
       if (backBtn) backBtn.addEventListener('click', goBack);
       const trackBtn = container.querySelector('#bomRegisterTrackBtn');
@@ -2556,17 +2749,23 @@ window.PAGES.bom = {
       if (continueBtn) {
         continueBtn.addEventListener('click', async () => {
           const items = [];
+          const dupIssues = [];
           container.querySelectorAll('[data-cont-name]').forEach((el) => {
             const name = el.getAttribute('data-cont-name');
             const totalQty = Number(el.getAttribute('data-cont-total')) || 0;
             if (el.getAttribute('data-cont-kind') === 'serial') {
-              const serials = bomSplitSerials(el.value || '');
+              const { serials, dupes } = bomContSerialDupes(el.value || '');
+              if (dupes.length) { dupIssues.push(`${name}: ${dupes.join(', ')}`); return; }
               if (serials.length) items.push({ name, qty: serials.length, totalQty, serials });
             } else {
               const qty = Number(el.value) || 0;
               if (qty > 0) items.push({ name, qty, totalQty, serials: [] });
             }
           });
+          if (dupIssues.length) {
+            window.openModal('Duplicate Serial No.', `<p>Please remove the duplicate serial number(s) before dispatching:</p><ul>${dupIssues.map((s) => `<li>${bomEsc(s)}</li>`).join('')}</ul>`);
+            return;
+          }
           if (!items.length) {
             window.openModal('Nothing to Dispatch', '<p>Enter a quantity or serial number(s) for at least one item.</p>');
             return;
