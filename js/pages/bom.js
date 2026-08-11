@@ -2099,7 +2099,25 @@ window.PAGES.bom = {
             <input type="file" id="bomSerialFileInput" accept=".txt,.csv">
             <p class="note" style="margin-top:6px;">Pick a .txt or .csv file — one serial per line, or comma/space separated. It loads into the box below so you can review before saving.</p>
           </div>
-          <textarea id="bomSerialModalBox" rows="8" ${bomSerialBtMode ? 'inputmode="none"' : 'inputmode="text"'} ${required != null ? `data-max-serials="${required}"` : ''} placeholder="Scan or type serial numbers — one per line...">${bomEsc(item.serials || '')}</textarea>
+          <div style="position:relative;">
+            <textarea id="bomSerialModalBox" rows="8" ${bomSerialBtMode ? 'inputmode="none"' : 'inputmode="text"'} ${required != null ? `data-max-serials="${required}"` : ''} placeholder="Scan or type serial numbers — one per line...">${bomEsc(item.serials || '')}</textarea>
+            <!-- Bluetooth scan confirm card — sits ALREADY in the DOM
+                 (just hidden) instead of being created fresh per scan like
+                 the full-screen camera overlay is. Toggling display is
+                 instant, which is what keeps this fast: the scan itself
+                 shows the card immediately, and only the human's own Done
+                 tap (not any artificial delay) gates when it lands in the
+                 box. -->
+            <div id="bomBtResultCard" style="display:none; position:absolute; inset:0; background:var(--bg2, #1e1e1e); border:1px solid var(--border, #444); border-radius:8px; padding:14px; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:8px; z-index:2;">
+              <div class="note" style="font-size:12px;">Scanned value</div>
+              <div id="bomBtResultValue" style="font-size:18px; font-weight:700; word-break:break-all;"></div>
+              <div id="bomBtResultMsg" class="note" style="margin:0;"></div>
+              <div class="actions-row" style="margin-top:6px;">
+                <button type="button" class="btn btn-ghost" id="bomBtRetryBtn"><i class="fa-solid fa-rotate-left"></i> Retry</button>
+                <button type="button" class="btn btn-green" id="bomBtDoneBtn"><i class="fa-solid fa-check"></i> Done</button>
+              </div>
+            </div>
+          </div>
           <p class="note" id="bomSerialCountNote" style="margin-top:8px;"></p>
           <div class="actions-row" style="margin-top:12px;">
             <button type="button" class="btn btn-blue" id="bomSerialSaveBtn"><i class="fa-solid fa-check"></i> Save</button>
@@ -2117,6 +2135,11 @@ window.PAGES.bom = {
       const cancelBtn = document.getElementById('bomSerialCancelBtn');
       const cameraBtn = document.getElementById('bomSerialCameraBtn');
       const btBtn = document.getElementById('bomSerialBtBtn');
+      const btCard = document.getElementById('bomBtResultCard');
+      const btCardValueEl = document.getElementById('bomBtResultValue');
+      const btCardMsgEl = document.getElementById('bomBtResultMsg');
+      const btRetryBtn = document.getElementById('bomBtRetryBtn');
+      const btDoneBtn = document.getElementById('bomBtDoneBtn');
       if (!box) return;
 
       // Buffers a physical BT scanner's keystrokes ourselves in BT mode
@@ -2169,6 +2192,7 @@ window.PAGES.bom = {
         btBtn.addEventListener('click', () => {
           bomSerialBtMode = !bomSerialBtMode;
           bomBtBuffer = '';
+          hideBtCard();
           applyBomSerialBtModeUi();
           if (bomSerialBtMode) {
             backToTypeMode(); // BT mode always uses the box, never the Upload pane
@@ -2220,21 +2244,59 @@ window.PAGES.bom = {
         if (window.showToast) window.showToast(`Limit reached — only ${required} serial number(s) allowed for this item.`);
       }
 
+      // Pending code waiting on a Done/Retry tap in BT mode. While this is
+      // non-null the confirm card is showing and new scanner keystrokes
+      // are ignored (mirrors the camera flow's handledOnce gate) so a
+      // second physical trigger-pull can't silently land underneath the
+      // card the user hasn't acted on yet.
+      let bomBtPendingCode = null;
+
+      function showBtCard(code, opts) {
+        opts = opts || {};
+        bomBtPendingCode = opts.blocked ? null : code;
+        btCardValueEl.textContent = code || '(empty)';
+        btCardMsgEl.textContent = opts.dup
+          ? 'This serial no. is already in the box. Retry with a different code.'
+          : opts.overCap
+            ? `You cannot scan more than the entered quantity — ${required} serial number(s) allowed for this item.`
+            : 'Scanned — tap Done to add it.';
+        btDoneBtn.style.display = opts.blocked ? 'none' : '';
+        btCard.style.display = 'flex';
+      }
+      function hideBtCard() {
+        btCard.style.display = 'none';
+        bomBtPendingCode = null;
+      }
+      if (btRetryBtn) btRetryBtn.addEventListener('click', () => { hideBtCard(); focusSerialBox(); });
+      if (btDoneBtn) {
+        btDoneBtn.addEventListener('click', () => {
+          if (!bomBtPendingCode) return;
+          const existing = bomSplitSerials(box.value);
+          existing.push(bomBtPendingCode);
+          box.value = existing.join('\n') + '\n';
+          box.dispatchEvent(new Event('input', { bubbles: true }));
+          hideBtCard();
+          focusSerialBox();
+        });
+      }
+
       // Auto-newline on delimiter + paste normalization — identical logic
       // to Purchase/Sale's serial box (splitSerials there === bomSplitSerials here).
       //
       // In BT mode this branches instead: a physical scanner's keystrokes
-      // are buffered ourselves (never inserted directly), and Enter/Tab
-      // commits the buffered code straight into the box — no overlay, no
-      // manual "Done" tap. Previously every scan opened a full-screen
-      // Retry/Done card (openBomBtScanResult) that required a tap to
-      // dismiss AND re-ran the 450ms readonly-release delay in
-      // closeBomScanner() on every single scan — that round trip was the
-      // actual reason BT mode felt much slower than the camera (which
-      // keeps its overlay open across scans and never pays that delay
-      // per-scan). A duplicate or over-quantity scan still gets rejected,
-      // just via an inline message instead of a blocking card, so nothing
-      // bad silently lands in the box and the box is never blurred/refocused.
+      // are buffered ourselves (never inserted directly). Enter/Tab shows
+      // the confirm card ABOVE (already sitting in the DOM, just hidden —
+      // see showBtCard) instantly, so the scan itself always feels fast;
+      // a Done tap then commits it to the box. This replaces the earlier
+      // "auto-add with no confirmation" version, which was fast but gave
+      // no chance to catch a misread before it landed in the box — and it
+      // also replaces the ORIGINAL version, which popped a brand-new
+      // full-screen overlay (openBomBtScanResult) per scan and re-ran a
+      // 450ms readonly-release delay in closeBomScanner() every time,
+      // which was the actual source of the earlier slowness. Reusing one
+      // always-present card and only doing the readonly-release dance
+      // after the user's own Done/Retry tap (see focusSerialBox() calls
+      // above) gets both: an instant card AND no per-scan overlay cost.
       box.addEventListener('keydown', (e) => {
         if (bomSerialBtMode) {
           if (e.ctrlKey || e.altKey || e.metaKey) return;
@@ -2250,25 +2312,20 @@ window.PAGES.bom = {
           // Dropping repeat events here fixes it: a real scanner keystroke
           // is never itself a repeat, only the OS's phantom echo of it is.
           if (e.repeat) { e.preventDefault(); return; }
+          // Card already showing — ignore further scanner input until the
+          // user resolves it (Done/Retry).
+          if (btCard.style.display !== 'none') { e.preventDefault(); return; }
           if (e.key === 'Enter' || e.key === 'Tab') {
             e.preventDefault();
             const code = bomBtBuffer.trim();
             bomBtBuffer = '';
             if (!code) return;
             const existing = bomSplitSerials(box.value);
-            if (required != null && existing.length >= required) { showQtyCapError(); return; }
+            if (required != null && existing.length >= required) { showBtCard(code, { blocked: true, overCap: true }); return; }
             const dup = existing.some((s) => s.toLowerCase() === code.toLowerCase());
-            if (dup) {
-              countNote.style.color = 'var(--red)';
-              countNote.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> "${bomEsc(code)}" is already in the list — skipped.`;
-              if (window.showToast) window.showToast(`Duplicate — "${code}" is already in the list.`);
-              return;
-            }
-            existing.push(code);
-            box.value = existing.join('\n') + '\n';
-            box.dispatchEvent(new Event('input', { bubbles: true }));
+            if (dup) { showBtCard(code, { blocked: true, dup: true }); return; }
             bomScanBeep();
-            updateCountNote();
+            showBtCard(code);
             return;
           }
           if (e.key === 'Escape') { bomBtBuffer = ''; return; }
