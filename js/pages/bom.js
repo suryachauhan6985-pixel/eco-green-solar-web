@@ -212,6 +212,24 @@ window.PAGES.bom = {
 
   async init() {
     const ctx = {};
+    // ctx.$ MUST exist before any of the createBom*Module(ctx) factory
+    // calls below run — several of them (e.g. createBomChallanMapModule's
+    // ctx.registerOverlay = ctx.$('bomRegisterOverlay') at its own bottom)
+    // call ctx.$(...) synchronously, right when the factory function
+    // itself executes, not just inside the functions it hands back. If
+    // ctx.$ isn't defined yet at that point, that call throws
+    // "ctx.$ is not a function" immediately, which aborts init() before
+    // ANY button listener gets wired and before bomLoadHomePendingTable()
+    // ever runs — exactly the "buttons dead + spinner stuck forever" bug.
+    // Same reasoning for the Challan-modal DOM refs
+    // (challanOverlay/challanModalBody/challanCloseBtn): createBomChallanMapModule
+    // wires their click handlers at factory-call time too, so those three
+    // must also be grabbed before that call, not after.
+    ctx.$ = (id) => document.getElementById(id);
+    ctx.challanOverlay = ctx.$('bomChallanOverlay');
+    ctx.challanModalBody = ctx.$('bomChallanModalBody');
+    ctx.challanCloseBtn = ctx.$('bomChallanCloseBtn');
+
     // Pull in the functions that used to be nested directly inside this
     // init() but were split out into separate files per
     // refactor-bom-prompt.md (pure code-organization refactor — see each
@@ -227,7 +245,6 @@ window.PAGES.bom = {
     Object.assign(ctx, createBomSerialScanModule(ctx));
     Object.assign(ctx, createBomSerialModalModule(ctx));
     Object.assign(ctx, createBomDispatchModule(ctx));
-    ctx.$ = (id) => document.getElementById(id);
     ctx.showBomHome = showBomHome;
     ctx.showBomEntry = showBomEntry;
     ctx.showBomEntryForNewKit = showBomEntryForNewKit;
@@ -247,9 +264,6 @@ window.PAGES.bom = {
     ctx.btnPrint = ctx.$('bomBtnPrint');
     ctx.printRoot = ctx.$('bomPrintRoot');
     ctx.challanPrintRoot = ctx.$('bomChallanPrintRoot');
-    ctx.challanOverlay = ctx.$('bomChallanOverlay');
-    ctx.challanModalBody = ctx.$('bomChallanModalBody');
-    ctx.challanCloseBtn = ctx.$('bomChallanCloseBtn');
 
     // ------------------------------------------------------------------
     // BOM Home <-> BOM Entry view switching. The BOM tab now lands on a
