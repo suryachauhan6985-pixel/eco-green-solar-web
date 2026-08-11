@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-10T10:20:40.807Z",
+  "generatedAt": "2026-08-11T06:40:26.405Z",
   "files": {
     ".env": {
       "hash": "fbf93500e5313e2f01018668de228b174a039bbf",
@@ -12,9 +12,9 @@
       "mtimeMs": 1785760530681.6638
     },
     "index.html": {
-      "hash": "bb09894e8c7433320391234a45a86734fc4d7f2c",
-      "size": 8055,
-      "mtimeMs": 1786357151792.562
+      "hash": "ab37a07278bc74d0e8b8f6e06b79c23512bb3db2",
+      "size": 8616,
+      "mtimeMs": 1786430341187.0295
     },
     "manifest.webmanifest": {
       "hash": "1a394524a536e053f78cdd82bfedeb87443475ae",
@@ -32,34 +32,69 @@
       "mtimeMs": 1786187114574.225
     },
     "sw.js": {
-      "hash": "26391d401b3e17139758720302b4cba090854db6",
-      "size": 4554,
-      "mtimeMs": 1786357154694.8687
+      "hash": "5ea5c501c328cf9b51e3d4c58724b1cef127e1b1",
+      "size": 4829,
+      "mtimeMs": 1786430343546.0947
     },
     "js/app.js": {
-      "hash": "cfd232dd7b4dd23114ed012966080ab0129a1ddc",
-      "size": 73030,
-      "mtimeMs": 1786348243878.738
+      "hash": "f3c73d4fd587143375901f3e72f26f4775c69f7a",
+      "size": 76347,
+      "mtimeMs": 1786358695821.676
     },
     "js/pages/backup.js": {
       "hash": "15f5b22b9fcb33d1b29b73bcd9a2d38abdadb104",
       "size": 6833,
       "mtimeMs": 1784943992000
     },
+    "js/pages/bom-challan-map.js": {
+      "hash": "00ca6ffd4a93770f7bfae8f2f0deba4d71cbee32",
+      "size": 10715,
+      "mtimeMs": 1786430198253.3293
+    },
     "js/pages/bom-challan.js": {
       "hash": "a381d5d8b619f22e2ff3201763d7f6962fd10262",
       "size": 27119,
       "mtimeMs": 1786357143842.0635
     },
+    "js/pages/bom-dispatch.js": {
+      "hash": "1b0178bdbdef95750c7606753f77d988629de22f",
+      "size": 40039,
+      "mtimeMs": 1786430195189.186
+    },
+    "js/pages/bom-kit-builder.js": {
+      "hash": "6f42fb70e2d0c7ea7954bc4a87b4972a35d1fe0e",
+      "size": 38006,
+      "mtimeMs": 1786430189228.7622
+    },
     "js/pages/bom-kit-helpers.js": {
-      "hash": "9cee2f09247fc5672ce08a0c939a84b913beb437",
-      "size": 32286,
-      "mtimeMs": 1786357141840.526
+      "hash": "194fe5b9e000881da610705e12b63f38c8cf6b12",
+      "size": 36629,
+      "mtimeMs": 1786361456425.425
+    },
+    "js/pages/bom-party-autocomplete.js": {
+      "hash": "a24d3aa19e46e95ffcf942f6a525f60e1ce1d642",
+      "size": 8901,
+      "mtimeMs": 1786430201281.8428
+    },
+    "js/pages/bom-serial-modal.js": {
+      "hash": "ddb3e4ad17d58051677251dc6a25fd141ab5914f",
+      "size": 24951,
+      "mtimeMs": 1786430186183.4216
+    },
+    "js/pages/bom-serial-scan.js": {
+      "hash": "a8941e17372ed3d1f79c68220df4e472149aeba2",
+      "size": 19820,
+      "mtimeMs": 1786430182335.6873
+    },
+    "js/pages/bom-track-register.js": {
+      "hash": "e6f6e9aea6826e9c9deb68d37cf5c2575da7ebfb",
+      "size": 11535,
+      "mtimeMs": 1786430192392.2642
     },
     "js/pages/bom.js": {
-      "hash": "084b644c9d16911d5a81e6a0ab92c0dacff044cf",
-      "size": 150684,
-      "mtimeMs": 1786357149576.2312
+      "hash": "2f70b53f2d02423515c5454412b2e5b875747b85",
+      "size": 39483,
+      "mtimeMs": 1786430179302.1147
     },
     "js/pages/dashboard.js": {
       "hash": "af49b335f2d4a08a7e0871848e53f3a03428b7cb",
@@ -192,9 +227,9 @@
       "mtimeMs": 1784981514487.0725
     },
     "api/server.js": {
-      "hash": "e671b6ff063729b6e4e263f2220b2dff2c49b124",
-      "size": 3559,
-      "mtimeMs": 1786256903335.0688
+      "hash": "49a5918f35dadd4037eeffb960ab2d800ebfb00a",
+      "size": 3660,
+      "mtimeMs": 1786361940521.2493
     },
     "api/utils/route.js": {
       "hash": "a3aa995b6d3f373aac34725907b963ada59eb150",
@@ -246,10 +281,15 @@
       "size": 27474,
       "mtimeMs": 1786338214317.2104
     },
+    "api/routes/bom_kits.routes.js": {
+      "hash": "c62aa8dd433f4aa0d7e8fed21c8ff1923ab6a1c9",
+      "size": 3694,
+      "mtimeMs": 1786361453843.8503
+    },
     "api/routes/challan.routes.js": {
-      "hash": "7031b36605edf710cfb19bf611b53a99e53eceb8",
-      "size": 7223,
-      "mtimeMs": 1786275283989.1921
+      "hash": "0218d7ab788932cf6a0f58a7e1174dfea592442e",
+      "size": 7829,
+      "mtimeMs": 1786359746031.8245
     },
     "api/routes/health.js": {
       "hash": "8002d2724a45cf6da7ddb86c481ebffcc8260823",

@@ -10,13 +10,13 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-10T10:20:40.798Z
+- **Generated:** 2026-08-11T06:40:26.394Z
 
 ## 2. Architecture Overview
 
 - **Detected technologies:** Node.js (runtime), Express (backend framework), MySQL (database), JWT Authentication (auth), HTML (markup), JavaScript (language), CSS (styling), PWA (platform)
-- **Total files (post-ignore):** 63
-- **Deeply analyzed files:** 50
+- **Total files (post-ignore):** 71
+- **Deeply analyzed files:** 58
 - **Typical request flow (heuristic):** Browser → Routes → Controller → Service → Database
 
 ## 3. Folder Structure
@@ -35,6 +35,7 @@ api/
         attachments.routes.js
         auth.routes.js
         backup.routes.js
+        bom_kits.routes.js
         bom.routes.js
         challan.routes.js
         health.js
@@ -74,8 +75,15 @@ js/
         sheets-store.js
     pages/
         backup.js
+        bom-challan-map.js
         bom-challan.js
+        bom-dispatch.js
+        bom-kit-builder.js
         bom-kit-helpers.js
+        bom-party-autocomplete.js
+        bom-serial-modal.js
+        bom-serial-scan.js
+        bom-track-register.js
         bom.js
         dashboard.js
         lowstock.js
@@ -104,9 +112,16 @@ sw.js
 - `Dockerfile` — Supporting source file.
 - `js/app.js` — Application entry point / bootstrap file.
 - `js/pages/backup.js` — Defines 3 function(s) implementing supporting logic.
+- `js/pages/bom-challan-map.js` — Defines 7 function(s) implementing supporting logic.
 - `js/pages/bom-challan.js` — Defines 20 function(s) implementing supporting logic.
-- `js/pages/bom-kit-helpers.js` — Defines 26 function(s) implementing supporting logic.
-- `js/pages/bom.js` — Defines 2 class(es) implementing core logic.
+- `js/pages/bom-dispatch.js` — Defines 1 class(es) implementing core logic.
+- `js/pages/bom-kit-builder.js` — Defines 12 function(s) implementing supporting logic.
+- `js/pages/bom-kit-helpers.js` — Defines 30 function(s) implementing supporting logic.
+- `js/pages/bom-party-autocomplete.js` — Defines 10 function(s) implementing supporting logic.
+- `js/pages/bom-serial-modal.js` — Defines 10 function(s) implementing supporting logic.
+- `js/pages/bom-serial-scan.js` — Defines 17 function(s) implementing supporting logic.
+- `js/pages/bom-track-register.js` — Defines 11 function(s) implementing supporting logic.
+- `js/pages/bom.js` — Defines 1 class(es) implementing core logic.
 - `js/pages/dashboard.js` — Defines 18 function(s) implementing supporting logic.
 - `js/pages/lowstock.js` — Defines 12 function(s) implementing supporting logic.
 - `js/pages/masters.js` — Defines 18 function(s) implementing supporting logic.
@@ -128,17 +143,12 @@ sw.js
 - `api/routes/auth.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/backup.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/bom.routes.js` — Defines HTTP route handlers (controller/router layer).
+- `api/routes/bom_kits.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/challan.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/health.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/ledgers.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/masters.routes.js` — Defines HTTP route handlers (controller/router layer).
 - `api/routes/purchase.routes.js` — Defines HTTP route handlers (controller/router layer).
-- `api/routes/reports.routes.js` — Defines HTTP route handlers (controller/router layer).
-- `api/routes/sales.routes.js` — Defines HTTP route handlers (controller/router layer).
-- `api/routes/scansheet.routes.js` — Defines HTTP route handlers (controller/router layer).
-- `api/routes/stockassign.routes.js` — Defines HTTP route handlers (controller/router layer).
-- `api/db/pool.js` — Supporting source file.
-- `api/db/schema.js` — Defines 17 function(s) implementing supporting logic.
 
 ## 5. Data Flow / Business Logic Entry Points
 
@@ -154,7 +164,7 @@ No route-level authentication middleware detected (verify manually if auth is ex
 
 ## 8. API
 
-99 HTTP endpoint(s) detected. Method breakdown: GET=43, POST=30, DELETE=12, PUT=14.
+102 HTTP endpoint(s) detected. Method breakdown: GET=44, POST=30, DELETE=13, PUT=15.
 
 ## 9. Services & Utilities
 
@@ -165,12 +175,12 @@ Utility/helper files: 2
 
 - Project appears to be plain JavaScript (no TypeScript detected).
 - File naming leans camelCase.
-- 43 of 50 analyzed files define at least one function.
+- 51 of 58 analyzed files define at least one function.
 
 ## 11. Known Issues / Risk Areas
 
-- 17 file(s) flagged as High complexity: js/app.js, js/pages/bom-challan.js, js/pages/bom-kit-helpers.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, js/pages/partyledger.js, js/pages/purchase.js, js/pages/sales.js, js/pages/scansheet.js, ...
-- Raw SQL string usage found in 38 file(s) — verify parameterization to avoid SQL injection.
+- 21 file(s) flagged as High complexity: js/app.js, js/pages/bom-challan.js, js/pages/bom-dispatch.js, js/pages/bom-kit-builder.js, js/pages/bom-kit-helpers.js, js/pages/bom-serial-modal.js, js/pages/bom-serial-scan.js, js/pages/bom.js, js/pages/dashboard.js, js/pages/masters.js, ...
+- Raw SQL string usage found in 46 file(s) — verify parameterization to avoid SQL injection.
 - No routes appear to use recognizable auth middleware — verify whether this API is intentionally public.
 - A real `.env` file exists in the project (.env) — ensure it is excluded from version control.
 
@@ -183,24 +193,24 @@ Utility/helper files: 2
 - js/app.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
 - js/app.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 - js/pages/backup.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+- js/pages/bom-challan-map.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 - js/pages/bom-challan.js: File defines a large number of functions — consider splitting into smaller modules.
 - js/pages/bom-challan.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
 - js/pages/bom-challan.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+- js/pages/bom-dispatch.js: File defines a large number of functions — consider splitting into smaller modules.
+- js/pages/bom-dispatch.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
+- js/pages/bom-dispatch.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+- js/pages/bom-kit-builder.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
+- js/pages/bom-kit-builder.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 - js/pages/bom-kit-helpers.js: File defines a large number of functions — consider splitting into smaller modules.
 - js/pages/bom-kit-helpers.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
 - js/pages/bom-kit-helpers.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
-- js/pages/bom.js: File defines a large number of functions — consider splitting into smaller modules.
-- js/pages/bom.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
-- js/pages/bom.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
-- js/pages/dashboard.js: File defines a large number of functions — consider splitting into smaller modules.
-- js/pages/dashboard.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
-- js/pages/dashboard.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
-- js/pages/lowstock.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
-- js/pages/masters.js: File defines a large number of functions — consider splitting into smaller modules.
-- js/pages/masters.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
-- js/pages/masters.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
-- js/pages/partyledger.js: File defines a large number of functions — consider splitting into smaller modules.
-- js/pages/partyledger.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
+- js/pages/bom-party-autocomplete.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+- js/pages/bom-serial-modal.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
+- js/pages/bom-serial-modal.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+- js/pages/bom-serial-scan.js: File defines a large number of functions — consider splitting into smaller modules.
+- js/pages/bom-serial-scan.js: High branching complexity detected — consider refactoring conditional logic into smaller helpers.
+- js/pages/bom-serial-scan.js: Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 
 ---
 

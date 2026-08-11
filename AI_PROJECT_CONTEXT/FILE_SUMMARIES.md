@@ -38,7 +38,7 @@ Deep analysis of every important source file.
 ## `sw.js`
 
 - **Purpose:** Supporting source file.
-- **Lines of code:** 130
+- **Lines of code:** 137
 - **Complexity:** Low (heuristic score: 11)
 - **Imports:** None
 - **Exports:** None
@@ -55,14 +55,14 @@ Deep analysis of every important source file.
 ## `js/app.js`
 
 - **Purpose:** Application entry point / bootstrap file.
-- **Lines of code:** 1552
-- **Complexity:** High (heuristic score: 279)
+- **Lines of code:** 1621
+- **Complexity:** High (heuristic score: 296)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** showLoader(), hideLoader(), applyGlobalTableSearch(query), applyAllFilters(), closeMenu(), positionMenu(menu, btn), openMenuFor(btn), updateProfileDisplay(username, role), showApp(), saveSession(username, role, persist, token), loadSession(), clearSession(), startHeartbeat(), stopHeartbeat(), resetIdleTimer(), stopIdleTimer(), notifyServerLogout(), showLoginOverlay(message), buildLoginOverlay(), wireOtpBoxes(boxesEl, hiddenEl), sync(), startResendCooldown(btn, seconds = RESEND_COOLDOWN_SECONDS), showCredsStep(), showOtpStep(maskedEmail), hideAllSteps(), showRegisterStep(), showRegisterOtpStep(maskedEmail), showForgotStep(), showResetStep(maskedEmail), finishLogin(data), attemptLogin(), attemptVerifyOtp(), attemptResendOtp(), attemptRegister(), attemptVerifyRegisterOtp(), attemptResendRegisterOtp(), attemptForgotPassword(), attemptResendForgotOtp(), attemptResetPassword(), closeProfileMenu(), endSessionAndShowLogin(), openProfileMenu(), go(id), closeConfirmDialog(result), guardField(el), guardAllFields(root), getRows(), cellValue(row, idx), uniqueValues(idx), itemCbs(), ping()
-- **Classes:** None
+- **Functions:** showLoader(), hideLoader(), focusInvalidField(el), injectInvalidFieldStyles(), applyGlobalTableSearch(query), applyAllFilters(), closeMenu(), positionMenu(menu, btn), openMenuFor(btn), updateProfileDisplay(username, role), showApp(), saveSession(username, role, persist, token), loadSession(), clearSession(), startHeartbeat(), stopHeartbeat(), resetIdleTimer(), stopIdleTimer(), notifyServerLogout(), showLoginOverlay(message), buildLoginOverlay(), wireOtpBoxes(boxesEl, hiddenEl), sync(), startResendCooldown(btn, seconds = RESEND_COOLDOWN_SECONDS), showCredsStep(), showOtpStep(maskedEmail), hideAllSteps(), showRegisterStep(), showRegisterOtpStep(maskedEmail), showForgotStep(), showResetStep(maskedEmail), finishLogin(data), attemptLogin(), attemptVerifyOtp(), attemptResendOtp(), attemptRegister(), attemptVerifyRegisterOtp(), attemptResendRegisterOtp(), attemptForgotPassword(), attemptResendForgotOtp(), attemptResetPassword(), closeProfileMenu(), endSessionAndShowLogin(), openProfileMenu(), go(id), closeConfirmDialog(result), guardField(el), guardAllFields(root), doFocus(), clear(), getRows(), cellValue(row, idx), uniqueValues(idx), itemCbs(), ping()
+- **Classes:** replays, name
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (4 statement keywords: SELECT, JOIN, UPDATE)
+- **Database usage:** Raw SQL detected (5 statement keywords: SELECT, JOIN, UPDATE)
 - **Environment variables used:** None
 - **Potential improvements:**
   - File defines a large number of functions — consider splitting into smaller modules.
@@ -88,6 +88,23 @@ Deep analysis of every important source file.
 
 ---
 
+## `js/pages/bom-challan-map.js`
+
+- **Purpose:** Defines 7 function(s) implementing supporting logic.
+- **Lines of code:** 192
+- **Complexity:** Medium (heuristic score: 37)
+- **Imports:** None
+- **Exports:** None
+- **Functions:** createBomChallanMapModule(ctx), openChallanModal(bodyHtml), closeChallanModal(), bomCollectItemGroupsForMapping(), bomRenderChallanMapModalHtml(groups), bomOpenChallanMapModal(), categoryOptions(selected)
+- **Classes:** None
+- **API endpoints:** None
+- **Database usage:** Raw SQL detected (9 statement keywords: UPDATE, SELECT, JOIN)
+- **Environment variables used:** None
+- **Potential improvements:**
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+
+---
+
 ## `js/pages/bom-challan.js`
 
 - **Purpose:** Defines 20 function(s) implementing supporting logic.
@@ -107,17 +124,17 @@ Deep analysis of every important source file.
 
 ---
 
-## `js/pages/bom-kit-helpers.js`
+## `js/pages/bom-dispatch.js`
 
-- **Purpose:** Defines 26 function(s) implementing supporting logic.
-- **Lines of code:** 617
-- **Complexity:** High (heuristic score: 105)
+- **Purpose:** Defines 1 class(es) implementing core logic.
+- **Lines of code:** 698
+- **Complexity:** High (heuristic score: 126)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** bomSetPrintPageSize(cssSizeAndMargin), bomLoadCustomKits(), bomSaveCustomKits(obj), bomGetAllKits(), bomIsCustomKitKey(key), bomSlugify(label), bomRenumberAll(sections), bomDefaultSectionsTemplate(), bomParseQtyNumber(qtyStr), bomEffectiveQty(it), bomNormalizeDispatchQty(state), bomSplitSerials(text), bomCollectKitItemNames(), bomLoadItemMasterNames(), bomResolveItemName(brand, model), bomRowBrand(it), bomBuildItemOptionsHtml(selectedBrand), bomBuildModelOptionsHtml(selectedModel, brandName), bomResolveSectionCategory(title), bomBuildCategoryOptionsHtml(selectedCategory), bomBuildCategoryItemOptionsHtml(category, selectedName), bomRenderScreenItemRowHtml(sec, si, it, ii, opts), bomRenderScreenItemsHtml(state, opts), bomRenderPrintSheetHtml(kit, header), bomEsc(s), bomEscAttr(s)
-- **Classes:** None
+- **Functions:** createBomDispatchModule(ctx), bomCollectItemsForStockCheck(), bomCollectItemsForDispatch(), bomShowStockIssuesModal(title, intro, rows), bomRunStockCheck(), bomRunDispatch(), bomParseBlockedRows(msg), bomRenderRegisterListHtml(orders), bomLoadRegisterList(), bomRenderContinueFormHtml(order, backLabel), bomContSerialDupes(text), bomUpdateContSerialNote(box), bomWireContSerialTextarea(box), bomLoadContinueDispatchForm(orderId, target), bomOpenOrderInline(orderId), setBody(html)
+- **Classes:** in
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (25 statement keywords: SELECT, JOIN)
+- **Database usage:** Raw SQL detected (13 statement keywords: JOIN, SELECT)
 - **Environment variables used:** None
 - **Potential improvements:**
   - File defines a large number of functions — consider splitting into smaller modules.
@@ -126,20 +143,127 @@ Deep analysis of every important source file.
 
 ---
 
-## `js/pages/bom.js`
+## `js/pages/bom-kit-builder.js`
 
-- **Purpose:** Defines 2 class(es) implementing core logic.
-- **Lines of code:** 2804
-- **Complexity:** High (heuristic score: 525)
+- **Purpose:** Defines 12 function(s) implementing supporting logic.
+- **Lines of code:** 733
+- **Complexity:** High (heuristic score: 135)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** bomRenderHomeViewHtml(), showBomHome(), showBomEntry(), showBomEntryForNewKit(), bomOverallStatusFromItems(items), bomRenderHomePendingTableHtml(orders), bomLoadHomePendingTable(), openChallanModal(bodyHtml), closeChallanModal(), bomCollectUsedItemNamesForMapping(), bomRenderChallanMapModalHtml(names), bomOpenChallanMapModal(), openRegisterModal(bodyHtml), closeRegisterModal(), bomTrackStatusPill(status), bomFmtDateTime(v), bomRenderTrackResultHtml(data), bomFetchAndRenderTrack(orderNo, resultBox), bomOpenTrackModal(), runTrack(), bomOpenTrackForOrderNo(orderNo), bomTrackCurrentOrder(), bomCollectItemsForCreate(), bomOpenCreateBomModal(), bomLoadSerialMandatoryInfo(), bomItemNeedsSerial(name), searchBomCustomerLedgers(q), searchBomCustomerShortCodes(q), fillBomCustomerDatalist(listEl, ledgers, key), wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), wireBomPartyTypeAutocomplete(inputEl, listEl, ledgerType), search(q), fillList(ledgers), setVerified(isVerified), allItemsChecked(), updateVerifyButtonState(), updateKitActionButtons(), populateKitDropdown(selectKey), refreshItemsPreview(), setKitBuilderMode(isEdit), renderKitBuilderSections(), handleBuilderFieldEdit(e), handleItemFieldEdit(e), bomFindScrollParent(el), rerenderItemsPreview(), bomRerenderItemRow(si, ii), bomScanBeep(), bomScanSetStatus(msg), openBomScanner(targetId), startBomScanCamera(), launchBomScanCamera(), onBomScanSuccess(decodedText), showBomScanResult(text), hideBomScanResult(), retryBomScan(), confirmBomScan(), toggleBomScanTorch(), flipBomScanCamera(), closeBomScanner(), openBomSerialModal(si, ii), updateCountNote(), getHeaderValues(), bomCollectItemsForStockCheck(), bomCollectItemsForDispatch(), bomShowStockIssuesModal(title, intro, rows), bomRunStockCheck(), bomRunDispatch(), bomParseBlockedRows(msg), bomRenderRegisterListHtml(orders), bomLoadRegisterList(), bomRenderContinueFormHtml(order, backLabel), bomLoadContinueDispatchForm(orderId, target), bomOpenOrderInline(orderId), computeAndApplyFitZoom(), $(id), categoryOptions(selected), blankItem(), finish(), setBody(html)
-- **Classes:** was, in
+- **Functions:** createBomKitBuilderModule(ctx), updateKitActionButtons(), populateKitDropdown(selectKey), refreshItemsPreview(), setKitBuilderMode(isEdit), renderKitBuilderSections(), handleBuilderFieldEdit(e), handleItemFieldEdit(e), bomFindScrollParent(el), rerenderItemsPreview(), bomRerenderItemRow(si, ii), blankItem()
+- **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (62 statement keywords: SELECT, JOIN, UPDATE)
+- **Database usage:** Raw SQL detected (27 statement keywords: SELECT, UPDATE, JOIN)
+- **Environment variables used:** None
+- **Potential improvements:**
+  - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+
+---
+
+## `js/pages/bom-kit-helpers.js`
+
+- **Purpose:** Defines 30 function(s) implementing supporting logic.
+- **Lines of code:** 684
+- **Complexity:** High (heuristic score: 121)
+- **Imports:** None
+- **Exports:** None
+- **Functions:** bomSetPrintPageSize(cssSizeAndMargin), bomPersistCustomKitsLocalCache(), bomLoadCustomKitsLocalCache(), bomHydrateCustomKits(), bomLoadCustomKits(), bomUpsertCustomKit(key, kit), bomDeleteCustomKit(key), bomGetAllKits(), bomIsCustomKitKey(key), bomSlugify(label), bomRenumberAll(sections), bomDefaultSectionsTemplate(), bomParseQtyNumber(qtyStr), bomEffectiveQty(it), bomNormalizeDispatchQty(state), bomSplitSerials(text), bomCollectKitItemNames(), bomLoadItemMasterNames(), bomResolveItemName(brand, model), bomRowBrand(it), bomBuildItemOptionsHtml(selectedBrand), bomBuildModelOptionsHtml(selectedModel, brandName), bomResolveSectionCategory(title), bomBuildCategoryOptionsHtml(selectedCategory), bomBuildCategoryItemOptionsHtml(category, selectedName), bomRenderScreenItemRowHtml(sec, si, it, ii, opts), bomRenderScreenItemsHtml(state, opts), bomRenderPrintSheetHtml(kit, header), bomEsc(s), bomEscAttr(s)
+- **Classes:** None
+- **API endpoints:** None
+- **Database usage:** Raw SQL detected (30 statement keywords: UPDATE, SELECT, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - File defines a large number of functions — consider splitting into smaller modules.
+  - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+
+---
+
+## `js/pages/bom-party-autocomplete.js`
+
+- **Purpose:** Defines 10 function(s) implementing supporting logic.
+- **Lines of code:** 166
+- **Complexity:** Medium (heuristic score: 40)
+- **Imports:** None
+- **Exports:** None
+- **Functions:** createBomPartyAutocompleteModule(ctx), bomLoadSerialMandatoryInfo(), bomItemNeedsSerial(name), searchBomCustomerLedgers(q), searchBomCustomerShortCodes(q), fillBomCustomerDatalist(listEl, ledgers, key), wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), wireBomPartyTypeAutocomplete(inputEl, listEl, ledgerType), search(q), fillList(ledgers)
+- **Classes:** None
+- **API endpoints:** None
+- **Database usage:** Raw SQL detected (3 statement keywords: SELECT, JOIN)
+- **Environment variables used:** None
+- **Potential improvements:**
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+
+---
+
+## `js/pages/bom-serial-modal.js`
+
+- **Purpose:** Defines 10 function(s) implementing supporting logic.
+- **Lines of code:** 452
+- **Complexity:** High (heuristic score: 84)
+- **Imports:** None
+- **Exports:** None
+- **Functions:** createBomSerialModalModule(ctx), openBomSerialModal(si, ii), focusSerialBox(), applyBomSerialBtModeUi(), backToTypeMode(), updateCountNote(), showQtyCapError(), showBtCard(code, opts), hideBtCard(), blankItem()
+- **Classes:** None
+- **API endpoints:** None
+- **Database usage:** Raw SQL detected (6 statement keywords: JOIN)
+- **Environment variables used:** None
+- **Potential improvements:**
+  - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+
+---
+
+## `js/pages/bom-serial-scan.js`
+
+- **Purpose:** Defines 17 function(s) implementing supporting logic.
+- **Lines of code:** 388
+- **Complexity:** High (heuristic score: 80)
+- **Imports:** None
+- **Exports:** None
+- **Functions:** createBomSerialScanModule(ctx), bomScanBeep(), bomScanSetStatus(msg), openBomScanner(targetId), startBomScanCamera(), launchBomScanCamera(), onBomScanSuccess(decodedText), showBomScanResult(text), hideBomScanResult(), retryBomScan(), confirmBomScan(), toggleBomScanTorch(), flipBomScanCamera(), closeBomScanner(), openBomBtScanResult(targetId, code), confirmBomBtScan(), finish()
+- **Classes:** None
+- **API endpoints:** None
+- **Database usage:** Raw SQL detected (2 statement keywords: JOIN)
+- **Environment variables used:** None
+- **Potential improvements:**
+  - File defines a large number of functions — consider splitting into smaller modules.
+  - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+
+---
+
+## `js/pages/bom-track-register.js`
+
+- **Purpose:** Defines 11 function(s) implementing supporting logic.
+- **Lines of code:** 202
+- **Complexity:** Medium (heuristic score: 41)
+- **Imports:** None
+- **Exports:** None
+- **Functions:** createBomTrackRegisterModule(ctx), openRegisterModal(bodyHtml), closeRegisterModal(), bomTrackStatusPill(status), bomFmtDateTime(v), bomRenderTrackResultHtml(data), bomFetchAndRenderTrack(orderNo, resultBox), bomOpenTrackModal(), runTrack(), bomOpenTrackForOrderNo(orderNo), bomTrackCurrentOrder()
+- **Classes:** None
+- **API endpoints:** None
+- **Database usage:** Raw SQL detected (3 statement keywords: JOIN)
+- **Environment variables used:** None
+- **Potential improvements:**
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+
+---
+
+## `js/pages/bom.js`
+
+- **Purpose:** Defines 1 class(es) implementing core logic.
+- **Lines of code:** 679
+- **Complexity:** High (heuristic score: 100)
+- **Imports:** None
+- **Exports:** None
+- **Functions:** bomRenderHomeViewHtml(), showBomHome(), showBomEntry(), showBomEntryForNewKit(), bomOverallStatusFromItems(items), bomRenderHomePendingTableHtml(orders), bomLoadHomePendingTable(), bomCollectItemsForCreate(), bomOpenCreateBomModal(), setVerified(isVerified), allItemsChecked(), updateVerifyButtonState(), getHeaderValues(), computeAndApplyFitZoom()
+- **Classes:** was
+- **API endpoints:** None
+- **Database usage:** Raw SQL detected (12 statement keywords: SELECT, JOIN)
+- **Environment variables used:** None
+- **Potential improvements:**
   - High branching complexity detected — consider refactoring conditional logic into smaller helpers.
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
 
@@ -445,9 +569,9 @@ Deep analysis of every important source file.
 ## `api/server.js`
 
 - **Purpose:** Application entry point / bootstrap file.
-- **Lines of code:** 71
+- **Lines of code:** 73
 - **Complexity:** Low (heuristic score: 1)
-- **Imports:** dotenv, express, path, ./config/cors, ./db/pool, ./db/schema, ./middleware/auth.middleware, ./middleware/rateLimiters, ./services/passwords, ./services/email, ./services/stockHelpers, ./utils/route, ./utils/time, ./routes/attachments.routes, ./routes/health, ./routes/auth.routes, ./routes/masters.routes, ./routes/purchase.routes, ./routes/ledgers.routes, ./routes/sales.routes, ./routes/stockassign.routes, ./routes/scansheet.routes, ./routes/reports.routes, ./routes/backup.routes, ./routes/challan.routes, ./routes/bom.routes
+- **Imports:** dotenv, express, path, ./config/cors, ./db/pool, ./db/schema, ./middleware/auth.middleware, ./middleware/rateLimiters, ./services/passwords, ./services/email, ./services/stockHelpers, ./utils/route, ./utils/time, ./routes/attachments.routes, ./routes/health, ./routes/auth.routes, ./routes/masters.routes, ./routes/purchase.routes, ./routes/ledgers.routes, ./routes/sales.routes, ./routes/stockassign.routes, ./routes/scansheet.routes, ./routes/reports.routes, ./routes/backup.routes, ./routes/challan.routes, ./routes/bom.routes, ./routes/bom_kits.routes
 - **Exports:** None
 - **Functions:** None
 - **Classes:** None
@@ -629,16 +753,33 @@ Deep analysis of every important source file.
 
 ---
 
+## `api/routes/bom_kits.routes.js`
+
+- **Purpose:** Defines HTTP route handlers (controller/router layer).
+- **Lines of code:** 76
+- **Complexity:** Low (heuristic score: 10)
+- **Imports:** None
+- **Exports:** module.exports
+- **Functions:** registerBomKitsRoutes(app, deps), isValidKitKey(key)
+- **Classes:** None
+- **API endpoints:** GET /api/bom/kits, PUT /api/bom/kits/:key, DELETE /api/bom/kits/:key
+- **Database usage:** Raw SQL detected (5 statement keywords: UPDATE, SELECT, INSERT INTO, DELETE FROM)
+- **Environment variables used:** None
+- **Potential improvements:**
+  - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
+
+---
+
 ## `api/routes/challan.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 133
+- **Lines of code:** 142
 - **Complexity:** Low (heuristic score: 13)
 - **Imports:** ../services/challanPdf
 - **Exports:** module.exports
 - **Functions:** registerChallanRoutes(app, deps)
 - **Classes:** None
-- **API endpoints:** POST /api/challan, GET /api/challan, GET /api/challan/:id, GET /api/challan/:id/pdf, GET /api/challan/category-map, PUT /api/challan/category-map
+- **API endpoints:** POST /api/challan, GET /api/challan, GET /api/challan/category-map, PUT /api/challan/category-map, GET /api/challan/:id, GET /api/challan/:id/pdf
 - **Database usage:** Raw SQL detected (8 statement keywords: INSERT INTO, SELECT, DELETE FROM, UPDATE)
 - **Environment variables used:** None
 - **Potential improvements:**

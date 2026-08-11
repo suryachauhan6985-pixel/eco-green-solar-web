@@ -14,7 +14,7 @@
 _None detected._
 
 
-## Public Routes (99)
+## Public Routes (102)
 
 | Method | Path | File |
 | --- | --- | --- |
@@ -36,6 +36,9 @@ _None detected._
 | GET | /api/backup/status | api/routes/backup.routes.js |
 | POST | /api/bom/check-stock | api/routes/bom.routes.js |
 | POST | /api/bom/dispatch | api/routes/bom.routes.js |
+| GET | /api/bom/kits | api/routes/bom_kits.routes.js |
+| DELETE | /api/bom/kits/:key | api/routes/bom_kits.routes.js |
+| PUT | /api/bom/kits/:key | api/routes/bom_kits.routes.js |
 | GET | /api/bom/orders | api/routes/bom.routes.js |
 | POST | /api/bom/orders | api/routes/bom.routes.js |
 | GET | /api/bom/orders/:id | api/routes/bom.routes.js |

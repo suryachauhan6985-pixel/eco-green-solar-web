@@ -37,6 +37,18 @@
   },
   {
     "type": "function",
+    "label": "focusInvalidField",
+    "file": "js/app.js",
+    "detail": "(el)"
+  },
+  {
+    "type": "function",
+    "label": "injectInvalidFieldStyles",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "applyGlobalTableSearch",
     "file": "js/app.js",
     "detail": "(query)"
@@ -301,6 +313,18 @@
   },
   {
     "type": "function",
+    "label": "doFocus",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "clear",
+    "file": "js/app.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "getRows",
     "file": "js/app.js",
     "detail": "()"
@@ -330,6 +354,18 @@
     "detail": "()"
   },
   {
+    "type": "class",
+    "label": "replays",
+    "file": "js/app.js",
+    "detail": ""
+  },
+  {
+    "type": "class",
+    "label": "name",
+    "file": "js/app.js",
+    "detail": ""
+  },
+  {
     "type": "file",
     "label": "js/pages/backup.js",
     "file": "js/pages/backup.js",
@@ -352,6 +388,54 @@
     "label": "$",
     "file": "js/pages/backup.js",
     "detail": "(id)"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/bom-challan-map.js",
+    "file": "js/pages/bom-challan-map.js",
+    "detail": "Defines 7 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "createBomChallanMapModule",
+    "file": "js/pages/bom-challan-map.js",
+    "detail": "(ctx)"
+  },
+  {
+    "type": "function",
+    "label": "openChallanModal",
+    "file": "js/pages/bom-challan-map.js",
+    "detail": "(bodyHtml)"
+  },
+  {
+    "type": "function",
+    "label": "closeChallanModal",
+    "file": "js/pages/bom-challan-map.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomCollectItemGroupsForMapping",
+    "file": "js/pages/bom-challan-map.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderChallanMapModalHtml",
+    "file": "js/pages/bom-challan-map.js",
+    "detail": "(groups)"
+  },
+  {
+    "type": "function",
+    "label": "bomOpenChallanMapModal",
+    "file": "js/pages/bom-challan-map.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "categoryOptions",
+    "file": "js/pages/bom-challan-map.js",
+    "detail": "(selected)"
   },
   {
     "type": "file",
@@ -481,9 +565,195 @@
   },
   {
     "type": "file",
+    "label": "js/pages/bom-dispatch.js",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "Defines 1 class(es) implementing core logic."
+  },
+  {
+    "type": "function",
+    "label": "createBomDispatchModule",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "(ctx)"
+  },
+  {
+    "type": "function",
+    "label": "bomCollectItemsForStockCheck",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomCollectItemsForDispatch",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomShowStockIssuesModal",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "(title, intro, rows)"
+  },
+  {
+    "type": "function",
+    "label": "bomRunStockCheck",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomRunDispatch",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomParseBlockedRows",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "(msg)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderRegisterListHtml",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "(orders)"
+  },
+  {
+    "type": "function",
+    "label": "bomLoadRegisterList",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderContinueFormHtml",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "(order, backLabel)"
+  },
+  {
+    "type": "function",
+    "label": "bomContSerialDupes",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "bomUpdateContSerialNote",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "(box)"
+  },
+  {
+    "type": "function",
+    "label": "bomWireContSerialTextarea",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "(box)"
+  },
+  {
+    "type": "function",
+    "label": "bomLoadContinueDispatchForm",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "(orderId, target)"
+  },
+  {
+    "type": "function",
+    "label": "bomOpenOrderInline",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "(orderId)"
+  },
+  {
+    "type": "function",
+    "label": "setBody",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "(html)"
+  },
+  {
+    "type": "class",
+    "label": "in",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": ""
+  },
+  {
+    "type": "file",
+    "label": "js/pages/bom-kit-builder.js",
+    "file": "js/pages/bom-kit-builder.js",
+    "detail": "Defines 12 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "createBomKitBuilderModule",
+    "file": "js/pages/bom-kit-builder.js",
+    "detail": "(ctx)"
+  },
+  {
+    "type": "function",
+    "label": "updateKitActionButtons",
+    "file": "js/pages/bom-kit-builder.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "populateKitDropdown",
+    "file": "js/pages/bom-kit-builder.js",
+    "detail": "(selectKey)"
+  },
+  {
+    "type": "function",
+    "label": "refreshItemsPreview",
+    "file": "js/pages/bom-kit-builder.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "setKitBuilderMode",
+    "file": "js/pages/bom-kit-builder.js",
+    "detail": "(isEdit)"
+  },
+  {
+    "type": "function",
+    "label": "renderKitBuilderSections",
+    "file": "js/pages/bom-kit-builder.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "handleBuilderFieldEdit",
+    "file": "js/pages/bom-kit-builder.js",
+    "detail": "(e)"
+  },
+  {
+    "type": "function",
+    "label": "handleItemFieldEdit",
+    "file": "js/pages/bom-kit-builder.js",
+    "detail": "(e)"
+  },
+  {
+    "type": "function",
+    "label": "bomFindScrollParent",
+    "file": "js/pages/bom-kit-builder.js",
+    "detail": "(el)"
+  },
+  {
+    "type": "function",
+    "label": "rerenderItemsPreview",
+    "file": "js/pages/bom-kit-builder.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomRerenderItemRow",
+    "file": "js/pages/bom-kit-builder.js",
+    "detail": "(si, ii)"
+  },
+  {
+    "type": "function",
+    "label": "blankItem",
+    "file": "js/pages/bom-kit-builder.js",
+    "detail": "()"
+  },
+  {
+    "type": "file",
     "label": "js/pages/bom-kit-helpers.js",
     "file": "js/pages/bom-kit-helpers.js",
-    "detail": "Defines 26 function(s) implementing supporting logic."
+    "detail": "Defines 30 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -493,15 +763,39 @@
   },
   {
     "type": "function",
+    "label": "bomPersistCustomKitsLocalCache",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomLoadCustomKitsLocalCache",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomHydrateCustomKits",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "bomLoadCustomKits",
     "file": "js/pages/bom-kit-helpers.js",
     "detail": "()"
   },
   {
     "type": "function",
-    "label": "bomSaveCustomKits",
+    "label": "bomUpsertCustomKit",
     "file": "js/pages/bom-kit-helpers.js",
-    "detail": "(obj)"
+    "detail": "(key, kit)"
+  },
+  {
+    "type": "function",
+    "label": "bomDeleteCustomKit",
+    "file": "js/pages/bom-kit-helpers.js",
+    "detail": "(key)"
   },
   {
     "type": "function",
@@ -643,9 +937,321 @@
   },
   {
     "type": "file",
+    "label": "js/pages/bom-party-autocomplete.js",
+    "file": "js/pages/bom-party-autocomplete.js",
+    "detail": "Defines 10 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "createBomPartyAutocompleteModule",
+    "file": "js/pages/bom-party-autocomplete.js",
+    "detail": "(ctx)"
+  },
+  {
+    "type": "function",
+    "label": "bomLoadSerialMandatoryInfo",
+    "file": "js/pages/bom-party-autocomplete.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomItemNeedsSerial",
+    "file": "js/pages/bom-party-autocomplete.js",
+    "detail": "(name)"
+  },
+  {
+    "type": "function",
+    "label": "searchBomCustomerLedgers",
+    "file": "js/pages/bom-party-autocomplete.js",
+    "detail": "(q)"
+  },
+  {
+    "type": "function",
+    "label": "searchBomCustomerShortCodes",
+    "file": "js/pages/bom-party-autocomplete.js",
+    "detail": "(q)"
+  },
+  {
+    "type": "function",
+    "label": "fillBomCustomerDatalist",
+    "file": "js/pages/bom-party-autocomplete.js",
+    "detail": "(listEl, ledgers, key)"
+  },
+  {
+    "type": "function",
+    "label": "wireBomCustomerAutocomplete",
+    "file": "js/pages/bom-party-autocomplete.js",
+    "detail": "(inputEl, listEl, matchKey, searchFn)"
+  },
+  {
+    "type": "function",
+    "label": "wireBomPartyTypeAutocomplete",
+    "file": "js/pages/bom-party-autocomplete.js",
+    "detail": "(inputEl, listEl, ledgerType)"
+  },
+  {
+    "type": "function",
+    "label": "search",
+    "file": "js/pages/bom-party-autocomplete.js",
+    "detail": "(q)"
+  },
+  {
+    "type": "function",
+    "label": "fillList",
+    "file": "js/pages/bom-party-autocomplete.js",
+    "detail": "(ledgers)"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/bom-serial-modal.js",
+    "file": "js/pages/bom-serial-modal.js",
+    "detail": "Defines 10 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "createBomSerialModalModule",
+    "file": "js/pages/bom-serial-modal.js",
+    "detail": "(ctx)"
+  },
+  {
+    "type": "function",
+    "label": "openBomSerialModal",
+    "file": "js/pages/bom-serial-modal.js",
+    "detail": "(si, ii)"
+  },
+  {
+    "type": "function",
+    "label": "focusSerialBox",
+    "file": "js/pages/bom-serial-modal.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "applyBomSerialBtModeUi",
+    "file": "js/pages/bom-serial-modal.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "backToTypeMode",
+    "file": "js/pages/bom-serial-modal.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "updateCountNote",
+    "file": "js/pages/bom-serial-modal.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "showQtyCapError",
+    "file": "js/pages/bom-serial-modal.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "showBtCard",
+    "file": "js/pages/bom-serial-modal.js",
+    "detail": "(code, opts)"
+  },
+  {
+    "type": "function",
+    "label": "hideBtCard",
+    "file": "js/pages/bom-serial-modal.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "blankItem",
+    "file": "js/pages/bom-serial-modal.js",
+    "detail": "()"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/bom-serial-scan.js",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "Defines 17 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "createBomSerialScanModule",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "(ctx)"
+  },
+  {
+    "type": "function",
+    "label": "bomScanBeep",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomScanSetStatus",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "(msg)"
+  },
+  {
+    "type": "function",
+    "label": "openBomScanner",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "(targetId)"
+  },
+  {
+    "type": "function",
+    "label": "startBomScanCamera",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "launchBomScanCamera",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "onBomScanSuccess",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "(decodedText)"
+  },
+  {
+    "type": "function",
+    "label": "showBomScanResult",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "(text)"
+  },
+  {
+    "type": "function",
+    "label": "hideBomScanResult",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "retryBomScan",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "confirmBomScan",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "toggleBomScanTorch",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "flipBomScanCamera",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "closeBomScanner",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "openBomBtScanResult",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "(targetId, code)"
+  },
+  {
+    "type": "function",
+    "label": "confirmBomBtScan",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "finish",
+    "file": "js/pages/bom-serial-scan.js",
+    "detail": "()"
+  },
+  {
+    "type": "file",
+    "label": "js/pages/bom-track-register.js",
+    "file": "js/pages/bom-track-register.js",
+    "detail": "Defines 11 function(s) implementing supporting logic."
+  },
+  {
+    "type": "function",
+    "label": "createBomTrackRegisterModule",
+    "file": "js/pages/bom-track-register.js",
+    "detail": "(ctx)"
+  },
+  {
+    "type": "function",
+    "label": "openRegisterModal",
+    "file": "js/pages/bom-track-register.js",
+    "detail": "(bodyHtml)"
+  },
+  {
+    "type": "function",
+    "label": "closeRegisterModal",
+    "file": "js/pages/bom-track-register.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomTrackStatusPill",
+    "file": "js/pages/bom-track-register.js",
+    "detail": "(status)"
+  },
+  {
+    "type": "function",
+    "label": "bomFmtDateTime",
+    "file": "js/pages/bom-track-register.js",
+    "detail": "(v)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderTrackResultHtml",
+    "file": "js/pages/bom-track-register.js",
+    "detail": "(data)"
+  },
+  {
+    "type": "function",
+    "label": "bomFetchAndRenderTrack",
+    "file": "js/pages/bom-track-register.js",
+    "detail": "(orderNo, resultBox)"
+  },
+  {
+    "type": "function",
+    "label": "bomOpenTrackModal",
+    "file": "js/pages/bom-track-register.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "runTrack",
+    "file": "js/pages/bom-track-register.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomOpenTrackForOrderNo",
+    "file": "js/pages/bom-track-register.js",
+    "detail": "(orderNo)"
+  },
+  {
+    "type": "function",
+    "label": "bomTrackCurrentOrder",
+    "file": "js/pages/bom-track-register.js",
+    "detail": "()"
+  },
+  {
+    "type": "file",
     "label": "js/pages/bom.js",
     "file": "js/pages/bom.js",
-    "detail": "Defines 2 class(es) implementing core logic."
+    "detail": "Defines 1 class(es) implementing core logic."
   },
   {
     "type": "function",
@@ -691,96 +1297,6 @@
   },
   {
     "type": "function",
-    "label": "openChallanModal",
-    "file": "js/pages/bom.js",
-    "detail": "(bodyHtml)"
-  },
-  {
-    "type": "function",
-    "label": "closeChallanModal",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomCollectUsedItemNamesForMapping",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomRenderChallanMapModalHtml",
-    "file": "js/pages/bom.js",
-    "detail": "(names)"
-  },
-  {
-    "type": "function",
-    "label": "bomOpenChallanMapModal",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "openRegisterModal",
-    "file": "js/pages/bom.js",
-    "detail": "(bodyHtml)"
-  },
-  {
-    "type": "function",
-    "label": "closeRegisterModal",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomTrackStatusPill",
-    "file": "js/pages/bom.js",
-    "detail": "(status)"
-  },
-  {
-    "type": "function",
-    "label": "bomFmtDateTime",
-    "file": "js/pages/bom.js",
-    "detail": "(v)"
-  },
-  {
-    "type": "function",
-    "label": "bomRenderTrackResultHtml",
-    "file": "js/pages/bom.js",
-    "detail": "(data)"
-  },
-  {
-    "type": "function",
-    "label": "bomFetchAndRenderTrack",
-    "file": "js/pages/bom.js",
-    "detail": "(orderNo, resultBox)"
-  },
-  {
-    "type": "function",
-    "label": "bomOpenTrackModal",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "runTrack",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomOpenTrackForOrderNo",
-    "file": "js/pages/bom.js",
-    "detail": "(orderNo)"
-  },
-  {
-    "type": "function",
-    "label": "bomTrackCurrentOrder",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
     "label": "bomCollectItemsForCreate",
     "file": "js/pages/bom.js",
     "detail": "()"
@@ -790,60 +1306,6 @@
     "label": "bomOpenCreateBomModal",
     "file": "js/pages/bom.js",
     "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomLoadSerialMandatoryInfo",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomItemNeedsSerial",
-    "file": "js/pages/bom.js",
-    "detail": "(name)"
-  },
-  {
-    "type": "function",
-    "label": "searchBomCustomerLedgers",
-    "file": "js/pages/bom.js",
-    "detail": "(q)"
-  },
-  {
-    "type": "function",
-    "label": "searchBomCustomerShortCodes",
-    "file": "js/pages/bom.js",
-    "detail": "(q)"
-  },
-  {
-    "type": "function",
-    "label": "fillBomCustomerDatalist",
-    "file": "js/pages/bom.js",
-    "detail": "(listEl, ledgers, key)"
-  },
-  {
-    "type": "function",
-    "label": "wireBomCustomerAutocomplete",
-    "file": "js/pages/bom.js",
-    "detail": "(inputEl, listEl, matchKey, searchFn)"
-  },
-  {
-    "type": "function",
-    "label": "wireBomPartyTypeAutocomplete",
-    "file": "js/pages/bom.js",
-    "detail": "(inputEl, listEl, ledgerType)"
-  },
-  {
-    "type": "function",
-    "label": "search",
-    "file": "js/pages/bom.js",
-    "detail": "(q)"
-  },
-  {
-    "type": "function",
-    "label": "fillList",
-    "file": "js/pages/bom.js",
-    "detail": "(ledgers)"
   },
   {
     "type": "function",
@@ -865,225 +1327,9 @@
   },
   {
     "type": "function",
-    "label": "updateKitActionButtons",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "populateKitDropdown",
-    "file": "js/pages/bom.js",
-    "detail": "(selectKey)"
-  },
-  {
-    "type": "function",
-    "label": "refreshItemsPreview",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "setKitBuilderMode",
-    "file": "js/pages/bom.js",
-    "detail": "(isEdit)"
-  },
-  {
-    "type": "function",
-    "label": "renderKitBuilderSections",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "handleBuilderFieldEdit",
-    "file": "js/pages/bom.js",
-    "detail": "(e)"
-  },
-  {
-    "type": "function",
-    "label": "handleItemFieldEdit",
-    "file": "js/pages/bom.js",
-    "detail": "(e)"
-  },
-  {
-    "type": "function",
-    "label": "bomFindScrollParent",
-    "file": "js/pages/bom.js",
-    "detail": "(el)"
-  },
-  {
-    "type": "function",
-    "label": "rerenderItemsPreview",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomRerenderItemRow",
-    "file": "js/pages/bom.js",
-    "detail": "(si, ii)"
-  },
-  {
-    "type": "function",
-    "label": "bomScanBeep",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomScanSetStatus",
-    "file": "js/pages/bom.js",
-    "detail": "(msg)"
-  },
-  {
-    "type": "function",
-    "label": "openBomScanner",
-    "file": "js/pages/bom.js",
-    "detail": "(targetId)"
-  },
-  {
-    "type": "function",
-    "label": "startBomScanCamera",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "launchBomScanCamera",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "onBomScanSuccess",
-    "file": "js/pages/bom.js",
-    "detail": "(decodedText)"
-  },
-  {
-    "type": "function",
-    "label": "showBomScanResult",
-    "file": "js/pages/bom.js",
-    "detail": "(text)"
-  },
-  {
-    "type": "function",
-    "label": "hideBomScanResult",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "retryBomScan",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "confirmBomScan",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "toggleBomScanTorch",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "flipBomScanCamera",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "closeBomScanner",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "openBomSerialModal",
-    "file": "js/pages/bom.js",
-    "detail": "(si, ii)"
-  },
-  {
-    "type": "function",
-    "label": "updateCountNote",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
     "label": "getHeaderValues",
     "file": "js/pages/bom.js",
     "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomCollectItemsForStockCheck",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomCollectItemsForDispatch",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomShowStockIssuesModal",
-    "file": "js/pages/bom.js",
-    "detail": "(title, intro, rows)"
-  },
-  {
-    "type": "function",
-    "label": "bomRunStockCheck",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomRunDispatch",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomParseBlockedRows",
-    "file": "js/pages/bom.js",
-    "detail": "(msg)"
-  },
-  {
-    "type": "function",
-    "label": "bomRenderRegisterListHtml",
-    "file": "js/pages/bom.js",
-    "detail": "(orders)"
-  },
-  {
-    "type": "function",
-    "label": "bomLoadRegisterList",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "bomRenderContinueFormHtml",
-    "file": "js/pages/bom.js",
-    "detail": "(order, backLabel)"
-  },
-  {
-    "type": "function",
-    "label": "bomLoadContinueDispatchForm",
-    "file": "js/pages/bom.js",
-    "detail": "(orderId, target)"
-  },
-  {
-    "type": "function",
-    "label": "bomOpenOrderInline",
-    "file": "js/pages/bom.js",
-    "detail": "(orderId)"
   },
   {
     "type": "function",
@@ -1092,44 +1338,8 @@
     "detail": "()"
   },
   {
-    "type": "function",
-    "label": "$",
-    "file": "js/pages/bom.js",
-    "detail": "(id)"
-  },
-  {
-    "type": "function",
-    "label": "categoryOptions",
-    "file": "js/pages/bom.js",
-    "detail": "(selected)"
-  },
-  {
-    "type": "function",
-    "label": "blankItem",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "finish",
-    "file": "js/pages/bom.js",
-    "detail": "()"
-  },
-  {
-    "type": "function",
-    "label": "setBody",
-    "file": "js/pages/bom.js",
-    "detail": "(html)"
-  },
-  {
     "type": "class",
     "label": "was",
-    "file": "js/pages/bom.js",
-    "detail": ""
-  },
-  {
-    "type": "class",
-    "label": "in",
     "file": "js/pages/bom.js",
     "detail": ""
   },
@@ -3817,6 +4027,24 @@
   },
   {
     "type": "file",
+    "label": "api/routes/bom_kits.routes.js",
+    "file": "api/routes/bom_kits.routes.js",
+    "detail": "Defines HTTP route handlers (controller/router layer)."
+  },
+  {
+    "type": "function",
+    "label": "registerBomKitsRoutes",
+    "file": "api/routes/bom_kits.routes.js",
+    "detail": "(app, deps)"
+  },
+  {
+    "type": "function",
+    "label": "isValidKitKey",
+    "file": "api/routes/bom_kits.routes.js",
+    "detail": "(key)"
+  },
+  {
+    "type": "file",
     "label": "api/routes/challan.routes.js",
     "file": "api/routes/challan.routes.js",
     "detail": "Defines HTTP route handlers (controller/router layer)."
@@ -4299,6 +4527,24 @@
     "type": "route",
     "label": "POST /api/bom/dispatch",
     "file": "api/routes/bom.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/bom/kits",
+    "file": "api/routes/bom_kits.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "DELETE /api/bom/kits/:key",
+    "file": "api/routes/bom_kits.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "PUT /api/bom/kits/:key",
+    "file": "api/routes/bom_kits.routes.js",
     "detail": "public"
   },
   {

@@ -60,6 +60,7 @@ Database
 | api/routes/auth.routes.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/backup.routes.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/bom.routes.js | Defines HTTP route handlers (controller/router layer). |
+| api/routes/bom_kits.routes.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/challan.routes.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/health.js | Defines HTTP route handlers (controller/router layer). |
 | api/routes/ledgers.routes.js | Defines HTTP route handlers (controller/router layer). |
@@ -106,9 +107,16 @@ Database
 | File | Purpose |
 | --- | --- |
 | js/pages/backup.js | Defines 3 function(s) implementing supporting logic. |
+| js/pages/bom-challan-map.js | Defines 7 function(s) implementing supporting logic. |
 | js/pages/bom-challan.js | Defines 20 function(s) implementing supporting logic. |
-| js/pages/bom-kit-helpers.js | Defines 26 function(s) implementing supporting logic. |
-| js/pages/bom.js | Defines 2 class(es) implementing core logic. |
+| js/pages/bom-dispatch.js | Defines 1 class(es) implementing core logic. |
+| js/pages/bom-kit-builder.js | Defines 12 function(s) implementing supporting logic. |
+| js/pages/bom-kit-helpers.js | Defines 30 function(s) implementing supporting logic. |
+| js/pages/bom-party-autocomplete.js | Defines 10 function(s) implementing supporting logic. |
+| js/pages/bom-serial-modal.js | Defines 10 function(s) implementing supporting logic. |
+| js/pages/bom-serial-scan.js | Defines 17 function(s) implementing supporting logic. |
+| js/pages/bom-track-register.js | Defines 11 function(s) implementing supporting logic. |
+| js/pages/bom.js | Defines 1 class(es) implementing core logic. |
 | js/pages/dashboard.js | Defines 18 function(s) implementing supporting logic. |
 | js/pages/lowstock.js | Defines 12 function(s) implementing supporting logic. |
 | js/pages/masters.js | Defines 18 function(s) implementing supporting logic. |

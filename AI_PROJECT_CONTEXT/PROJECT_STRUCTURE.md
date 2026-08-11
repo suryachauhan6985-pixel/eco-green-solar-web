@@ -17,6 +17,7 @@ api/
         attachments.routes.js
         auth.routes.js
         backup.routes.js
+        bom_kits.routes.js
         bom.routes.js
         challan.routes.js
         health.js
@@ -56,8 +57,15 @@ js/
         sheets-store.js
     pages/
         backup.js
+        bom-challan-map.js
         bom-challan.js
+        bom-dispatch.js
+        bom-kit-builder.js
         bom-kit-helpers.js
+        bom-party-autocomplete.js
+        bom-serial-modal.js
+        bom-serial-scan.js
+        bom-track-register.js
         bom.js
         dashboard.js
         lowstock.js

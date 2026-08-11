@@ -1,15 +1,15 @@
 # API Documentation
 
-Total endpoints detected: **99**
+Total endpoints detected: **102**
 
 ## Endpoints by Method
 
 | Method | Count |
 | --- | --- |
-| GET | 43 |
+| GET | 44 |
 | POST | 30 |
-| DELETE | 12 |
-| PUT | 14 |
+| DELETE | 13 |
+| PUT | 15 |
 
 
 ## All Endpoints
@@ -34,6 +34,9 @@ Total endpoints detected: **99**
 | GET | /api/backup/status | api/routes/backup.routes.js | No |
 | POST | /api/bom/check-stock | api/routes/bom.routes.js | No |
 | POST | /api/bom/dispatch | api/routes/bom.routes.js | No |
+| GET | /api/bom/kits | api/routes/bom_kits.routes.js | No |
+| DELETE | /api/bom/kits/:key | api/routes/bom_kits.routes.js | No |
+| PUT | /api/bom/kits/:key | api/routes/bom_kits.routes.js | No |
 | GET | /api/bom/orders | api/routes/bom.routes.js | No |
 | POST | /api/bom/orders | api/routes/bom.routes.js | No |
 | GET | /api/bom/orders/:id | api/routes/bom.routes.js | No |

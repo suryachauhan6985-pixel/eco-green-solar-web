@@ -1,9 +1,9 @@
 # Changelog (Since Last Scan)
 
-Scan performed: 2026-08-10T10:20:40.799Z
+Scan performed: 2026-08-11T06:40:26.396Z
 First scan for this project: Yes
 
-## Added Files (63)
+## Added Files (71)
 
 - .env
 - Dockerfile
@@ -14,8 +14,15 @@ First scan for this project: Yes
 - sw.js
 - js/app.js
 - js/pages/backup.js
+- js/pages/bom-challan-map.js
 - js/pages/bom-challan.js
+- js/pages/bom-dispatch.js
+- js/pages/bom-kit-builder.js
 - js/pages/bom-kit-helpers.js
+- js/pages/bom-party-autocomplete.js
+- js/pages/bom-serial-modal.js
+- js/pages/bom-serial-scan.js
+- js/pages/bom-track-register.js
 - js/pages/bom.js
 - js/pages/dashboard.js
 - js/pages/lowstock.js
@@ -54,6 +61,7 @@ First scan for this project: Yes
 - api/routes/auth.routes.js
 - api/routes/backup.routes.js
 - api/routes/bom.routes.js
+- api/routes/bom_kits.routes.js
 - api/routes/challan.routes.js
 - api/routes/health.js
 - api/routes/ledgers.routes.js

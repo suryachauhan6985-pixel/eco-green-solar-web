@@ -62,9 +62,21 @@ window.PAGES.sales = {
             </div>
 
             <div class="field span-full" id="saleSerialsField"><label>Scan Serial Numbers <span class="req">*</span></label>
-              <div class="ss-scan-input-wrap">
+              <div class="ss-scan-input-wrap" style="position:relative;">
                 <textarea id="saleSerials" placeholder="One serial per line, it auto-splits — or tap the scan icon"></textarea>
                 <button type="button" class="ss-scan-icon-btn" id="saleScanBtn" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
+                <div id="saleBtCard" style="display:none; position:absolute; inset:0; background:var(--bg2, #1e1e1e); border:1px solid var(--border, #444); border-radius:8px; padding:14px; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:8px; z-index:2;">
+                  <div class="note" style="font-size:12px;">Scanned value</div>
+                  <div id="saleBtValue" style="font-size:18px; font-weight:700; word-break:break-all;"></div>
+                  <div id="saleBtMsg" class="note" style="margin:0;"></div>
+                  <div class="actions-row" style="margin-top:6px;">
+                    <button type="button" class="btn btn-ghost" id="saleBtRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
+                    <button type="button" class="btn btn-green" id="saleBtDone"><i class="fa-solid fa-check"></i> Done</button>
+                  </div>
+                </div>
+              </div>
+              <div class="actions-row" style="margin-top:6px;">
+                <button type="button" class="btn btn-ghost" id="saleBtBtn" title="Bluetooth scanner mode — disables the camera and keeps this box ready for a BT scanner"><i class="fa-brands fa-bluetooth-b"></i> BT Scan</button>
               </div>
             </div>
             <div class="field span-full" id="saleQtyOnlyNote" style="display:none;">
@@ -137,9 +149,21 @@ window.PAGES.sales = {
             </div>
 
             <div class="field span-full" id="saleEditSerialsWrap"><label>Serials <span class="req">*</span></label>
-              <div class="ss-scan-input-wrap">
+              <div class="ss-scan-input-wrap" style="position:relative;">
                 <textarea id="saleEditSerials" placeholder="Serials will load here... or tap the scan icon"></textarea>
                 <button type="button" class="ss-scan-icon-btn" id="saleEditScanBtn" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
+                <div id="saleEditBtCard" style="display:none; position:absolute; inset:0; background:var(--bg2, #1e1e1e); border:1px solid var(--border, #444); border-radius:8px; padding:14px; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:8px; z-index:2;">
+                  <div class="note" style="font-size:12px;">Scanned value</div>
+                  <div id="saleEditBtValue" style="font-size:18px; font-weight:700; word-break:break-all;"></div>
+                  <div id="saleEditBtMsg" class="note" style="margin:0;"></div>
+                  <div class="actions-row" style="margin-top:6px;">
+                    <button type="button" class="btn btn-ghost" id="saleEditBtRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
+                    <button type="button" class="btn btn-green" id="saleEditBtDone"><i class="fa-solid fa-check"></i> Done</button>
+                  </div>
+                </div>
+              </div>
+              <div class="actions-row" style="margin-top:6px;">
+                <button type="button" class="btn btn-ghost" id="saleEditBtBtn" title="Bluetooth scanner mode — disables the camera and keeps this box ready for a BT scanner"><i class="fa-brands fa-bluetooth-b"></i> BT Scan</button>
               </div>
             </div>
           </div>
@@ -265,8 +289,9 @@ window.PAGES.sales = {
     function splitSerials(text) {
       return String(text || '').match(/[A-Za-z0-9-]+/g) || [];
     }
-    function wireSerialBox(el) {
+    function wireSerialBox(el, btToggleGetter) {
       el.addEventListener('keydown', (e) => {
+        if (btToggleGetter && btToggleGetter() && btToggleGetter().isBtMode()) return; // BT toggle owns input while ON
         if ([',', ' ', '|', ';', 'Tab'].includes(e.key)) {
           e.preventDefault();
           const before = el.value.slice(0, el.selectionStart);
@@ -278,6 +303,7 @@ window.PAGES.sales = {
         }
       });
       el.addEventListener('paste', (e) => {
+        if (btToggleGetter && btToggleGetter() && btToggleGetter().isBtMode()) return;
         e.preventDefault();
         const pasted = (e.clipboardData || window.clipboardData).getData('text');
         const normalized = splitSerials(pasted).join('\n');
@@ -287,11 +313,17 @@ window.PAGES.sales = {
         el.value = before + prefix + normalized + '\n' + after;
       });
       el.addEventListener('blur', () => {
+        if (btToggleGetter && btToggleGetter() && btToggleGetter().isBtMode()) return;
         el.value = splitSerials(el.value).join('\n');
       });
     }
-    wireSerialBox($('saleSerials'));
-    wireSerialBox($('saleEditSerials'));
+    // BT toggles are wired further below (after saleScanBeep is defined) —
+    // declared here first and passed into wireSerialBox as getters so it
+    // can consult isBtMode() live once they're assigned.
+    let saleSerialBt = null;
+    let saleEditSerialBt = null;
+    wireSerialBox($('saleSerials'), () => saleSerialBt);
+    wireSerialBox($('saleEditSerials'), () => saleEditSerialBt);
 
     // ---------------- Serial scanner (camera) ----------------
     // Same html5-qrcode-based scanner used by Purchase Inward (see
@@ -567,6 +599,173 @@ window.PAGES.sales = {
     if (saleScanBtnEl) saleScanBtnEl.addEventListener('click', () => openSaleScanner('saleSerials'));
     const saleEditScanBtnEl = $('saleEditScanBtn');
     if (saleEditScanBtnEl) saleEditScanBtnEl.addEventListener('click', () => openSaleScanner('saleEditSerials'));
+
+    // ---------------- Serial scanner — Bluetooth toggle ----------------
+    // Adds a "BT Scan" mode next to the camera scanner, mirroring
+    // js/pages/bom-serial-modal.js's Bluetooth toggle exactly: while ON, a
+    // physical BT/HID scanner's keystrokes are buffered ourselves (never
+    // typed straight into the box) and Enter/Tab pops a Retry/Done confirm
+    // card instead of landing directly — catches a misread before it lands,
+    // and hard-blocks a duplicate the same way the camera scanner already
+    // does. The camera scan button is disabled while BT mode is ON (only
+    // one input method active at a time). `qtyFieldId`, when given, is read
+    // live on every scan as this box's serial-count cap — wired below for
+    // the New Entry box against Expected Qty (cleared after every "Add
+    // Product Line", so it's always THIS line's target); the Edit box has
+    // no single per-line Qty to cap against (its total is only checked when
+    // a line is added / at Apply time), so it's wired with no live cap,
+    // just duplicate-blocking, same as Purchase's boxes.
+    function wireSerialBtToggle(opts) {
+      const box = document.getElementById(opts.boxId);
+      const btBtn = document.getElementById(opts.btBtnId);
+      const cameraBtn = document.getElementById(opts.cameraBtnId);
+      const card = document.getElementById(opts.cardId);
+      const valueEl = document.getElementById(opts.valueId);
+      const msgEl = document.getElementById(opts.msgId);
+      const retryBtn = document.getElementById(opts.retryId);
+      const doneBtn = document.getElementById(opts.doneId);
+      if (!box || !btBtn || !card) return { isBtMode: () => false };
+
+      let btMode = false;
+      let buffer = '';
+      let pendingCode = null;
+
+      function requiredQty() {
+        if (!opts.qtyFieldId) return null;
+        const el = document.getElementById(opts.qtyFieldId);
+        if (!el) return null;
+        const v = parseInt(el.value, 10);
+        return (Number.isFinite(v) && v > 0) ? v : null;
+      }
+
+      function focusBox() {
+        if (btMode) {
+          box.setAttribute('readonly', 'readonly');
+          box.focus({ preventScroll: true });
+          window.setTimeout(() => {
+            box.removeAttribute('readonly');
+            const len = box.value.length;
+            if (typeof box.setSelectionRange === 'function') box.setSelectionRange(len, len);
+            box.focus({ preventScroll: true });
+          }, 450);
+        } else {
+          box.focus({ preventScroll: true });
+        }
+      }
+
+      function applyUi() {
+        btBtn.classList.toggle('active', btMode);
+        btBtn.classList.toggle('btn-blue', btMode);
+        btBtn.classList.toggle('btn-ghost', !btMode);
+        btBtn.innerHTML = `<i class="fa-brands fa-bluetooth-b"></i> ${btMode ? 'BT Scan: ON' : 'BT Scan'}`;
+        if (cameraBtn) {
+          cameraBtn.disabled = btMode;
+          cameraBtn.classList.toggle('ss-disabled', btMode);
+          cameraBtn.title = btMode ? 'Camera disabled in Bluetooth scanner mode' : 'Scan barcode / QR';
+        }
+        box.setAttribute('inputmode', btMode ? 'none' : 'text');
+      }
+
+      function hideCard() {
+        card.style.display = 'none';
+        pendingCode = null;
+      }
+      function showCard(code, flags) {
+        flags = flags || {};
+        pendingCode = flags.blocked ? null : code;
+        if (valueEl) valueEl.textContent = code || '(empty)';
+        const req = requiredQty();
+        if (msgEl) {
+          msgEl.textContent = flags.dup
+            ? 'This serial no. is already in the box. Retry with a different code.'
+            : flags.overCap
+              ? `You cannot scan more than the entered quantity — ${req} serial number(s) allowed.`
+              : 'Scanned — tap Done to add it.';
+        }
+        if (doneBtn) doneBtn.style.display = flags.blocked ? 'none' : '';
+        card.style.display = 'flex';
+      }
+
+      if (retryBtn) retryBtn.addEventListener('click', () => { hideCard(); focusBox(); });
+      if (doneBtn) {
+        doneBtn.addEventListener('click', () => {
+          if (!pendingCode) return;
+          const existing = splitSerials(box.value);
+          existing.push(pendingCode);
+          box.value = existing.join('\n') + '\n';
+          box.dispatchEvent(new Event('input', { bubbles: true }));
+          hideCard();
+          focusBox();
+        });
+      }
+
+      btBtn.addEventListener('click', () => {
+        btMode = !btMode;
+        buffer = '';
+        hideCard();
+        applyUi();
+        if (window.showToast) {
+          window.showToast(btMode
+            ? 'Bluetooth scanner mode ON — camera disabled, box ready for the scanner.'
+            : 'Bluetooth scanner mode OFF — camera scan available again.');
+        }
+        focusBox();
+      });
+
+      // Capture phase so this runs before wireSerialBox's own
+      // auto-newline-on-delimiter listener and can shadow it completely
+      // while BT mode is on — that listener also checks isBtMode() itself
+      // as a second guard.
+      box.addEventListener('keydown', (e) => {
+        if (!btMode) return;
+        if (e.ctrlKey || e.altKey || e.metaKey) return;
+        // Drop OS auto-repeat echoes from a fast HID/BT wedge scanner —
+        // see bom-serial-modal.js's identical guard for why (a real
+        // scanner keystroke is never itself a repeat).
+        if (e.repeat) { e.preventDefault(); return; }
+        if (card.style.display !== 'none') { e.preventDefault(); return; } // card showing — ignore further input
+        if (e.key === 'Enter' || e.key === 'Tab') {
+          e.preventDefault();
+          const code = buffer.trim();
+          buffer = '';
+          if (!code) return;
+          const existing = splitSerials(box.value);
+          const req = requiredQty();
+          if (req != null && existing.length >= req) { showCard(code, { blocked: true, overCap: true }); return; }
+          const dup = existing.some((s) => s.toLowerCase() === code.toLowerCase());
+          if (dup) { showCard(code, { blocked: true, dup: true }); return; }
+          if (opts.beepFn) opts.beepFn();
+          showCard(code);
+          return;
+        }
+        if (e.key === 'Escape') { buffer = ''; return; }
+        if (e.key.length === 1) { e.preventDefault(); buffer += e.key; }
+      }, true);
+
+      // Turns BT mode off and clears any pending confirm card — called on
+      // Clear Form / Clear Changes so a leftover pending scan or an ON
+      // toggle never survives a form reset.
+      function reset() {
+        btMode = false;
+        buffer = '';
+        hideCard();
+        applyUi();
+      }
+
+      return { isBtMode: () => btMode, reset };
+    }
+
+    saleSerialBt = wireSerialBtToggle({
+      boxId: 'saleSerials', btBtnId: 'saleBtBtn', cameraBtnId: 'saleScanBtn',
+      cardId: 'saleBtCard', valueId: 'saleBtValue', msgId: 'saleBtMsg',
+      retryId: 'saleBtRetry', doneId: 'saleBtDone', beepFn: saleScanBeep,
+      qtyFieldId: 'saleQty',
+    });
+    saleEditSerialBt = wireSerialBtToggle({
+      boxId: 'saleEditSerials', btBtnId: 'saleEditBtBtn', cameraBtnId: 'saleEditScanBtn',
+      cardId: 'saleEditBtCard', valueId: 'saleEditBtValue', msgId: 'saleEditBtMsg',
+      retryId: 'saleEditBtRetry', doneId: 'saleEditBtDone', beepFn: saleScanBeep,
+    });
 
     function renderLineList(container, lines, emptyText) {
       if (!lines.length) {
@@ -974,6 +1173,7 @@ window.PAGES.sales = {
       saleProof.files = [];
       $('saleProofFile').value = '';
       $('saleProofName').textContent = 'No proof selected';
+      if (saleSerialBt) saleSerialBt.reset();
     }
     $('saleBtnClearForm').addEventListener('click', clearSalesForm);
 
@@ -1145,6 +1345,7 @@ window.PAGES.sales = {
         $('saleEditProofName').textContent = 'No proof selected';
         updateSaleEditQtyFieldVisibility();
         updateSaleEditWattModelVisibility();
+        if (saleEditSerialBt) saleEditSerialBt.reset();
       }
       $('saleBtnClearEdit').addEventListener('click', clearEditPanel);
 
@@ -1242,6 +1443,7 @@ window.PAGES.sales = {
         renderLineList(saleEditLineList, saleEditLines, 'Find an order above to load its lines.');
         await loadEditCascadeForLine(saleEditLines[0]);
         $('saleEditSerials').value = (order.allSerials || []).join('\n');
+        if (saleEditSerialBt) saleEditSerialBt.reset(); // fresh order — drop any in-progress BT scan from before
 
         window.openModal('Loaded', `<p>Sales challan/order loaded with ${saleEditLines.length} product line(s).</p>`);
         return true;
