@@ -41,7 +41,12 @@ function createBomKitBuilderModule(ctx) {
       }
       ctx.updateKitActionButtons();
     }
-    ctx.populateKitDropdown();
+    // Bare local call — ctx.populateKitDropdown doesn't exist yet at this
+    // point in the factory (only assigned once bom.js's init() runs
+    // Object.assign(ctx, createBomKitBuilderModule(ctx)) AFTER this whole
+    // function body finishes). Calling ctx.populateKitDropdown() here
+    // throws immediately and aborts init() before any button gets wired.
+    populateKitDropdown();
 
     function refreshItemsPreview() {
       const kit = bomGetAllKits()[ctx.kitSelect.value];
@@ -53,8 +58,12 @@ function createBomKitBuilderModule(ctx) {
       ctx.updateVerifyButtonState(); // fresh kit — nothing ticked yet, Verify stays disabled
       ctx.updateKitActionButtons();
     }
-    ctx.kitSelect.addEventListener('change', ctx.refreshItemsPreview);
-    ctx.refreshItemsPreview();
+    // Bare local refs — same reasoning as ctx.populateKitDropdown above.
+    // addEventListener(..., ctx.refreshItemsPreview) would have captured
+    // `undefined` at registration time and never actually fired on kit
+    // change, even after ctx.refreshItemsPreview got assigned later.
+    ctx.kitSelect.addEventListener('change', refreshItemsPreview);
+    refreshItemsPreview();
 
     if (ctx.btnDeleteKit) {
       ctx.btnDeleteKit.addEventListener('click', async () => {
@@ -200,8 +209,10 @@ function createBomKitBuilderModule(ctx) {
     // straight back into ctx.newKitSections — same delegated-listener pattern
     // used for the live Kit Items preview above.
     if (ctx.kitBuilderSectionsEl) {
-      ctx.kitBuilderSectionsEl.addEventListener('input', ctx.handleBuilderFieldEdit);
-      ctx.kitBuilderSectionsEl.addEventListener('change', ctx.handleBuilderFieldEdit);
+      // Bare local refs — ctx.handleBuilderFieldEdit isn't assigned yet at
+      // this point in the factory (see comment on populateKitDropdown above).
+      ctx.kitBuilderSectionsEl.addEventListener('input', handleBuilderFieldEdit);
+      ctx.kitBuilderSectionsEl.addEventListener('change', handleBuilderFieldEdit);
     }
     function handleBuilderFieldEdit(e) {
       const el = e.target.closest('[data-bfield]');
@@ -450,8 +461,9 @@ function createBomKitBuilderModule(ctx) {
     // one listener on the container catches edits to all rows across kit
     // re-renders and writes them straight into ctx.currentKitState — nothing
     // needs to be retyped for the parts that stay the same.
-    ctx.itemsPreview.addEventListener('input', ctx.handleItemFieldEdit);
-    ctx.itemsPreview.addEventListener('change', ctx.handleItemFieldEdit);
+    // Bare local refs — same reasoning as handleBuilderFieldEdit above.
+    ctx.itemsPreview.addEventListener('input', handleItemFieldEdit);
+    ctx.itemsPreview.addEventListener('change', handleItemFieldEdit);
     function handleItemFieldEdit(e) {
       const el = e.target.closest('[data-field]');
       if (!el) return;

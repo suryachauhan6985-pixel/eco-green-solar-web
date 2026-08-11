@@ -51,8 +51,12 @@ function createBomPartyAutocompleteModule(ctx) {
     // it exactly matches one, Customer Name auto-fills. Typing directly in
     // Customer Name still searches/auto-fills by full name. Both fields
     // stay fully editable so the person can type over the auto-filled value.
-    ctx.bomCustNameList = ctx.$('ctx.bomCustNameList');
-    ctx.bomOrderNoList = ctx.$('ctx.bomOrderNoList');
+    // Was passing the literal string 'ctx.bomCustNameList' as the element
+    // id (typo) — that id doesn't exist in the DOM, so this always
+    // resolved to null and the Customer Name / Order No. datalists never
+    // got populated by search results.
+    ctx.bomCustNameList = ctx.$('bomCustNameList');
+    ctx.bomOrderNoList = ctx.$('bomOrderNoList');
     ctx.bomCustSearchTimer = null;
 
     async function searchBomCustomerLedgers(q) {
@@ -92,8 +96,14 @@ function createBomPartyAutocompleteModule(ctx) {
         ctx.fillBomCustomerDatalist(listEl, ledgers, matchKey);
       });
     }
-    ctx.wireBomCustomerAutocomplete(ctx.$('bomCustomerName'), ctx.bomCustNameList, 'name', ctx.searchBomCustomerLedgers);
-    ctx.wireBomCustomerAutocomplete(ctx.$('bomOrderNo'), ctx.bomOrderNoList, 'short', ctx.searchBomCustomerShortCodes);
+    // Bare local names, not ctx.wireBomCustomerAutocomplete/ctx.search* —
+    // this factory function hasn't returned yet, so none of its own
+    // exports exist on ctx at this point. Calling ctx.wireBomCustomerAutocomplete(...)
+    // here throws "ctx.wireBomCustomerAutocomplete is not a function" and
+    // aborts the whole factory (and every module load after it) the
+    // instant bom.js's init() reaches this file.
+    wireBomCustomerAutocomplete(ctx.$('bomCustomerName'), ctx.bomCustNameList, 'name', searchBomCustomerLedgers);
+    wireBomCustomerAutocomplete(ctx.$('bomOrderNo'), ctx.bomOrderNoList, 'short', searchBomCustomerShortCodes);
 
     // ---------------- Dealer / Installer / Fabricator ledger autocomplete --
     // These are now real Party Ledger types too. Each field here is a single
@@ -135,9 +145,10 @@ function createBomPartyAutocompleteModule(ctx) {
         fillList(await search(''));
       });
     }
-    ctx.wireBomPartyTypeAutocomplete(ctx.$('bomDealerName'), ctx.$('bomDealerList'), 'Dealer');
-    ctx.wireBomPartyTypeAutocomplete(ctx.$('bomInstallerName'), ctx.$('bomInstallerList'), 'Installer');
-    ctx.wireBomPartyTypeAutocomplete(ctx.$('bomFabricatorName'), ctx.$('bomFabricatorList'), 'Fabricator');
+    // Same reasoning as above — bare local name, not ctx.wireBomPartyTypeAutocomplete.
+    wireBomPartyTypeAutocomplete(ctx.$('bomDealerName'), ctx.$('bomDealerList'), 'Dealer');
+    wireBomPartyTypeAutocomplete(ctx.$('bomInstallerName'), ctx.$('bomInstallerList'), 'Installer');
+    wireBomPartyTypeAutocomplete(ctx.$('bomFabricatorName'), ctx.$('bomFabricatorList'), 'Fabricator');
 
     // ---------------- Ch. Date: calendar-picker only, no manual typing -----
     // Mirrors sales.js/purchase.js: clicking opens the native date picker,

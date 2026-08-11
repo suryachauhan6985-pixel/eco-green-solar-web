@@ -25,7 +25,11 @@ function createBomTrackRegisterModule(ctx) {
       ctx.registerOverlay.classList.remove('show');
       document.body.classList.remove('no-scroll');
     }
-    if (ctx.registerCloseBtn) ctx.registerCloseBtn.addEventListener('click', ctx.closeRegisterModal);
+    // Bare local function, not ctx.closeRegisterModal — see the matching
+    // comment in bom-challan-map.js; ctx.closeRegisterModal isn't assigned
+    // yet at this point in the factory, so referencing it here would bind
+    // the click permanently to `undefined`.
+    if (ctx.registerCloseBtn) ctx.registerCloseBtn.addEventListener('click', closeRegisterModal);
     if (ctx.registerOverlay) {
       ctx.registerOverlay.addEventListener('click', (e) => {
         if (e.target === ctx.registerOverlay) ctx.closeRegisterModal(); // backdrop click only

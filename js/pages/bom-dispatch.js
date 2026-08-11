@@ -420,7 +420,9 @@ function createBomDispatchModule(ctx) {
       ctx.bomLoadContinueDispatchForm(orderId, 'inline');
     }
 
-    if (ctx.homeBtnRegister) ctx.homeBtnRegister.addEventListener('click', ctx.bomLoadRegisterList);
+    // Bare local ref, not ctx.bomLoadRegisterList — same reasoning as the
+    // fixes in bom-kit-builder.js/bom-challan-map.js/bom-track-register.js.
+    if (ctx.homeBtnRegister) ctx.homeBtnRegister.addEventListener('click', bomLoadRegisterList);
 
     if (ctx.btnChallan) {
       ctx.btnChallan.addEventListener('click', async () => {

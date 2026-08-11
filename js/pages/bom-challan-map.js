@@ -26,7 +26,12 @@ function createBomChallanMapModule(ctx) {
       ctx.challanOverlay.classList.remove('show');
       document.body.classList.remove('no-scroll');
     }
-    if (ctx.challanCloseBtn) ctx.challanCloseBtn.addEventListener('click', ctx.closeChallanModal);
+    // NOTE: bind the bare local function, not ctx.closeChallanModal — at
+    // this point (factory executing, before Object.assign(ctx, ...) below
+    // in bom.js has run) ctx.closeChallanModal doesn't exist yet, so
+    // addEventListener would have permanently bound this click to
+    // `undefined` instead of the real handler.
+    if (ctx.challanCloseBtn) ctx.challanCloseBtn.addEventListener('click', closeChallanModal);
     if (ctx.challanOverlay) {
       ctx.challanOverlay.addEventListener('click', (e) => {
         if (e.target === ctx.challanOverlay) ctx.closeChallanModal(); // backdrop click only
