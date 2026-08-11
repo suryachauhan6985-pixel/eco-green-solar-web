@@ -229,6 +229,42 @@ window.PAGES.bom = {
     ctx.challanOverlay = ctx.$('bomChallanOverlay');
     ctx.challanModalBody = ctx.$('bomChallanModalBody');
     ctx.challanCloseBtn = ctx.$('bomChallanCloseBtn');
+    // These DOM refs must ALSO be grabbed before the factory calls below —
+    // createBomKitBuilderModule (and others) read ctx.kitSelect/ctx.itemsPreview
+    // etc. synchronously the moment they run (e.g. populateKitDropdown()'s
+    // very first line is ctx.kitSelect.value), not just inside deferred
+    // callbacks. Previously these were assigned AFTER the Object.assign
+    // block below, so at factory-call time they were still undefined,
+    // throwing "Cannot read properties of undefined (reading 'value')" and
+    // aborting init() — the actual remaining cause of the stuck spinner /
+    // dead buttons after the ctx.$ ordering fix.
+    ctx.kitSelect = ctx.$('bomKitSelect');
+    ctx.itemsPreview = ctx.$('bomItemsPreview');
+    ctx.kitItemsPanel = ctx.$('bomKitItemsPanel');
+    ctx.btnPrint = ctx.$('bomBtnPrint');
+    ctx.printRoot = ctx.$('bomPrintRoot');
+    ctx.challanPrintRoot = ctx.$('bomChallanPrintRoot');
+
+    // Same reasoning again: these are plain function-declaration refs (hoisted
+    // within this async init(), so it's always safe to assign them onto ctx
+    // this early regardless of where they're textually defined below) — but
+    // several factories call e.g. ctx.setVerified()/ctx.updateVerifyButtonState()
+    // synchronously the moment they run (refreshItemsPreview does, right at
+    // module-4/createBomKitBuilderModule's own call time), so they must be on
+    // ctx BEFORE the Object.assign block, not after it.
+    ctx.showBomHome = showBomHome;
+    ctx.showBomEntry = showBomEntry;
+    ctx.showBomEntryForNewKit = showBomEntryForNewKit;
+    ctx.bomOverallStatusFromItems = bomOverallStatusFromItems;
+    ctx.bomRenderHomePendingTableHtml = bomRenderHomePendingTableHtml;
+    ctx.bomLoadHomePendingTable = bomLoadHomePendingTable;
+    ctx.bomCollectItemsForCreate = bomCollectItemsForCreate;
+    ctx.bomOpenCreateBomModal = bomOpenCreateBomModal;
+    ctx.setVerified = setVerified;
+    ctx.allItemsChecked = allItemsChecked;
+    ctx.updateVerifyButtonState = updateVerifyButtonState;
+    ctx.getHeaderValues = getHeaderValues;
+    ctx.computeAndApplyFitZoom = computeAndApplyFitZoom;
 
     // Pull in the functions that used to be nested directly inside this
     // init() but were split out into separate files per
@@ -245,25 +281,6 @@ window.PAGES.bom = {
     Object.assign(ctx, createBomSerialScanModule(ctx));
     Object.assign(ctx, createBomSerialModalModule(ctx));
     Object.assign(ctx, createBomDispatchModule(ctx));
-    ctx.showBomHome = showBomHome;
-    ctx.showBomEntry = showBomEntry;
-    ctx.showBomEntryForNewKit = showBomEntryForNewKit;
-    ctx.bomOverallStatusFromItems = bomOverallStatusFromItems;
-    ctx.bomRenderHomePendingTableHtml = bomRenderHomePendingTableHtml;
-    ctx.bomLoadHomePendingTable = bomLoadHomePendingTable;
-    ctx.bomCollectItemsForCreate = bomCollectItemsForCreate;
-    ctx.bomOpenCreateBomModal = bomOpenCreateBomModal;
-    ctx.setVerified = setVerified;
-    ctx.allItemsChecked = allItemsChecked;
-    ctx.updateVerifyButtonState = updateVerifyButtonState;
-    ctx.getHeaderValues = getHeaderValues;
-    ctx.computeAndApplyFitZoom = computeAndApplyFitZoom;
-    ctx.kitSelect = ctx.$('bomKitSelect');
-    ctx.itemsPreview = ctx.$('bomItemsPreview');
-    ctx.kitItemsPanel = ctx.$('bomKitItemsPanel');
-    ctx.btnPrint = ctx.$('bomBtnPrint');
-    ctx.printRoot = ctx.$('bomPrintRoot');
-    ctx.challanPrintRoot = ctx.$('bomChallanPrintRoot');
 
     // ------------------------------------------------------------------
     // BOM Home <-> BOM Entry view switching. The BOM tab now lands on a

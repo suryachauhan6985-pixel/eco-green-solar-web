@@ -39,7 +39,7 @@ function createBomKitBuilderModule(ctx) {
         // Only one kit exists right now — auto-select it so the preview isn't empty.
         ctx.kitSelect.value = keys[0];
       }
-      ctx.updateKitActionButtons();
+      updateKitActionButtons();
     }
     // Bare local call — ctx.populateKitDropdown doesn't exist yet at this
     // point in the factory (only assigned once bom.js's init() runs
@@ -56,7 +56,7 @@ function createBomKitBuilderModule(ctx) {
       ctx.itemsPreview.innerHTML = bomRenderScreenItemsHtml(ctx.currentKitState, { isAdmin: ctx.bomIsAdmin, needsSerial: ctx.bomItemNeedsSerial });
       ctx.setVerified(false); // changing the kit invalidates any prior verification
       ctx.updateVerifyButtonState(); // fresh kit — nothing ticked yet, Verify stays disabled
-      ctx.updateKitActionButtons();
+      updateKitActionButtons();
     }
     // Bare local refs — same reasoning as ctx.populateKitDropdown above.
     // addEventListener(..., ctx.refreshItemsPreview) would have captured
