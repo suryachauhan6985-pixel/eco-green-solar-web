@@ -10,8 +10,10 @@
 //   6 & 7. Camera scanner (permission handling + custom viewfinder overlay)
 //
 // State (sheets, columns, entries) is persisted via window.SheetsStore
-// (js/data/sheets-store.js), which wraps localStorage — this app's stand-in
-// for SQLite/Hive/AsyncStorage on a plain web stack.
+// (js/data/sheets-store.js), which saves to the shared MariaDB database via
+// the /api/scansheet/... routes (api/routes/scansheet.routes.js), scoped to
+// the logged-in user. It also keeps a small localStorage cache purely as an
+// instant-render/offline fallback — the database is the source of truth.
 //
 // Barcode/QR decoding uses the html5-qrcode library (loaded via CDN in
 // index.html), which supports QR codes and the common 1D barcode symbologies
@@ -577,6 +579,67 @@ window.PAGES = window.PAGES || {};
     ]);
   }
 
+  // Same idea as saveTextFile() above, but for BINARY content (.xlsx is a
+  // zip archive, not text) — writing binary bytes through a text Blob
+  // would corrupt the file, so this is its own helper rather than
+  // overloading saveTextFile with a "is this binary?" flag.
+  async function saveBinaryFile(bytes, suggestedName, mimeType, pickerTypes) {
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({ suggestedName, types: pickerTypes });
+        const writable = await handle.createWritable();
+        await writable.write(bytes);
+        await writable.close();
+        window.showToast(`Saved "${suggestedName}"`);
+        return true;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return false; // user cancelled the save dialog
+        console.warn('showSaveFilePicker failed, falling back to a direct download', err);
+      }
+    }
+    // showSaveFilePicker isn't available (Firefox, Safari, most mobile
+    // browsers/webviews, including this app installed as a PWA) — there is
+    // no way for a web page to open a native "choose folder" dialog there,
+    // so this is the same fallback saveTextFile() uses: a normal download
+    // straight into the device's default Downloads folder.
+    const blob = new Blob([bytes], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = suggestedName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    window.showToast(`Saved "${suggestedName}" to your Downloads folder`);
+    return true;
+  }
+
+  // Real .xlsx export (the "Export CSV" button above only ever wrote a
+  // .csv file, which just happens to open in Excel — this uses the same
+  // SheetJS (window.XLSX) library CSV/XLSX Import already loads to build
+  // an actual workbook). Goes through saveBinaryFile() above, so on
+  // Chrome/Edge desktop it prompts the native Save-As dialog exactly like
+  // Export CSV does; on browsers without that API it downloads straight
+  // to Downloads, same as every other export/PDF in this app.
+  function exportSheetXlsx(sheetId) {
+    const sheet = window.SheetsStore.getSheet(sheetId);
+    if (!sheet) return;
+    if (!window.XLSX) { window.showToast('Spreadsheet library failed to load'); return; }
+    const entries = window.SheetsStore.getEntries(sheetId);
+    const header = ['S.No', ...sheet.columns.map((c) => c.name)];
+    const rows = entries.map((en) => [en.sno, ...sheet.columns.map((c) => (c.type === 'image' ? '' : (en.values[c.id] || '')))]);
+    const ws = window.XLSX.utils.aoa_to_sheet([header, ...rows]);
+    const wb = window.XLSX.utils.book_new();
+    // Sheet (tab) names are capped at 31 chars by the xlsx format itself.
+    window.XLSX.utils.book_append_sheet(wb, ws, (sheet.name || 'Sheet').slice(0, 31) || 'Sheet');
+    const wbout = window.XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const fileName = `${sheet.name.replace(/[^a-z0-9]+/gi, '_')}.xlsx`;
+    saveBinaryFile(wbout, fileName, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', [
+      { description: 'Excel file', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } },
+    ]);
+  }
+
   // ---------------- small dropdown menus (sheet card "..." + entry screen "...") ----------------
   function dropdownOutsideHandler(e) {
     if (window._ssDropdown && !window._ssDropdown.contains(e.target)) closeAnyDropdown();
@@ -602,9 +665,11 @@ window.PAGES = window.PAGES || {};
     menu.className = 'ss-dropdown';
     menu.innerHTML = `
       <button type="button" class="ss-dropdown-item" id="ssCardExport"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+      <button type="button" class="ss-dropdown-item" id="ssCardExportXlsx"><i class="fa-solid fa-file-excel"></i> Export Excel (.xlsx)</button>
       <button type="button" class="ss-dropdown-item danger" id="ssCardDelete"><i class="fa-solid fa-trash"></i> Delete Sheet</button>`;
     placeDropdown(menu, anchorBtn);
     menu.querySelector('#ssCardExport').onclick = () => { closeAnyDropdown(); exportSheetCsv(sheetId); };
+    menu.querySelector('#ssCardExportXlsx').onclick = () => { closeAnyDropdown(); exportSheetXlsx(sheetId); };
     menu.querySelector('#ssCardDelete').onclick = () => {
       closeAnyDropdown();
       window.confirmDanger('Delete Sheet', `Delete "${sheet.name}" and all its data? This cannot be undone.`).then((ok) => {
@@ -624,10 +689,12 @@ window.PAGES = window.PAGES || {};
     menu.className = 'ss-dropdown';
     menu.innerHTML = `
       <button type="button" class="ss-dropdown-item" id="ssExportCsv"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+      <button type="button" class="ss-dropdown-item" id="ssExportXlsx"><i class="fa-solid fa-file-excel"></i> Export Excel (.xlsx)</button>
       <button type="button" class="ss-dropdown-item" id="ssClearEntries"><i class="fa-solid fa-broom"></i> Clear All Entries</button>
       <button type="button" class="ss-dropdown-item danger" id="ssDeleteSheetFromEntry"><i class="fa-solid fa-trash"></i> Delete Sheet</button>`;
     placeDropdown(menu, anchorBtn);
     menu.querySelector('#ssExportCsv').onclick = () => { closeAnyDropdown(); exportSheetCsv(sheet.id); };
+    menu.querySelector('#ssExportXlsx').onclick = () => { closeAnyDropdown(); exportSheetXlsx(sheet.id); };
     menu.querySelector('#ssClearEntries').onclick = () => {
       closeAnyDropdown();
       window.confirmDanger('Clear All Entries', 'This will remove every row from this sheet. Continue?').then((ok) => {
