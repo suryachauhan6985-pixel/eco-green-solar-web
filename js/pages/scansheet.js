@@ -804,8 +804,18 @@ window.PAGES = window.PAGES || {};
 
   function openScanner(targetFieldId) {
     if (ST.bluetoothScanMode) return;
+    // Guard: never stack a second camera session on top of one already
+    // open — see onBluetoothScannerKeydown's note below for the full
+    // "BT scanner during permission request" deadlock this prevents.
+    if (scannerState.overlayEl) return;
     if (!targetFieldId) targetFieldId = resolveScanTargetId();
     if (!targetFieldId) { window.showToast('Add a Text or Barcode/QR column to this sheet first'); return; }
+    // Drop focus off whatever triggered this (almost always the scan
+    // button) so a paired BT/HID scanner's Enter/Tab a moment later can't
+    // silently re-click it and open a second overlay + camera session.
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
     scannerState.targetFieldId = targetFieldId;
     scannerState.handledOnce = false;
     scannerState.torchOn = false;
@@ -844,6 +854,13 @@ window.PAGES = window.PAGES || {};
     document.body.appendChild(overlay);
     scannerState.overlayEl = overlay;
     document.body.style.overflow = 'hidden';
+
+    // Trap real keyboard focus inside the overlay itself (not on any one
+    // button) so there's nothing behind it for a BT/HID scanner to type
+    // into while the camera is starting up.
+    overlay.setAttribute('tabindex', '-1');
+    overlay.style.outline = 'none';
+    overlay.focus({ preventScroll: true });
 
     overlay.querySelector('#ssScanBack').onclick = closeScanner;
     overlay.querySelector('#ssScanCancel').onclick = closeScanner;
@@ -1333,6 +1350,22 @@ window.PAGES = window.PAGES || {};
 
   function onBluetoothScannerKeydown(e) {
     if (ST.view !== 'data-entry') return;
+    // Camera-scanner overlay open — swallow EVERY keystroke here
+    // (Escape closes it). A paired Bluetooth/HID scanner is just a
+    // keyboard, and while the overlay is up — including the whole
+    // "Requesting camera permission…" wait, which can take a few seconds
+    // on mobile — its keystrokes must never reach the wedge-detector
+    // below or a stray focused button behind the overlay. That leak is
+    // exactly what caused the "requesting camera permission… then
+    // everything freezes" deadlock: a scan's Enter/Tab silently re-
+    // triggering whatever still had focus, opening a second overlay +
+    // camera session that then fights the first one over the same camera.
+    if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-scanner-overlay')) {
+      if (e.key === 'Escape') { closeScanner(); }
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     if (scannerState.overlayEl && scannerState.overlayEl.classList.contains('ss-bt-result-overlay')) {
       if (e.key === 'Enter' || e.key === 'Tab') {
         e.preventDefault();

@@ -368,8 +368,16 @@ window.PAGES.sales = {
     }
 
     function openSaleScanner(targetId) {
+      // Guard: never stack a second overlay/camera session on top of one
+      // already open — see purScanSwallowKeydown's note in purchase.js for
+      // the full "BT scanner during permission request" deadlock story
+      // this (plus the focus-blur + keydown-swallow below) prevents.
+      if (saleScanState.overlayEl) return;
       const box = document.getElementById(targetId);
       if (!box) return;
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
       saleScanState.targetId = targetId;
       saleScanState.torchOn = false;
       saleScanState.handledOnce = false;
@@ -420,7 +428,33 @@ window.PAGES.sales = {
       overlay.querySelector('#saleScanRetry').onclick = retrySaleScan;
       overlay.querySelector('#saleScanDone2').onclick = confirmSaleScan;
 
+      // Move real keyboard focus INTO the overlay so a paired BT/HID
+      // scanner has nothing behind the overlay to type into while the
+      // camera is starting up — see saleScanSwallowKeydown below.
+      overlay.setAttribute('tabindex', '-1');
+      overlay.style.outline = 'none';
+      overlay.focus({ preventScroll: true });
+      document.addEventListener('keydown', saleScanSwallowKeydown, true);
+
       startSaleCamera();
+    }
+
+    // Same fix as purchase.js's purScanSwallowKeydown: while this overlay
+    // is open (including the whole "Requesting camera permission…" wait,
+    // which can take a few seconds on mobile), a paired Bluetooth/HID
+    // scanner is still just a keyboard sending real keydown events. If a
+    // background button (e.g. the scan icon that opened this overlay)
+    // still has focus, a scan's Enter/Tab can silently re-click it,
+    // opening a SECOND overlay + camera session on top of the first —
+    // two sessions then fight over one camera + a duplicate
+    // #saleScanRegion id, and every button on screen stops responding
+    // ("requesting camera permission" freeze). Capturing keydown here and
+    // swallowing everything except Escape (which closes the overlay)
+    // means a BT scanner simply can't reach anything while this is open.
+    function saleScanSwallowKeydown(e) {
+      if (e.key === 'Escape') { closeSaleScanner(); }
+      e.preventDefault();
+      e.stopPropagation();
     }
 
     function startSaleCamera() {
@@ -579,6 +613,7 @@ window.PAGES.sales = {
       const targetId = saleScanState.targetId;
       saleScanState.pendingText = null;
       saleScanState.pendingIsDup = false;
+      document.removeEventListener('keydown', saleScanSwallowKeydown, true);
       const finish = () => {
         if (saleScanState.overlayEl) { saleScanState.overlayEl.remove(); saleScanState.overlayEl = null; }
         document.body.style.overflow = '';
