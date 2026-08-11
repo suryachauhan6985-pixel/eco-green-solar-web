@@ -211,16 +211,45 @@ window.PAGES.bom = {
   `,
 
   async init() {
-    const $ = (id) => document.getElementById(id);
-    const kitSelect = $('bomKitSelect');
-    const itemsPreview = $('bomItemsPreview');
-    const kitItemsPanel = $('bomKitItemsPanel');
-    const btnPrint = $('bomBtnPrint');
-    const printRoot = $('bomPrintRoot');
-    const challanPrintRoot = $('bomChallanPrintRoot');
-    const challanOverlay = $('bomChallanOverlay');
-    const challanModalBody = $('bomChallanModalBody');
-    const challanCloseBtn = $('bomChallanCloseBtn');
+    const ctx = {};
+    // Pull in the functions that used to be nested directly inside this
+    // init() but were split out into separate files per
+    // refactor-bom-prompt.md (pure code-organization refactor — see each
+    // file's header comment). Each factory closes over the same shared
+    // `ctx` object this init() builds below, then hands its functions back
+    // to be exposed on ctx (so any file can call any other file's
+    // functions the same way, via ctx.<name>(...)) exactly as if they were
+    // still one big nested closure.
+    Object.assign(ctx, createBomChallanMapModule(ctx));
+    Object.assign(ctx, createBomPartyAutocompleteModule(ctx));
+    Object.assign(ctx, createBomTrackRegisterModule(ctx));
+    Object.assign(ctx, createBomKitBuilderModule(ctx));
+    Object.assign(ctx, createBomSerialScanModule(ctx));
+    Object.assign(ctx, createBomSerialModalModule(ctx));
+    Object.assign(ctx, createBomDispatchModule(ctx));
+    ctx.$ = (id) => document.getElementById(id);
+    ctx.showBomHome = showBomHome;
+    ctx.showBomEntry = showBomEntry;
+    ctx.showBomEntryForNewKit = showBomEntryForNewKit;
+    ctx.bomOverallStatusFromItems = bomOverallStatusFromItems;
+    ctx.bomRenderHomePendingTableHtml = bomRenderHomePendingTableHtml;
+    ctx.bomLoadHomePendingTable = bomLoadHomePendingTable;
+    ctx.bomCollectItemsForCreate = bomCollectItemsForCreate;
+    ctx.bomOpenCreateBomModal = bomOpenCreateBomModal;
+    ctx.setVerified = setVerified;
+    ctx.allItemsChecked = allItemsChecked;
+    ctx.updateVerifyButtonState = updateVerifyButtonState;
+    ctx.getHeaderValues = getHeaderValues;
+    ctx.computeAndApplyFitZoom = computeAndApplyFitZoom;
+    ctx.kitSelect = ctx.$('bomKitSelect');
+    ctx.itemsPreview = ctx.$('bomItemsPreview');
+    ctx.kitItemsPanel = ctx.$('bomKitItemsPanel');
+    ctx.btnPrint = ctx.$('bomBtnPrint');
+    ctx.printRoot = ctx.$('bomPrintRoot');
+    ctx.challanPrintRoot = ctx.$('bomChallanPrintRoot');
+    ctx.challanOverlay = ctx.$('bomChallanOverlay');
+    ctx.challanModalBody = ctx.$('bomChallanModalBody');
+    ctx.challanCloseBtn = ctx.$('bomChallanCloseBtn');
 
     // ------------------------------------------------------------------
     // BOM Home <-> BOM Entry view switching. The BOM tab now lands on a
@@ -228,36 +257,36 @@ window.PAGES.bom = {
     // a live pending-orders table) instead of dropping straight into the
     // full kit-selection form (bomEntryView, unchanged, just wrapped).
     // ------------------------------------------------------------------
-    const homeView = $('bomHomeView');
-    const entryView = $('bomEntryView');
-    const continuePanel = $('bomContinuePanel');
-    const continueInlineBody = $('bomContinueInlineBody');
-    const newEntryPanel = $('bomNewEntryPanel');
-    const btnBackHome = $('bomBtnBackHome');
-    let bomInlineContinueOrderId = null; // set while bomContinuePanel is showing a specific order
+    ctx.homeView = ctx.$('bomHomeView');
+    ctx.entryView = ctx.$('bomEntryView');
+    ctx.continuePanel = ctx.$('bomContinuePanel');
+    ctx.continueInlineBody = ctx.$('bomContinueInlineBody');
+    ctx.newEntryPanel = ctx.$('bomNewEntryPanel');
+    ctx.btnBackHome = ctx.$('bomBtnBackHome');
+    ctx.bomInlineContinueOrderId = null; // set while bomContinuePanel is showing a specific order
 
     function showBomHome() {
-      bomInlineContinueOrderId = null;
-      if (entryView) entryView.style.display = 'none';
-      if (homeView) homeView.style.display = '';
-      bomLoadHomePendingTable();
+      ctx.bomInlineContinueOrderId = null;
+      if (ctx.entryView) ctx.entryView.style.display = 'none';
+      if (ctx.homeView) ctx.homeView.style.display = '';
+      ctx.bomLoadHomePendingTable();
     }
     function showBomEntry() {
-      if (homeView) homeView.style.display = 'none';
-      if (entryView) entryView.style.display = '';
+      if (ctx.homeView) ctx.homeView.style.display = 'none';
+      if (ctx.entryView) ctx.entryView.style.display = '';
     }
     // Fresh "Create BOM" entry: full kit-picker form, Continue Dispatch
     // panel hidden. Used by both the Home "Create BOM" button and the
     // entry screen's own "Back"-free default state.
     function showBomEntryForNewKit() {
-      bomInlineContinueOrderId = null;
-      if (continuePanel) continuePanel.style.display = 'none';
-      if (newEntryPanel) newEntryPanel.style.display = '';
-      const kip = $('bomKitItemsPanel');
+      ctx.bomInlineContinueOrderId = null;
+      if (ctx.continuePanel) ctx.continuePanel.style.display = 'none';
+      if (ctx.newEntryPanel) ctx.newEntryPanel.style.display = '';
+      const kip = ctx.$('bomKitItemsPanel');
       if (kip) kip.style.display = '';
-      showBomEntry();
+      ctx.showBomEntry();
     }
-    if (btnBackHome) btnBackHome.addEventListener('click', showBomHome);
+    if (ctx.btnBackHome) ctx.btnBackHome.addEventListener('click', ctx.showBomHome);
 
     function bomOverallStatusFromItems(items) {
       const total = (items || []).reduce((s, it) => s + (it.total || 0), 0);
@@ -295,7 +324,7 @@ window.PAGES.bom = {
     }
 
     async function bomLoadHomePendingTable() {
-      const wrap = $('bomHomePendingWrap');
+      const wrap = ctx.$('bomHomePendingWrap');
       if (!wrap) return;
       wrap.innerHTML = '<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading pending BOM orders...</p>';
       let orders;
@@ -312,392 +341,35 @@ window.PAGES.bom = {
       // trips against them yet (isUntouched, from GET /api/bom/orders —
       // see bom.routes.js's pendingForOrder). The moment even one item
       // gets partially dispatched, it drops off THIS list but keeps
-      // showing in the full BOM Register (bomLoadRegisterList below,
+      // showing in the full BOM Register (ctx.bomLoadRegisterList below,
       // which intentionally does NOT apply this filter).
       const untouched = (orders || []).filter((o) => o.isUntouched !== false);
-      wrap.innerHTML = bomRenderHomePendingTableHtml(untouched);
+      wrap.innerHTML = ctx.bomRenderHomePendingTableHtml(untouched);
       wrap.querySelectorAll('[data-bom-order-id]').forEach((el) => {
         const id = el.getAttribute('data-bom-order-id');
         if (el.tagName === 'BUTTON') {
-          el.addEventListener('click', () => bomOpenOrderInline(id));
+          el.addEventListener('click', () => ctx.bomOpenOrderInline(id));
         } else {
-          el.addEventListener('dblclick', () => bomOpenOrderInline(id));
+          el.addEventListener('dblclick', () => ctx.bomOpenOrderInline(id));
         }
       });
     }
 
-    const homeBtnCreate = $('bomHomeBtnCreate');
-    const homeBtnTrack = $('bomHomeBtnTrack');
-    const homeBtnRegister = $('bomHomeBtnRegister');
-    const homeBtnRefresh = $('bomHomeBtnRefresh');
-    if (homeBtnCreate) {
-      homeBtnCreate.addEventListener('click', () => {
-        showBomEntryForNewKit();
+    ctx.homeBtnCreate = ctx.$('bomHomeBtnCreate');
+    ctx.homeBtnTrack = ctx.$('bomHomeBtnTrack');
+    ctx.homeBtnRegister = ctx.$('bomHomeBtnRegister');
+    ctx.homeBtnRefresh = ctx.$('bomHomeBtnRefresh');
+    if (ctx.homeBtnCreate) {
+      ctx.homeBtnCreate.addEventListener('click', () => {
+        ctx.showBomEntryForNewKit();
       });
     }
-    if (homeBtnRefresh) homeBtnRefresh.addEventListener('click', bomLoadHomePendingTable);
-    bomLoadHomePendingTable(); // initial load — BOM tab lands on the Home view
+    if (ctx.homeBtnRefresh) ctx.homeBtnRefresh.addEventListener('click', ctx.bomLoadHomePendingTable);
+    ctx.bomLoadHomePendingTable(); // initial load — BOM tab lands on the Home view
 
-    // Open/close for the dedicated Challan modal — mirrors the
-    // lockPageScroll/unlockPageScroll + .show/.no-scroll pattern Party
-    // Ledger's own modal-fullscreen dialogs already use, so this behaves
-    // identically to those (background locked while open, unlocked on close).
-    function openChallanModal(bodyHtml) {
-      if (!challanOverlay || !challanModalBody) return;
-      challanModalBody.innerHTML = bodyHtml;
-      challanOverlay.classList.add('show');
-      document.body.classList.add('no-scroll');
-    }
-    function closeChallanModal() {
-      if (!challanOverlay) return;
-      challanOverlay.classList.remove('show');
-      document.body.classList.remove('no-scroll');
-    }
-    if (challanCloseBtn) challanCloseBtn.addEventListener('click', closeChallanModal);
-    if (challanOverlay) {
-      challanOverlay.addEventListener('click', (e) => {
-        if (e.target === challanOverlay) closeChallanModal(); // backdrop click only
-      });
-    }
-
-    // ---------- Challan Category Mapping — admin editor (Goal 5) ----------
-    // Reuses the same fullscreen Challan overlay/body (openChallanModal
-    // above) — it's already a generic "big scrollable panel" host, no need
-    // for a second modal shell. Lists EVERY item registered in Masters >
-    // Item Registration (GET /api/masters/items — same source
-    // bomLoadItemMasterNames() uses for the BOM Kit dropdowns), not just
-    // items that have already gone out under a real BOM order: a fresh
-    // item can only ever get used in a BOM/Kit Template AFTER it's mapped
-    // here, so gating this list on "already used in a BOM" made it
-    // impossible to map a brand-new item before its first use.
-    //
-    // Display grouping: items.name in the DB is a concatenated
-    // "<Brand> <Model/Watt>" string (see masters.routes.js item
-    // create/update), which reads badly in a mapping list (e.g. "DC
-    // Earthing Wire - Yellow - Polycab 4 SQ.MM"). Split it based on
-    // whether the item's effective rule (its own override, or its
-    // Category's default — watt_mandatory_effective / serial_mandatory_effective,
-    // same fields Masters > Categories sets) actually needs the Model to
-    // tell two rows apart:
-    //   - Serial/Watt-mandatory items (Solar Panel, Inverter, ...) — each
-    //     Model IS effectively its own product, so one mapping row per
-    //     distinct Model, labelled by Model alone.
-    //   - Everything else (wires, clamps, cement, bags, ...) — the Model
-    //     suffix (e.g. "4 SQ.MM", "19mm DIA") makes no difference to which
-    //     Challan line the item folds into, so every Model under the same
-    //     Brand collapses into ONE row, labelled by Brand alone.
-    // Either way this is purely a DISPLAY + bulk-save convenience — saving
-    // one row still writes a mapping for every real items.name it
-    // represents, because Convert-into-Challan's compress logic
-    // (bomComputeChallanAutoQty) matches strictly on the real per-item
-    // name (bomChallanCategoryMap[it.name]).
-    // "Save Mapping" bulk-PUTs the whole set. This is the ONLY place
-    // bomChallanCategoryMap changes.
-    async function bomCollectItemGroupsForMapping() {
-      try {
-        const rows = await window.Api.get('/masters/items');
-        const list = Array.isArray(rows) ? rows : [];
-        const byBrand = {}; // brand -> { label, itemNames: [] }
-        const variantGroups = []; // one per distinct Model, itemNames: [fullName]
-        list.forEach((r) => {
-          const fullName = (r.name || '').trim();
-          if (!fullName) return;
-          const brand = (r.brand_name || fullName).trim();
-          const model = (r.model || '').trim();
-          const isMandatory = !!(r.watt_mandatory_effective || r.serial_mandatory_effective);
-          if (isMandatory) {
-            variantGroups.push({ label: model || fullName, itemNames: [fullName] });
-          } else {
-            if (!byBrand[brand]) byBrand[brand] = { label: brand, itemNames: [] };
-            byBrand[brand].itemNames.push(fullName);
-          }
-        });
-        const groups = Object.values(byBrand).concat(variantGroups);
-        groups.sort((a, b) =>
-          String(a.label).localeCompare(String(b.label), undefined, { sensitivity: 'base', numeric: true })
-        );
-        return groups;
-      } catch (e) {
-        console.warn('bom: could not load item master rows for Challan mapping', e);
-        return [];
-      }
-    }
-
-    // Set fresh every time the modal (re)renders — index -> { label,
-    // itemNames }. The rendered <select>'s data-row-index looks this up on
-    // Save, so the bulk-write below can expand one visible row back out to
-    // every real item name it represents.
-    let bomChallanMapGroups = [];
-
-    function bomRenderChallanMapModalHtml(groups) {
-      bomChallanMapGroups = groups;
-      const categoryOptions = (selected) =>
-        `<option value="">-- Unmapped --</option>` +
-        bomChallanCategoryList.map((c) => `<option value="${bomEscAttr(c)}" ${c === selected ? 'selected' : ''}>${bomEsc(c)}</option>`).join('');
-      const rows = groups.map((g, gi) => {
-        // If every real item this row represents already shares the same
-        // saved category, pre-select it; otherwise (mixed/none) start on
-        // "-- Unmapped --" rather than guessing.
-        const savedCats = Array.from(new Set(g.itemNames.map((n) => bomChallanCategoryMap[n] || '')));
-        const selected = savedCats.length === 1 ? savedCats[0] : '';
-        return `
-        <tr>
-          <td>${bomEsc(g.label)}</td>
-          <td><select class="bom-field-input bom-challanmap-select" data-row-index="${gi}">${categoryOptions(selected)}</select></td>
-        </tr>`;
-      }).join('');
-      return `
-        <div id="bomChallanMapModalRoot">
-          <p class="note" style="margin-bottom:12px;">
-            <i class="fa-solid fa-circle-info"></i> Decide which Challan line each item's quantity folds into.
-            "GI Pipe" items are handled automatically (feet &rarr; 20/15/10/5-Feet pieces) &mdash; you only need to tag
-            them "GI Pipe" here so they're excluded from every other category's count. Every item registered in
-            Item Master is listed below (${bomChallanCategoryList.length} Challan categories available).
-          </p>
-          <div class="table-wrap" style="max-height:60vh;overflow:auto;">
-            <table class="bom-items-form-table">
-              <thead><tr><th>Item Name</th><th>Challan Category</th></tr></thead>
-              <tbody>${rows || '<tr><td colspan="2">No items registered in Item Master yet.</td></tr>'}</tbody>
-            </table>
-          </div>
-          <div class="actions-row" style="margin-top:14px;">
-            <button type="button" class="btn btn-blue" id="bomChallanMapSaveBtn"><i class="fa-solid fa-floppy-disk"></i> Save Mapping</button>
-          </div>
-        </div>
-      `;
-    }
-
-    async function bomOpenChallanMapModal() {
-      openChallanModal('<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading items from Item Master...</p>');
-      const modalTitleEl = document.getElementById('bomChallanModalTitle');
-      if (modalTitleEl) modalTitleEl.innerHTML = '<i class="fa-solid fa-sitemap"></i> Challan Category Mapping';
-      // Re-fetch BOTH the category list and the item list fresh every time
-      // this opens — never rely solely on init()'s one-time load having
-      // succeeded (a slow/failed first-load fetch used to leave
-      // bomChallanCategoryList permanently empty for the rest of the
-      // session, which is why every dropdown only ever showed
-      // "-- Unmapped --" with no real categories to pick from).
-      const [, groups] = await Promise.all([bomLoadChallanCategoryMap(), bomCollectItemGroupsForMapping()]);
-      openChallanModal(bomRenderChallanMapModalHtml(groups));
-      if (modalTitleEl) modalTitleEl.innerHTML = '<i class="fa-solid fa-sitemap"></i> Challan Category Mapping';
-      const saveBtn = document.getElementById('bomChallanMapSaveBtn');
-      if (saveBtn) {
-        saveBtn.addEventListener('click', async () => {
-          // Expand each visible row back out to every real item name it
-          // represents — a brand-collapsed row (e.g. "Polycab") writes the
-          // same category for every model under that brand in one go.
-          const mappings = [];
-          document.querySelectorAll('.bom-challanmap-select').forEach((sel) => {
-            const group = bomChallanMapGroups[Number(sel.dataset.rowIndex)];
-            if (!group) return;
-            group.itemNames.forEach((itemName) => mappings.push({ itemName, category: sel.value }));
-          });
-          saveBtn.disabled = true;
-          try {
-            await window.Api.put('/challan/category-map', { mappings });
-            await bomLoadChallanCategoryMap(); // refresh the in-memory map the compress logic reads
-            if (window.showToast) window.showToast('Challan category mapping saved.');
-            closeChallanModal();
-          } catch (e) {
-            window.openModal('Save Failed', `<p>${bomEsc((e && e.message) || 'Could not save the mapping. Please try again.')}</p>`);
-          } finally {
-            saveBtn.disabled = false;
-          }
-        });
-      }
-    }
-
-    // Step 4: Pending BOM Register modal — same open/close pattern as the
-    // Challan modal above, kept as its own overlay/functions so neither
-    // modal's state ever leaks into the other.
-    const registerOverlay = $('bomRegisterOverlay');
-    const registerModalBody = $('bomRegisterModalBody');
-    const registerCloseBtn = $('bomRegisterCloseBtn');
-    function openRegisterModal(bodyHtml) {
-      if (!registerOverlay || !registerModalBody) return;
-      registerModalBody.innerHTML = bodyHtml;
-      registerOverlay.classList.add('show');
-      document.body.classList.add('no-scroll');
-    }
-    function closeRegisterModal() {
-      if (!registerOverlay) return;
-      registerOverlay.classList.remove('show');
-      document.body.classList.remove('no-scroll');
-    }
-    if (registerCloseBtn) registerCloseBtn.addEventListener('click', closeRegisterModal);
-    if (registerOverlay) {
-      registerOverlay.addEventListener('click', (e) => {
-        if (e.target === registerOverlay) closeRegisterModal(); // backdrop click only
-      });
-    }
-
-    // Row/section add-delete (Add Item, Remove Item, Add Section, Remove
-    // Section) is an Admin/SuperAdmin-only action — a plain User can still
-    // edit every field (name/model/qty/serial/remarks) and tick items, but
-    // cannot restructure the kit. Computed early so it's available to the
-    // very first render below (bomRenderScreenItemsHtml reads it via opts).
-    const bomCurrentRole = window.currentUserRole || 'User';
-    const bomIsAdmin = bomCurrentRole === 'SuperAdmin' || bomCurrentRole === 'Admin';
-
-    // ---------------- BOM: Create BOM + Track BOM — now REAL, wired to
-    // POST /api/bom/orders and GET /api/bom/orders/by-order-no/:orderNo. ----
-    // Create BOM (Admin/SuperAdmin only) captures the kit's full baseline
-    // (every item's full Quantity) as a bom_orders row up front, before any
-    // dispatch trip — it then shows up in BOM Home / BOM Register as
-    // "Pending" and flips to "Partially Dispatched"/"Dispatched" on its own
-    // as real dispatch trips go out (status is derived from dispatched vs
-    // total each time it's read — see bomOverallStatusFromItems above and
-    // the server's matching helper in bom.routes.js, no separate DB status
-    // needed). Track BOM (visible to everyone) is the read-only counterpart:
-    // look up any Order No. and see its real status + per-item breakdown +
-    // full dispatch-trip history.
-    const btnCreateBom = $('bomBtnCreateBom');
-    const btnTrackBom = $('bomBtnTrackBom');
-    if (btnCreateBom) btnCreateBom.style.display = bomIsAdmin ? '' : 'none';
-
-    function bomTrackStatusPill(status) {
-      const map = {
-        Pending: { color: '#a15c00', bg: '#fff3da' },
-        'Partially Dispatched': { color: '#0b5ea8', bg: '#e4f1ff' },
-        Dispatched: { color: '#1a7f37', bg: '#e6f7ea' },
-      };
-      const c = map[status] || map.Pending;
-      return `<span style="display:inline-block; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; color:${c.color}; background:${c.bg};">${bomEsc(status)}</span>`;
-    }
-
-    function bomFmtDateTime(v) {
-      if (!v) return '';
-      const d = new Date(v);
-      if (isNaN(d.getTime())) return String(v);
-      return d.toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
-    }
-
-    // Renders the real per-item breakdown + trip-by-trip dispatch history
-    // returned by GET /api/bom/orders/by-order-no/:orderNo. `data.trips` is
-    // ordered oldest-first, so each trip is one visual "step" — a genuine
-    // timeline built from bom_dispatches rows, not a sample/mock one.
-    function bomRenderTrackResultHtml(data) {
-      const itemRows = (data.items || []).map((it) => `
-        <tr>
-          <td style="padding:6px 8px; border-bottom:1px solid var(--border, #eee);">${bomEsc(it.name)}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid var(--border, #eee); text-align:center;">${it.total}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid var(--border, #eee); text-align:center;">${it.dispatched}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid var(--border, #eee); text-align:center; color:${it.remaining > 0 ? 'var(--red, #c0392b)' : 'var(--green, #1a7f37)'};">${it.remaining}</td>
-        </tr>
-      `).join('');
-
-      const trips = data.trips || [];
-      const tripSteps = trips.length
-        ? trips.map((t, idx) => {
-            const isLast = idx === trips.length - 1;
-            const itemsLine = (t.items || []).map((it) => `${bomEsc(it.name)} &times; ${it.qty}`).join(', ') || '—';
-            return `
-              <div style="display:flex; gap:12px;">
-                <div style="display:flex; flex-direction:column; align-items:center;">
-                  <div style="width:26px; height:26px; border-radius:50%; background:#1a7f37; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0;">
-                    <i class="fa-solid fa-truck"></i>
-                  </div>
-                  ${!isLast ? `<div style="width:2px; flex:1; background:#1a7f37; min-height:26px;"></div>` : ''}
-                </div>
-                <div style="padding-bottom:20px;">
-                  <div style="font-weight:600; font-size:13.5px;">Trip ${idx + 1} <span style="font-weight:400; color:var(--txt-muted); font-size:11.5px;">(${bomEsc(t.dispatchedBy || 'Unknown user')})</span></div>
-                  <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">${bomEsc(itemsLine)}</div>
-                  <div style="font-size:11px; color:var(--txt-muted); margin-top:2px;">${bomEsc(bomFmtDateTime(t.dispatchedAt))}</div>
-                </div>
-              </div>
-            `;
-          }).join('')
-        : `<p class="note"><i class="fa-solid fa-circle-info"></i> No dispatch trips yet — this BOM is created but nothing has gone out.</p>`;
-
-      return `
-        <div style="margin-bottom:14px; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
-          <div>
-            <div style="font-weight:700; font-size:15px;">Order No <span style="color:var(--gold, #b8860b);">${bomEsc(data.orderNo)}</span></div>
-            <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">${bomEsc((data.header && data.header.customerName) || '')}</div>
-            <div style="margin-top:6px;">${bomTrackStatusPill(data.status)}</div>
-          </div>
-        </div>
-        <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
-          <thead><tr>
-            <th style="text-align:left; padding:6px 8px; border-bottom:2px solid var(--border, #ddd);">Item</th>
-            <th style="padding:6px 8px; border-bottom:2px solid var(--border, #ddd);">Total</th>
-            <th style="padding:6px 8px; border-bottom:2px solid var(--border, #ddd);">Dispatched</th>
-            <th style="padding:6px 8px; border-bottom:2px solid var(--border, #ddd);">Pending</th>
-          </tr></thead>
-          <tbody>${itemRows}</tbody>
-        </table>
-        <div style="font-weight:600; font-size:13px; margin-bottom:10px;">Dispatch Trips</div>
-        <div>${tripSteps}</div>
-      `;
-    }
-
-    async function bomFetchAndRenderTrack(orderNo, resultBox) {
-      resultBox.innerHTML = '<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Looking up this BOM...</p>';
-      try {
-        const data = await window.Api.get(`/bom/orders/by-order-no/${encodeURIComponent(orderNo)}`, { silent: true });
-        resultBox.innerHTML = bomRenderTrackResultHtml(data);
-      } catch (e) {
-        const msg = (e && e.message) || 'Could not fetch this BOM.';
-        resultBox.innerHTML = `<p class="note" style="color:var(--red);">${bomEsc(msg)}</p>`;
-      }
-    }
-
-    // Home screen's Track BOM — asks for an Order No. since there's no
-    // "current" BOM in context there.
-    function bomOpenTrackModal() {
-      window.openModal('Track BOM', `
-        <div class="field" style="margin-bottom:12px;">
-          <label>Order No.</label>
-          <div style="display:flex; gap:8px;">
-            <input type="text" id="bomTrackOrderInput" placeholder="e.g. ORD-1234" style="flex:1;">
-            <button type="button" class="btn btn-blue" id="bomTrackSearchBtn"><i class="fa-solid fa-magnifying-glass"></i> Track</button>
-          </div>
-        </div>
-        <div id="bomTrackResult"></div>
-      `);
-      const input = document.getElementById('bomTrackOrderInput');
-      const searchBtn = document.getElementById('bomTrackSearchBtn');
-      const resultBox = document.getElementById('bomTrackResult');
-      function runTrack() {
-        const orderNo = ((input && input.value) || '').trim();
-        if (!orderNo) {
-          if (resultBox) resultBox.innerHTML = '<p class="note" style="color:var(--red);">Enter an Order No. first.</p>';
-          return;
-        }
-        bomFetchAndRenderTrack(orderNo, resultBox);
-      }
-      if (searchBtn) searchBtn.addEventListener('click', runTrack);
-      if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') runTrack(); });
-      if (input) input.focus();
-    }
-
-    // Used wherever the Order No. is already known — the BOM Entry
-    // screen's own Track BOM button, and the Continue Dispatch form's
-    // "Track This BOM" button — so the person never has to retype it.
-    function bomOpenTrackForOrderNo(orderNo) {
-      window.openModal('Track BOM', `<div id="bomTrackResult"></div>`);
-      const resultBox = document.getElementById('bomTrackResult');
-      if (resultBox) bomFetchAndRenderTrack(orderNo, resultBox);
-    }
-
-    // Entry screen's Track BOM: uses whichever Order No. is "current" —
-    // the order being continued via BOM Home/Register, or whatever's typed
-    // into the Order No. field for a fresh kit — no prompt needed.
-    function bomTrackCurrentOrder() {
-      const fromField = ($('bomOrderNo') && $('bomOrderNo').value.trim()) || '';
-      if (!fromField) {
-        window.openModal('Order No. Required', '<p>Enter an <b>Order No.</b> above first, or open an existing order from BOM Home / BOM Register.</p>');
-        return;
-      }
-      bomOpenTrackForOrderNo(fromField);
-    }
-
-    // Create BOM — captures the currently-selected kit's FULL baseline
-    // (every item's full Quantity, not a partial Dispatch Qty) as a real
-    // bom_orders row, before any dispatch trip goes out.
     function bomCollectItemsForCreate() {
       const out = [];
-      (currentKitState || []).forEach((sec) => {
+      (ctx.currentKitState || []).forEach((sec) => {
         (sec.items || []).forEach((it) => {
           const name = (it.name || '').trim();
           const qty = Number(it.qty) || 0;
@@ -708,24 +380,24 @@ window.PAGES.bom = {
     }
 
     function bomOpenCreateBomModal() {
-      if (!currentKitState) {
+      if (!ctx.currentKitState) {
         window.openModal('Select a Kit', '<p>Please select a BOM Kit before generating a BOM.</p>');
-        if (window.focusInvalidField) window.focusInvalidField($('bomKitSelect'));
+        if (window.focusInvalidField) window.focusInvalidField(ctx.$('bomKitSelect'));
         return;
       }
-      const header = getHeaderValues();
+      const header = ctx.getHeaderValues();
       const orderNo = (header.orderNo || '').trim();
       if (!orderNo) {
         window.openModal('Order No. Required', '<p>Please enter an <b>Order No.</b> before generating a BOM.</p>');
-        if (window.focusInvalidField) window.focusInvalidField($('bomOrderNo'));
+        if (window.focusInvalidField) window.focusInvalidField(ctx.$('bomOrderNo'));
         return;
       }
       if (!(header.customerName || '').trim()) {
         window.openModal('Customer Name Required', '<p>Please enter a <b>Customer Name</b> before generating a BOM.</p>');
-        if (window.focusInvalidField) window.focusInvalidField($('bomCustomerName'));
+        if (window.focusInvalidField) window.focusInvalidField(ctx.$('bomCustomerName'));
         return;
       }
-      const items = bomCollectItemsForCreate();
+      const items = ctx.bomCollectItemsForCreate();
       if (!items.length) {
         window.openModal('No Items', '<p>Add at least one item with a quantity before generating a BOM.</p>');
         return;
@@ -740,7 +412,7 @@ window.PAGES.bom = {
           <tr><td style="padding:6px 0; color:var(--txt-muted);">Order No.</td><td style="padding:6px 0; font-weight:600;">${bomEsc(orderNo)}</td></tr>
           <tr><td style="padding:6px 0; color:var(--txt-muted);">Customer</td><td style="padding:6px 0; font-weight:600;">${bomEsc(header.customerName || '—')}</td></tr>
           <tr><td style="padding:6px 0; color:var(--txt-muted);">Items</td><td style="padding:6px 0; font-weight:600;">${items.length} item(s)</td></tr>
-          <tr><td style="padding:6px 0; color:var(--txt-muted);">Initial Status</td><td style="padding:6px 0;">${bomTrackStatusPill('Pending')}</td></tr>
+          <tr><td style="padding:6px 0; color:var(--txt-muted);">Initial Status</td><td style="padding:6px 0;">${ctx.bomTrackStatusPill('Pending')}</td></tr>
         </table>
         <div class="actions-row">
           <button type="button" class="btn btn-green" id="bomCreateBomConfirmBtn"><i class="fa-solid fa-check"></i> Generate BOM</button>
@@ -764,177 +436,29 @@ window.PAGES.bom = {
           }
           window.closeModal();
           if (window.showToast) window.showToast('BOM generated — it now appears in BOM Home / BOM Register as Pending.');
-          showBomHome();
+          ctx.showBomHome();
         });
       }
       if (cancelBtn) cancelBtn.addEventListener('click', () => window.closeModal());
     }
 
-    if (btnCreateBom) btnCreateBom.addEventListener('click', bomOpenCreateBomModal);
-    if (btnTrackBom) btnTrackBom.addEventListener('click', bomTrackCurrentOrder);
-    if (homeBtnTrack) homeBtnTrack.addEventListener('click', bomOpenTrackModal);
+    if (ctx.btnCreateBom) ctx.btnCreateBom.addEventListener('click', ctx.bomOpenCreateBomModal);
+    if (ctx.btnTrackBom) ctx.btnTrackBom.addEventListener('click', ctx.bomTrackCurrentOrder);
+    if (ctx.homeBtnTrack) ctx.homeBtnTrack.addEventListener('click', ctx.bomOpenTrackModal);
 
     // Item -> category -> Serial No. mandatory lookup. Panels (and any other
     // category with the Serial No. mandatory rule set in Masters > Category)
     // are tracked by serial number on Purchase Inward already, so Dispatch
     // (outward) mirrors that with a Serial No. field per matching item. This
     // never touches the print sheet — bomRenderPrintSheetHtml is untouched.
-    let bomCategorySerialMandatory = {};
-    let bomItemCategoryByName = {};
-    async function bomLoadSerialMandatoryInfo() {
-      try {
-        const [items, cats] = await Promise.all([
-          window.Api.get('/masters/items'),
-          window.Api.get('/masters/categories'),
-        ]);
-        bomCategoryNameList = (cats || []).map((c) => c.name).filter(Boolean);
-        bomItemsByCategory = {};
-        (cats || []).forEach((c) => { bomCategorySerialMandatory[c.name] = !!c.serial_mandatory; });
-        (items || []).forEach((it) => {
-          if (!it.name) return;
-          bomItemCategoryByName[it.name] = it.category;
-          if (!it.category) return;
-          if (!bomItemsByCategory[it.category]) bomItemsByCategory[it.category] = [];
-          bomItemsByCategory[it.category].push(it.name);
-        });
-      } catch (e) {
-        // API/DB not reachable in this preview — no item is treated as serial-mandatory,
-        // and the Category/Model dropdowns on category-driven sections fall back to empty lists.
-      }
-    }
-    function bomItemNeedsSerial(name) {
-      const cat = bomItemCategoryByName[name];
-      return !!(cat && bomCategorySerialMandatory[cat]);
-    }
-
-    // Live, mutable clone of the selected kit's `sections`. Selecting a kit
-    // auto-fills this from BOM_KITS; every field rendered from it is a real
-    // input/select, so edits below write straight back into this object —
-    // this is what actually gets printed (not the static BOM_KITS data).
-    let currentKitState = null;
-
-    // ---------------- Customer ledger live autocomplete + autofill ---------
-    // Same idea as Sale/Purchase, but without a separate Short Code field:
-    // a customer's short code IS the Order No here, so typing in Order No
-    // itself live-searches customer ledgers by short code, and the instant
-    // it exactly matches one, Customer Name auto-fills. Typing directly in
-    // Customer Name still searches/auto-fills by full name. Both fields
-    // stay fully editable so the person can type over the auto-filled value.
-    const bomCustNameList = $('bomCustNameList');
-    const bomOrderNoList = $('bomOrderNoList');
-    let bomCustSearchTimer = null;
-
-    async function searchBomCustomerLedgers(q) {
-      // silent: true — this fires on every keystroke (debounced) for
-      // autocomplete; flashing the full-screen loader on each one made the
-      // BOM page feel like it was constantly "loading". The initial focus
-      // load (empty query) also goes through here and stays silent for the
-      // same reason — it's a background suggestion fetch, not a page load.
-      try { return await window.Api.get(`/ledgers?type=Customer&q=${encodeURIComponent(q)}`, { silent: true }); }
-      catch (e) { return []; }
-    }
-    async function searchBomCustomerShortCodes(q) {
-      try { return await window.Api.get(`/ledgers/shortcodes?type=Customer&q=${encodeURIComponent(q)}`, { silent: true }); }
-      catch (e) { return []; }
-    }
-    function fillBomCustomerDatalist(listEl, ledgers, key) {
-      if (!listEl) return;
-      listEl.innerHTML = ledgers
-        .filter((l) => String(l[key] || '').trim() !== '')
-        .map((l) => `<option value="${String(l[key]).replace(/"/g, '&quot;')}">`).join('');
-    }
-    function wireBomCustomerAutocomplete(inputEl, listEl, matchKey, searchFn) {
-      if (!inputEl || !listEl) return;
-      inputEl.addEventListener('input', () => {
-        const text = inputEl.value;
-        clearTimeout(bomCustSearchTimer);
-        bomCustSearchTimer = setTimeout(async () => {
-          const ledgers = await searchFn(text);
-          fillBomCustomerDatalist(listEl, ledgers, matchKey);
-          const exact = ledgers.find((l) => String(l[matchKey] || '').trim().toLowerCase() === text.trim().toLowerCase());
-          if (exact) $('bomCustomerName').value = exact.name || '';
-        }, 250);
-      });
-      inputEl.addEventListener('focus', async () => {
-        if (inputEl.value.trim()) return;
-        const ledgers = await searchFn('');
-        fillBomCustomerDatalist(listEl, ledgers, matchKey);
-      });
-    }
-    wireBomCustomerAutocomplete($('bomCustomerName'), bomCustNameList, 'name', searchBomCustomerLedgers);
-    wireBomCustomerAutocomplete($('bomOrderNo'), bomOrderNoList, 'short', searchBomCustomerShortCodes);
-
-    // ---------------- Dealer / Installer / Fabricator ledger autocomplete --
-    // These are now real Party Ledger types too. Each field here is a single
-    // Name box (no separate short-code field), so this searches by EITHER
-    // full name or short name (the plain /ledgers endpoint already matches
-    // both) and shows the matching full name in the dropdown — typing the
-    // short name and picking/matching it fills the box with the full name.
-    function wireBomPartyTypeAutocomplete(inputEl, listEl, ledgerType) {
-      if (!inputEl || !listEl) return;
-      let timer = null;
-      async function search(q) {
-        // silent: true — same reasoning as searchBomCustomerLedgers above:
-        // this is a debounced keystroke-driven autocomplete call, not a
-        // user-initiated page load, so it shouldn't flash the full-screen
-        // loader every time someone types a letter.
-        try { return await window.Api.get(`/ledgers?type=${encodeURIComponent(ledgerType)}&q=${encodeURIComponent(q)}`, { silent: true }); }
-        catch (e) { return []; }
-      }
-      function fillList(ledgers) {
-        listEl.innerHTML = ledgers
-          .filter((l) => String(l.name || '').trim() !== '')
-          .map((l) => `<option value="${bomEscAttr(l.name)}">`).join('');
-      }
-      inputEl.addEventListener('input', () => {
-        const text = inputEl.value;
-        clearTimeout(timer);
-        timer = setTimeout(async () => {
-          const ledgers = await search(text);
-          fillList(ledgers);
-          const exact = ledgers.find((l) => {
-            const t = text.trim().toLowerCase();
-            return String(l.name || '').trim().toLowerCase() === t || String(l.short || '').trim().toLowerCase() === t;
-          });
-          if (exact) inputEl.value = exact.name || '';
-        }, 250);
-      });
-      inputEl.addEventListener('focus', async () => {
-        if (inputEl.value.trim()) return;
-        fillList(await search(''));
-      });
-    }
-    wireBomPartyTypeAutocomplete($('bomDealerName'), $('bomDealerList'), 'Dealer');
-    wireBomPartyTypeAutocomplete($('bomInstallerName'), $('bomInstallerList'), 'Installer');
-    wireBomPartyTypeAutocomplete($('bomFabricatorName'), $('bomFabricatorList'), 'Fabricator');
-
-    // ---------------- Ch. Date: calendar-picker only, no manual typing -----
-    // Mirrors sales.js/purchase.js: clicking opens the native date picker,
-    // and every keystroke except Tab is blocked, so the date can only be
-    // set by picking it from the calendar.
-    const bomChallanDateEl = $('bomChallanDate');
-    if (bomChallanDateEl) {
-      bomChallanDateEl.addEventListener('click', () => {
-        if (bomChallanDateEl.showPicker) { try { bomChallanDateEl.showPicker(); } catch (e) {} }
-      });
-      bomChallanDateEl.addEventListener('keydown', (e) => { if (e.key !== 'Tab') e.preventDefault(); });
-    }
-
-    // "Verify BOM" gate: Create Dispatch stays locked until the person
-    // explicitly confirms the BOM is ready. Any kit change or item edit
-    // after that re-locks it, since the verified snapshot no longer matches
-    // what's on screen.
-    const btnVerify = $('bomBtnVerify');
-    const btnDispatch = $('bomBtnDispatch');
-    const btnChallan = $('bomBtnChallan');
-    const verifyStatus = $('bomVerifyStatus');
-    let bomVerified = false;
+    ctx.bomCategorySerialMandatory = {};
+    ctx.bomItemCategoryByName = {};
     function setVerified(isVerified) {
-      bomVerified = isVerified;
-      if (btnDispatch) btnDispatch.disabled = !isVerified;
-      if (btnChallan) btnChallan.disabled = !isVerified;
-      if (verifyStatus) {
-        verifyStatus.innerHTML = isVerified
+      ctx.bomVerified = isVerified;
+      if (ctx.btnDispatch) ctx.btnDispatch.disabled = !isVerified;
+      if (ctx.btnChallan) ctx.btnChallan.disabled = !isVerified;
+      if (ctx.verifyStatus) {
+        ctx.verifyStatus.innerHTML = isVerified
           ? '<i class="fa-solid fa-circle-check" style="color:var(--green);"></i> Verified — ready for dispatch.'
           : '<i class="fa-solid fa-circle-info"></i> Tick every item in the <b>Check</b> column below, then click <b>Verify BOM</b>. "Create Dispatch" stays locked until then.';
       }
@@ -943,30 +467,30 @@ window.PAGES.bom = {
     // On-screen equivalent of the print sheet's blank "Checked" box: Verify
     // BOM stays disabled until every item, in every section, is ticked.
     function allItemsChecked() {
-      if (!currentKitState || !currentKitState.length) return false;
-      return currentKitState.every((sec) => sec.items.length && sec.items.every((it) => it.checked));
+      if (!ctx.currentKitState || !ctx.currentKitState.length) return false;
+      return ctx.currentKitState.every((sec) => sec.items.length && sec.items.every((it) => it.checked));
     }
     function updateVerifyButtonState() {
-      if (btnVerify) btnVerify.disabled = !allItemsChecked();
+      if (ctx.btnVerify) ctx.btnVerify.disabled = !ctx.allItemsChecked();
     }
 
     // "Tick All" — ticks every item's Check box in one click instead of
     // clicking each row individually. Items whose category needs a Serial
-    // No. (see bomItemNeedsSerial) are still held to the same rule as
-    // ticking them one-by-one in handleItemFieldEdit below: they only get
+    // No. (see ctx.bomItemNeedsSerial) are still held to the same rule as
+    // ticking them one-by-one in ctx.handleItemFieldEdit below: they only get
     // ticked if their serials are already fully entered, otherwise they're
     // left unticked and the person is told how many still need serials.
-    const btnTickAll = $('bomBtnTickAll');
-    if (btnTickAll) {
-      btnTickAll.addEventListener('click', () => {
-        if (!currentKitState || !currentKitState.length) {
+    ctx.btnTickAll = ctx.$('bomBtnTickAll');
+    if (ctx.btnTickAll) {
+      ctx.btnTickAll.addEventListener('click', () => {
+        if (!ctx.currentKitState || !ctx.currentKitState.length) {
           window.openModal('Select a Kit', '<p>Select a BOM Kit above to load its items before ticking all.</p>');
           return;
         }
         let blocked = 0;
-        currentKitState.forEach((sec) => {
+        ctx.currentKitState.forEach((sec) => {
           sec.items.forEach((it) => {
-            if (bomItemNeedsSerial(it.name)) {
+            if (ctx.bomItemNeedsSerial(it.name)) {
               const required = bomEffectiveQty(it);
               const entered = bomSplitSerials(it.serials).length;
               if (!entered || (required != null && entered !== required)) {
@@ -977,7 +501,7 @@ window.PAGES.bom = {
             it.checked = true;
           });
         });
-        rerenderItemsPreview();
+        ctx.rerenderItemsPreview();
         if (blocked > 0) {
           window.openModal('Some Items Skipped', `<p>${blocked} item(s) still need their Serial No. entered before they can be ticked — fill those in, then click <b>Tick All</b> again.</p>`);
         } else if (window.showToast) {
@@ -990,1548 +514,40 @@ window.PAGES.bom = {
     // dropdown once the API/DB is reachable; falls back to kit-derived names
     // otherwise (see bomLoadItemMasterNames). Load once, up front.
     await bomLoadItemMasterNames();
-    await bomLoadSerialMandatoryInfo();
+    await ctx.bomLoadSerialMandatoryInfo();
     await bomLoadChallanCategoryMap();
     // Kit templates ("New Kit" / "Edit Kit") — now database-backed (see
     // bom-kit-helpers.js) so a kit saved on one device shows up on every
     // device/login instead of being stuck in that browser's localStorage.
     await bomHydrateCustomKits();
 
-    const btnDeleteKit = $('bomBtnDeleteKit');
-    const btnEditKit = $('bomBtnEditKit');
+    ctx.btnDeleteKit = ctx.$('bomBtnDeleteKit');
+    ctx.btnEditKit = ctx.$('bomBtnEditKit');
 
     // Both Edit and Delete only make sense for a saved custom template
     // (built-in kits don't exist anymore per BOM_KITS being empty, but the
     // bomIsCustomKitKey guard is kept so this stays correct either way),
     // and — same as "New Kit" — restructuring a kit template is an
     // Admin/SuperAdmin-only action.
-    function updateKitActionButtons() {
-      const showActions = bomIsAdmin && bomIsCustomKitKey(kitSelect.value);
-      if (btnDeleteKit) btnDeleteKit.style.display = showActions ? '' : 'none';
-      if (btnEditKit) btnEditKit.style.display = showActions ? '' : 'none';
-    }
-
-    // Populate the kW dropdown from BOM_KITS + any saved custom templates.
-    // Pulled into its own function since saving/deleting a template needs
-    // to rebuild this list without a full page reload.
-    function populateKitDropdown(selectKey) {
-      const previousValue = selectKey !== undefined ? selectKey : kitSelect.value;
-      kitSelect.innerHTML = '<option value="">-- Select Kit --</option>';
-      const allKits = bomGetAllKits();
-      Object.keys(allKits).forEach((key) => {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = allKits[key].label;
-        kitSelect.appendChild(opt);
-      });
-      const keys = Object.keys(allKits);
-      if (previousValue && allKits[previousValue]) {
-        kitSelect.value = previousValue;
-      } else if (keys.length === 1) {
-        // Only one kit exists right now — auto-select it so the preview isn't empty.
-        kitSelect.value = keys[0];
-      }
-      updateKitActionButtons();
-    }
-    populateKitDropdown();
-
-    function refreshItemsPreview() {
-      const kit = bomGetAllKits()[kitSelect.value];
-      // Deep clone so editing on-screen never mutates the kit catalogue itself.
-      currentKitState = kit ? JSON.parse(JSON.stringify(kit.sections)) : null;
-      bomNormalizeDispatchQty(currentKitState); // Dispatch Qty defaults to Quantity until User narrows it for a partial dispatch
-      itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState, { isAdmin: bomIsAdmin, needsSerial: bomItemNeedsSerial });
-      setVerified(false); // changing the kit invalidates any prior verification
-      updateVerifyButtonState(); // fresh kit — nothing ticked yet, Verify stays disabled
-      updateKitActionButtons();
-    }
-    kitSelect.addEventListener('change', refreshItemsPreview);
-    refreshItemsPreview();
-
-    if (btnDeleteKit) {
-      btnDeleteKit.addEventListener('click', async () => {
-        const key = kitSelect.value;
-        if (!bomIsCustomKitKey(key)) return;
-        const custom = bomLoadCustomKits();
-        const kitLabel = custom[key] ? custom[key].label : 'this kit';
-        const confirmed = await window.confirmDanger(
-          'Delete Kit Template',
-          `Delete the saved template "${kitLabel}"? This cannot be undone.`,
-        );
-        if (!confirmed) return;
-        btnDeleteKit.disabled = true;
-        try {
-          await bomDeleteCustomKit(key); // server first — cache only updates once this succeeds
-        } catch (e) {
-          window.openModal('Delete Failed', `<p>${bomEsc((e && e.message) || 'Could not delete this kit template. Please try again.')}</p>`);
-          return;
-        } finally {
-          btnDeleteKit.disabled = false;
-        }
-        populateKitDropdown('');
-        refreshItemsPreview();
-        if (window.showToast) window.showToast('Kit template deleted.');
-      });
-    }
-
-    // ---------- Create / Save New Kit Template ----------
-    const kitBuilderPanel = $('bomKitBuilderPanel');
-    const btnNewKit = $('bomBtnNewKit');
-    const btnCancelKitBuilder = $('bomBtnCancelKitBuilder');
-    const btnAddKitSection = $('bomBtnAddKitSection');
-    const btnSaveKitTemplate = $('bomBtnSaveKitTemplate');
-    const kitBuilderSectionsEl = $('bomNewKitSections');
-    const newKitLabelInput = $('bomNewKitLabel');
-    const newKitKwInput = $('bomNewKitKw');
-
-    // "New Kit" (creating/saving a BOM Kit template) is an Admin/SuperAdmin
-    // action only — a plain User should not see the option at all, same
-    // role gate used for the edit sections in sales.js/purchase.js. (role
-    // computed once, near the top of init() — see bomIsAdmin above.)
-    if (btnNewKit) btnNewKit.style.display = bomIsAdmin ? '' : 'none';
-
-    // "Challan Category Mapping" — same Admin/SuperAdmin gate as New Kit:
-    // this decides which BOM item's quantity feeds which Challan summary
-    // line, same trust level as editing an Item Master rule. Lives ONLY on
-    // the BOM Home launcher screen now (bomHomeBtnChallanMap) — the Entry
-    // screen's own copy of this button was removed per instruction so the
-    // action exists in exactly one place.
-    const homeBtnChallanMap = $('bomHomeBtnChallanMap');
-    if (homeBtnChallanMap) {
-      homeBtnChallanMap.style.display = bomIsAdmin ? '' : 'none';
-      homeBtnChallanMap.addEventListener('click', bomOpenChallanMapModal);
-    }
-
-    // Live, mutable working copy of the kit being built — same
-    // {title, items:[{sr,name,model,qty,remarks}]} shape as any real kit's
-    // `sections`, so it saves straight into the same catalogue format.
-    let newKitSections = [];
-
-    // Set to the kit's storage key (e.g. "custom_5-kw-commercial-550-wp")
-    // while editing an EXISTING saved template via the pencil/"Edit Kit"
-    // button, and back to null for a brand new kit ("New Kit"). This is
-    // the only thing that tells Save whether to overwrite that same key
-    // in place or mint a fresh one — see btnSaveKitTemplate below.
-    let editingKitKey = null;
-
-    const kitBuilderTitleEl = $('bomKitBuilderTitle');
-    const kitBuilderHintEl = $('bomKitBuilderHint');
-    const saveKitTemplateLabelEl = $('bomBtnSaveKitTemplateLabel');
-
-    // Swaps the builder's heading/hint/save-button text between "creating
-    // a brand new kit" and "editing an existing one" — purely cosmetic,
-    // but stops someone editing "3.3 kW" from mistakenly thinking they're
-    // about to create a whole new template.
-    function setKitBuilderMode(isEdit) {
-      if (kitBuilderTitleEl) {
-        kitBuilderTitleEl.innerHTML = isEdit
-          ? '<i class="fa-solid fa-pen"></i> Edit BOM Kit &amp; Template'
-          : '<i class="fa-solid fa-layer-group"></i> Create / Save New BOM Kit &amp; Template';
-      }
-      if (kitBuilderHintEl) {
-        kitBuilderHintEl.innerHTML = isEdit
-          ? '<i class="fa-solid fa-circle-info"></i> Editing the saved template selected in the BOM Kit dropdown. Change anything below, then click Update — every BOM created from this kit AFTER saving will use the new list (BOMs already created keep their own frozen item list).'
-          : '<i class="fa-solid fa-circle-info"></i> Starts pre-filled with the standard section/item format below — Model, Quantity &amp; Remarks are left blank for you to fill in. Add or remove sections/items freely, and item names can be renamed too.';
-      }
-      if (saveKitTemplateLabelEl) saveKitTemplateLabelEl.textContent = isEdit ? 'Update Kit Template' : 'Save Kit Template';
-    }
-
-    function renderKitBuilderSections() {
-      bomRenumberAll(newKitSections);
-      kitBuilderSectionsEl.innerHTML = newKitSections.map((sec, si) => {
-        // Same "Category on top, real item under Model" rule as the live
-        // Kit Items table (bomRenderScreenItemsHtml/bomResolveSectionCategory):
-        // only the FIRST row of a section whose title matches a real
-        // Masters > Category name (e.g. "Solar Panel", "Inverter") gets the
-        // Category / Model-item dropdown pair. Every other row — including
-        // every other row of that same section — gets the normal Item Name
-        // dropdown + Model dropdown pair, both sourced from Masters > Item
-        // Registration.
-        const sectionCategory = bomResolveSectionCategory(sec.title);
-        const itemRowsHtml = sec.items.map((it, ii) => {
-          const isCategoryDrivenRow = !!sectionCategory && ii === 0;
-          const effectiveCategory = it.category || sectionCategory;
-          const rowBrand = bomRowBrand(it);
-          const nameCell = isCategoryDrivenRow
-            ? `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="category">${bomBuildCategoryOptionsHtml(effectiveCategory)}</select>`
-            : `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="name">${bomBuildItemOptionsHtml(rowBrand)}</select>`;
-          const modelCell = isCategoryDrivenRow
-            ? `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="name">${bomBuildCategoryItemOptionsHtml(effectiveCategory, it.name)}</select>`
-            : `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="model">${bomBuildModelOptionsHtml(it.model, rowBrand)}</select>`;
-          return `
-                  <tr>
-                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="sr" value="${bomEscAttr(it.sr)}"></td>
-                    <td>${nameCell}</td>
-                    <td>${modelCell}</td>
-                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="qty" placeholder="Quantity" value="${bomEscAttr(it.qty)}"></td>
-                    <td><input type="text" class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="remarks" placeholder="Remarks" value="${bomEscAttr(it.remarks)}"></td>
-                    <td style="white-space:nowrap;">
-                      <button type="button" class="btn btn-ghost bom-mini-btn" data-binsert-sec="${si}" data-binsert-idx="${ii}" title="Insert item below"><i class="fa-solid fa-plus"></i></button>
-                      <button type="button" class="btn btn-red bom-mini-btn" data-bremove-sec="${si}" data-bremove-idx="${ii}" title="Remove item"><i class="fa-solid fa-xmark"></i></button>
-                    </td>
-                  </tr>`;
-        }).join('');
-        return `
-        <div class="panel" style="margin-bottom:14px; background:rgba(255,255,255,0.02);">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
-            <input type="text" class="bom-field-input" data-bsec="${si}" data-bfield="sectitle" value="${bomEscAttr(sec.title)}" style="max-width:280px; font-weight:700;">
-            <button type="button" class="btn btn-red bom-mini-btn" data-bsec-remove="${si}" ${newKitSections.length <= 1 ? 'disabled' : ''}><i class="fa-solid fa-trash"></i> Remove Section</button>
-          </div>
-          <div class="table-wrap">
-            <table class="bom-items-form-table">
-              <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th><th>Remarks</th><th></th></tr></thead>
-              <tbody>${itemRowsHtml}</tbody>
-            </table>
-          </div>
-          <button type="button" class="btn btn-ghost bom-mini-btn" data-bsec-add-item="${si}" style="margin-top:8px;"><i class="fa-solid fa-plus"></i> Add Item to this Section</button>
-        </div>`;
-      }).join('');
-    }
-
-    // Field edits (section title, sr, name, model, qty, remarks) write
-    // straight back into newKitSections — same delegated-listener pattern
-    // used for the live Kit Items preview above.
-    if (kitBuilderSectionsEl) {
-      kitBuilderSectionsEl.addEventListener('input', handleBuilderFieldEdit);
-      kitBuilderSectionsEl.addEventListener('change', handleBuilderFieldEdit);
-    }
-    function handleBuilderFieldEdit(e) {
-      const el = e.target.closest('[data-bfield]');
-      if (!el) return;
-      const si = Number(el.dataset.bsec);
-      const field = el.dataset.bfield;
-      if (!newKitSections[si]) return;
-      if (field === 'sectitle') {
-        newKitSections[si].title = el.value;
-        // A section title can change which real Category it matches (see
-        // bomResolveSectionCategory) — re-render on 'change' (blur/Enter)
-        // only, not on every keystroke, so the first row's Item Name/Model
-        // cells switch to/from the Category dropdown pair as soon as the
-        // person finishes typing, without the table jumping around mid-edit.
-        if (e.type === 'change') renderKitBuilderSections();
-        return;
-      }
-      const ii = Number(el.dataset.bidx);
-      if (!newKitSections[si].items[ii]) return;
-      const item = newKitSections[si].items[ii];
-
-      // Category select on a category-driven row's first item (see
-      // renderKitBuilderSections). Changing it invalidates whichever real
-      // item (item.name) was picked under the old category — clear it and
-      // refresh the Model dropdown's option list for the new category.
-      if (field === 'category') {
-        item.category = el.value;
-        item.name = '';
-        renderKitBuilderSections();
-        return;
-      }
-
-      // field 'name' is shared by two different selects depending on the
-      // row type (see renderKitBuilderSections):
-      //  - category-driven lead row's Model-item select — its value IS
-      //    already the real registered item name (bomBuildCategoryItemOptionsHtml).
-      //  - normal row's Item Name select — now a deduped BRAND picker
-      //    (bomBuildItemOptionsHtml), so its value must be resolved
-      //    through bomResolveItemName before it becomes item.name.
-      if (field === 'name') {
-        const sectionCategory = bomResolveSectionCategory(newKitSections[si].title);
-        const isCategoryDrivenRow = !!sectionCategory && ii === 0;
-        if (isCategoryDrivenRow) {
-          item.name = el.value;
-          return;
-        }
-        item.brand = el.value;
-        item.model = '';
-        const resolved = bomResolveItemName(item.brand, item.model);
-        item.name = resolved;
-        if (resolved) {
-          const meta = bomItemMasterMeta[resolved];
-          if (meta && meta.model) item.model = meta.model; // brand had exactly one item — keep Model in sync
-        }
-        renderKitBuilderSections();
-        return;
-      }
-
-      // Model select on a normal row — resolve the real item.name now
-      // that both brand (item.brand) and model are known.
-      if (field === 'model' && item.brand) {
-        item.model = el.value;
-        item.name = bomResolveItemName(item.brand, item.model);
-        return;
-      }
-
-      item[field] = el.value;
-    }
-
-    // Structural changes (insert/remove item, add/remove section) — every
-    // one re-renders and renumbers Sr No. across the whole builder.
-    if (kitBuilderSectionsEl) {
-      kitBuilderSectionsEl.addEventListener('click', (e) => {
-        const insertBtn = e.target.closest('[data-binsert-sec]');
-        const removeItemBtn = e.target.closest('[data-bremove-sec]');
-        const addItemBtn = e.target.closest('[data-bsec-add-item]');
-        const removeSectionBtn = e.target.closest('[data-bsec-remove]');
-        const blankItem = () => ({ sr: '', name: '', model: '', qty: '', remarks: '' });
-
-        if (insertBtn) {
-          const si = Number(insertBtn.dataset.binsertSec);
-          const idx = Number(insertBtn.dataset.binsertIdx);
-          newKitSections[si].items.splice(idx + 1, 0, blankItem());
-        } else if (removeItemBtn) {
-          const si = Number(removeItemBtn.dataset.bremoveSec);
-          const idx = Number(removeItemBtn.dataset.bremoveIdx);
-          newKitSections[si].items.splice(idx, 1);
-        } else if (addItemBtn) {
-          const si = Number(addItemBtn.dataset.bsecAddItem);
-          newKitSections[si].items.push(blankItem());
-        } else if (removeSectionBtn) {
-          if (newKitSections.length <= 1) return; // button is disabled at 1 section anyway
-          const si = Number(removeSectionBtn.dataset.bsecRemove);
-          newKitSections.splice(si, 1);
-        } else {
-          return;
-        }
-        renderKitBuilderSections();
-      });
-    }
-
-    if (btnAddKitSection) {
-      btnAddKitSection.addEventListener('click', () => {
-        newKitSections.push({ title: 'New Section', items: [{ sr: '', name: '', model: '', qty: '', remarks: '' }] });
-        renderKitBuilderSections();
-      });
-    }
-
-    if (btnNewKit) {
-      btnNewKit.addEventListener('click', () => {
-        editingKitKey = null;
-        setKitBuilderMode(false);
-        // Pre-fill with the standard section/item format (names only,
-        // Model/Quantity/Remarks blank) — the person only needs to fill in
-        // values and add/remove items/sections where this kit differs.
-        newKitSections = bomDefaultSectionsTemplate();
-        newKitLabelInput.value = '';
-        newKitKwInput.value = '';
-        renderKitBuilderSections();
-        kitBuilderPanel.style.display = '';
-        // The "Kit Items" panel below always mirrors the currently-selected
-        // kit (e.g. the default 3.3 kW list) — while building a brand new
-        // kit that old list has nothing to do with what's being created, so
-        // hide it for the duration of the builder to avoid the confusing
-        // "two item lists on screen at once" look. Restored on Cancel/Save.
-        if (kitItemsPanel) kitItemsPanel.style.display = 'none';
-        kitBuilderPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        newKitLabelInput.focus();
-      });
-    }
-
-    // ---------- Edit an existing saved Kit Template ----------
-    // Opens the SAME builder panel as "New Kit", but pre-filled with the
-    // currently-selected custom kit's real sections/items (deep-cloned, so
-    // Cancel never mutates the saved template) instead of the blank
-    // default — and Save (now "Update Kit Template") overwrites that same
-    // saved key rather than minting a new one. Only ever visible for a
-    // saved custom kit (see updateKitActionButtons), same Admin/SuperAdmin
-    // gate as New Kit/Delete Kit.
-    if (btnEditKit) {
-      btnEditKit.addEventListener('click', () => {
-        const key = kitSelect.value;
-        if (!bomIsCustomKitKey(key)) return;
-        const custom = bomLoadCustomKits();
-        const kit = custom[key];
-        if (!kit) return;
-
-        editingKitKey = key;
-        setKitBuilderMode(true);
-        newKitSections = JSON.parse(JSON.stringify(kit.sections || []));
-        if (!newKitSections.length) newKitSections = bomDefaultSectionsTemplate();
-        newKitLabelInput.value = kit.label || '';
-        newKitKwInput.value = kit.kw || '';
-        renderKitBuilderSections();
-        kitBuilderPanel.style.display = '';
-        if (kitItemsPanel) kitItemsPanel.style.display = 'none';
-        kitBuilderPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        newKitLabelInput.focus();
-      });
-    }
-
-    if (btnCancelKitBuilder) {
-      btnCancelKitBuilder.addEventListener('click', () => {
-        editingKitKey = null;
-        kitBuilderPanel.style.display = 'none';
-        if (kitItemsPanel) kitItemsPanel.style.display = '';
-      });
-    }
-
-    if (btnSaveKitTemplate) {
-      btnSaveKitTemplate.addEventListener('click', async () => {
-        const label = newKitLabelInput.value.trim();
-        if (!label) {
-          window.openModal('Validation Error', '<p>Kit Name is required.</p>');
-          if (window.focusInvalidField) window.focusInvalidField(newKitLabelInput);
-          return;
-        }
-        // Drop any item left with a blank name, and any section left with
-        // no named items — everything else (Model/Qty/Remarks) can stay blank.
-        const sectionsToSave = newKitSections
-          .map((sec) => ({
-            title: (sec.title || '').trim() || 'Items',
-            items: sec.items
-              .map((it) => ({
-                sr: it.sr,
-                name: (it.name || '').trim(),
-                model: (it.model || '').trim(),
-                qty: (it.qty || '').trim(),
-                remarks: (it.remarks || '').trim(),
-              }))
-              .filter((it) => it.name),
-          }))
-          .filter((sec) => sec.items.length);
-        if (!sectionsToSave.length) {
-          window.openModal('Validation Error', '<p>Add at least one item with a name before saving the template.</p>');
-          return;
-        }
-        bomRenumberAll(sectionsToSave);
-
-        const custom = bomLoadCustomKits();
-        let key;
-        if (editingKitKey && custom[editingKitKey]) {
-          // Editing an existing template — keep the SAME key regardless of
-          // whether the label changed, so the dropdown selection, any
-          // in-flight BOM's kit reference, and Delete/Edit all keep
-          // pointing at the one saved entry instead of leaving behind an
-          // orphaned old key + a brand new one.
-          key = editingKitKey;
-        } else {
-          // Unique key: slugified name, de-duplicated if that slug is already taken.
-          key = 'custom_' + bomSlugify(label);
-          let n = 2;
-          while (custom[key] && custom[key].label !== label) {
-            key = 'custom_' + bomSlugify(label) + '-' + n;
-            n += 1;
-          }
-        }
-        const kitPayload = {
-          label,
-          kw: newKitKwInput.value.trim(),
-          sections: sectionsToSave,
-        };
-
-        btnSaveKitTemplate.disabled = true;
-        try {
-          await bomUpsertCustomKit(key, kitPayload); // server first — cache (and every device/login) only updates once this succeeds
-        } catch (e) {
-          window.openModal('Save Failed', `<p>${bomEsc((e && e.message) || 'Could not save this kit template. Please try again.')}</p>`);
-          return;
-        } finally {
-          btnSaveKitTemplate.disabled = false;
-        }
-        const wasEditing = !!editingKitKey;
-        editingKitKey = null;
-
-        kitBuilderPanel.style.display = 'none';
-        if (kitItemsPanel) kitItemsPanel.style.display = '';
-        populateKitDropdown(key); // auto-select the newly saved/updated kit
-        refreshItemsPreview();
-        if (window.showToast) window.showToast(wasEditing ? 'Kit template updated.' : 'Kit template saved — it now auto-fills from the dropdown, on every device.');
-      });
-    }
-
-    // Delegated listener: every field (item dropdown, model/qty/remarks
-    // inputs, sr, section title) carries data-sec(+data-idx)/data-field, so
-    // one listener on the container catches edits to all rows across kit
-    // re-renders and writes them straight into currentKitState — nothing
-    // needs to be retyped for the parts that stay the same.
-    itemsPreview.addEventListener('input', handleItemFieldEdit);
-    itemsPreview.addEventListener('change', handleItemFieldEdit);
-    function handleItemFieldEdit(e) {
-      const el = e.target.closest('[data-field]');
-      if (!el) return;
-      const si = Number(el.dataset.sec);
-      const field = el.dataset.field;
-      if (!currentKitState || !currentKitState[si]) return;
-      if (field === 'sectitle') {
-        currentKitState[si].title = el.value;
-        setVerified(false);
-        // A section title can change which real Category it matches (see
-        // bomResolveSectionCategory) — re-render on 'change' (blur/Enter)
-        // only, not on every keystroke, so every item row in this section
-        // switches to/from the Category+Model dropdown pair as soon as the
-        // person finishes typing, without the table jumping around while
-        // they're still mid-edit.
-        if (e.type === 'change') rerenderItemsPreview();
-        return;
-      }
-      const ii = Number(el.dataset.idx);
-      const item = currentKitState[si].items[ii];
-      if (!item) return;
-
-      // Check column: the on-screen equivalent of the print sheet's blank
-      // "Checked" box. Ticking a serial-mandatory item (e.g. a Panel) is
-      // blocked until its Serial No. is filled in — Verify BOM only unlocks
-      // once every item, including these, is genuinely ready.
-      if (field === 'checked') {
-        if (el.checked && bomItemNeedsSerial(item.name)) {
-          const required = bomEffectiveQty(item);
-          const entered = bomSplitSerials(item.serials).length;
-          if (!entered) {
-            el.checked = false;
-            window.openModal('Serial No. Required', '<p>Please enter Serial No. first.</p>');
-            if (window.focusInvalidField) window.focusInvalidField(document.querySelector(`.bom-serial-btn[data-sec="${si}"][data-idx="${ii}"]`));
-            return;
-          }
-          if (required != null && entered !== required) {
-            el.checked = false;
-            window.openModal('Serial No. Required', `<p>Please enter Serial No. first — <strong>${bomEsc(item.name || 'this item')}</strong> needs exactly ${required} serial number(s), but ${entered} ${entered === 1 ? 'is' : 'are'} entered.</p>`);
-            if (window.focusInvalidField) window.focusInvalidField(document.querySelector(`.bom-serial-btn[data-sec="${si}"][data-idx="${ii}"]`));
-            return;
-          }
-        }
-        item.checked = el.checked;
-        updateVerifyButtonState();
-        return;
-      }
-
-      // Category select on a category-driven row (any section whose title
-      // matches a real Masters > Category name, e.g. "Solar Panel" or
-      // "Inverter" — see bomResolveSectionCategory). Changing the category
-      // invalidates whichever real item (it.name) was picked under the old
-      // category — force a re-pick and refresh the Model dropdown's option
-      // list for the new category.
-      if (field === 'category') {
-        item.category = el.value;
-        item.name = '';
-        item.checked = false;
-        setVerified(false);
-        updateVerifyButtonState();
-        bomRerenderItemRow(si, ii);
-        return;
-      }
-
-      // Quantity (Admin/SuperAdmin only — disabled for a plain User, see
-      // bomRenderScreenItemRowHtml). By default this loads pre-filled from
-      // the selected kit template, and Admin/SuperAdmin — the only roles
-      // that can actually generate a BOM (see btnCreateBom's bomIsAdmin
-      // gate) — can freely change it at generation time. Admin's own
-      // Dispatch Qty column is disabled and always mirrors Quantity, so
-      // keep it in sync here — a User doing a partial dispatch uses their
-      // own separate Dispatch Qty column instead, Quantity itself stays
-      // locked for them since it was already set by whoever generated
-      // this BOM.
-      if (field === 'qty') {
-        item.qty = el.value;
-        if (bomIsAdmin) {
-          const n = bomParseQtyNumber(el.value);
-          item.dispatchQty = n != null ? String(n) : '';
-        }
-        item.checked = false;
-        setVerified(false);
-        updateVerifyButtonState();
-        return;
-      }
-
-      // Dispatch Qty — User-only editable field (disabled for Admin, see
-      // bomRenderScreenItemsHtml). How many units of the allocated
-      // Quantity are being sent right now (partial dispatch). Clamped so
-      // it can never exceed the original allocation, and never negative.
-      if (field === 'dispatchQty') {
-        const full = bomParseQtyNumber(item.qty);
-        let n = Number(el.value);
-        if (Number.isNaN(n) || n < 0) n = 0;
-        if (full != null && n > full) {
-          n = full;
-          el.value = n;
-          if (window.showToast) window.showToast(`Cannot dispatch more than the allocated ${full}.`);
-        }
-        item.dispatchQty = String(n);
-        item.checked = false;
-        setVerified(false);
-        updateVerifyButtonState();
-        return;
-      }
-
-      // Model-item select on a category-driven row's lead item (Solar
-      // Panel/Inverter's first row — see bomRenderScreenItemRowHtml). Its
-      // value IS already the real registered item name
-      // (bomBuildCategoryItemOptionsHtml), so it must be written straight
-      // to item.name — routing it through the brand-resolution logic below
-      // (meant for the normal Item Name select) is what was making a
-      // freshly-picked item snap back to "-- Select Item --": that brand
-      // lookup always failed for a full item name, silently clearing
-      // item.name back to ''.
-      if (field === 'modelitem') {
-        item.name = el.value;
-        item.checked = false;
-        setVerified(false);
-        updateVerifyButtonState();
-        bomRerenderItemRow(si, ii); // item changed — refresh the Serial No. column for this row
-        return;
-      }
-
-      // Category select (unchanged) is handled above and returns early.
-      // Item Name select on a normal (non-category-driven) row now offers
-      // one entry per BRAND (bomBuildItemOptionsHtml) — the value picked
-      // here is a brand, not the final registered item name. Remember it
-      // in item.brand, then resolve the real name via bomResolveItemName:
-      // instantly for a brand with only one registered item, or as soon
-      // as a matching Model is also picked for a brand with several (see
-      // the 'model'-adjacent branch below).
-      if (field === 'name') {
-        item.brand = el.value;
-        item.model = '';
-        const resolved = bomResolveItemName(item.brand, item.model);
-        item.name = resolved;
-        if (resolved) {
-          const meta = bomItemMasterMeta[resolved];
-          if (meta && meta.model) item.model = meta.model; // keep Model in sync with the resolved item
-        }
-        item.checked = false;
-        setVerified(false);
-        updateVerifyButtonState();
-        bomRerenderItemRow(si, ii); // item changed — refresh the Serial No. column for this row
-        return;
-      }
-
-      // Model select on a normal (non-category-driven) row — now a
-      // dropdown (bomBuildModelOptionsHtml) instead of free text, same as
-      // the Kit Builder. Once a brand has already been picked (item.brand),
-      // resolve item.name the moment a matching Model is selected (e.g.
-      // brand "Lug" + model "16" resolves to the real "Lug_16"). Left
-      // unresolved (name stays '') until it matches, so a half-picked row
-      // never silently saves the wrong item.
-      if (field === 'model' && item.brand) {
-        item.model = el.value;
-        item.name = bomResolveItemName(item.brand, item.model);
-        item.checked = false;
-        setVerified(false);
-        updateVerifyButtonState();
-        bomRerenderItemRow(si, ii); // item changed — refresh the Serial No. column for this row
-        return;
-      }
-
-      item[field] = el.value;
-      item.checked = false; // any content edit invalidates this row's tick
-      setVerified(false); // any edit after verifying means it needs re-verifying
-      updateVerifyButtonState();
-    }
-
-    // Re-renders the item table in place (after a dropdown/field edit,
-    // add/remove row, etc.) WITHOUT jumping the page back to the top.
-    // itemsPreview.innerHTML replaces the whole table with a fresh DOM
-    // tree, so the browser loses whatever scroll position it had — this
-    // finds whichever ancestor is actually scrolling (the page itself, or
-    // a scrollable panel wrapping it) and restores its scrollTop right
-    // after the swap, so editing row 25 keeps row 25 in view instead of
-    // snapping back to row 1.
-    function bomFindScrollParent(el) {
-      let node = el && el.parentElement;
-      while (node && node !== document.body) {
-        const style = window.getComputedStyle(node);
-        if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight) {
-          return node;
-        }
-        node = node.parentElement;
-      }
-      return document.scrollingElement || document.documentElement;
-    }
-
-    function rerenderItemsPreview() {
-      const scrollParent = bomFindScrollParent(itemsPreview);
-      const scrollTop = scrollParent.scrollTop;
-      itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState, { isAdmin: bomIsAdmin, needsSerial: bomItemNeedsSerial });
-      scrollParent.scrollTop = scrollTop;
-      setVerified(false);
-      updateVerifyButtonState();
-    }
-
-    // Re-renders ONLY the one <tr> for (si, ii) — used for a Name/Category
-    // dropdown pick or a Serial No. save, where only that single row's
-    // markup actually changes. Swapping just that <tr> instead of the whole
-    // table means the browser never touches anything else on the page, so
-    // there is nothing to "jump" — editing item 25 keeps item 25 exactly
-    // where it is, unlike the old full-table rerenderItemsPreview() call
-    // this replaces (which relied on a scroll-restore hack that could land
-    // back at the top, especially right after a modal like Serial No. closes).
-    // Falls back to a full rerenderItemsPreview() if the row can't be found,
-    // so this can never silently no-op.
-    function bomRerenderItemRow(si, ii) {
-      if (!currentKitState || !currentKitState[si] || !currentKitState[si].items[ii]) return;
-      const rowEl = itemsPreview.querySelector(`tr[data-row-sec="${si}"][data-row-idx="${ii}"]`);
-      if (!rowEl) { rerenderItemsPreview(); return; }
-      const html = bomRenderScreenItemRowHtml(currentKitState[si], si, currentKitState[si].items[ii], ii, { isAdmin: bomIsAdmin, needsSerial: bomItemNeedsSerial });
-      const tmp = document.createElement('tbody');
-      tmp.innerHTML = html;
-      rowEl.replaceWith(tmp.firstElementChild);
-      setVerified(false);
-      updateVerifyButtonState();
-    }
-
-    // ---------------- Serial scanner (camera) — Step 5 ----------------
-    // Same "html5-qrcode" engine + .ss-scanner-* overlay markup/CSS already
-    // used by Purchase Inward (js/pages/purchase.js's openPurchaseScanner)
-    // and SCAN To Sheet (js/pages/scansheet.js) — loaded globally via CDN
-    // in index.html, CSS ships site-wide via css/modules/scan-sheet.css.
-    // Generic over `targetId` so ONE set of functions serves both:
-    //   - the main screen's openBomSerialModal() box (#bomSerialModalBox)
-    //   - every per-item serial <textarea> the Continue Dispatch form
-    //     (Step 4's bomRenderContinueFormHtml) renders — one order can have
-    //     several pending serial-mandatory items, each gets its own textarea
-    //     id and its own scan button, all calling openBomScanner(thatId).
-    // Flow mirrors Purchase's exactly: decode -> camera pauses -> result
-    // card with Retry/Done -> Done appends one line to the target textarea
-    // and resumes scanning for the next serial, duplicate scans are
-    // blocked (Done hidden) until Retry'd.
-    //
-    // Deliberately NO separate "Bluetooth scanner mode" toggle: unlike
-    // scansheet.js's single-line inputs (which need one because a BT
-    // wedge-scanner's trailing Enter key would submit/blur a single-line
-    // field), these are multi-line <textareas> that already auto-newline
-    // on any delimiter (see bomSplitSerials + the keydown/paste handlers
-    // below and in the Continue Dispatch form). A Bluetooth scanner just
-    // needs the box focused — it types + Enter like a keyboard, which the
-    // textarea turns into "one serial per line" on its own. Purchase
-    // Inward's identical serial textarea uses this same reasoning and
-    // likewise ships no BT toggle.
-    const bomScanState = {
-      html5QrCode: null,
-      cameras: [],
-      cameraIndex: 0,
-      torchOn: false,
-      overlayEl: null,
-      targetId: null,
-      handledOnce: false,
-      pendingText: null,
-      pendingIsDup: false,
-      pendingIsOverCap: false,
-      addedCount: 0,
-    };
-
-    // "BT Scan" toggle for the Serial No. modal (openBomSerialModal below).
-    // Chrome has no API to ask the OS "is a Bluetooth barcode scanner
-    // paired right now" — same limitation SCAN To Sheet (scansheet.js)
-    // already works around with its own bluetoothScanMode toggle. A BT
-    // scanner types like a fast keyboard, so it doesn't strictly need this
-    // (the textarea already turns any delimiter into a newline — see the
-    // big comment above openBomScanner), but the toggle still (a) disables
-    // the camera button so it can't be tapped by mistake while a physical
-    // scanner is in use, and (b) keeps the mobile soft keyboard from
-    // popping up over the box. Persists for as long as this BOM page stays
-    // mounted, same as scansheet's ST.bluetoothScanMode.
-    let bomSerialBtMode = false;
-
-    function bomScanBeep() {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = 1050;
-        gain.gain.setValueAtTime(0.001, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.16);
-        osc.onended = () => ctx.close();
-      } catch (e) { /* Web Audio not available — silently skip the beep */ }
-    }
-
-    function bomScanSetStatus(msg) {
-      const el = document.getElementById('bomScanStatus');
-      if (el) el.textContent = msg;
-    }
-
-    function openBomScanner(targetId) {
-      const box = document.getElementById(targetId);
-      if (!box) return;
-      bomScanState.targetId = targetId;
-      bomScanState.torchOn = false;
-      bomScanState.handledOnce = false;
-      bomScanState.pendingText = null;
-      bomScanState.pendingIsDup = false;
-      bomScanState.pendingIsOverCap = false;
-      bomScanState.addedCount = 0;
-
-      const overlay = document.createElement('div');
-      overlay.className = 'ss-scanner-overlay';
-      overlay.innerHTML = `
-        <div class="ss-scanner-topbar">
-          <button type="button" class="ss-icon-btn light" id="bomScanBack" title="Close"><i class="fa-solid fa-arrow-left"></i></button>
-          <div class="ss-scanner-title">Scan Serial Numbers</div>
-          <div class="ss-scanner-topbtns">
-            <button type="button" class="ss-icon-btn light" id="bomScanTorch" title="Flashlight"><i class="fa-solid fa-bolt"></i></button>
-            <button type="button" class="ss-icon-btn light" id="bomScanFlip" title="Flip camera"><i class="fa-solid fa-camera-rotate"></i></button>
-          </div>
-        </div>
-        <div class="ss-scanner-camwrap">
-          <div id="bomScanRegion" class="ss-scanner-camfeed"></div>
-          <div class="ss-scanner-target" id="bomScanTargetBox"></div>
-          <div class="ss-scanner-instruction" id="bomScanStatus">Requesting camera permission&hellip;</div>
-          <div class="ss-scanner-result" id="bomScanResult" style="display:none;">
-            <div class="ss-scanner-result-card" id="bomScanResultCard">
-              <div class="ss-scanner-result-label">Scanned value</div>
-              <div class="ss-scanner-result-value" id="bomScanResultValue"></div>
-              <div class="ss-scanner-result-msg" id="bomScanResultMsg"></div>
-            </div>
-            <div class="ss-scanner-result-actions">
-              <button type="button" class="btn btn-ghost" id="bomScanRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
-              <button type="button" class="btn btn-green" id="bomScanDone2"><i class="fa-solid fa-check"></i> Done</button>
-            </div>
-          </div>
-        </div>
-        <div class="ss-scanner-bottom">
-          <span class="proof-name" id="bomScanCount" style="color:#fff;">0 serial(s) added</span>
-          <button type="button" class="btn btn-red ss-scanner-cancel" id="bomScanCancel"><i class="fa-solid fa-xmark"></i> Close</button>
-        </div>
-      `;
-      document.body.appendChild(overlay);
-      bomScanState.overlayEl = overlay;
-      document.body.style.overflow = 'hidden';
-
-      overlay.querySelector('#bomScanBack').onclick = closeBomScanner;
-      overlay.querySelector('#bomScanCancel').onclick = closeBomScanner;
-      overlay.querySelector('#bomScanTorch').onclick = toggleBomScanTorch;
-      overlay.querySelector('#bomScanFlip').onclick = flipBomScanCamera;
-      overlay.querySelector('#bomScanRetry').onclick = retryBomScan;
-      overlay.querySelector('#bomScanDone2').onclick = confirmBomScan;
-
-      startBomScanCamera();
-    }
-
-    function startBomScanCamera() {
-      if (!window.Html5Qrcode) {
-        bomScanSetStatus('Scanner library failed to load. Check your connection and try again.');
-        return;
-      }
-      window.Html5Qrcode.getCameras().then((cameras) => {
-        if (!cameras || !cameras.length) { bomScanSetStatus('No camera found on this device.'); return; }
-        bomScanState.cameras = cameras;
-        const backIdx = cameras.findIndex((c) => /back|rear|environment/i.test(c.label || ''));
-        bomScanState.cameraIndex = backIdx !== -1 ? backIdx : 0;
-        launchBomScanCamera();
-      }).catch((err) => {
-        console.warn('Camera permission error', err);
-        bomScanSetStatus('Camera permission denied. Please allow camera access in your browser settings, then tap Close and try again.');
-      });
-    }
-
-    function launchBomScanCamera() {
-      const camera = bomScanState.cameras[bomScanState.cameraIndex];
-      if (!camera) return;
-      bomScanState.handledOnce = false;
-      bomScanSetStatus('Place the serial barcode / QR in the box');
-
-      const config = { fps: 10 };
-      if (window.Html5QrcodeSupportedFormats) {
-        config.formatsToSupport = [
-          window.Html5QrcodeSupportedFormats.QR_CODE,
-          window.Html5QrcodeSupportedFormats.EAN_13,
-          window.Html5QrcodeSupportedFormats.EAN_8,
-          window.Html5QrcodeSupportedFormats.CODE_128,
-          window.Html5QrcodeSupportedFormats.CODE_39,
-          window.Html5QrcodeSupportedFormats.UPC_A,
-          window.Html5QrcodeSupportedFormats.UPC_E,
-          window.Html5QrcodeSupportedFormats.ITF,
-        ];
-      }
-
-      bomScanState.html5QrCode = new window.Html5Qrcode('bomScanRegion', { verbose: false });
-      bomScanState.html5QrCode.start(
-        camera.id,
-        config,
-        onBomScanSuccess,
-        () => { /* per-frame "no code found yet" — expected, ignore */ }
-      ).catch((err) => {
-        console.warn('Camera start error', err);
-        bomScanSetStatus('Could not start the camera. Tap Close and try again.');
-      });
-    }
-
-    // Decoding pauses here (handledOnce guard, exactly like Purchase/
-    // scansheet.js) until the user explicitly taps Retry or Done.
-    function onBomScanSuccess(decodedText) {
-      if (bomScanState.handledOnce) return;
-      bomScanState.handledOnce = true;
-      bomScanBeep();
-      if (navigator.vibrate) { try { navigator.vibrate(180); } catch (e) { /* not supported */ } }
-      showBomScanResult(decodedText);
-    }
-
-    function showBomScanResult(text) {
-      const code = String(text || '').trim();
-      const box = document.getElementById(bomScanState.targetId);
-      const existing = box ? bomSplitSerials(box.value) : [];
-      const dup = !!code && existing.some((s) => s.toLowerCase() === code.toLowerCase());
-
-      // The target box carries its own required-Quantity cap via
-      // data-max-serials (set by openBomSerialModal). Reading it straight
-      // off the element keeps this generic — works for the main Serial
-      // No. modal today and any future scan target without extra wiring.
-      const maxAttr = box ? box.getAttribute('data-max-serials') : null;
-      const max = maxAttr !== null && maxAttr !== '' ? Number(maxAttr) : null;
-      const overCap = !dup && !!code && max != null && !Number.isNaN(max) && existing.length >= max;
-
-      bomScanState.pendingText = code;
-      bomScanState.pendingIsDup = dup;
-      bomScanState.pendingIsOverCap = overCap;
-
-      const panel = document.getElementById('bomScanResult');
-      const card = document.getElementById('bomScanResultCard');
-      const valueEl = document.getElementById('bomScanResultValue');
-      const msgEl = document.getElementById('bomScanResultMsg');
-      const doneBtn = document.getElementById('bomScanDone2');
-      const targetBox = document.getElementById('bomScanTargetBox');
-      if (!panel || !valueEl) return;
-
-      valueEl.textContent = code || '(empty)';
-      if (card) card.classList.toggle('dup', dup || overCap);
-      if (msgEl) msgEl.textContent = dup
-        ? 'This serial no. is already in the box. Retry with a different code, or remove the old one first.'
-        : overCap
-          ? `You cannot scan more than the entered quantity — ${max} serial number(s) allowed for this item.`
-          : 'Scanned successfully.';
-      if (doneBtn) doneBtn.style.display = (dup || overCap) ? 'none' : '';
-
-      panel.style.display = 'flex';
-      bomScanSetStatus('');
-      if (targetBox) targetBox.style.visibility = 'hidden';
-    }
-
-    function hideBomScanResult() {
-      const panel = document.getElementById('bomScanResult');
-      const targetBox = document.getElementById('bomScanTargetBox');
-      if (panel) panel.style.display = 'none';
-      if (targetBox) targetBox.style.visibility = '';
-      bomScanState.pendingText = null;
-      bomScanState.pendingIsDup = false;
-      bomScanState.pendingIsOverCap = false;
-    }
-
-    function retryBomScan() {
-      hideBomScanResult();
-      bomScanState.handledOnce = false;
-      bomScanSetStatus('Place the serial barcode / QR in the box');
-    }
-
-    // "Done" — commit the scanned value into the target textarea (one per
-    // line, same normalization Purchase's paste handler uses), then resume
-    // scanning so the next serial can be captured right away.
-    function confirmBomScan() {
-      if (bomScanState.pendingIsDup || bomScanState.pendingIsOverCap) return; // guard — Done is hidden for dupes/over-cap anyway
-      const code = bomScanState.pendingText;
-      if (!code) { retryBomScan(); return; }
-
-      const box = document.getElementById(bomScanState.targetId);
-      if (box) {
-        const existing = bomSplitSerials(box.value);
-        existing.push(code);
-        box.value = existing.join('\n') + '\n';
-        box.dispatchEvent(new Event('input', { bubbles: true }));
-        bomScanState.addedCount = existing.length;
-        const countEl = document.getElementById('bomScanCount');
-        if (countEl) countEl.textContent = `${existing.length} serial(s) added`;
-      }
-
-      hideBomScanResult();
-      bomScanState.handledOnce = false;
-      bomScanSetStatus('Added \u2713 — scan the next one');
-    }
-
-    function toggleBomScanTorch() {
-      if (!bomScanState.html5QrCode) return;
-      bomScanState.torchOn = !bomScanState.torchOn;
-      bomScanState.html5QrCode.applyVideoConstraints({ advanced: [{ torch: bomScanState.torchOn }] })
-        .then(() => {
-          const btn = document.getElementById('bomScanTorch');
-          if (btn) btn.classList.toggle('active', bomScanState.torchOn);
-        })
-        .catch(() => { if (window.showToast) window.showToast('Flashlight not supported on this device'); bomScanState.torchOn = false; });
-    }
-
-    function flipBomScanCamera() {
-      if (!bomScanState.cameras.length || bomScanState.cameras.length < 2) { if (window.showToast) window.showToast('Only one camera available'); return; }
-      bomScanState.cameraIndex = (bomScanState.cameraIndex + 1) % bomScanState.cameras.length;
-      const qr = bomScanState.html5QrCode;
-      if (qr) qr.stop().then(launchBomScanCamera).catch(launchBomScanCamera);
-      else launchBomScanCamera();
-    }
-
-    function closeBomScanner() {
-      const qr = bomScanState.html5QrCode;
-      const targetId = bomScanState.targetId;
-      bomScanState.pendingText = null;
-      bomScanState.pendingIsDup = false;
-      bomScanState.pendingIsOverCap = false;
-      const finish = () => {
-        if (bomScanState.overlayEl) { bomScanState.overlayEl.remove(); bomScanState.overlayEl = null; }
-        document.body.style.overflow = '';
-        bomScanState.html5QrCode = null;
-        // Final normalize pass (dedupe/trim), same cleanup Purchase's
-        // blur() handler already does.
-        const box = targetId ? document.getElementById(targetId) : null;
-        if (box) {
-          box.value = bomSplitSerials(box.value).join('\n');
-          // Same readonly-then-release trick openBomSerialModal's
-          // focusSerialBox() uses in BT mode — a plain box.focus() here
-          // pops the mobile soft keyboard right over a physical BT
-          // scanner's target field, which is exactly what BT mode exists
-          // to avoid.
-          if (bomSerialBtMode) {
-            box.setAttribute('readonly', 'readonly');
-            box.focus({ preventScroll: true });
-            window.setTimeout(() => {
-              box.removeAttribute('readonly');
-              const len = box.value.length;
-              if (typeof box.setSelectionRange === 'function') box.setSelectionRange(len, len);
-              box.focus({ preventScroll: true });
-            }, 450);
-          } else {
-            box.focus();
-          }
-          box.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-      };
-      if (qr) qr.stop().then(finish).catch(finish);
-      else finish();
-    }
-
-    // Bluetooth-scanner result card — same Retry/Done + duplicate-check
-    // card the camera scanner shows (reuses showBomScanResult/confirmBomScan
-    // verbatim, since those only look up elements by id and don't care
-    // whether they're sitting inside a live camera overlay or this
-    // camera-less "paused" one). Previously a BT scan's Enter just landed
-    // straight in the textarea with no confirmation step at all — this
-    // gives BT scans the same pause-and-confirm card the camera already
-    // has, per scansheet.js's Bluetooth Scan overlay pattern.
-    // NOTE: no longer called from openBomSerialModal's BT keydown handler —
-    // that now commits a valid scan directly (see the keydown listener in
-    // openBomSerialModal) instead of popping this overlay every time, since
-    // the overlay + manual "Done" tap + closeBomScanner()'s 450ms
-    // readonly-release was exactly what made BT mode feel slow. Left in
-    // place in case a future BT entry point wants the confirm-card flow.
-    function openBomBtScanResult(targetId, code) {
-      bomScanState.targetId = targetId;
-      bomScanState.handledOnce = true;
-
-      const overlay = document.createElement('div');
-      overlay.className = 'ss-scanner-overlay ss-bt-result-overlay';
-      overlay.innerHTML = `
-        <div class="ss-scanner-topbar">
-          <button type="button" class="ss-icon-btn light" id="bomScanBack" title="Close"><i class="fa-solid fa-arrow-left"></i></button>
-          <div class="ss-scanner-title">Bluetooth Scan</div>
-          <div class="ss-scanner-topbtns"></div>
-        </div>
-        <div class="ss-scanner-camwrap">
-          <div class="ss-bt-result-blank">
-            <i class="fa-brands fa-bluetooth-b"></i>
-            <span>Scanner paused</span>
-          </div>
-          <div class="ss-scanner-instruction" id="bomScanStatus"></div>
-          <div class="ss-scanner-result" id="bomScanResult" style="display:none;">
-            <div class="ss-scanner-result-card" id="bomScanResultCard">
-              <div class="ss-scanner-result-label">Scanned value</div>
-              <div class="ss-scanner-result-value" id="bomScanResultValue"></div>
-              <div class="ss-scanner-result-msg" id="bomScanResultMsg"></div>
-            </div>
-            <div class="ss-scanner-result-actions">
-              <button type="button" class="btn btn-ghost" id="bomScanRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
-              <button type="button" class="btn btn-green" id="bomScanDone2"><i class="fa-solid fa-check"></i> Done</button>
-            </div>
-          </div>
-        </div>
-        <div class="ss-scanner-bottom">
-          <span class="proof-name" id="bomScanCount" style="color:#fff;">0 serial(s) added</span>
-          <button type="button" class="btn btn-red ss-scanner-cancel" id="bomScanCancel"><i class="fa-solid fa-xmark"></i> Close</button>
-        </div>
-      `;
-      document.body.appendChild(overlay);
-      bomScanState.overlayEl = overlay;
-      document.body.style.overflow = 'hidden';
-      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-
-      overlay.querySelector('#bomScanBack').onclick = closeBomScanner;
-      overlay.querySelector('#bomScanCancel').onclick = closeBomScanner;
-      // "Retry" for a BT scan just discards this reading and closes back to
-      // the (readonly-released) box, ready for the next physical scan —
-      // there's no live decode loop to resume like the camera has.
-      overlay.querySelector('#bomScanRetry').onclick = closeBomScanner;
-      overlay.querySelector('#bomScanDone2').onclick = confirmBomBtScan;
-
-      const targetBox = document.getElementById(targetId);
-      const existingCount = targetBox ? bomSplitSerials(targetBox.value).length : 0;
-      const countEl = document.getElementById('bomScanCount');
-      if (countEl) countEl.textContent = `${existingCount} serial(s) added`;
-
-      showBomScanResult(code);
-    }
-
-    // Same as confirmBomScan (appends the pending value to the target
-    // textarea) but also closes the BT result overlay afterwards, since a
-    // BT scan has no camera feed running behind the card to return to.
-    function confirmBomBtScan() {
-      confirmBomScan();
-      closeBomScanner();
-    }
-
-    // Serial No. popup — click the Serial No. button on a serial-mandatory
-    // row (Solar Panel, Inverter, etc.) to open the same style of box
-    // Purchase/Sale already use: scan-or-type with auto-newline on any
-    // delimiter, paste normalization, and a live count against the item's
-    // Quantity. Adds "Scan Serial No." / "Upload Serial No. through File"
-    // as two entry modes on top of the same box, per the requested flow.
-    function openBomSerialModal(si, ii) {
-      const item = currentKitState[si] && currentKitState[si].items[ii];
-      if (!item) return;
-      const required = bomEffectiveQty(item);
-
-      window.openModal(`Serial No. — ${item.name || 'Item'}`, `
-        <div class="bom-serial-modal">
-          <p class="note" style="margin-bottom:10px;">
-            <i class="fa-solid fa-box"></i> <b>${bomEsc(item.name || 'Item')}</b>
-            &nbsp;—&nbsp; Quantity required: <b>${required != null ? required : '—'}</b> serial number(s)
-          </p>
-          <div class="actions-row bom-serial-mode-row" style="margin-bottom:10px;">
-            <button type="button" class="btn btn-ghost bom-serial-mode-btn" id="bomSerialModeUpload"><i class="fa-solid fa-file-arrow-up"></i> Upload Serial No. (File)</button>
-            <button type="button" class="btn btn-blue" id="bomSerialCameraBtn" ${bomSerialBtMode ? 'disabled aria-disabled="true"' : ''} title="${bomSerialBtMode ? 'Camera disabled in Bluetooth scanner mode' : 'Scan barcode / QR'}"><i class="fa-solid fa-barcode"></i> Scan Serial No.</button>
-            <button type="button" class="btn ${bomSerialBtMode ? 'btn-blue active' : 'btn-ghost'} bom-serial-bt-btn" id="bomSerialBtBtn" title="Bluetooth scanner mode — disables the camera and keeps this box ready for a BT scanner"><i class="fa-brands fa-bluetooth-b"></i> ${bomSerialBtMode ? 'BT Scan: ON' : 'BT Scan'}</button>
-          </div>
-          <div id="bomSerialUploadPane" style="display:none; margin-bottom:10px;">
-            <input type="file" id="bomSerialFileInput" accept=".txt,.csv">
-            <p class="note" style="margin-top:6px;">Pick a .txt or .csv file — one serial per line, or comma/space separated. It loads into the box below so you can review before saving.</p>
-          </div>
-          <div style="position:relative;">
-            <textarea id="bomSerialModalBox" rows="8" ${bomSerialBtMode ? 'inputmode="none"' : 'inputmode="text"'} ${required != null ? `data-max-serials="${required}"` : ''} placeholder="Scan or type serial numbers — one per line...">${bomEsc(item.serials || '')}</textarea>
-            <!-- Bluetooth scan confirm card — sits ALREADY in the DOM
-                 (just hidden) instead of being created fresh per scan like
-                 the full-screen camera overlay is. Toggling display is
-                 instant, which is what keeps this fast: the scan itself
-                 shows the card immediately, and only the human's own Done
-                 tap (not any artificial delay) gates when it lands in the
-                 box. -->
-            <div id="bomBtResultCard" style="display:none; position:absolute; inset:0; background:var(--bg2, #1e1e1e); border:1px solid var(--border, #444); border-radius:8px; padding:14px; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:8px; z-index:2;">
-              <div class="note" style="font-size:12px;">Scanned value</div>
-              <div id="bomBtResultValue" style="font-size:18px; font-weight:700; word-break:break-all;"></div>
-              <div id="bomBtResultMsg" class="note" style="margin:0;"></div>
-              <div class="actions-row" style="margin-top:6px;">
-                <button type="button" class="btn btn-ghost" id="bomBtRetryBtn"><i class="fa-solid fa-rotate-left"></i> Retry</button>
-                <button type="button" class="btn btn-green" id="bomBtDoneBtn"><i class="fa-solid fa-check"></i> Done</button>
-              </div>
-            </div>
-          </div>
-          <p class="note" id="bomSerialCountNote" style="margin-top:8px;"></p>
-          <div class="actions-row" style="margin-top:12px;">
-            <button type="button" class="btn btn-blue" id="bomSerialSaveBtn"><i class="fa-solid fa-check"></i> Save</button>
-            <button type="button" class="btn btn-ghost" id="bomSerialCancelBtn">Cancel</button>
-          </div>
-        </div>
-      `);
-
-      const box = document.getElementById('bomSerialModalBox');
-      const countNote = document.getElementById('bomSerialCountNote');
-      const modeUploadBtn = document.getElementById('bomSerialModeUpload');
-      const uploadPane = document.getElementById('bomSerialUploadPane');
-      const fileInput = document.getElementById('bomSerialFileInput');
-      const saveBtn = document.getElementById('bomSerialSaveBtn');
-      const cancelBtn = document.getElementById('bomSerialCancelBtn');
-      const cameraBtn = document.getElementById('bomSerialCameraBtn');
-      const btBtn = document.getElementById('bomSerialBtBtn');
-      const btCard = document.getElementById('bomBtResultCard');
-      const btCardValueEl = document.getElementById('bomBtResultValue');
-      const btCardMsgEl = document.getElementById('bomBtResultMsg');
-      const btRetryBtn = document.getElementById('bomBtRetryBtn');
-      const btDoneBtn = document.getElementById('bomBtDoneBtn');
-      if (!box) return;
-
-      // Buffers a physical BT scanner's keystrokes ourselves in BT mode
-      // (see the keydown listener below) instead of letting them land
-      // directly in the box — Enter/Tab then pops the same Retry/Done
-      // result card the camera scanner shows, via openBomBtScanResult.
-      let bomBtBuffer = '';
-
-      // Focuses the box the same way it normally gets the cursor when this
-      // modal opens. In BT mode the field is briefly marked readonly first
-      // — that stops the mobile soft keyboard from popping up (a BT
-      // scanner is a hardware keyboard, it doesn't need the on-screen
-      // one) — then released a moment later so the caret is sitting in
-      // the box, ready for the scanner's next scan, exactly like the plain
-      // type/scan box already does outside BT mode.
-      function focusSerialBox() {
-        if (bomSerialBtMode) {
-          box.setAttribute('readonly', 'readonly');
-          box.focus({ preventScroll: true });
-          window.setTimeout(() => {
-            box.removeAttribute('readonly');
-            const len = box.value.length;
-            if (typeof box.setSelectionRange === 'function') box.setSelectionRange(len, len);
-            box.focus({ preventScroll: true });
-          }, 450);
-        } else {
-          box.focus({ preventScroll: true });
-        }
-      }
-
-      // Reflects bomSerialBtMode onto the modal's buttons + textarea
-      // without rebuilding the modal (so whatever's already typed/scanned
-      // in the box is never lost when the toggle is flipped).
-      function applyBomSerialBtModeUi() {
-        if (btBtn) {
-          btBtn.classList.toggle('active', bomSerialBtMode);
-          btBtn.classList.toggle('btn-blue', bomSerialBtMode);
-          btBtn.classList.toggle('btn-ghost', !bomSerialBtMode);
-          btBtn.innerHTML = `<i class="fa-brands fa-bluetooth-b"></i> ${bomSerialBtMode ? 'BT Scan: ON' : 'BT Scan'}`;
-        }
-        if (cameraBtn) {
-          cameraBtn.disabled = bomSerialBtMode;
-          cameraBtn.classList.toggle('ss-disabled', bomSerialBtMode);
-          cameraBtn.title = bomSerialBtMode ? 'Camera disabled in Bluetooth scanner mode' : 'Scan barcode / QR';
-        }
-        box.setAttribute('inputmode', bomSerialBtMode ? 'none' : 'text');
-      }
-
-      if (btBtn) {
-        btBtn.addEventListener('click', () => {
-          bomSerialBtMode = !bomSerialBtMode;
-          bomBtBuffer = '';
-          hideBtCard();
-          applyBomSerialBtModeUi();
-          if (bomSerialBtMode) {
-            backToTypeMode(); // BT mode always uses the box, never the Upload pane
-            if (window.showToast) window.showToast('Bluetooth scanner mode ON — camera disabled, box ready for the scanner.');
-          } else if (window.showToast) {
-            window.showToast('Bluetooth scanner mode OFF — camera scan available again.');
-          }
-          focusSerialBox();
-        });
-      }
-
-      // Auto-focus on open, same as a fresh scan/type box normally gets.
-      focusSerialBox();
-
-      // Hides the Upload pane and returns focus to the type/scan box —
-      // replaces the old "Scan Serial No." mode-toggle button, which was
-      // removed (the box is the default/active mode already, so a
-      // separate button just to switch back to it was redundant).
-      function backToTypeMode() {
-        modeUploadBtn.classList.remove('active');
-        uploadPane.style.display = 'none';
-        box.focus();
-      }
-
-      // The real camera scanner (see openBomScanner above) — appending
-      // each Done'd scan straight into this modal's box. Labeled "Scan
-      // Serial No." since it's the only actual scan entry point now.
-      if (cameraBtn) cameraBtn.addEventListener('click', () => openBomScanner('bomSerialModalBox'));
-
-      function updateCountNote() {
-        const count = bomSplitSerials(box.value).length;
-        if (required != null) {
-          const ok = count === required;
-          countNote.style.color = ok ? 'var(--green)' : 'var(--red)';
-          countNote.innerHTML = `<i class="fa-solid ${ok ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i> ${count} of ${required} serial number(s) entered${ok ? ' — matches quantity.' : ''}`;
-        } else {
-          countNote.style.color = '';
-          countNote.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${count} serial number(s) entered.`;
-        }
-      }
-
-      // Shows a clear, consistent error whenever a scan/entry would push
-      // the count past the item's required Quantity — used by every entry
-      // path below (BT scan, camera scan, typing, paste, file upload) so
-      // the message is identical no matter how the extra serial arrived.
-      function showQtyCapError() {
-        countNote.style.color = 'var(--red)';
-        countNote.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> You cannot scan more than the entered quantity — ${required} serial number(s) allowed for this item.`;
-        if (window.showToast) window.showToast(`Limit reached — only ${required} serial number(s) allowed for this item.`);
-      }
-
-      // Pending code waiting on a Done/Retry tap in BT mode. While this is
-      // non-null the confirm card is showing and new scanner keystrokes
-      // are ignored (mirrors the camera flow's handledOnce gate) so a
-      // second physical trigger-pull can't silently land underneath the
-      // card the user hasn't acted on yet.
-      let bomBtPendingCode = null;
-
-      function showBtCard(code, opts) {
-        opts = opts || {};
-        bomBtPendingCode = opts.blocked ? null : code;
-        btCardValueEl.textContent = code || '(empty)';
-        btCardMsgEl.textContent = opts.dup
-          ? 'This serial no. is already in the box. Retry with a different code.'
-          : opts.overCap
-            ? `You cannot scan more than the entered quantity — ${required} serial number(s) allowed for this item.`
-            : 'Scanned — tap Done to add it.';
-        btDoneBtn.style.display = opts.blocked ? 'none' : '';
-        btCard.style.display = 'flex';
-      }
-      function hideBtCard() {
-        btCard.style.display = 'none';
-        bomBtPendingCode = null;
-      }
-      if (btRetryBtn) btRetryBtn.addEventListener('click', () => { hideBtCard(); focusSerialBox(); });
-      if (btDoneBtn) {
-        btDoneBtn.addEventListener('click', () => {
-          if (!bomBtPendingCode) return;
-          const existing = bomSplitSerials(box.value);
-          existing.push(bomBtPendingCode);
-          box.value = existing.join('\n') + '\n';
-          box.dispatchEvent(new Event('input', { bubbles: true }));
-          hideBtCard();
-          focusSerialBox();
-        });
-      }
-
-      // Auto-newline on delimiter + paste normalization — identical logic
-      // to Purchase/Sale's serial box (splitSerials there === bomSplitSerials here).
-      //
-      // In BT mode this branches instead: a physical scanner's keystrokes
-      // are buffered ourselves (never inserted directly). Enter/Tab shows
-      // the confirm card ABOVE (already sitting in the DOM, just hidden —
-      // see showBtCard) instantly, so the scan itself always feels fast;
-      // a Done tap then commits it to the box. This replaces the earlier
-      // "auto-add with no confirmation" version, which was fast but gave
-      // no chance to catch a misread before it landed in the box — and it
-      // also replaces the ORIGINAL version, which popped a brand-new
-      // full-screen overlay (openBomBtScanResult) per scan and re-ran a
-      // 450ms readonly-release delay in closeBomScanner() every time,
-      // which was the actual source of the earlier slowness. Reusing one
-      // always-present card and only doing the readonly-release dance
-      // after the user's own Done/Retry tap (see focusSerialBox() calls
-      // above) gets both: an instant card AND no per-scan overlay cost.
-      box.addEventListener('keydown', (e) => {
-        if (bomSerialBtMode) {
-          if (e.ctrlKey || e.altKey || e.metaKey) return;
-          // A fast HID/BT wedge scanner can outrun the main thread just
-          // enough that the browser doesn't see a key's keyup in time and
-          // the OS fires its own auto-repeat keydown(s) for that same key
-          // (e.repeat === true) before the real next character arrives.
-          // Previously every one of those repeats got appended to
-          // bomBtBuffer too, which is exactly what produced scans like
-          // "MMMMMMMMMMMMMMS2409S531420" / "MS24PPPPPS531420" /
-          // "MS240PS53111111111420" — random runs of one duplicated
-          // character in the middle of an otherwise-correct serial.
-          // Dropping repeat events here fixes it: a real scanner keystroke
-          // is never itself a repeat, only the OS's phantom echo of it is.
-          if (e.repeat) { e.preventDefault(); return; }
-          // Card already showing — ignore further scanner input until the
-          // user resolves it (Done/Retry).
-          if (btCard.style.display !== 'none') { e.preventDefault(); return; }
-          if (e.key === 'Enter' || e.key === 'Tab') {
-            e.preventDefault();
-            const code = bomBtBuffer.trim();
-            bomBtBuffer = '';
-            if (!code) return;
-            const existing = bomSplitSerials(box.value);
-            if (required != null && existing.length >= required) { showBtCard(code, { blocked: true, overCap: true }); return; }
-            const dup = existing.some((s) => s.toLowerCase() === code.toLowerCase());
-            if (dup) { showBtCard(code, { blocked: true, dup: true }); return; }
-            bomScanBeep();
-            showBtCard(code);
-            return;
-          }
-          if (e.key === 'Escape') { bomBtBuffer = ''; return; }
-          if (e.key.length === 1) {
-            e.preventDefault();
-            bomBtBuffer += e.key;
-          }
-          return;
-        }
-        if ([',', ' ', '|', ';', 'Tab'].includes(e.key)) {
-          e.preventDefault();
-          // Block starting a NEW serial once the box already holds
-          // `required` of them — bomSplitSerials(box.value) at this point
-          // still includes the token the user just finished typing, so
-          // this only rejects the (required+1)th one onward, never the
-          // final in-quota entry itself.
-          if (required != null && bomSplitSerials(box.value).length > required) {
-            showQtyCapError();
-            return;
-          }
-          const before = box.value.slice(0, box.selectionStart);
-          const after = box.value.slice(box.selectionEnd);
-          const needsNewline = before && !before.endsWith('\n');
-          box.value = before + (needsNewline ? '\n' : '') + after;
-          const pos = before.length + (needsNewline ? 1 : 0);
-          box.setSelectionRange(pos, pos);
-        }
-        updateCountNote();
-      });
-      box.addEventListener('paste', (e) => {
-        e.preventDefault();
-        const pasted = (e.clipboardData || window.clipboardData).getData('text');
-        let incoming = bomSplitSerials(pasted);
-        if (required != null) {
-          const room = Math.max(0, required - bomSplitSerials(box.value).length);
-          if (incoming.length > room) {
-            const skipped = incoming.length - room;
-            incoming = incoming.slice(0, room);
-            showQtyCapError();
-            if (window.showToast) window.showToast(`${skipped} serial number(s) skipped — quantity limit is ${required}.`);
-          }
-        }
-        const normalized = incoming.join('\n');
-        const before = box.value.slice(0, box.selectionStart);
-        const after = box.value.slice(box.selectionEnd);
-        const prefix = before && !before.endsWith('\n') ? '\n' : '';
-        box.value = before + prefix + normalized + (normalized ? '\n' : '') + after;
-        updateCountNote();
-      });
-      box.addEventListener('input', updateCountNote);
-      box.addEventListener('blur', () => {
-        let serials = bomSplitSerials(box.value);
-        if (required != null && serials.length > required) {
-          serials = serials.slice(0, required);
-          showQtyCapError();
-        }
-        box.value = serials.join('\n');
-        updateCountNote();
-      });
-
-      modeUploadBtn.addEventListener('click', () => {
-        const isOpen = uploadPane.style.display !== 'none' && uploadPane.style.display !== '';
-        if (isOpen) { backToTypeMode(); return; }
-        modeUploadBtn.classList.add('active');
-        uploadPane.style.display = '';
-      });
-      fileInput.addEventListener('change', () => {
-        const file = fileInput.files && fileInput.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          const parsed = bomSplitSerials(String(reader.result || ''));
-          let merged = bomSplitSerials(box.value).concat(parsed);
-          let loadedCount = parsed.length;
-          if (required != null && merged.length > required) {
-            const skipped = merged.length - required;
-            merged = merged.slice(0, required);
-            loadedCount = Math.max(0, parsed.length - skipped);
-            showQtyCapError();
-          }
-          box.value = merged.join('\n');
-          updateCountNote();
-          backToTypeMode(); // back to the box so it can be reviewed/edited before Save
-          if (window.showToast) window.showToast(`${loadedCount} serial number(s) loaded from file.`);
-        };
-        reader.onerror = () => window.openModal('File Read Error', '<p>Could not read that file. Please try a plain .txt or .csv file.</p>');
-        reader.readAsText(file);
-        fileInput.value = '';
-      });
-
-      saveBtn.addEventListener('click', () => {
-        const serials = bomSplitSerials(box.value);
-        if (!serials.length) {
-          countNote.style.color = 'var(--red)';
-          countNote.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Please enter Serial No. first.';
-          return;
-        }
-        const seen = new Set();
-        const dupes = new Set();
-        serials.forEach((s) => { if (seen.has(s)) dupes.add(s); seen.add(s); });
-        if (dupes.size) {
-          countNote.style.color = 'var(--red)';
-          countNote.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Duplicate serial number(s): ${[...dupes].map(bomEsc).join(', ')}`;
-          return;
-        }
-        if (required != null && serials.length > required) {
-          countNote.style.color = 'var(--red)';
-          countNote.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> You cannot scan more than the entered quantity — ${required} serial number(s) allowed, ${serials.length} entered.`;
-          return;
-        }
-        if (required != null && serials.length < required) {
-          countNote.style.color = 'var(--red)';
-          countNote.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Please enter Serial No. first — exactly ${required} needed, ${serials.length} entered.`;
-          return;
-        }
-        item.serials = serials.join('\n');
-        item.checked = false; // any serial change invalidates this row's tick
-        setVerified(false);
-        window.closeModal();
-        bomRerenderItemRow(si, ii);
-        if (window.showToast) window.showToast('Serial numbers saved.');
-      });
-
-      cancelBtn.addEventListener('click', () => window.closeModal());
-
-      updateCountNote();
-    }
-
-    // Delegated click listener: lets a new item be inserted at ANY position
-    // within any section (not just appended at the end) — e.g. right after
-    // the 5th item in "Solar Structure" — plus removing an item, adding a
-    // whole new section, or removing one. Every structural change
-    // renumbers Sr No. across the whole kit so it always stays 1,2,3...
-    // Restructuring the kit (add/remove item, add/remove section) is
-    // Admin/SuperAdmin only — the buttons themselves are already hidden for
-    // a plain User (see bomRenderScreenItemsHtml), this is the defensive
-    // second check. Remove actions (item/section) ask for confirmation
-    // first — a stray tap used to delete a row instantly with no way back;
-    // Add actions still fire immediately since they're non-destructive.
-    itemsPreview.addEventListener('click', async (e) => {
-      if (!currentKitState) return;
-      const serialBtn = e.target.closest('.bom-serial-btn');
-      if (serialBtn) {
-        openBomSerialModal(Number(serialBtn.dataset.sec), Number(serialBtn.dataset.idx));
-        return;
-      }
-      const insertBtn = e.target.closest('[data-insert-after-sec]');
-      const removeItemBtn = e.target.closest('[data-remove-sec]');
-      const addItemBtn = e.target.closest('[data-sec-add-item]');
-      const removeSectionBtn = e.target.closest('[data-sec-remove]');
-      const addSectionBtn = e.target.closest('#bomBtnAddSectionLive');
-      if ((insertBtn || removeItemBtn || addItemBtn || removeSectionBtn || addSectionBtn) && !bomIsAdmin) return;
-      const blankItem = () => ({ sr: '', name: '', model: '', qty: '', remarks: '', serials: '', checked: false, dispatchQty: '' });
-
-      if (insertBtn) {
-        const si = Number(insertBtn.dataset.insertAfterSec);
-        const idx = Number(insertBtn.dataset.insertAfterIdx);
-        currentKitState[si].items.splice(idx + 1, 0, blankItem());
-      } else if (removeItemBtn) {
-        const si = Number(removeItemBtn.dataset.removeSec);
-        const idx = Number(removeItemBtn.dataset.removeIdx);
-        const itemName = (currentKitState[si].items[idx] && currentKitState[si].items[idx].name) || 'this item';
-        const confirmed = await window.confirmDanger('Remove Item', `Remove "${itemName}" from this BOM? This cannot be undone.`);
-        if (!confirmed) return;
-        currentKitState[si].items.splice(idx, 1);
-      } else if (addItemBtn) {
-        const si = Number(addItemBtn.dataset.secAddItem);
-        currentKitState[si].items.push(blankItem());
-      } else if (removeSectionBtn) {
-        if (currentKitState.length <= 1) {
-          window.openModal('Cannot Remove', '<p>A kit needs at least one section.</p>');
-          return;
-        }
-        const si = Number(removeSectionBtn.dataset.secRemove);
-        const secTitle = currentKitState[si].title || 'this section';
-        const confirmed = await window.confirmDanger('Remove Section', `Remove the section "${secTitle}" and all ${currentKitState[si].items.length} item(s) in it? This cannot be undone.`);
-        if (!confirmed) return;
-        currentKitState.splice(si, 1);
-      } else if (addSectionBtn) {
-        currentKitState.push({ title: 'New Section', items: [blankItem()] });
-      } else {
-        return;
-      }
-      bomRenumberAll(currentKitState);
-      rerenderItemsPreview();
-    });
-
     function getHeaderValues() {
       return {
-        customerName: $('bomCustomerName').value,
-        orderNo: $('bomOrderNo').value,
-        installerName: $('bomInstallerName').value,
-        challanNo: $('bomChallanNo').value,
-        challanDate: $('bomChallanDate').value,
-        fabricatorName: $('bomFabricatorName').value,
-        dealerName: $('bomDealerName').value,
+        customerName: ctx.$('bomCustomerName').value,
+        orderNo: ctx.$('bomOrderNo').value,
+        installerName: ctx.$('bomInstallerName').value,
+        challanNo: ctx.$('bomChallanNo').value,
+        challanDate: ctx.$('bomChallanDate').value,
+        fabricatorName: ctx.$('bomFabricatorName').value,
+        dealerName: ctx.$('bomDealerName').value,
       };
     }
 
-    if (btnVerify) {
-      btnVerify.addEventListener('click', async () => {
-        if (!currentKitState) {
+    if (ctx.btnVerify) {
+      ctx.btnVerify.addEventListener('click', async () => {
+        if (!ctx.currentKitState) {
           window.openModal('Select a Kit', '<p>Please select a BOM Kit before verifying.</p>');
           return;
         }
-        if (!allItemsChecked()) {
+        if (!ctx.allItemsChecked()) {
           window.openModal('Tick Every Item', '<p>Please tick every item in the <b>Check</b> column before verifying.</p>');
           return;
         }
@@ -2540,12 +556,12 @@ window.PAGES.bom = {
         // Challan) — checks whether Dispatch Qty for every item is
         // actually available right now. Convert into Challan and Create
         // Dispatch both stay locked until this passes.
-        const originalLabel = btnVerify.innerHTML;
-        btnVerify.disabled = true;
-        btnVerify.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking Stock...';
-        const canProceed = await bomRunStockCheck();
-        btnVerify.innerHTML = originalLabel;
-        updateVerifyButtonState(); // restores the normal enabled/disabled state (still gated on allItemsChecked)
+        const originalLabel = ctx.btnVerify.innerHTML;
+        ctx.btnVerify.disabled = true;
+        ctx.btnVerify.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking Stock...';
+        const canProceed = await ctx.bomRunStockCheck();
+        ctx.btnVerify.innerHTML = originalLabel;
+        ctx.updateVerifyButtonState(); // restores the normal enabled/disabled state (still gated on ctx.allItemsChecked)
         if (!canProceed) return;
 
         const confirmed = await window.confirmDialog(
@@ -2554,705 +570,27 @@ window.PAGES.bom = {
           { kind: 'warning', okLabel: 'Yes, Verified' },
         );
         if (confirmed) {
-          setVerified(true);
+          ctx.setVerified(true);
           if (window.showToast) window.showToast('BOM verified — Create Dispatch is now unlocked.');
         }
       });
     }
 
-    // Flattens currentKitState's sections into the flat { name, qty, serials }
+    // Flattens ctx.currentKitState's sections into the flat { name, qty, serials }
     // list /api/bom/check-stock (and /api/bom/dispatch) expects. `qty` here
     // is bomEffectiveQty() — the User's partial Dispatch Qty when set,
     // otherwise Admin's full Quantity — so a partial dispatch only ever
     // checks/deducts the amount actually being sent right now, not the
     // BOM's full original allocation.
-    function bomCollectItemsForStockCheck() {
-      const out = [];
-      (currentKitState || []).forEach((sec) => {
-        (sec.items || []).forEach((it) => {
-          out.push({
-            name: it.name || '',
-            qty: bomEffectiveQty(it) || 0,
-            serials: bomSplitSerials(it.serials || ''),
-          });
-        });
-      });
-      return out;
-    }
-
-    // Same as bomCollectItemsForStockCheck, but for Create Dispatch only
-    // (Step 3) — also carries `totalQty`, the item's full originally-
-    // required Quantity (not the partial amount being sent this trip).
-    // The server needs this once per Order No. to set the pending
-    // baseline; check-stock (read-only, no persistence) never needs it,
-    // so that collector is left untouched.
-    function bomCollectItemsForDispatch() {
-      const out = [];
-      (currentKitState || []).forEach((sec) => {
-        (sec.items || []).forEach((it) => {
-          out.push({
-            name: it.name || '',
-            qty: bomEffectiveQty(it) || 0,
-            totalQty: Number(it.qty) || bomEffectiveQty(it) || 0,
-            serials: bomSplitSerials(it.serials || ''),
-          });
-        });
-      });
-      return out;
-    }
-
-    // Shared renderer for "here's exactly which item(s) failed and why" —
-    // used by both Verify BOM's stock CHECK and Create Dispatch's actual
-    // DEDUCTION, so the person sees the same itemized list either way.
-    function bomShowStockIssuesModal(title, intro, rows) {
-      const listHtml = (rows || []).map((r) => `
-        <li style="margin-bottom:6px;">
-          <b>${bomEsc(r.name || '(blank)')}</b>${r.category ? ` <span class="note">(${bomEsc(r.category)})</span>` : ''}
-          <br><span style="color:var(--red);">${bomEsc(r.reason || 'Not available.')}</span>
-        </li>
-      `).join('');
-      window.openModal(title, `
-        <p>${intro}</p>
-        <ul style="padding-left:18px; margin-top:10px;">${listHtml || '<li>Unknown error.</li>'}</ul>
-      `);
-    }
-
-    // Real, read-only stock check — asks the server whether every item in
-    // this BOM can actually be dispatched right now (item registered in
-    // Masters? enough Available quantity for the entered Dispatch Qty?
-    // entered serials real/Available/matching?) and, if not, exactly why.
-    // Nothing is deducted or reserved here. Called from Verify BOM (moved
-    // off Convert into Challan) — so verifying is what gates whether the
-    // BOM can be dispatched/challan'd at all; the actual deduction happens
-    // separately via Create Dispatch (bomRunDispatch below).
-    async function bomRunStockCheck() {
-      const items = bomCollectItemsForStockCheck();
-      let result;
-      try {
-        result = await window.Api.post('/bom/check-stock', { items });
-      } catch (e) {
-        window.openModal('Stock Check Failed', `<p>Could not verify stock — ${bomEsc((e && e.message) || 'server error')}. Please try again.</p>`);
-        return false;
-      }
-      if (result && result.canDispatch) return true;
-
-      const rows = (result && result.items ? result.items : []).filter((r) => !r.ok);
-      bomShowStockIssuesModal(
-        'Dispatch Not Possible',
-        'This BOM cannot be dispatched right now — the following item(s) failed the stock check:',
-        rows
-      );
-      return false;
-    }
-
-    // Create Dispatch — Step 2: the REAL, transactional stock deduction.
-    // Server re-checks everything (with row locks, in case stock changed
-    // since Verify BOM's check) and only then deducts — serial items get
-    // marked Dispatched, quantity items get FIFO-consumed from Available.
-    // Nothing is deducted if any single item fails.
-    async function bomRunDispatch() {
-      const header = getHeaderValues();
-      // Step 3: Order No. is now how the server links multiple partial
-      // dispatch trips back to the same BOM (pending-qty tracking).
-      // Checked here, right before the call, rather than earlier in the
-      // flow — Verify BOM / stock check don't persist anything, so they
-      // never needed it.
-      if (!header.orderNo || !header.orderNo.trim()) {
-        window.openModal('Order No. Required', '<p>Please enter an <b>Order No.</b> before creating a dispatch — it\'s how partial dispatches for this BOM get tracked together.</p>');
-        if (window.focusInvalidField) window.focusInvalidField($('bomOrderNo'));
-        return false;
-      }
-      if (!header.customerName || !header.customerName.trim()) {
-        window.openModal('Customer Name Required', '<p>Please enter a <b>Customer Name</b> before creating a dispatch.</p>');
-        if (window.focusInvalidField) window.focusInvalidField($('bomCustomerName'));
-        return false;
-      }
-      const items = bomCollectItemsForDispatch();
-      let result;
-      try {
-        result = await window.Api.post('/bom/dispatch', { orderNo: header.orderNo, header, items });
-      } catch (e) {
-        const msg = (e && e.message) || '';
-        // Server sends "DISPATCH BLOCKED:\n<item>: <reason>\n..." as the
-        // error message on a failed dispatch (mirrors Sales dispatch's own
-        // convention) — split it back into rows for the same itemized
-        // modal Convert into Challan uses, instead of one wall of text.
-        if (msg.startsWith('DISPATCH BLOCKED')) {
-          const rows = msg.split('\n').slice(1).map((line) => {
-            const idx = line.indexOf(': ');
-            return idx === -1 ? { name: line, reason: '' } : { name: line.slice(0, idx), reason: line.slice(idx + 2) };
-          });
-          bomShowStockIssuesModal('Dispatch Not Possible', 'This BOM could not be dispatched — the following item(s) failed the stock check:', rows);
-        } else {
-          window.openModal('Dispatch Failed', `<p>${bomEsc(msg || 'Could not dispatch this BOM. Please try again.')}</p>`);
-        }
-        return false;
-      }
-      return result;
-    }
-
-    // ------------------------------------------------------------------
-    // Step 4: Pending BOM Register — list every Open bom_orders row
-    // (server-computed remaining-per-item) and let a partial order be
-    // continued from ANY session, not just the one that started it,
-    // without re-picking the kit or retyping what already went out.
-    // Deliberately its own small form (not a reload into currentKitState/
-    // the multi-section kit editor) — bom_orders only ever stored a flat
-    // { itemName: totalQty } baseline (see Step 3), it never captured
-    // section layout, so there's nothing to rebuild a full kit screen
-    // from. This form only needs name/category/remaining per item, which
-    // GET /api/bom/orders/:id provides directly.
-    // ------------------------------------------------------------------
-
-    // Same "DISPATCH BLOCKED:\n<item>: <reason>\n..." convention the
-    // server uses everywhere else — shared parsing so this modal shows
-    // the same itemized failure list bomRunDispatch's own errors do.
-    function bomParseBlockedRows(msg) {
-      return String(msg || '').split('\n').slice(1).map((line) => {
-        const idx = line.indexOf(': ');
-        return idx === -1 ? { name: line, reason: '' } : { name: line.slice(0, idx), reason: line.slice(idx + 2) };
-      });
-    }
-
-    function bomRenderRegisterListHtml(orders) {
-      if (!orders || !orders.length) {
-        return `<p class="note" style="padding:20px 0;"><i class="fa-solid fa-circle-check" style="color:var(--green);"></i> Nothing pending — every BOM order has been fully dispatched.</p>`;
-      }
-      const rows = orders.map((o) => `
-        <tr>
-          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${bomEsc(o.orderNo)}</td>
-          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${bomEsc((o.header && o.header.customerName) || '-')}</td>
-          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${o.pendingItemCount} item(s) / ${o.pendingQty} unit(s) pending</td>
-          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${bomEsc((o.createdAt || '').slice(0, 10))}</td>
-          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);"><button type="button" class="btn btn-blue bom-mini-btn" data-bom-order-id="${o.id}"><i class="fa-solid fa-truck"></i> Continue Dispatch</button></td>
-        </tr>
-      `).join('');
-      return `
-        <table style="width:100%; border-collapse:collapse;">
-          <thead><tr>
-            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Order No</th>
-            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Customer</th>
-            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Pending</th>
-            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Started</th>
-            <th style="border-bottom:2px solid var(--border, #ddd);"></th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      `;
-    }
-
-    async function bomLoadRegisterList() {
-      openRegisterModal('<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading pending BOM orders...</p>');
-      let orders;
-      try {
-        orders = await window.Api.get('/bom/orders?status=Open');
-      } catch (e) {
-        openRegisterModal(`<p class="note" style="color:var(--red);">Could not load the register — ${bomEsc((e && e.message) || 'server error')}.</p>`);
-        return;
-      }
-      openRegisterModal(bomRenderRegisterListHtml(orders));
-      registerModalBody.querySelectorAll('[data-bom-order-id]').forEach((btn) => {
-        btn.addEventListener('click', () => bomLoadContinueDispatchForm(btn.getAttribute('data-bom-order-id')));
-      });
-    }
-
-    // `backLabel`/`showBack` let the same form read right whether it's
-    // sitting inside the Register modal ("Back to list") or inline on the
-    // BOM Home double-click flow ("Back to BOM Home").
-    function bomRenderContinueFormHtml(order, backLabel) {
-      const pendingItems = (order.items || []).filter((it) => it.remaining > 0);
-      if (!pendingItems.length) {
-        return `<p class="note">Nothing left pending for this order.</p><button type="button" class="btn btn-ghost" id="bomRegisterBackBtn"><i class="fa-solid fa-arrow-left"></i> ${bomEsc(backLabel)}</button>`;
-      }
-      // Step 5: each serial-mandatory row gets its own textarea id + a scan
-      // icon button (data-cont-scan-target points at that id) so the same
-      // openBomScanner() from the main screen can be reused here too — see
-      // bomLoadContinueDispatchForm below for the click wiring.
-      const rows = pendingItems.map((it, idx) => {
-        const taId = `bomContSerial_${idx}`;
-        return `
-        <div class="field" style="margin-bottom:14px;">
-          <label>${bomEsc(it.name)} <span class="note">(${bomEsc(it.category || '')} — ${it.remaining} of ${it.total} pending, ${it.dispatched} already dispatched)</span></label>
-          ${it.serialMandatory
-            ? `<div style="display:flex; gap:8px; align-items:flex-start;">
-                 <textarea id="${taId}" data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="serial" data-cont-total="${it.total}" rows="2" placeholder="Enter up to ${it.remaining} serial number(s), comma or newline separated" style="flex:1;"></textarea>
-                 <button type="button" class="ss-scan-icon-btn" data-cont-scan-target="${taId}" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
-               </div>
-               <p class="note" id="${taId}Note" style="margin-top:6px;"></p>`
-            : `<input type="number" min="0" max="${it.remaining}" value="${it.remaining}" data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="qty" data-cont-total="${it.total}">`
-          }
-        </div>
-      `;
-      }).join('');
-      return `
-        <p class="note" style="margin-bottom:10px;">Order No <b>${bomEsc(order.orderNo)}</b> — enter what's going out on THIS trip; leave the rest for a later trip.</p>
-        ${rows}
-        <div class="actions-row">
-          <button type="button" class="btn btn-green" id="bomRegisterContinueBtn"><i class="fa-solid fa-truck"></i> Continue Dispatch</button>
-          <button type="button" class="btn btn-ghost" id="bomRegisterBackBtn"><i class="fa-solid fa-arrow-left"></i> ${bomEsc(backLabel)}</button>
-          <button type="button" class="btn btn-ghost" id="bomRegisterTrackBtn"><i class="fa-solid fa-route"></i> Track This BOM</button>
-        </div>
-      `;
-    }
-
-    // The Continue Dispatch form's per-item serial textarea used to be
-    // "half-done" compared to the main Serial No. modal (openBomSerialModal
-    // above): typing/pasting here did no delimiter normalization and no
-    // duplicate check, so a repeated serial (typed twice, or the same
-    // barcode scanned twice) would silently sail through into the dispatch
-    // request. This gives it the same auto-newline-on-delimiter, paste
-    // normalization, and live duplicate warning the main modal already has
-    // — bomEsc/bomSplitSerials are the same helpers reused everywhere else.
-    function bomContSerialDupes(text) {
-      const serials = bomSplitSerials(text);
-      const seen = new Set();
-      const dupes = new Set();
-      serials.forEach((s) => {
-        const key = s.toLowerCase();
-        if (seen.has(key)) dupes.add(s);
-        seen.add(key);
-      });
-      return { serials, dupes: [...dupes] };
-    }
-
-    function bomUpdateContSerialNote(box) {
-      const note = document.getElementById(`${box.id}Note`);
-      if (!note) return;
-      const { serials, dupes } = bomContSerialDupes(box.value);
-      if (dupes.length) {
-        note.style.color = 'var(--red)';
-        note.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Duplicate serial number(s): ${dupes.map(bomEsc).join(', ')}`;
-      } else if (serials.length) {
-        note.style.color = 'var(--green)';
-        note.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${serials.length} serial number(s) entered.`;
-      } else {
-        note.style.color = '';
-        note.innerHTML = '';
-      }
-    }
-
-    // Same keydown/paste/blur wiring as the main Serial No. modal's box
-    // (see openBomSerialModal above) — any delimiter becomes a newline as
-    // you type/scan, a paste gets normalized the same way, and every
-    // change refreshes the duplicate note live (this also covers a camera
-    // scan's "Done", since confirmBomScan dispatches an 'input' event on
-    // the target textarea).
-    function bomWireContSerialTextarea(box) {
-      box.addEventListener('keydown', (e) => {
-        if ([',', ' ', '|', ';', 'Tab'].includes(e.key)) {
-          e.preventDefault();
-          const before = box.value.slice(0, box.selectionStart);
-          const after = box.value.slice(box.selectionEnd);
-          const needsNewline = before && !before.endsWith('\n');
-          box.value = before + (needsNewline ? '\n' : '') + after;
-          const pos = before.length + (needsNewline ? 1 : 0);
-          box.setSelectionRange(pos, pos);
-        }
-        bomUpdateContSerialNote(box);
-      });
-      box.addEventListener('paste', (e) => {
-        e.preventDefault();
-        const pasted = (e.clipboardData || window.clipboardData).getData('text');
-        const normalized = bomSplitSerials(pasted).join('\n');
-        const before = box.value.slice(0, box.selectionStart);
-        const after = box.value.slice(box.selectionEnd);
-        const prefix = before && !before.endsWith('\n') ? '\n' : '';
-        box.value = before + prefix + normalized + '\n' + after;
-        bomUpdateContSerialNote(box);
-      });
-      box.addEventListener('input', () => bomUpdateContSerialNote(box));
-      box.addEventListener('blur', () => {
-        box.value = bomSplitSerials(box.value).join('\n');
-        bomUpdateContSerialNote(box);
-      });
-    }
-
-    // `target` is either 'modal' (Pending/BOM Register overlay, unchanged
-    // behaviour) or 'inline' (renders straight into the BOM Entry screen's
-    // #bomContinuePanel — see bomOpenOrderInline below, used by the BOM
-    // Home table's double-click / Open action).
-    async function bomLoadContinueDispatchForm(orderId, target) {
-      const mode = target === 'inline' ? 'inline' : 'modal';
-      const container = mode === 'inline' ? continueInlineBody : registerModalBody;
-      const setBody = (html) => {
-        if (mode === 'inline') { container.innerHTML = html; }
-        else { openRegisterModal(html); }
-      };
-      const backLabel = mode === 'inline' ? 'Back to BOM Home' : 'Back to list';
-      const goBack = mode === 'inline' ? showBomHome : bomLoadRegisterList;
-
-      setBody('<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading order...</p>');
-      let order;
-      try {
-        order = await window.Api.get(`/bom/orders/${orderId}`);
-      } catch (e) {
-        setBody(`<p class="note" style="color:var(--red);">Could not load this order — ${bomEsc((e && e.message) || 'server error')}.</p>`);
-        return;
-      }
-      setBody(bomRenderContinueFormHtml(order, backLabel));
-      // Step 5: wire each pending serial item's scan icon button to open
-      // the camera scanner targeting that item's own textarea id.
-      container.querySelectorAll('[data-cont-scan-target]').forEach((btn) => {
-        btn.addEventListener('click', () => openBomScanner(btn.getAttribute('data-cont-scan-target')));
-      });
-      // Wire normalization + live duplicate note on every serial textarea
-      // (covers both manual typing/paste AND a camera scan's "Done", since
-      // that dispatches its own 'input' event on the same box).
-      container.querySelectorAll('textarea[data-cont-kind="serial"]').forEach((box) => bomWireContSerialTextarea(box));
-      const backBtn = container.querySelector('#bomRegisterBackBtn');
-      if (backBtn) backBtn.addEventListener('click', goBack);
-      const trackBtn = container.querySelector('#bomRegisterTrackBtn');
-      if (trackBtn) trackBtn.addEventListener('click', () => bomOpenTrackForOrderNo(order.orderNo));
-      const continueBtn = container.querySelector('#bomRegisterContinueBtn');
-      if (continueBtn) {
-        continueBtn.addEventListener('click', async () => {
-          const items = [];
-          const dupIssues = [];
-          container.querySelectorAll('[data-cont-name]').forEach((el) => {
-            const name = el.getAttribute('data-cont-name');
-            const totalQty = Number(el.getAttribute('data-cont-total')) || 0;
-            if (el.getAttribute('data-cont-kind') === 'serial') {
-              const { serials, dupes } = bomContSerialDupes(el.value || '');
-              if (dupes.length) { dupIssues.push(`${name}: ${dupes.join(', ')}`); return; }
-              if (serials.length) items.push({ name, qty: serials.length, totalQty, serials });
-            } else {
-              const qty = Number(el.value) || 0;
-              if (qty > 0) items.push({ name, qty, totalQty, serials: [] });
-            }
-          });
-          if (dupIssues.length) {
-            window.openModal('Duplicate Serial No.', `<p>Please remove the duplicate serial number(s) before dispatching:</p><ul>${dupIssues.map((s) => `<li>${bomEsc(s)}</li>`).join('')}</ul>`);
-            return;
-          }
-          if (!items.length) {
-            window.openModal('Nothing to Dispatch', '<p>Enter a quantity or serial number(s) for at least one item.</p>');
-            return;
-          }
-          const originalLabel = continueBtn.innerHTML;
-          continueBtn.disabled = true;
-          continueBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Dispatching...';
-          let result;
-          try {
-            result = await window.Api.post('/bom/dispatch', { orderNo: order.orderNo, header: order.header, items });
-          } catch (e) {
-            continueBtn.disabled = false;
-            continueBtn.innerHTML = originalLabel;
-            const msg = (e && e.message) || '';
-            if (msg.startsWith('DISPATCH BLOCKED')) {
-              bomShowStockIssuesModal('Dispatch Not Possible', "This trip could not be dispatched — the following item(s) failed:", bomParseBlockedRows(msg));
-            } else {
-              window.openModal('Dispatch Failed', `<p>${bomEsc(msg || 'Could not dispatch this order. Please try again.')}</p>`);
-            }
-            return;
-          }
-          if (window.showToast) window.showToast('Dispatched — stock has been deducted.');
-          if (result.orderStatus === 'Completed' || !(result.pending || []).length) {
-            window.openModal('Dispatch Complete', `<p>Order No <b>${bomEsc(order.orderNo)}</b> is now fully dispatched.</p>`);
-            goBack();
-          } else {
-            window.openModal('Partial Dispatch Done', `<p>Stock deducted for this trip. Order No <b>${bomEsc(order.orderNo)}</b> still has item(s) pending — reopen it from the register any time to continue.</p>`);
-            bomLoadContinueDispatchForm(orderId, mode);
-          }
-        });
-      }
-    }
-
-    // Opens a pending order directly INSIDE the BOM Entry screen (the
-    // literal "double-click -> redirected inside the BOM" flow) instead of
-    // the Pending BOM Register modal. Kit-selection panel is hidden while
-    // this is showing; "Back to BOM Home" (top of the entry screen) and
-    // the form's own "Back to BOM Home" button both return to the launcher.
-    function bomOpenOrderInline(orderId) {
-      bomInlineContinueOrderId = orderId;
-      showBomEntry();
-      if (newEntryPanel) newEntryPanel.style.display = 'none';
-      const kip = $('bomKitItemsPanel');
-      if (kip) kip.style.display = 'none';
-      if (continuePanel) continuePanel.style.display = '';
-      bomLoadContinueDispatchForm(orderId, 'inline');
-    }
-
-    if (homeBtnRegister) homeBtnRegister.addEventListener('click', bomLoadRegisterList);
-
-    if (btnChallan) {
-      btnChallan.addEventListener('click', async () => {
-        // belt-and-braces — button stays disabled until Verify BOM passes,
-        // which already ran the real stock check (see btnVerify above), so
-        // there's nothing left to check here.
-        if (!bomVerified) return;
-        if (!currentKitState) {
-          window.openModal('Select a Kit', '<p>Please select a BOM Kit before converting to a challan.</p>');
-          return;
-        }
-
-        const kw = bomGetAllKits()[kitSelect.value] ? bomGetAllKits()[kitSelect.value].kw : '';
-        const kit = { kw, sections: currentKitState };
-        const header = getHeaderValues();
-
-        const challanModalTitleEl = document.getElementById('bomChallanModalTitle');
-        if (challanModalTitleEl) challanModalTitleEl.innerHTML = '<i class="fa-solid fa-file-invoice"></i> Convert into Challan';
-        openChallanModal(bomRenderChallanEntryModalHtml(header, kit));
-        // Auto-fill Qty from the actual on-screen kit items (respecting any
-        // partial Dispatch Qty) via the item->category mapping — see
-        // bomComputeChallanAutoQty above. Every field stays editable after
-        // this; it only sets the starting value.
-        bomApplyChallanAutoQty(currentKitState);
-
-        const modalNo = document.getElementById('bomChallanModalNo');
-        const modalDate = document.getElementById('bomChallanModalDate');
-        const modalOrderNo = document.getElementById('bomChallanModalOrderNo');
-        const modalCapacity = document.getElementById('bomChallanModalCapacity');
-        const modalName = document.getElementById('bomChallanModalName');
-        const modalCity = document.getElementById('bomChallanModalCity');
-        const modalVehicleNo = document.getElementById('bomChallanModalVehicleNo');
-        const printBtn = document.getElementById('bomChallanPrintBtn');
-
-        if (printBtn) {
-          printBtn.addEventListener('click', async () => {
-            // Open the tab SYNCHRONOUSLY, as the very first thing in this
-            // handler, before any `await`. This is what stops browsers'
-            // popup blocker from kicking in — a window.open() call is only
-            // treated as "a direct result of the user's click" if it runs
-            // before the call stack yields to any async work. It starts as
-            // a small "Preparing..." page and gets redirected to the real
-            // PDF blob once the server finishes generating it below.
-            const pdfWindow = window.open('', '_blank');
-            if (pdfWindow) {
-              pdfWindow.document.write('<title>Preparing Challan…</title><body style="font-family:sans-serif;background:#1a1a1a;color:#ccc;display:flex;flex-direction:column;gap:16px;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="width:40px;height:40px;border:4px solid #444;border-top-color:#ffb020;border-radius:50%;animation:egsSpin 0.8s linear infinite;"></div><div>Preparing your Challan PDF…</div><style>@keyframes egsSpin{to{transform:rotate(360deg)}}</style></body>');
-            }
-            // NEW FLOW: Save Data -> backend fills the REAL Excel template ->
-            // converts to PDF via LibreOffice -> browser opens/prints the
-            // PDF. Replaces the old HTML-replica sheet (bomRenderChallanPrintSheetHtml)
-            // entirely — that function + #bomChallanPrintRoot HTML sheet are
-            // no longer used by this button (left in place, unused, in case
-            // of rollback; safe to delete once this is verified in production).
-            const challanNo = modalNo ? modalNo.value.trim() : '';
-            // TEMP: mandatory check disabled for testing — re-enable before going live
-            // if (!challanNo) {
-            //   window.openModal('Challan No. Required', '<p>Please enter a Challan No. before printing.</p>');
-            //   return;
-            // }
-
-            const payload = {
-              challanNo,
-              challanDate: modalDate ? modalDate.value : '',
-              orderNo: modalOrderNo ? modalOrderNo.value : '',
-              capacityKw: modalCapacity ? modalCapacity.value : kw,
-              customerName: modalName ? modalName.value : '',
-              city: modalCity ? modalCity.value : '',
-              vehicleNo: modalVehicleNo ? modalVehicleNo.value : '',
-              installerName: header.installerName || '',
-              fabricatorName: header.fabricatorName || '',
-              dealerName: header.dealerName || '',
-              items: bomCollectChallanTemplateValues(),
-            };
-
-            printBtn.disabled = true;
-            const originalLabel = printBtn.innerHTML;
-            printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving & Preparing PDF...';
-            try {
-              // pdfWindow (opened synchronously above) shows "Preparing..."
-              // while this runs; the global loading overlay (js/app.js)
-              // also covers the whole "Saving -> generating PDF on the
-              // server" wait on this page itself.
-              const saved = await window.Api.post('/challan', payload);
-              const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
-              // NOTE: window.open(pdfUrl, '_blank') directly on the URL was
-              // used previously, but that's a plain browser navigation — it
-              // never goes through the window.fetch wrapper in js/app.js that
-              // auto-attaches the "Authorization: Bearer <token>" header, so
-              // the server always rejected it with "Please log in to
-              // continue" even for a logged-in user. Fetching the PDF as a
-              // blob (via fetch(), which IS wrapped and gets the header) and
-              // pointing the already-open tab at an object URL for that blob
-              // keeps the request authenticated.
-              const pdfRes = await fetch(pdfUrl);
-              if (!pdfRes.ok) {
-                let msg = 'Could not generate the Challan PDF.';
-                try { const j = await pdfRes.json(); if (j && j.error) msg = j.error; } catch (e) { /* ignore */ }
-                throw new Error(msg);
-              }
-              const pdfBlob = await pdfRes.blob();
-              const blobUrl = URL.createObjectURL(pdfBlob);
-              // Redirect the tab we already opened synchronously on click —
-              // this is what actually avoids the popup blocker. Only if that
-              // tab somehow never opened (or the person closed it while
-              // waiting) do we fall back to a same-tab forced download.
-              if (pdfWindow && !pdfWindow.closed) {
-                pdfWindow.location = blobUrl;
-                pdfWindow.addEventListener('load', () => {
-                  try { pdfWindow.print(); } catch (e) { /* let user use the PDF viewer's own print button */ }
-                });
-              } else {
-                // Popup was blocked (or closed early) — fall back to a
-                // same-tab download link so the person can still get the PDF.
-                const a = document.createElement('a');
-                a.href = blobUrl;
-                a.download = `challan-${saved.id}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                if (window.showToast) window.showToast('Popup blocked — PDF downloaded instead. Allow popups for this site to open it directly next time.');
-              }
-              // Object URLs are per-tab memory references — revoke it after a
-              // delay so the new tab has time to actually load/render the PDF
-              // before the underlying blob is freed.
-              setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-              if (window.showToast) window.showToast('Challan saved — opening PDF for print.');
-            } catch (err) {
-              if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
-              window.openModal('Print Failed', `<p>${(err && err.message) || 'Could not generate the Challan PDF.'}</p>`);
-            } finally {
-              printBtn.disabled = false;
-              printBtn.innerHTML = originalLabel;
-            }
-          });
-        }
-      });
-    }
-
-    if (btnDispatch) {
-      btnDispatch.addEventListener('click', async () => {
-        if (!bomVerified) return; // belt-and-braces — button is disabled until verified anyway
-        if (!currentKitState) {
-          window.openModal('Select a Kit', '<p>Please select a BOM Kit before dispatching.</p>');
-          return;
-        }
-        const confirmed = await window.confirmDialog(
-          'Create Dispatch',
-          'This will permanently deduct every item in this BOM from stock. This cannot be undone from here. Continue?',
-          { kind: 'warning', okLabel: 'Yes, Dispatch' }
-        );
-        if (!confirmed) return;
-
-        const originalLabel = btnDispatch.innerHTML;
-        btnDispatch.disabled = true;
-        btnDispatch.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Dispatching...';
-        const result = await bomRunDispatch();
-        btnDispatch.disabled = false;
-        btnDispatch.innerHTML = originalLabel;
-
-        if (result && result.success) {
-          const pending = Array.isArray(result.pending) ? result.pending : [];
-          if (window.showToast) window.showToast('Dispatched — stock has been deducted.');
-
-          if (result.orderStatus === 'Completed' || !pending.length) {
-            // Nothing left pending for this Order No. — same end state as
-            // before Step 3.
-            window.openModal('Dispatch Complete', '<p>This BOM has been dispatched and stock has been deducted accordingly. Nothing is pending for this Order No. anymore.</p>');
-            btnDispatch.disabled = true; // fully done — avoids an accidental re-dispatch of a completed order
-          } else {
-            // Step 3: Partial dispatch — some item(s) still have qty left
-            // pending for this Order No. Pre-fill Dispatch Qty with what's
-            // still remaining (per item) and re-render, so the person can
-            // immediately do the next trip in this same session without
-            // retyping numbers. Entered serials are cleared for every row
-            // since whatever was entered this trip is already Dispatched
-            // in stock_ledger — they'd otherwise fail re-validation as
-            // "not Available" on the next check.
-            const pendingByName = {};
-            pending.forEach((p) => { pendingByName[p.name] = p.remaining; });
-            (currentKitState || []).forEach((sec) => {
-              (sec.items || []).forEach((it) => {
-                const rem = pendingByName[it.name || ''];
-                if (rem !== undefined) {
-                  it.dispatchQty = String(rem);
-                  it.serials = '';
-                  it.checked = false;
-                } else if (it.name) {
-                  // Fully dispatched already — nothing left to send for
-                  // this item on a future trip.
-                  it.dispatchQty = '0';
-                  it.serials = '';
-                }
-              });
-            });
-            if (itemsPreview) {
-              const scrollParent = bomFindScrollParent(itemsPreview);
-              const scrollTop = scrollParent.scrollTop;
-              itemsPreview.innerHTML = bomRenderScreenItemsHtml(currentKitState, { isAdmin: bomIsAdmin, needsSerial: bomItemNeedsSerial });
-              scrollParent.scrollTop = scrollTop;
-            }
-
-            const listHtml = pending.map((p) => `<li>${bomEsc(p.name)} — <b>${p.remaining}</b> pending (dispatched ${p.dispatched} of ${p.total})</li>`).join('');
-            window.openModal('Partial Dispatch Done', `
-              <p>Stock has been deducted for this trip. The following item(s) are still pending for Order No. <b>${bomEsc(getHeaderValues().orderNo)}</b>:</p>
-              <ul style="padding-left:18px; margin-top:10px;">${listHtml}</ul>
-              <p style="margin-top:10px;">Dispatch Qty has been pre-filled with the remaining amounts — tick <b>Check</b> again and re-verify when ready to send the rest.</p>
-            `);
-            // Remaining stock could have moved since this trip, and every
-            // row needs to be re-ticked for the next partial trip anyway
-            // (fresh serials, fresh amounts) — so require Verify BOM again
-            // before Create Dispatch unlocks, same gate as the very first
-            // trip.
-            setVerified(false);
-            updateVerifyButtonState();
-          }
-        }
-        // On failure, bomRunDispatch() already showed the itemized/error modal.
-      });
-    }
-
-    // Mirrors Excel's "Fit to 1 page" print option: measure the sheet's
-    // real height and shrink it (via CSS `zoom`, which reflows the layout
-    // so borders/columns stay correctly aligned — unlike `transform:
-    // scale()`, which does NOT reflow and caused the border/column
-    // misalignment seen earlier) so it always prints on exactly one page.
-    //
-    // WHY THE OLD VERSION STILL PRINTED 2 PAGES:
-    // 1) It measured with `sheet.scrollHeight` right after setting
-    //    `sheet.style.zoom`. In Chromium, scrollHeight/offsetHeight do NOT
-    //    reflect a zoom that's just been applied — they keep reporting
-    //    (roughly) the un-zoomed size — so the "how tall is it right now"
-    //    check was reading the wrong number every time, no matter what
-    //    zoom was set. getBoundingClientRect().height is the one DOM API
-    //    that DOES report the true, on-screen (zoomed) size, so that's
-    //    what this version measures with instead.
-    // 2) It only ever ran from the 'beforeprint' event. That event's
-    //    timing relative to when the browser actually lays out the print
-    //    preview is not something we can rely on — on the reporter's
-    //    machine it evidently didn't take effect before the page was
-    //    paginated, so the sheet fell back to the CSS's static baseline
-    //    zoom alone... which (see next point) was too big by itself.
-    // 3) The CSS baseline `zoom:0.75` on `.bom-sheet` was assumed (per its
-    //    old comment) to *by itself* guarantee one page. It doesn't —
-    //    measured directly, this exact 53-item/66-row kit still overflows
-    //    onto a 2nd page at zoom 0.75. There is no safe one-size-fits-all
-    //    static zoom: it depends on the item count, which changes per kit.
-    //
-    // FIX: there's no static zoom in CSS anymore (see style.css). Instead,
-    // this always measures the sheet's actual current natural height and
-    // computes the exact zoom needed — every time Print is clicked, not
-    // only reactively from 'beforeprint'. Because #bomPrintRoot is
-    // display:none outside of @media print, measuring it requires
-    // temporarily forcing it visible (off-screen, via the .bom-measuring
-    // class in style.css) — this works regardless of whether print media
-    // is active, so it no longer depends on 'beforeprint' firing at all.
-    //
-    // WIDTH: a plain uniform `zoom` shrinks width and height by the SAME
-    // factor. That's exactly what left big blank strips down both sides
-    // once the sheet had to shrink a lot to fit its height on one page —
-    // the sheet got shorter (good) but also proportionally narrower than
-    // the page (not wanted). Row height in this table depends only on
-    // font-size/line-height/padding (fixed values) — NOT on the table's
-    // width, since every cell is white-space:nowrap so nothing re-wraps
-    // when columns get wider. That means the sheet's *width* can be set
-    // independently of the vertical fit-to-page calculation: this widens
-    // the sheet's un-zoomed base width just enough that, after the SAME
-    // zoom shrink is applied for the height, the final on-page width
-    // comes out to exactly the printable page width — no leftover math
-    // needed elsewhere, and it's still one single `zoom` factor (so
-    // pagination — which depends on `zoom` reflowing layout — stays
-    // exactly as reliable as the height-only version above).
     function computeAndApplyFitZoom() {
-      const sheet = $('bomSheet');
-      if (!sheet || !printRoot) return;
+      const sheet = ctx.$('bomSheet');
+      if (!sheet || !ctx.printRoot) return;
       sheet.style.transform = '';
       sheet.style.width = '850px'; // arbitrary baseline just to measure natural height
       sheet.style.zoom = 1; // measure the sheet's true, un-scaled height first
-      printRoot.classList.add('bom-measuring');
+      ctx.printRoot.classList.add('bom-measuring');
       const naturalHeightPx = sheet.getBoundingClientRect().height;
-      printRoot.classList.remove('bom-measuring');
+      ctx.printRoot.classList.remove('bom-measuring');
       if (!naturalHeightPx) return; // nothing rendered yet — nothing to scale
 
       const PX_PER_MM = 96 / 25.4;
@@ -3308,22 +646,22 @@ window.PAGES.bom = {
     if (window.__bomBeforePrintHandler) {
       window.removeEventListener('beforeprint', window.__bomBeforePrintHandler);
     }
-    window.__bomBeforePrintHandler = computeAndApplyFitZoom;
-    window.addEventListener('beforeprint', computeAndApplyFitZoom);
+    window.__bomBeforePrintHandler = ctx.computeAndApplyFitZoom;
+    window.addEventListener('beforeprint', ctx.computeAndApplyFitZoom);
 
-    if (btnPrint) {
-      btnPrint.addEventListener('click', () => {
-        if (!currentKitState) {
+    if (ctx.btnPrint) {
+      ctx.btnPrint.addEventListener('click', () => {
+        if (!ctx.currentKitState) {
           window.openModal('Select a Kit', '<p>Please select a BOM Kit before printing.</p>');
           return;
         }
-        const kw = bomGetAllKits()[kitSelect.value].kw;
-        printRoot.innerHTML = bomRenderPrintSheetHtml({ kw, sections: currentKitState }, getHeaderValues());
+        const kw = bomGetAllKits()[ctx.kitSelect.value].kw;
+        ctx.printRoot.innerHTML = bomRenderPrintSheetHtml({ kw, sections: ctx.currentKitState }, ctx.getHeaderValues());
         bomSetPrintPageSize('size:A4 portrait; margin:19.05mm 6.35mm;');
         // Measure and apply the fit-to-one-page zoom BEFORE window.print()
         // is called — this is the actual fix (see the long comment above):
         // don't wait for 'beforeprint', do it right here, synchronously.
-        computeAndApplyFitZoom();
+        ctx.computeAndApplyFitZoom();
         window.print();
       });
     }
