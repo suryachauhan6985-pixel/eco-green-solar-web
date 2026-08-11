@@ -850,8 +850,22 @@ window.PAGES.purchase = {
     }
 
     function openPurchaseScanner(targetId) {
+      // Guard: if a scanner overlay is already up (e.g. this got called a
+      // second time), never stack a second one — that's exactly how the
+      // "camera permission requesting… then everything freezes" deadlock
+      // happens (see purScanSwallowKeydown below for the full story).
+      if (purScanState.overlayEl) return;
       const box = document.getElementById(targetId);
       if (!box) return;
+      // Whatever currently has keyboard focus (almost always the scan-icon
+      // button that was just tapped) can otherwise still "hear" an Enter/
+      // Tab keystroke fired a moment later by a paired Bluetooth/HID
+      // barcode scanner — which is a real physical keyboard event, not a
+      // touch — and re-click that hidden button, opening a second overlay
+      // on top of this one. Dropping focus here closes that door.
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
       purScanState.targetId = targetId;
       purScanState.torchOn = false;
       purScanState.handledOnce = false;
@@ -902,7 +916,38 @@ window.PAGES.purchase = {
       overlay.querySelector('#purScanRetry').onclick = retryPurchaseScan;
       overlay.querySelector('#purScanDone2').onclick = confirmPurchaseScan;
 
+      // Move real keyboard focus INTO the overlay (not onto any one
+      // button) so a paired BT/HID scanner has nothing useful to type
+      // into while the camera is starting up — see purScanSwallowKeydown.
+      overlay.setAttribute('tabindex', '-1');
+      overlay.style.outline = 'none';
+      overlay.focus({ preventScroll: true });
+      document.addEventListener('keydown', purScanSwallowKeydown, true);
+
       startPurchaseCamera();
+    }
+
+    // While the camera-scanner overlay is open — including the whole
+    // "Requesting camera permission…" window, which can take a few
+    // seconds on mobile — a paired Bluetooth/HID barcode scanner is still
+    // just a keyboard sending real keydown events to the page. If those
+    // events reach anything clickable behind/around the overlay (a
+    // button that still has focus, a stray Enter triggering the last-
+    // focused element, etc.) it can silently fire a second
+    // openPurchaseScanner() call, which stacks a second overlay + starts
+    // a second Html5Qrcode session while the first is still mid-permission
+    // -request. Two sessions then fight over one camera and a duplicate
+    // #purScanRegion id, the first overlay's status text never updates
+    // again, and every button underneath stops responding — the exact
+    // "deadlock" this fixes. Capturing keydown at the document level and
+    // swallowing everything except Escape means a BT scanner simply can't
+    // do anything while this screen is up; Escape closes it as an escape
+    // hatch. Camera-permission dialogs are native browser UI and aren't
+    // affected by this (it only ever sees events that reach the DOM).
+    function purScanSwallowKeydown(e) {
+      if (e.key === 'Escape') { closePurchaseScanner(); }
+      e.preventDefault();
+      e.stopPropagation();
     }
 
     function startPurchaseCamera() {
@@ -1061,6 +1106,7 @@ window.PAGES.purchase = {
       const targetId = purScanState.targetId;
       purScanState.pendingText = null;
       purScanState.pendingIsDup = false;
+      document.removeEventListener('keydown', purScanSwallowKeydown, true);
       const finish = () => {
         if (purScanState.overlayEl) { purScanState.overlayEl.remove(); purScanState.overlayEl = null; }
         document.body.style.overflow = '';
