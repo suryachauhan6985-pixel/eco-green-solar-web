@@ -1702,6 +1702,7 @@ window.PAGES.bom = {
       handledOnce: false,
       pendingText: null,
       pendingIsDup: false,
+      pendingIsOverCap: false,
       addedCount: 0,
     };
 
@@ -1748,6 +1749,7 @@ window.PAGES.bom = {
       bomScanState.handledOnce = false;
       bomScanState.pendingText = null;
       bomScanState.pendingIsDup = false;
+      bomScanState.pendingIsOverCap = false;
       bomScanState.addedCount = 0;
 
       const overlay = document.createElement('div');
@@ -1861,8 +1863,17 @@ window.PAGES.bom = {
       const existing = box ? bomSplitSerials(box.value) : [];
       const dup = !!code && existing.some((s) => s.toLowerCase() === code.toLowerCase());
 
+      // The target box carries its own required-Quantity cap via
+      // data-max-serials (set by openBomSerialModal). Reading it straight
+      // off the element keeps this generic — works for the main Serial
+      // No. modal today and any future scan target without extra wiring.
+      const maxAttr = box ? box.getAttribute('data-max-serials') : null;
+      const max = maxAttr !== null && maxAttr !== '' ? Number(maxAttr) : null;
+      const overCap = !dup && !!code && max != null && !Number.isNaN(max) && existing.length >= max;
+
       bomScanState.pendingText = code;
       bomScanState.pendingIsDup = dup;
+      bomScanState.pendingIsOverCap = overCap;
 
       const panel = document.getElementById('bomScanResult');
       const card = document.getElementById('bomScanResultCard');
@@ -1873,11 +1884,13 @@ window.PAGES.bom = {
       if (!panel || !valueEl) return;
 
       valueEl.textContent = code || '(empty)';
-      if (card) card.classList.toggle('dup', dup);
+      if (card) card.classList.toggle('dup', dup || overCap);
       if (msgEl) msgEl.textContent = dup
         ? 'This serial no. is already in the box. Retry with a different code, or remove the old one first.'
-        : 'Scanned successfully.';
-      if (doneBtn) doneBtn.style.display = dup ? 'none' : '';
+        : overCap
+          ? `You cannot scan more than the entered quantity — ${max} serial number(s) allowed for this item.`
+          : 'Scanned successfully.';
+      if (doneBtn) doneBtn.style.display = (dup || overCap) ? 'none' : '';
 
       panel.style.display = 'flex';
       bomScanSetStatus('');
@@ -1891,6 +1904,7 @@ window.PAGES.bom = {
       if (targetBox) targetBox.style.visibility = '';
       bomScanState.pendingText = null;
       bomScanState.pendingIsDup = false;
+      bomScanState.pendingIsOverCap = false;
     }
 
     function retryBomScan() {
@@ -1903,7 +1917,7 @@ window.PAGES.bom = {
     // line, same normalization Purchase's paste handler uses), then resume
     // scanning so the next serial can be captured right away.
     function confirmBomScan() {
-      if (bomScanState.pendingIsDup) return; // guard — Done is hidden for dupes anyway
+      if (bomScanState.pendingIsDup || bomScanState.pendingIsOverCap) return; // guard — Done is hidden for dupes/over-cap anyway
       const code = bomScanState.pendingText;
       if (!code) { retryBomScan(); return; }
 
@@ -1947,6 +1961,7 @@ window.PAGES.bom = {
       const targetId = bomScanState.targetId;
       bomScanState.pendingText = null;
       bomScanState.pendingIsDup = false;
+      bomScanState.pendingIsOverCap = false;
       const finish = () => {
         if (bomScanState.overlayEl) { bomScanState.overlayEl.remove(); bomScanState.overlayEl = null; }
         document.body.style.overflow = '';
@@ -1988,6 +2003,12 @@ window.PAGES.bom = {
     // straight in the textarea with no confirmation step at all — this
     // gives BT scans the same pause-and-confirm card the camera already
     // has, per scansheet.js's Bluetooth Scan overlay pattern.
+    // NOTE: no longer called from openBomSerialModal's BT keydown handler —
+    // that now commits a valid scan directly (see the keydown listener in
+    // openBomSerialModal) instead of popping this overlay every time, since
+    // the overlay + manual "Done" tap + closeBomScanner()'s 450ms
+    // readonly-release was exactly what made BT mode feel slow. Left in
+    // place in case a future BT entry point wants the confirm-card flow.
     function openBomBtScanResult(targetId, code) {
       bomScanState.targetId = targetId;
       bomScanState.handledOnce = true;
@@ -2078,7 +2099,7 @@ window.PAGES.bom = {
             <input type="file" id="bomSerialFileInput" accept=".txt,.csv">
             <p class="note" style="margin-top:6px;">Pick a .txt or .csv file — one serial per line, or comma/space separated. It loads into the box below so you can review before saving.</p>
           </div>
-          <textarea id="bomSerialModalBox" rows="8" ${bomSerialBtMode ? 'inputmode="none"' : 'inputmode="text"'} placeholder="Scan or type serial numbers — one per line...">${bomEsc(item.serials || '')}</textarea>
+          <textarea id="bomSerialModalBox" rows="8" ${bomSerialBtMode ? 'inputmode="none"' : 'inputmode="text"'} ${required != null ? `data-max-serials="${required}"` : ''} placeholder="Scan or type serial numbers — one per line...">${bomEsc(item.serials || '')}</textarea>
           <p class="note" id="bomSerialCountNote" style="margin-top:8px;"></p>
           <div class="actions-row" style="margin-top:12px;">
             <button type="button" class="btn btn-blue" id="bomSerialSaveBtn"><i class="fa-solid fa-check"></i> Save</button>
@@ -2189,21 +2210,65 @@ window.PAGES.bom = {
         }
       }
 
+      // Shows a clear, consistent error whenever a scan/entry would push
+      // the count past the item's required Quantity — used by every entry
+      // path below (BT scan, camera scan, typing, paste, file upload) so
+      // the message is identical no matter how the extra serial arrived.
+      function showQtyCapError() {
+        countNote.style.color = 'var(--red)';
+        countNote.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> You cannot scan more than the entered quantity — ${required} serial number(s) allowed for this item.`;
+        if (window.showToast) window.showToast(`Limit reached — only ${required} serial number(s) allowed for this item.`);
+      }
+
       // Auto-newline on delimiter + paste normalization — identical logic
       // to Purchase/Sale's serial box (splitSerials there === bomSplitSerials here).
+      //
       // In BT mode this branches instead: a physical scanner's keystrokes
-      // are buffered ourselves (never inserted directly) so Enter/Tab can
-      // pop the same Retry/Done result card the camera scanner shows —
-      // previously BT mode just let the scanner type straight into the
-      // box with no confirmation card and no per-scan duplicate check.
+      // are buffered ourselves (never inserted directly), and Enter/Tab
+      // commits the buffered code straight into the box — no overlay, no
+      // manual "Done" tap. Previously every scan opened a full-screen
+      // Retry/Done card (openBomBtScanResult) that required a tap to
+      // dismiss AND re-ran the 450ms readonly-release delay in
+      // closeBomScanner() on every single scan — that round trip was the
+      // actual reason BT mode felt much slower than the camera (which
+      // keeps its overlay open across scans and never pays that delay
+      // per-scan). A duplicate or over-quantity scan still gets rejected,
+      // just via an inline message instead of a blocking card, so nothing
+      // bad silently lands in the box and the box is never blurred/refocused.
       box.addEventListener('keydown', (e) => {
         if (bomSerialBtMode) {
           if (e.ctrlKey || e.altKey || e.metaKey) return;
+          // A fast HID/BT wedge scanner can outrun the main thread just
+          // enough that the browser doesn't see a key's keyup in time and
+          // the OS fires its own auto-repeat keydown(s) for that same key
+          // (e.repeat === true) before the real next character arrives.
+          // Previously every one of those repeats got appended to
+          // bomBtBuffer too, which is exactly what produced scans like
+          // "MMMMMMMMMMMMMMS2409S531420" / "MS24PPPPPS531420" /
+          // "MS240PS53111111111420" — random runs of one duplicated
+          // character in the middle of an otherwise-correct serial.
+          // Dropping repeat events here fixes it: a real scanner keystroke
+          // is never itself a repeat, only the OS's phantom echo of it is.
+          if (e.repeat) { e.preventDefault(); return; }
           if (e.key === 'Enter' || e.key === 'Tab') {
             e.preventDefault();
             const code = bomBtBuffer.trim();
             bomBtBuffer = '';
-            if (code) openBomBtScanResult('bomSerialModalBox', code);
+            if (!code) return;
+            const existing = bomSplitSerials(box.value);
+            if (required != null && existing.length >= required) { showQtyCapError(); return; }
+            const dup = existing.some((s) => s.toLowerCase() === code.toLowerCase());
+            if (dup) {
+              countNote.style.color = 'var(--red)';
+              countNote.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> "${bomEsc(code)}" is already in the list — skipped.`;
+              if (window.showToast) window.showToast(`Duplicate — "${code}" is already in the list.`);
+              return;
+            }
+            existing.push(code);
+            box.value = existing.join('\n') + '\n';
+            box.dispatchEvent(new Event('input', { bubbles: true }));
+            bomScanBeep();
+            updateCountNote();
             return;
           }
           if (e.key === 'Escape') { bomBtBuffer = ''; return; }
@@ -2215,6 +2280,15 @@ window.PAGES.bom = {
         }
         if ([',', ' ', '|', ';', 'Tab'].includes(e.key)) {
           e.preventDefault();
+          // Block starting a NEW serial once the box already holds
+          // `required` of them — bomSplitSerials(box.value) at this point
+          // still includes the token the user just finished typing, so
+          // this only rejects the (required+1)th one onward, never the
+          // final in-quota entry itself.
+          if (required != null && bomSplitSerials(box.value).length > required) {
+            showQtyCapError();
+            return;
+          }
           const before = box.value.slice(0, box.selectionStart);
           const after = box.value.slice(box.selectionEnd);
           const needsNewline = before && !before.endsWith('\n');
@@ -2227,16 +2301,31 @@ window.PAGES.bom = {
       box.addEventListener('paste', (e) => {
         e.preventDefault();
         const pasted = (e.clipboardData || window.clipboardData).getData('text');
-        const normalized = bomSplitSerials(pasted).join('\n');
+        let incoming = bomSplitSerials(pasted);
+        if (required != null) {
+          const room = Math.max(0, required - bomSplitSerials(box.value).length);
+          if (incoming.length > room) {
+            const skipped = incoming.length - room;
+            incoming = incoming.slice(0, room);
+            showQtyCapError();
+            if (window.showToast) window.showToast(`${skipped} serial number(s) skipped — quantity limit is ${required}.`);
+          }
+        }
+        const normalized = incoming.join('\n');
         const before = box.value.slice(0, box.selectionStart);
         const after = box.value.slice(box.selectionEnd);
         const prefix = before && !before.endsWith('\n') ? '\n' : '';
-        box.value = before + prefix + normalized + '\n' + after;
+        box.value = before + prefix + normalized + (normalized ? '\n' : '') + after;
         updateCountNote();
       });
       box.addEventListener('input', updateCountNote);
       box.addEventListener('blur', () => {
-        box.value = bomSplitSerials(box.value).join('\n');
+        let serials = bomSplitSerials(box.value);
+        if (required != null && serials.length > required) {
+          serials = serials.slice(0, required);
+          showQtyCapError();
+        }
+        box.value = serials.join('\n');
         updateCountNote();
       });
 
@@ -2252,11 +2341,18 @@ window.PAGES.bom = {
         const reader = new FileReader();
         reader.onload = () => {
           const parsed = bomSplitSerials(String(reader.result || ''));
-          const merged = bomSplitSerials(box.value).concat(parsed);
+          let merged = bomSplitSerials(box.value).concat(parsed);
+          let loadedCount = parsed.length;
+          if (required != null && merged.length > required) {
+            const skipped = merged.length - required;
+            merged = merged.slice(0, required);
+            loadedCount = Math.max(0, parsed.length - skipped);
+            showQtyCapError();
+          }
           box.value = merged.join('\n');
           updateCountNote();
           backToTypeMode(); // back to the box so it can be reviewed/edited before Save
-          if (window.showToast) window.showToast(`${parsed.length} serial number(s) loaded from file.`);
+          if (window.showToast) window.showToast(`${loadedCount} serial number(s) loaded from file.`);
         };
         reader.onerror = () => window.openModal('File Read Error', '<p>Could not read that file. Please try a plain .txt or .csv file.</p>');
         reader.readAsText(file);
@@ -2278,7 +2374,12 @@ window.PAGES.bom = {
           countNote.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Duplicate serial number(s): ${[...dupes].map(bomEsc).join(', ')}`;
           return;
         }
-        if (required != null && serials.length !== required) {
+        if (required != null && serials.length > required) {
+          countNote.style.color = 'var(--red)';
+          countNote.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> You cannot scan more than the entered quantity — ${required} serial number(s) allowed, ${serials.length} entered.`;
+          return;
+        }
+        if (required != null && serials.length < required) {
           countNote.style.color = 'var(--red)';
           countNote.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Please enter Serial No. first — exactly ${required} needed, ${serials.length} entered.`;
           return;
