@@ -341,16 +341,18 @@ window.PAGES.bom = {
         </tr>
       `).join('');
       return `
-        <table style="width:100%; border-collapse:collapse;">
-          <thead><tr>
-            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Order No</th>
-            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Customer</th>
-            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Pending</th>
-            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Started</th>
-            <th style="border-bottom:2px solid var(--border, #ddd);"></th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
+        <div class="table-wrap" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+          <table style="width:100%; min-width:560px; border-collapse:collapse;">
+            <thead><tr>
+              <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Order No</th>
+              <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Customer</th>
+              <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Pending</th>
+              <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Started</th>
+              <th style="border-bottom:2px solid var(--border, #ddd);"></th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
       `;
     }
 
