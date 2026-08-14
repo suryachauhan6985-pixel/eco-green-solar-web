@@ -342,8 +342,23 @@ window.PAGES.sales = {
       handledOnce: false,
       pendingText: null,
       pendingIsDup: false,
+      pendingBlocked: false, // dup OR over the saleQty cap — either way Done stays disabled
       addedCount: 0,
     };
+
+    // Live cap for the camera scanner, mirroring wireSerialBtToggle's own
+    // requiredQty() below — only the New Sale Entry box (saleSerials) has a
+    // single Qty field to cap against (one product line per scan session);
+    // the Edit/Modify box (saleEditSerials) holds serials across potentially
+    // several lines at once and is checked at Apply time instead, same
+    // reasoning purchase.js's serial boxes already use.
+    function saleScanRequiredQty() {
+      if (saleScanState.targetId !== 'saleSerials') return null;
+      const el = document.getElementById('saleQty');
+      if (!el) return null;
+      const v = parseInt(el.value, 10);
+      return (Number.isFinite(v) && v > 0) ? v : null;
+    }
 
     function saleScanBeep() {
       try {
@@ -383,6 +398,7 @@ window.PAGES.sales = {
       saleScanState.handledOnce = false;
       saleScanState.pendingText = null;
       saleScanState.pendingIsDup = false;
+      saleScanState.pendingBlocked = false;
       saleScanState.addedCount = 0;
 
       const overlay = document.createElement('div');
@@ -525,9 +541,16 @@ window.PAGES.sales = {
       const box = document.getElementById(saleScanState.targetId);
       const existing = box ? splitSerials(box.value) : [];
       const dup = !!code && existing.some((s) => s.toLowerCase() === code.toLowerCase());
+      // Same live cap the BT toggle already enforces (qtyFieldId: 'saleQty')
+      // — without this, the camera path let you keep scanning past the
+      // entered Qty with no warning until "Add Product Line" rejected the
+      // whole line with a Quantity Mismatch error, forcing a manual cleanup.
+      const req = saleScanRequiredQty();
+      const overCap = !dup && req != null && existing.length >= req;
 
       saleScanState.pendingText = code;
       saleScanState.pendingIsDup = dup;
+      saleScanState.pendingBlocked = dup || overCap;
 
       const panel = document.getElementById('saleScanResult');
       const card = document.getElementById('saleScanResultCard');
@@ -538,11 +561,13 @@ window.PAGES.sales = {
       if (!panel || !valueEl) return;
 
       valueEl.textContent = code || '(empty)';
-      if (card) card.classList.toggle('dup', dup);
+      if (card) card.classList.toggle('dup', dup || overCap);
       if (msgEl) msgEl.textContent = dup
         ? 'This serial no. is already in the box. Retry with a different code, or remove the old one first.'
-        : 'Scanned successfully.';
-      if (doneBtn) doneBtn.style.display = dup ? 'none' : '';
+        : overCap
+          ? `You cannot scan more than the entered quantity — ${req} serial number(s) allowed.`
+          : 'Scanned successfully.';
+      if (doneBtn) doneBtn.style.display = (dup || overCap) ? 'none' : '';
 
       panel.style.display = 'flex';
       saleScanSetStatus('');
@@ -556,6 +581,7 @@ window.PAGES.sales = {
       if (targetBox) targetBox.style.visibility = '';
       saleScanState.pendingText = null;
       saleScanState.pendingIsDup = false;
+      saleScanState.pendingBlocked = false;
     }
 
     // "Retry" — discard the paused result and resume live scanning.
@@ -569,7 +595,7 @@ window.PAGES.sales = {
     // per line, same normalization the paste handler above uses), then
     // resume scanning so the next serial can be captured right away.
     function confirmSaleScan() {
-      if (saleScanState.pendingIsDup) return; // guard — Done button is hidden for dupes anyway
+      if (saleScanState.pendingBlocked) return; // guard — Done button is hidden for dupes/over-cap anyway
       const code = saleScanState.pendingText;
       if (!code) { retrySaleScan(); return; }
 
@@ -613,6 +639,7 @@ window.PAGES.sales = {
       const targetId = saleScanState.targetId;
       saleScanState.pendingText = null;
       saleScanState.pendingIsDup = false;
+      saleScanState.pendingBlocked = false;
       document.removeEventListener('keydown', saleScanSwallowKeydown, true);
       const finish = () => {
         if (saleScanState.overlayEl) { saleScanState.overlayEl.remove(); saleScanState.overlayEl = null; }
