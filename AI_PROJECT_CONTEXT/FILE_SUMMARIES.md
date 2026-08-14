@@ -91,7 +91,7 @@ Deep analysis of every important source file.
 ## `js/pages/bom-challan-map.js`
 
 - **Purpose:** Defines 7 function(s) implementing supporting logic.
-- **Lines of code:** 192
+- **Lines of code:** 197
 - **Complexity:** Medium (heuristic score: 37)
 - **Imports:** None
 - **Exports:** None
@@ -127,7 +127,7 @@ Deep analysis of every important source file.
 ## `js/pages/bom-dispatch.js`
 
 - **Purpose:** Defines 1 class(es) implementing core logic.
-- **Lines of code:** 698
+- **Lines of code:** 700
 - **Complexity:** High (heuristic score: 126)
 - **Imports:** None
 - **Exports:** None
@@ -146,7 +146,7 @@ Deep analysis of every important source file.
 ## `js/pages/bom-kit-builder.js`
 
 - **Purpose:** Defines 12 function(s) implementing supporting logic.
-- **Lines of code:** 733
+- **Lines of code:** 745
 - **Complexity:** High (heuristic score: 135)
 - **Imports:** None
 - **Exports:** None
@@ -183,7 +183,7 @@ Deep analysis of every important source file.
 ## `js/pages/bom-party-autocomplete.js`
 
 - **Purpose:** Defines 10 function(s) implementing supporting logic.
-- **Lines of code:** 166
+- **Lines of code:** 177
 - **Complexity:** Medium (heuristic score: 40)
 - **Imports:** None
 - **Exports:** None
@@ -237,7 +237,7 @@ Deep analysis of every important source file.
 ## `js/pages/bom-track-register.js`
 
 - **Purpose:** Defines 11 function(s) implementing supporting logic.
-- **Lines of code:** 202
+- **Lines of code:** 206
 - **Complexity:** Medium (heuristic score: 41)
 - **Imports:** None
 - **Exports:** None
@@ -254,8 +254,8 @@ Deep analysis of every important source file.
 ## `js/pages/bom.js`
 
 - **Purpose:** Defines 1 class(es) implementing core logic.
-- **Lines of code:** 679
-- **Complexity:** High (heuristic score: 100)
+- **Lines of code:** 710
+- **Complexity:** High (heuristic score: 101)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** bomRenderHomeViewHtml(), showBomHome(), showBomEntry(), showBomEntryForNewKit(), bomOverallStatusFromItems(items), bomRenderHomePendingTableHtml(orders), bomLoadHomePendingTable(), bomCollectItemsForCreate(), bomOpenCreateBomModal(), setVerified(isVerified), allItemsChecked(), updateVerifyButtonState(), getHeaderValues(), computeAndApplyFitZoom()
@@ -345,15 +345,15 @@ Deep analysis of every important source file.
 
 ## `js/pages/purchase.js`
 
-- **Purpose:** Defines 45 function(s) implementing supporting logic.
-- **Lines of code:** 1360
-- **Complexity:** High (heuristic score: 222)
+- **Purpose:** Defines 53 function(s) implementing supporting logic.
+- **Lines of code:** 1641
+- **Complexity:** High (heuristic score: 294)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** splitSerials(text), setPurEditOpen(open), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), fillSelect(selectEl, items, placeholder), purCategoryNeedsSerial(cat), purCategoryNeedsModel(cat), loadPurCategories(), refreshPurBrandsAndType(), refreshPurWattages(), refreshPurModels(), updatePurWattModelVisibility(), updatePurSerialVisibility(), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadPurWarehouses(injectEditValue), searchSupplierLedgers(q), searchSupplierShortCodes(q), fillSupplierDatalist(listEl, ledgers, key), applyLedgerToSupplierFields(l), wireSupplierAutocomplete(inputEl, listEl, matchKey, searchFn), purScanBeep(), purScanSetStatus(msg), openPurchaseScanner(targetId), startPurchaseCamera(), launchPurchaseCamera(), onPurchaseScanSuccess(decodedText), showPurchaseScanResult(text), hidePurchaseScanResult(), retryPurchaseScan(), confirmPurchaseScan(), togglePurchaseTorch(), flipPurchaseCamera(), closePurchaseScanner(), clearPurchaseForm(), refreshPurEditBrandsAndType(injectBrand, injectType), refreshPurEditWattages(injectWatt), refreshPurEditModels(injectModel), updatePurEditWattModelVisibility(), updatePurEditSerialVisibility(), loadEditCascadeForLine(line), $(id), finish()
+- **Functions:** splitSerials(text), setPurEditOpen(open), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), fillSelect(selectEl, items, placeholder), purCategoryNeedsSerial(cat), purCategoryNeedsModel(cat), loadPurCategories(), refreshPurBrandsAndType(), refreshPurWattages(), refreshPurModels(), updatePurWattModelVisibility(), updatePurSerialVisibility(), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadPurWarehouses(injectEditValue), searchSupplierLedgers(q), searchSupplierShortCodes(q), fillSupplierDatalist(listEl, ledgers, key), applyLedgerToSupplierFields(l), wireSupplierAutocomplete(inputEl, listEl, matchKey, searchFn), wireSerialBtToggle(opts), requiredQty(), focusBox(), applyUi(), hideCard(), showCard(code, flags), reset(), purScanBeep(), purScanSetStatus(msg), openPurchaseScanner(targetId), purScanSwallowKeydown(e), startPurchaseCamera(), launchPurchaseCamera(), onPurchaseScanSuccess(decodedText), showPurchaseScanResult(text), hidePurchaseScanResult(), retryPurchaseScan(), confirmPurchaseScan(), togglePurchaseTorch(), flipPurchaseCamera(), closePurchaseScanner(), clearPurchaseForm(), refreshPurEditBrandsAndType(injectBrand, injectType), refreshPurEditWattages(injectWatt), refreshPurEditModels(injectModel), updatePurEditWattModelVisibility(), updatePurEditSerialVisibility(), loadEditCascadeForLine(line), $(id), finish()
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (56 statement keywords: SELECT, JOIN, UPDATE)
+- **Database usage:** Raw SQL detected (59 statement keywords: SELECT, JOIN, UPDATE)
 - **Environment variables used:** None
 - **Potential improvements:**
   - File defines a large number of functions — consider splitting into smaller modules.
@@ -433,14 +433,14 @@ Deep analysis of every important source file.
 ## `js/pages/sales.js`
 
 - **Purpose:** Defines 1 class(es) implementing core logic.
-- **Lines of code:** 1399
-- **Complexity:** High (heuristic score: 254)
+- **Lines of code:** 1636
+- **Complexity:** High (heuristic score: 316)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** fillSelect(selectEl, items, placeholder), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadCategoryWattRules(), isWattMandatory(cat), isSerialMandatory(cat), saleCategoryNeedsModel(cat), splitSerials(text), wireSerialBox(el), saleScanBeep(), saleScanSetStatus(msg), openSaleScanner(targetId), startSaleCamera(), launchSaleCamera(), onSaleScanSuccess(decodedText), showSaleScanResult(text), hideSaleScanResult(), retrySaleScan(), confirmSaleScan(), toggleSaleTorch(), flipSaleCamera(), closeSaleScanner(), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), loadSaleCategories(), refreshSaleBrandsAndWatt(), refreshSaleWattage(), refreshSaleModels(), refreshSaleType(), updateSaleSerialFieldVisibility(), updateSaleWattModelVisibility(), updateSaleEditQtyFieldVisibility(), updateSaleEditWattModelVisibility(), searchCustomerLedgers(q), searchCustomerShortCodes(q), fillCustomerDatalist(listEl, ledgers, key), applyLedgerToCustomerFields(l), wireCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), clearSalesForm(), refreshSaleEditBrandsAndWatt(injectBrand, injectWatt), refreshSaleEditWattage(injectWatt), refreshSaleEditModels(injectModel), refreshSaleEditType(injectType), loadEditCascadeForLine(line), clearEditPanel(), findSalesOrderForEditing(term), prefillFromAssign(customerName, orderNo, mobile, address, lines), $(id), finish(), qtyLineKey(l)
+- **Functions:** fillSelect(selectEl, items, placeholder), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadCategoryWattRules(), isWattMandatory(cat), isSerialMandatory(cat), saleCategoryNeedsModel(cat), splitSerials(text), wireSerialBox(el, btToggleGetter), saleScanBeep(), saleScanSetStatus(msg), openSaleScanner(targetId), saleScanSwallowKeydown(e), startSaleCamera(), launchSaleCamera(), onSaleScanSuccess(decodedText), showSaleScanResult(text), hideSaleScanResult(), retrySaleScan(), confirmSaleScan(), toggleSaleTorch(), flipSaleCamera(), closeSaleScanner(), wireSerialBtToggle(opts), requiredQty(), focusBox(), applyUi(), hideCard(), showCard(code, flags), reset(), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), loadSaleCategories(), refreshSaleBrandsAndWatt(), refreshSaleWattage(), refreshSaleModels(), refreshSaleType(), updateSaleSerialFieldVisibility(), updateSaleWattModelVisibility(), updateSaleEditQtyFieldVisibility(), updateSaleEditWattModelVisibility(), searchCustomerLedgers(q), searchCustomerShortCodes(q), fillCustomerDatalist(listEl, ledgers, key), applyLedgerToCustomerFields(l), wireCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), clearSalesForm(), refreshSaleEditBrandsAndWatt(injectBrand, injectWatt), refreshSaleEditWattage(injectWatt), refreshSaleEditModels(injectModel), refreshSaleEditType(injectType), loadEditCascadeForLine(line), clearEditPanel(), findSalesOrderForEditing(term), prefillFromAssign(customerName, orderNo, mobile, address, lines), $(id), finish(), qtyLineKey(l)
 - **Classes:** Step
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (56 statement keywords: SELECT, JOIN)
+- **Database usage:** Raw SQL detected (57 statement keywords: SELECT, JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - File defines a large number of functions — consider splitting into smaller modules.
@@ -451,12 +451,12 @@ Deep analysis of every important source file.
 
 ## `js/pages/scansheet.js`
 
-- **Purpose:** Defines 95 function(s) implementing supporting logic.
-- **Lines of code:** 1756
-- **Complexity:** High (heuristic score: 418)
+- **Purpose:** Defines 97 function(s) implementing supporting logic.
+- **Lines of code:** 1855
+- **Complexity:** High (heuristic score: 436)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** escapeHtml(str), fmtTimestamp(iso), root(), render(), renderList(), sheetCardHtml(sheet), openCreateModal(), openTemplateModal(), handleImportFile(file), parseCsv(text), importFromRows(rows, fileName), startManualCreate(prefill), startEditSheet(sheetId), renderManualCreate(), colRowHtml(col), syncDraftFromDom(), addDraftColumn(), deleteDraftColumn(id), saveDraftSheet(), backToList(), openSheetDataEntry(sheetId), renderDataEntry(), isScannableCol(col), fieldHtml(col), entryRowHtml(entry, sheet), handleImageFieldChange(inputEl), saveCurrentEntry(), deleteEntryRow(entryId), saveTextFile(content, suggestedName, mimeType, pickerTypes), exportSheetCsv(sheetId), dropdownOutsideHandler(e), closeAnyDropdown(), placeDropdown(menu, anchorBtn), openSheetCardMenu(sheetId, anchorBtn), openEntryMenu(anchorBtn), isDuplicateScanValue(sheet, colId, value), processScanValue(text, fieldId), resolveScanTargetId(), openScanner(targetFieldId), setScanStatus(msg), startCamera(), launchCamera(), onScanSuccess(decodedText), showScanResult(text), openBluetoothScanResult(text, targetId), showBluetoothScanResult(text), bindBtResultAction(btn, handler), hideScanResult(), closeBluetoothResultOverlay(), closeBluetoothResultAndResume(), retryScan(), confirmScanSave(), fillTargetField(text, fieldId), toggleTorch(), flipCamera(), closeScanner(), beep(), ensureBluetoothScannerListener(), setBluetoothScanMode(enabled), resetBluetoothScanBuffer(), clearBluetoothTargetValue(targetId), getBluetoothCaptureValue(), setTargetFieldValue(text, targetId), prepBluetoothFieldForFocus(input), releaseBluetoothFieldForScanner(input), resumeBluetoothScannerAfterResult(targetId, clearValue), focusBluetoothScanTarget(), onBluetoothScannerKeydown(e), clearBluetoothKeyBufferTimer(), addBluetoothKeyBufferChar(ch), onBluetoothScannerPaste(e), observeKeyboardWedgeScan(e), isLikelyScannerBurst(text, now), appendBluetoothScannerChar(ch, preferredField), syncBluetoothCapture(value), queueBluetoothScanValue(text, targetId), handleBluetoothScanValue(text, fieldId), setDirectScannerStatus(msg, isError), connectHidScanner(), onHidScannerInputReport(event), parseHidKeyboardReport(bytes), hidKeyCodeToChar(code, shift), addDirectScannerChar(ch, source), finishDirectScannerBuffer(source), connectSerialScanner(), readSerialScannerLoop(port), handleSerialScannerText(text), wire(), wireList(), wireManualCreate(), wireDataEntry(), pad(n), csvEscape(v), run(e), finish()
+- **Functions:** escapeHtml(str), fmtTimestamp(iso), root(), render(), renderList(), sheetCardHtml(sheet), openCreateModal(), openTemplateModal(), handleImportFile(file), parseCsv(text), importFromRows(rows, fileName), startManualCreate(prefill), startEditSheet(sheetId), renderManualCreate(), colRowHtml(col), syncDraftFromDom(), addDraftColumn(), deleteDraftColumn(id), saveDraftSheet(), backToList(), openSheetDataEntry(sheetId), renderDataEntry(), isScannableCol(col), fieldHtml(col), entryRowHtml(entry, sheet), handleImageFieldChange(inputEl), saveCurrentEntry(), deleteEntryRow(entryId), saveTextFile(content, suggestedName, mimeType, pickerTypes), exportSheetCsv(sheetId), saveBinaryFile(bytes, suggestedName, mimeType, pickerTypes), exportSheetXlsx(sheetId), dropdownOutsideHandler(e), closeAnyDropdown(), placeDropdown(menu, anchorBtn), openSheetCardMenu(sheetId, anchorBtn), openEntryMenu(anchorBtn), isDuplicateScanValue(sheet, colId, value), processScanValue(text, fieldId), resolveScanTargetId(), openScanner(targetFieldId), setScanStatus(msg), startCamera(), launchCamera(), onScanSuccess(decodedText), showScanResult(text), openBluetoothScanResult(text, targetId), showBluetoothScanResult(text), bindBtResultAction(btn, handler), hideScanResult(), closeBluetoothResultOverlay(), closeBluetoothResultAndResume(), retryScan(), confirmScanSave(), fillTargetField(text, fieldId), toggleTorch(), flipCamera(), closeScanner(), beep(), ensureBluetoothScannerListener(), setBluetoothScanMode(enabled), resetBluetoothScanBuffer(), clearBluetoothTargetValue(targetId), getBluetoothCaptureValue(), setTargetFieldValue(text, targetId), prepBluetoothFieldForFocus(input), releaseBluetoothFieldForScanner(input), resumeBluetoothScannerAfterResult(targetId, clearValue), focusBluetoothScanTarget(), onBluetoothScannerKeydown(e), clearBluetoothKeyBufferTimer(), addBluetoothKeyBufferChar(ch), onBluetoothScannerPaste(e), observeKeyboardWedgeScan(e), isLikelyScannerBurst(text, now), appendBluetoothScannerChar(ch, preferredField), syncBluetoothCapture(value), queueBluetoothScanValue(text, targetId), handleBluetoothScanValue(text, fieldId), setDirectScannerStatus(msg, isError), connectHidScanner(), onHidScannerInputReport(event), parseHidKeyboardReport(bytes), hidKeyCodeToChar(code, shift), addDirectScannerChar(ch, source), finishDirectScannerBuffer(source), connectSerialScanner(), readSerialScannerLoop(port), handleSerialScannerText(text), wire(), wireList(), wireManualCreate(), wireDataEntry(), pad(n), csvEscape(v), run(e), finish()
 - **Classes:** None
 - **API endpoints:** None
 - **Database usage:** Raw SQL detected (14 statement keywords: JOIN, SELECT)

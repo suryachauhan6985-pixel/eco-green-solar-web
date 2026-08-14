@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-11T06:40:26.405Z",
+  "generatedAt": "2026-08-14T09:51:50.637Z",
   "files": {
     ".env": {
       "hash": "fbf93500e5313e2f01018668de228b174a039bbf",
@@ -12,9 +12,9 @@
       "mtimeMs": 1785760530681.6638
     },
     "index.html": {
-      "hash": "ab37a07278bc74d0e8b8f6e06b79c23512bb3db2",
+      "hash": "ce29b3db5c2f206ca02fc079b67b3777029d4480",
       "size": 8616,
-      "mtimeMs": 1786430341187.0295
+      "mtimeMs": 1786435952489.481
     },
     "manifest.webmanifest": {
       "hash": "1a394524a536e053f78cdd82bfedeb87443475ae",
@@ -32,9 +32,9 @@
       "mtimeMs": 1786187114574.225
     },
     "sw.js": {
-      "hash": "5ea5c501c328cf9b51e3d4c58724b1cef127e1b1",
+      "hash": "3a6492fbc68c50487c506972df58f50c9054bf61",
       "size": 4829,
-      "mtimeMs": 1786430343546.0947
+      "mtimeMs": 1786435960351.3472
     },
     "js/app.js": {
       "hash": "f3c73d4fd587143375901f3e72f26f4775c69f7a",
@@ -47,9 +47,9 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/bom-challan-map.js": {
-      "hash": "00ca6ffd4a93770f7bfae8f2f0deba4d71cbee32",
-      "size": 10715,
-      "mtimeMs": 1786430198253.3293
+      "hash": "3bedb4ab54fada58eb9912e94eb3b3809d96cf53",
+      "size": 11047,
+      "mtimeMs": 1786435731640.7805
     },
     "js/pages/bom-challan.js": {
       "hash": "a381d5d8b619f22e2ff3201763d7f6962fd10262",
@@ -57,14 +57,14 @@
       "mtimeMs": 1786357143842.0635
     },
     "js/pages/bom-dispatch.js": {
-      "hash": "1b0178bdbdef95750c7606753f77d988629de22f",
-      "size": 40039,
-      "mtimeMs": 1786430195189.186
+      "hash": "0092bf74bded6140464ddd486b8541eb8a681c90",
+      "size": 40189,
+      "mtimeMs": 1786435737435.3777
     },
     "js/pages/bom-kit-builder.js": {
-      "hash": "6f42fb70e2d0c7ea7954bc4a87b4972a35d1fe0e",
-      "size": 38006,
-      "mtimeMs": 1786430189228.7622
+      "hash": "285073d05d61dec2f091e5f59854f82116d71819",
+      "size": 38860,
+      "mtimeMs": 1786435721490.7844
     },
     "js/pages/bom-kit-helpers.js": {
       "hash": "194fe5b9e000881da610705e12b63f38c8cf6b12",
@@ -72,9 +72,9 @@
       "mtimeMs": 1786361456425.425
     },
     "js/pages/bom-party-autocomplete.js": {
-      "hash": "a24d3aa19e46e95ffcf942f6a525f60e1ce1d642",
-      "size": 8901,
-      "mtimeMs": 1786430201281.8428
+      "hash": "faa7273de8deaf0eac23ed1bbf845725fcb17766",
+      "size": 9642,
+      "mtimeMs": 1786435727382.2334
     },
     "js/pages/bom-serial-modal.js": {
       "hash": "ddb3e4ad17d58051677251dc6a25fd141ab5914f",
@@ -87,14 +87,14 @@
       "mtimeMs": 1786430182335.6873
     },
     "js/pages/bom-track-register.js": {
-      "hash": "e6f6e9aea6826e9c9deb68d37cf5c2575da7ebfb",
-      "size": 11535,
-      "mtimeMs": 1786430192392.2642
+      "hash": "75b093b3a243d6d88b0edf0cc0ead766a1b5c0a8",
+      "size": 11803,
+      "mtimeMs": 1786435734220.6875
     },
     "js/pages/bom.js": {
-      "hash": "2f70b53f2d02423515c5454412b2e5b875747b85",
-      "size": 39483,
-      "mtimeMs": 1786430179302.1147
+      "hash": "e568a3bed9cbbf412c738969ee341246a0c19bc8",
+      "size": 41597,
+      "mtimeMs": 1786435718644.6548
     },
     "js/pages/dashboard.js": {
       "hash": "af49b335f2d4a08a7e0871848e53f3a03428b7cb",
@@ -117,9 +117,9 @@
       "mtimeMs": 1785070246476.3562
     },
     "js/pages/purchase.js": {
-      "hash": "8e1a8a531988ef9976c31abd4c91bd3cc1ccca25",
-      "size": 72816,
-      "mtimeMs": 1786196178528.0518
+      "hash": "76b5434e50e970fa73d6901b0ee54033da2a11f1",
+      "size": 88297,
+      "mtimeMs": 1786433217387.9297
     },
     "js/pages/purchaseregister.js": {
       "hash": "e155cf368a8b35e8dd7b493aa7f7e1e0c3c335a4",
@@ -142,14 +142,14 @@
       "mtimeMs": 1784943992000
     },
     "js/pages/sales.js": {
-      "hash": "b37a5368b8e5e43e7bfd42b28a52ee41c23ad6a0",
-      "size": 73951,
-      "mtimeMs": 1786278292195.5283
+      "hash": "f2128ae28e1bd384b203e3e9f47b925e4e1a2005",
+      "size": 86686,
+      "mtimeMs": 1786434133416.3655
     },
     "js/pages/scansheet.js": {
-      "hash": "8fa99e1e75299b9422d10b0dbd83d9b52de8b598",
-      "size": 80707,
-      "mtimeMs": 1785241284134.7773
+      "hash": "bffc66a53cac9d2e4a6a1eab706845888c826f12",
+      "size": 87399,
+      "mtimeMs": 1786434144042.546
     },
     "js/pages/stockassign.js": {
       "hash": "99fbf8a99413d402260265d7e82631a10de49ed1",

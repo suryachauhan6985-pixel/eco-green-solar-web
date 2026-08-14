@@ -121,13 +121,13 @@ Database
 | js/pages/lowstock.js | Defines 12 function(s) implementing supporting logic. |
 | js/pages/masters.js | Defines 18 function(s) implementing supporting logic. |
 | js/pages/partyledger.js | Defines 39 function(s) implementing supporting logic. |
-| js/pages/purchase.js | Defines 45 function(s) implementing supporting logic. |
+| js/pages/purchase.js | Defines 53 function(s) implementing supporting logic. |
 | js/pages/purchaseregister.js | Defines 15 function(s) implementing supporting logic. |
 | js/pages/reports.js | Defines 14 function(s) implementing supporting logic. |
 | js/pages/returns.js | Defines 8 function(s) implementing supporting logic. |
 | js/pages/saleregister.js | Defines 15 function(s) implementing supporting logic. |
 | js/pages/sales.js | Defines 1 class(es) implementing core logic. |
-| js/pages/scansheet.js | Defines 95 function(s) implementing supporting logic. |
+| js/pages/scansheet.js | Defines 97 function(s) implementing supporting logic. |
 | js/pages/stockassign.js | Defines 24 function(s) implementing supporting logic. |
 
 

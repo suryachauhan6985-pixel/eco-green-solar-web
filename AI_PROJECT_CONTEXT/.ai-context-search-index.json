@@ -1893,7 +1893,7 @@
     "type": "file",
     "label": "js/pages/purchase.js",
     "file": "js/pages/purchase.js",
-    "detail": "Defines 45 function(s) implementing supporting logic."
+    "detail": "Defines 53 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -2035,6 +2035,48 @@
   },
   {
     "type": "function",
+    "label": "wireSerialBtToggle",
+    "file": "js/pages/purchase.js",
+    "detail": "(opts)"
+  },
+  {
+    "type": "function",
+    "label": "requiredQty",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "focusBox",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "applyUi",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "hideCard",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "showCard",
+    "file": "js/pages/purchase.js",
+    "detail": "(code, flags)"
+  },
+  {
+    "type": "function",
+    "label": "reset",
+    "file": "js/pages/purchase.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "purScanBeep",
     "file": "js/pages/purchase.js",
     "detail": "()"
@@ -2050,6 +2092,12 @@
     "label": "openPurchaseScanner",
     "file": "js/pages/purchase.js",
     "detail": "(targetId)"
+  },
+  {
+    "type": "function",
+    "label": "purScanSwallowKeydown",
+    "file": "js/pages/purchase.js",
+    "detail": "(e)"
   },
   {
     "type": "function",
@@ -2553,7 +2601,7 @@
     "type": "function",
     "label": "wireSerialBox",
     "file": "js/pages/sales.js",
-    "detail": "(el)"
+    "detail": "(el, btToggleGetter)"
   },
   {
     "type": "function",
@@ -2572,6 +2620,12 @@
     "label": "openSaleScanner",
     "file": "js/pages/sales.js",
     "detail": "(targetId)"
+  },
+  {
+    "type": "function",
+    "label": "saleScanSwallowKeydown",
+    "file": "js/pages/sales.js",
+    "detail": "(e)"
   },
   {
     "type": "function",
@@ -2630,6 +2684,48 @@
   {
     "type": "function",
     "label": "closeSaleScanner",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "wireSerialBtToggle",
+    "file": "js/pages/sales.js",
+    "detail": "(opts)"
+  },
+  {
+    "type": "function",
+    "label": "requiredQty",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "focusBox",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "applyUi",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "hideCard",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "showCard",
+    "file": "js/pages/sales.js",
+    "detail": "(code, flags)"
+  },
+  {
+    "type": "function",
+    "label": "reset",
     "file": "js/pages/sales.js",
     "detail": "()"
   },
@@ -2829,7 +2925,7 @@
     "type": "file",
     "label": "js/pages/scansheet.js",
     "file": "js/pages/scansheet.js",
-    "detail": "Defines 95 function(s) implementing supporting logic."
+    "detail": "Defines 97 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -3008,6 +3104,18 @@
   {
     "type": "function",
     "label": "exportSheetCsv",
+    "file": "js/pages/scansheet.js",
+    "detail": "(sheetId)"
+  },
+  {
+    "type": "function",
+    "label": "saveBinaryFile",
+    "file": "js/pages/scansheet.js",
+    "detail": "(bytes, suggestedName, mimeType, pickerTypes)"
+  },
+  {
+    "type": "function",
+    "label": "exportSheetXlsx",
     "file": "js/pages/scansheet.js",
     "detail": "(sheetId)"
   },

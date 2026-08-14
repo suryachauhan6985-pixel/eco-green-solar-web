@@ -15,6 +15,7 @@ async function ensureStartupSchema(pool) {
   await ensureBomDispatchSchema(pool);
   await ensureBomOrderSchema(pool);
   await ensureChallanCategoryMapSchema(pool);
+  await ensureBomKitTemplatesSchema(pool);
 }
 async function ensureSessionSchema(pool) { try { await pool.query(`ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS last_seen DATETIME NULL`); } catch (e) { console.warn('[Session schema] Could not ensure last_seen column (will retry lazily on first use):', e.message); } }
 async function ensureSerialRuleSchema(pool) { try { await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS serial_mandatory TINYINT(1) NOT NULL DEFAULT 0`); } catch (e) { console.warn('[Serial rule schema] Could not ensure serial_mandatory column (will retry lazily on first use):', e.message); } }
@@ -306,4 +307,32 @@ async function ensureChallanCategoryMapSchema(pool) {
       );
     }
   } catch (e) { console.warn('[Challan category map schema] Could not ensure challan_category_map table:', e.message); }
+}
+
+// BOM Kit Templates — shared, org-wide catalogue of saved kits (see
+// api/routes/bom_kits.routes.js). This table was missing from startup
+// schema entirely, so on any environment where it hadn't already been
+// created manually/out-of-band (fresh DB, DB reset, new deploy target),
+// every GET/PUT/DELETE against /api/bom/kits would fail against a
+// nonexistent table — PUT (Save Kit Template) would error out, and GET
+// would throw, silently falling back to whatever's in that one browser's
+// localStorage cache (bom-kit-helpers.js's bomHydrateCustomKits), making a
+// previously-saved kit look like it "disappeared" on any other device/
+// browser or once that cache was cleared/expired.
+// kit_key MUST be the PRIMARY KEY (unique) — bom_kits.routes.js's PUT
+// handler relies on `ON DUPLICATE KEY UPDATE` against it to update an
+// existing template in place instead of erroring or duplicating rows.
+async function ensureBomKitTemplatesSchema(pool) {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS bom_kit_templates (
+      kit_key VARCHAR(190) NOT NULL PRIMARY KEY,
+      label VARCHAR(190) NOT NULL,
+      kw VARCHAR(60),
+      sections_json LONGTEXT NOT NULL,
+      created_by VARCHAR(100),
+      updated_by VARCHAR(100),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`);
+  } catch (e) { console.warn('[BOM kit templates schema] Could not ensure bom_kit_templates table:', e.message); }
 }
