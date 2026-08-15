@@ -28,12 +28,20 @@
 // Row 7:  B7 = "Name:" label, C7:E7 = value box -> value goes in C7  / L7
 //         F7:G7 = "City:" label                 -> value goes in H7  / Q7
 // Row 8:  column headers (Sr.No / Item Name / Model / Qty. / Description)
-// Rows 9-27: the fixed 13-line item table (item name/model/size/unit are
-//         ALL STATIC in the template — only Qty and Description are blank):
-//           Qty column   = F (customer) / O (company)  [G/P hold static units]
-//           Desc column  = H (customer) / Q (company)  [these are single, unmerged]
-// Rows 28-36: extra blank numbered lines (14-22) left for handwritten items —
-//         this is intentional template design, not something to fill in.
+// Rows 9-10: Solar Panel / GI Structure — STATIC, always these 2 rows,
+//         never move. Item name/model/unit stay baked in the template;
+//         only Qty/Description are written per record (same as before).
+// Rows 11-36: a SHARED DYNAMIC POOL (26 rows, both copies) — GI Pipe's
+//         active feet-sub-rows, the 10 fixed single-line categories, and
+//         any leftover blank numbered rows, ALL computed fresh per PDF.
+//         See the "Dynamic GI Pipe / fixed-category row pool" block below
+//         (GI_PIPE_MODELS / FIXED_CATEGORIES / buildChallanRowPlan /
+//         applyChallanRowPlan) — item name/model/size/unit are NO LONGER
+//         static template text in this range, because which row a given
+//         category lands on now varies per record. POOL_START_ROW (11) and
+//         POOL_END_ROW (36) themselves never change, which is what keeps
+//         the outer table box / print area / row heights identical on
+//         every printed challan regardless of content.
 // Row 37: D37:G37 = Vehicle No. value box (merged, blank) -> M37:P37 (company)
 //         B37:C38 = "Issued by" caption, H37:H38 = "Received by" caption
 // Row 38: D38:G38 = "Vehicle No." caption (static, under the box above)
@@ -59,37 +67,143 @@ const HEADER_CELLS = {
   vehicleNo:    { customer: 'D37', company: 'M37' },
 };
 
-// Qty / Description columns per copy — combined with each row below.
-const QTY_COL = { customer: 'F', company: 'O' };
-const DESC_COL = { customer: 'H', company: 'Q' };
-
-// BOM_CHALLAN_TEMPLATE's fixed 13-line layout mapped to its exact sheet row
-// (verified against the real template: item names/models/sizes/units below
-// are already static text in the sheet — only qty + description are blank).
-// `descKey` matches how js/pages/bom.js's bomCollectChallanTemplateValues()
-// keys description (always "${sr}|", regardless of size) — only the FIRST
-// row of a multi-size item (GI Pipe) carries the description write.
-const ITEM_ROWS = [
-  { sr: 1, size: '', row: 9,  firstOfItem: true  },  // Solar Panel
-  { sr: 2, size: '', row: 10, firstOfItem: true  },  // GI Structure
-  { sr: 3, size: '20 Feet', row: 11, firstOfItem: true  }, // GI Pipe 1.5 X 1.5
-  { sr: 3, size: '15 Feet', row: 12, firstOfItem: false },
-  { sr: 3, size: '10 Feet', row: 13, firstOfItem: false },
-  { sr: 3, size: '5 Feet',  row: 14, firstOfItem: false },
-  { sr: 4, size: '20 Feet', row: 15, firstOfItem: true  }, // GI Pipe 2.5 X 1.5
-  { sr: 4, size: '15 Feet', row: 16, firstOfItem: false },
-  { sr: 4, size: '10 Feet', row: 17, firstOfItem: false },
-  { sr: 4, size: '5 Feet',  row: 18, firstOfItem: false },
-  { sr: 5,  size: '', row: 19, firstOfItem: true }, // Bom Box
-  { sr: 6,  size: '', row: 20, firstOfItem: true }, // Inverter
-  { sr: 7,  size: '', row: 21, firstOfItem: true }, // Earthing & LA Kit
-  { sr: 8,  size: '', row: 22, firstOfItem: true }, // Earthing Bag
-  { sr: 9,  size: '', row: 23, firstOfItem: true }, // PVC Pipe
-  { sr: 10, size: '', row: 24, firstOfItem: true }, // Ferma
-  { sr: 11, size: '', row: 25, firstOfItem: true }, // Reti Bag
-  { sr: 12, size: '', row: 26, firstOfItem: true }, // Kapchi Bag
-  { sr: 13, size: '', row: 27, firstOfItem: true }, // Cement Bag
+// -----------------------------------------------------------------------------
+// Dynamic GI Pipe / fixed-category row pool (rows 11-36 on both copies)
+// -----------------------------------------------------------------------------
+// Rows 9-10 (Solar Panel / GI Structure) are NOT part of this — their
+// name/model/unit text stays static in the template exactly as before,
+// these two rows never move.
+//
+// Everything from row 11 to row 36 (26 rows, both copies) used to be a
+// FIXED row->category mapping (the old ITEM_ROWS above). It is now built
+// FRESH for every single PDF, because:
+//   - a GI Pipe model only takes as many sub-rows as it has active
+//     (qty > 0) feet-values (1 to 4) this trip, not always a hardcoded 4
+//   - a GI Pipe model with NO qty at all this trip takes ZERO rows
+//   - a 3rd GI Pipe size ("1 X 1") can appear or not, borrowing rows from
+//     the SAME shared blank-row pool at the bottom — never a fixed slot
+// Whatever rows GI Pipe frees up (or uses up) simply changes how many
+// blank numbered rows are left at the bottom. POOL_START_ROW/POOL_END_ROW
+// themselves NEVER change, which is what keeps the outer table box, print
+// area, and every row height byte-identical on every printed challan
+// regardless of how many GI Pipe sizes/lines are actually used.
+//
+// Because rows now MOVE (e.g. "Bom Box" might land on row 19 on one
+// challan and row 23 on another, depending on how many GI Pipe rows came
+// before it), the item name / model / size / unit text can no longer be
+// static template content the way it used to be — this code now writes
+// ALL of it (not just Qty/Description) into whichever row a category
+// actually lands on this time.
+//
+// `sr` below is a STABLE STORAGE KEY ONLY (matches BOM_CHALLAN_TEMPLATE /
+// items_json in bom-challan.js on the frontend) — it is NOT the printed
+// Sr. No., which is recomputed fresh (3, 4, 5, 6...) based on what
+// actually prints. Do NOT renumber these `sr` values to "make room" for a
+// new category — that would misread every already-saved
+// bom_challans.items_json row in the database. This is why GI Pipe 1 X 1
+// below is sr:15 (not sr:5) even though it prints 3rd, right after
+// 2.5 X 1.5 — array/list POSITION controls print order, `sr` is just a
+// lookup key.
+const GI_PIPE_MODELS = [
+  { sr: 3,  model: '1.5 X 1.5' },
+  { sr: 4,  model: '2.5 X 1.5' },
+  { sr: 15, model: '1 X 1' }, // NEW 3rd size
 ];
+const GI_FEET_ORDER = ['20 Feet', '15 Feet', '10 Feet', '5 Feet'];
+const GI_UNIT = 'Nos';
+
+// Fixed single-row categories, always printed one line each (unlike GI
+// Pipe these are never skipped even at qty 0 — same as the original
+// template's always-visible 13/14-line list). Sr numbers match
+// BOM_CHALLAN_TEMPLATE in bom-challan.js exactly — including sr:9 = Wire
+// Box, which the OLD ITEM_ROWS above never included at all (a real bug:
+// Wire Box quantities were silently never printed, and every category
+// after it in that old list was reading the WRONG sr's data one slot off).
+const FIXED_CATEGORIES = [
+  { sr: 5,  name: 'Bom Box',           unit: 'Box'  },
+  { sr: 6,  name: 'Inverter',          unit: 'Nos'  },
+  { sr: 7,  name: 'Earthing & LA Kit', unit: 'Nos'  },
+  { sr: 8,  name: 'Earthing Bag',      unit: 'Nos'  },
+  { sr: 9,  name: 'Wire Box',          unit: 'Box'  },
+  { sr: 10, name: 'PVC Pipe',          unit: 'Nos'  },
+  { sr: 11, name: 'Ferma',             unit: 'Nos'  },
+  { sr: 12, name: 'Reti Bag',          unit: 'Bori' },
+  { sr: 13, name: 'Kapchi Bag',        unit: 'Bori' },
+  { sr: 14, name: 'Cement Bag',        unit: 'Bori' },
+];
+
+const POOL_START_ROW = 11;
+const POOL_END_ROW = 36; // inclusive, 26 rows total — NEVER changes.
+
+// Column letters for each logical field, per copy. Mirrors HEADER_CELLS'
+// customer/company split above.
+const POOL_COLS = {
+  customer: { sr: 'B', name: 'C', model: 'D', size: 'E', qty: 'F', unit: 'G', desc: 'H' },
+  company:  { sr: 'K', name: 'L', model: 'M', size: 'N', qty: 'O', unit: 'P', desc: 'Q' },
+};
+
+// Builds the row plan for ONE render: which physical row (11-36) gets
+// which content, and what its printed Sr. No. is. Same plan is reused for
+// both copies (Customer/Company), since they always mirror each other.
+//
+// worst case (all 3 GI sizes fully active + all 10 fixed categories) =
+// 12 + 10 = 22 rows, comfortably inside the 26-row pool — the
+// `row > POOL_END_ROW` guard below is defensive only, not expected to hit.
+function buildChallanRowPlan(items) {
+  const plan = [];
+  let row = POOL_START_ROW;
+  let printSr = 3; // Sr 1/2 (Solar Panel/GI Structure) are static, rows 9-10
+
+  GI_PIPE_MODELS.forEach(({ sr, model }) => {
+    const activeFeet = GI_FEET_ORDER.filter((size) => {
+      const v = items[`${sr}|${size}`];
+      return v && Number(v.qty) > 0;
+    });
+    if (!activeFeet.length) return; // this size wasn't dispatched this trip — zero rows, no Sr No used
+    if (row + activeFeet.length - 1 > POOL_END_ROW) return; // pool exhausted — skip rather than overflow
+
+    activeFeet.forEach((size, i) => {
+      plan.push({
+        kind: 'gi',
+        row: row + i,
+        blockFirst: i === 0,
+        blockLast: i === activeFeet.length - 1,
+        blockSize: activeFeet.length,
+        printSr,
+        model,
+        size,
+        unit: GI_UNIT,
+        qtyKey: `${sr}|${size}`,
+        descKey: `${sr}|`,
+      });
+    });
+    row += activeFeet.length;
+    printSr += 1;
+  });
+
+  FIXED_CATEGORIES.forEach(({ sr, name, unit }) => {
+    if (row > POOL_END_ROW) return; // pool exhausted — defensive, see note above
+    plan.push({
+      kind: 'fixed',
+      row,
+      printSr,
+      name,
+      unit,
+      qtyKey: `${sr}|`,
+      descKey: `${sr}|`,
+    });
+    row += 1;
+    printSr += 1;
+  });
+
+  while (row <= POOL_END_ROW) {
+    plan.push({ kind: 'blank', row, printSr });
+    row += 1;
+    printSr += 1;
+  }
+
+  return plan;
+}
 
 function runSoffice(xlsxPath, outDir) {
   return new Promise((resolve, reject) => {
@@ -472,6 +586,128 @@ function applySheetFormatting(sheet, config) {
   }
 }
 
+// -----------------------------------------------------------------------------
+// Dynamic pool engine — unmerge/rebuild rows 11-36 fresh on every render.
+// -----------------------------------------------------------------------------
+
+// Strips every merge the template currently has inside the dynamic pool
+// (rows 11-36, columns B-H / K-Q) — DISCOVERED from the loaded workbook
+// itself (sheet.model.merges) rather than hardcoded, so this keeps working
+// even if challan_template.xlsx's exact merge pattern is edited later.
+// Must run before applyChallanRowPlan() below, which rebuilds merges to
+// match THIS render's plan — otherwise a leftover template merge (e.g. the
+// template's own B11:B14) can collide with a plan that now wants B11:B12.
+function unmergePoolZone(sheet) {
+  const merges = (sheet.model && sheet.model.merges) ? sheet.model.merges.slice() : [];
+  merges.forEach((range) => {
+    const m = String(range).match(/^([A-Z]+)(\d+):/);
+    if (!m) return;
+    const col = m[1];
+    const row = Number(m[2]);
+    if (row < POOL_START_ROW || row > POOL_END_ROW) return;
+    if (!'BCDEFGHKLMNOPQ'.includes(col)) return;
+    try { sheet.unMergeCells(range); } catch (e) { /* already unmerged — ignore */ }
+  });
+}
+
+// Merges an existing border object (reusing the same normalizeBorderSide
+// used by the SHEET_CONFIG engine above) with only the sides passed in —
+// sides left `undefined` are untouched. Needed because the template's OWN
+// border data for the INTERIOR rows of a merge is intentionally blank
+// (Excel doesn't draw internal gridlines inside a merged box), so leftover
+// border state from the original template cannot be trusted once a row's
+// merge span changes size on this render — every pool cell gets its full
+// border re-applied explicitly, every time.
+function setBorder(cell, sides) {
+  const existing = cell.border || {};
+  const next = { ...existing };
+  for (const side of BORDER_STYLE_KEYS) {
+    if (sides[side] !== undefined) next[side] = normalizeBorderSide(sides[side]);
+  }
+  cell.border = next;
+}
+
+// Writes one render's row plan (from buildChallanRowPlan) into both copies.
+// Call unmergePoolZone(sheet) once before this, for the same sheet.
+function applyChallanRowPlan(sheet, plan, items) {
+  ['customer', 'company'].forEach((copy) => {
+    const cols = POOL_COLS[copy];
+    const outerLeft = 'medium';  // matches the template's own left/right table edge
+    const outerRight = 'medium';
+
+    plan.forEach((entry) => {
+      const r = entry.row;
+
+      if (entry.kind === 'gi') {
+        if (entry.blockFirst) {
+          sheet.mergeCells(`${cols.sr}${r}:${cols.sr}${r + entry.blockSize - 1}`);
+          sheet.mergeCells(`${cols.name}${r}:${cols.name}${r + entry.blockSize - 1}`);
+          sheet.mergeCells(`${cols.model}${r}:${cols.model}${r + entry.blockSize - 1}`);
+          sheet.getCell(`${cols.sr}${r}`).value = entry.printSr;
+          sheet.getCell(`${cols.name}${r}`).value = 'GI Pipe';
+          sheet.getCell(`${cols.model}${r}`).value = entry.model;
+          const desc = (items[entry.descKey] && items[entry.descKey].desc) || '';
+          if (desc) sheet.getCell(`${cols.desc}${r}`).value = desc;
+        }
+        const qty = (items[entry.qtyKey] && items[entry.qtyKey].qty) || '';
+        sheet.getCell(`${cols.size}${r}`).value = entry.size;
+        sheet.getCell(`${cols.qty}${r}`).value = qty;
+        sheet.getCell(`${cols.unit}${r}`).value = entry.unit;
+
+        // Box border: only the block's top row gets a top edge, only its
+        // bottom row gets a bottom edge — same visual as Excel's own
+        // "Merge & Center" box, whether the block is 1 row or 4.
+        [cols.sr, cols.name, cols.model].forEach((col) => {
+          setBorder(sheet.getCell(`${col}${r}`), {
+            top: entry.blockFirst ? 'thin' : 'none',
+            bottom: entry.blockLast ? 'thin' : 'none',
+            left: col === cols.sr ? outerLeft : 'thin',
+            right: 'thin',
+          });
+        });
+        setBorder(sheet.getCell(`${cols.size}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin' });
+        setBorder(sheet.getCell(`${cols.qty}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'none' });
+        setBorder(sheet.getCell(`${cols.unit}${r}`), { top: 'thin', bottom: 'thin', left: 'none', right: 'thin' });
+        setBorder(sheet.getCell(`${cols.desc}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: outerRight });
+        return;
+      }
+
+      if (entry.kind === 'fixed') {
+        sheet.mergeCells(`${cols.name}${r}:${cols.size}${r}`); // name spans C:E — no separate model/size column needed
+        sheet.getCell(`${cols.sr}${r}`).value = entry.printSr;
+        sheet.getCell(`${cols.name}${r}`).value = entry.name;
+        const qty = (items[entry.qtyKey] && items[entry.qtyKey].qty) || '';
+        sheet.getCell(`${cols.qty}${r}`).value = qty;
+        sheet.getCell(`${cols.unit}${r}`).value = entry.unit;
+        const desc = (items[entry.descKey] && items[entry.descKey].desc) || '';
+        if (desc) sheet.getCell(`${cols.desc}${r}`).value = desc;
+
+        [cols.sr, cols.name].forEach((col) => {
+          setBorder(sheet.getCell(`${col}${r}`), {
+            top: 'thin', bottom: 'thin',
+            left: col === cols.sr ? outerLeft : 'thin',
+            right: 'thin',
+          });
+        });
+        setBorder(sheet.getCell(`${cols.qty}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'none' });
+        setBorder(sheet.getCell(`${cols.unit}${r}`), { top: 'thin', bottom: 'thin', left: 'none', right: 'thin' });
+        setBorder(sheet.getCell(`${cols.desc}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: outerRight });
+        return;
+      }
+
+      // blank pool row — just the running Sr. No., everything else stays empty
+      sheet.getCell(`${cols.sr}${r}`).value = entry.printSr;
+      setBorder(sheet.getCell(`${cols.sr}${r}`), { top: 'thin', bottom: 'thin', left: outerLeft, right: 'thin' });
+      [cols.name, cols.model, cols.size].forEach((col) => {
+        setBorder(sheet.getCell(`${col}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin' });
+      });
+      setBorder(sheet.getCell(`${cols.qty}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'none' });
+      setBorder(sheet.getCell(`${cols.unit}${r}`), { top: 'thin', bottom: 'thin', left: 'none', right: 'thin' });
+      setBorder(sheet.getCell(`${cols.desc}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: outerRight });
+    });
+  });
+}
+
 async function fillTemplateAndConvertToPdf(record) {
   const workDir = path.join(os.tmpdir(), `challan_${crypto.randomUUID()}`);
   await fsp.mkdir(workDir, { recursive: true });
@@ -517,20 +753,9 @@ async function fillTemplateAndConvertToPdf(record) {
     }
 
     const items = record.items || {}; // { "sr|size": { qty, desc } }
-    for (const spec of ITEM_ROWS) {
-      const qtyKey = `${spec.sr}|${spec.size}`;
-      const descKey = `${spec.sr}|`;
-      const qty = (items[qtyKey] && items[qtyKey].qty) || '';
-      sheet.getCell(`${QTY_COL.customer}${spec.row}`).value = qty;
-      sheet.getCell(`${QTY_COL.company}${spec.row}`).value = qty;
-      if (spec.firstOfItem) {
-        const desc = (items[descKey] && items[descKey].desc) || '';
-        if (desc) {
-          sheet.getCell(`${DESC_COL.customer}${spec.row}`).value = desc;
-          sheet.getCell(`${DESC_COL.company}${spec.row}`).value = desc;
-        }
-      }
-    }
+    unmergePoolZone(sheet);
+    const rowPlan = buildChallanRowPlan(items);
+    applyChallanRowPlan(sheet, rowPlan, items);
 
     // Apply every layout/visual property from SHEET_CONFIG — page margins,
     // column widths, row heights, and per-cell styling — now that all the

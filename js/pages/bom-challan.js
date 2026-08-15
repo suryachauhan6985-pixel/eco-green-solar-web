@@ -25,6 +25,14 @@ const BOM_CHALLAN_TEMPLATE = [
   { sr: 2, name: 'GI Structure', model: '', unit: 'Set' },
   { sr: 3, name: 'GI Pipe', model: '1.5 X 1.5', unit: 'Nos', sizes: ['20 Feet', '15 Feet', '10 Feet', '5 Feet'] },
   { sr: 4, name: 'GI Pipe', model: '2.5 X 1.5', unit: 'Nos', sizes: ['20 Feet', '15 Feet', '10 Feet', '5 Feet'] },
+  // sr:15 (NOT sr:5/6/...) is intentional — BOM only ever has these 3 GI
+  // Pipe sizes, but every category below already has its own sr baked into
+  // OLD saved bom_challans.items_json rows. Renumbering Bom Box..Cement Bag
+  // to make room here would misread every challan printed before this
+  // change. sr is just a storage key; ARRAY POSITION (3rd, right after
+  // 2.5 X 1.5) is what actually controls where it prints — see
+  // bomChallanBuildRowGroups below, which walks this array in order.
+  { sr: 15, name: 'GI Pipe', model: '1 X 1', unit: 'Nos', sizes: ['20 Feet', '15 Feet', '10 Feet', '5 Feet'] },
   { sr: 5, name: 'Bom Box', model: '', unit: 'Box' },
   { sr: 6, name: 'Inverter', model: '', unit: 'Nos' },
   { sr: 7, name: 'Earthing & LA Kit', model: '', unit: 'Nos' },
@@ -103,17 +111,24 @@ function bomGiPipeFeetToPieces(totalFeet) {
   return pieces;
 }
 
-// Which template row (Sr 3 = "1.5 X 1.5", Sr 4 = "2.5 X 1.5") a GI Pipe
-// kit-item's Model text belongs under. Matched by whichever size number
-// appears first in the model text (kit items use `1.5" X 1.5"` /
-// `2.5" X 1.5"` — quotes and spacing vary, so this only looks for the
-// leading "1.5" vs "2.5"). Anything else (e.g. the kit's 3rd "1\" X 1\""
-// GI Pipe row, which has no matching template row) returns null and is
-// skipped — same as it being left blank/'-' today.
+// Which template row (Sr 3 = "1.5 X 1.5", Sr 4 = "2.5 X 1.5", Sr 15 =
+// "1 X 1") a GI Pipe kit-item's Model text belongs under.
+//
+// FIXED a real bug here: the old version matched by `indexOf('1.5')`,
+// which also fires on "2.5 X 1.5" because that string itself CONTAINS the
+// substring "1.5" (its own second number) — so a 2.5 X 1.5 kit-item could
+// silently get filed under the 1.5 X 1.5 row. This version instead reads
+// the FIRST number in the model text and compares it exactly, so "2.5 X
+// 1.5" and "1.5 X 1.5" (and now "1 X 1") can never be confused with each
+// other regardless of what other numbers appear later in the string.
+// Anything that doesn't match one of the 3 known sizes returns null and is
+// skipped — same as before.
 function bomGiPipeModelSr(modelText) {
-  const m = String(modelText || '');
-  if (m.indexOf('1.5') !== -1) return 3;
-  if (m.indexOf('2.5') !== -1) return 4;
+  const match = String(modelText || '').match(/\d+(\.\d+)?/);
+  const first = match ? parseFloat(match[0]) : null;
+  if (first === 1.5) return 3;
+  if (first === 2.5) return 4;
+  if (first === 1) return 15;
   return null;
 }
 
@@ -133,7 +148,7 @@ function bomGiPipeModelSr(modelText) {
 // Returns { qtyBySr: { [sr]: number }, giPipe: { 3: {size:qty}, 4: {size:qty} } }.
 function bomComputeChallanAutoQty(sections) {
   const qtyBySr = {};
-  const giPipe = { 3: {}, 4: {} };
+  const giPipe = { 3: {}, 4: {}, 15: {} };
   const presentByCategory = {}; // category -> [{ qty }]
 
   (sections || []).forEach((sec) => {
@@ -331,25 +346,49 @@ function bomCollectChallanTemplateValues() {
 const CHALLAN_PRINT_TOTAL_BODY_ROWS = 28;
 
 // Walks BOM_CHALLAN_TEMPLATE and turns it into physical "row groups": one
-// group per template item (rowCount = 4 for GI Pipe's size sub-rows, 1 for
-// everything else), then appends blank, sequentially-numbered groups
-// (continuing the Sr. No. sequence) until the physical row total reaches
-// CHALLAN_PRINT_TOTAL_BODY_ROWS — the exact padding rule in §15.
-function bomChallanBuildRowGroups(template) {
+// group per template item, then appends blank, sequentially-numbered
+// groups until the physical row total reaches CHALLAN_PRINT_TOTAL_BODY_ROWS
+// (§15's padding rule) — same as before, EXCEPT a GI Pipe model (it.sizes)
+// now only contributes rows for the feet-values that actually have a
+// qty > 0 on THIS challan (`values`), and contributes ZERO rows (not even
+// a placeholder line) if none of its 4 feet-values were used this trip.
+// Whatever rows that frees up simply become extra blank padding rows at
+// the end, same pool either way — this is what lets a 3rd GI Pipe size
+// (or a GI Pipe model going unused this trip) fit without ever changing
+// CHALLAN_PRINT_TOTAL_BODY_ROWS itself.
+//
+// `sr` on each group stays the item's STABLE storage key (used to look up
+// its Qty/Description in `values`) — it is NOT the printed Sr. No., which
+// is tracked separately as `displaySr` and is always a clean 1, 2, 3, 4...
+// sequence based on what actually ends up on the page, regardless of which
+// stored sr numbers were skipped (e.g. GI Pipe 1 X 1's sr:15 never shows up
+// as "15" in print — it just takes whatever the next real position is).
+function bomChallanBuildRowGroups(template, values) {
   const groups = [];
   let physicalRows = 0;
-  let lastSr = 0;
+  let displaySr = 0;
+
   template.forEach((it) => {
-    const rowCount = (it.sizes && it.sizes.length) ? it.sizes.length : 1;
-    groups.push({ sr: it.sr, item: it, rowCount, blank: false });
-    physicalRows += rowCount;
-    lastSr = it.sr;
-  });
-  let nextSr = lastSr + 1;
-  while (physicalRows < CHALLAN_PRINT_TOTAL_BODY_ROWS) {
-    groups.push({ sr: nextSr, item: null, rowCount: 1, blank: true });
+    if (it.sizes && it.sizes.length) {
+      const activeSizes = it.sizes.filter((size) => {
+        const v = values[`${it.sr}|${size}`];
+        return v && Number(v.qty) > 0;
+      });
+      if (!activeSizes.length) return; // unused this trip — zero rows, no Sr No consumed
+      displaySr += 1;
+      groups.push({ sr: it.sr, displaySr, item: it, sizes: activeSizes, rowCount: activeSizes.length, blank: false });
+      physicalRows += activeSizes.length;
+      return;
+    }
+    displaySr += 1;
+    groups.push({ sr: it.sr, displaySr, item: it, rowCount: 1, blank: false });
     physicalRows += 1;
-    nextSr += 1;
+  });
+
+  while (physicalRows < CHALLAN_PRINT_TOTAL_BODY_ROWS) {
+    displaySr += 1;
+    groups.push({ sr: null, displaySr, item: null, rowCount: 1, blank: true });
+    physicalRows += 1;
   }
   return groups;
 }
@@ -372,7 +411,7 @@ function bomRenderChallanBodyRowsHtml(groups, values) {
     if (g.blank) {
       return `
       <tr class="bom-challan-row bom-challan-row-blank">
-        <td class="bom-c-sr">${g.sr}</td>
+        <td class="bom-c-sr">${g.displaySr}</td>
         <td class="bom-c-name" colspan="3"></td>
         <td class="bom-c-qtylabel"></td>
         <td class="bom-c-qtyunit"></td>
@@ -380,16 +419,16 @@ function bomRenderChallanBodyRowsHtml(groups, values) {
       </tr>`;
     }
     const it = g.item;
-    if (it.sizes && it.sizes.length) {
+    if (g.sizes && g.sizes.length) { // g.sizes = only the ACTIVE feet-values for this trip (see bomChallanBuildRowGroups)
       const desc = getDesc(it.sr);
-      return it.sizes.map((size, i) => {
+      return g.sizes.map((size, i) => {
         const leadCells = i === 0
-          ? `<td class="bom-c-sr" rowspan="${it.sizes.length}">${it.sr}</td>
-             <td class="bom-c-name" rowspan="${it.sizes.length}">${bomEsc(it.name)}</td>
-             <td class="bom-c-model" rowspan="${it.sizes.length}">${bomEsc(it.model || '')}</td>`
+          ? `<td class="bom-c-sr" rowspan="${g.sizes.length}">${g.displaySr}</td>
+             <td class="bom-c-name" rowspan="${g.sizes.length}">${bomEsc(it.name)}</td>
+             <td class="bom-c-model" rowspan="${g.sizes.length}">${bomEsc(it.model || '')}</td>`
           : '';
         const descCell = i === 0
-          ? `<td class="bom-c-desc" rowspan="${it.sizes.length}">${bomEsc(desc)}</td>`
+          ? `<td class="bom-c-desc" rowspan="${g.sizes.length}">${bomEsc(desc)}</td>`
           : '';
         return `
       <tr class="bom-challan-row">
@@ -403,7 +442,7 @@ function bomRenderChallanBodyRowsHtml(groups, values) {
     }
     return `
       <tr class="bom-challan-row">
-        <td class="bom-c-sr">${it.sr}</td>
+        <td class="bom-c-sr">${g.displaySr}</td>
         <td class="bom-c-name" colspan="3">${bomEsc(it.name)}</td>
         <td class="bom-c-qtylabel">${bomEsc(getQty(it.sr))}</td>
         <td class="bom-c-qtyunit">${bomEsc(it.unit)}</td>
@@ -493,7 +532,7 @@ function bomRenderChallanFooterRowsHtml(header) {
 // 7.5:25.4) — header rows, the column-header row, the fixed 28-row body,
 // then the footer, all inside one continuous grid (§13: no nested tables).
 function bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy) {
-  const groups = bomChallanBuildRowGroups(BOM_CHALLAN_TEMPLATE);
+  const groups = bomChallanBuildRowGroups(BOM_CHALLAN_TEMPLATE, templateValues);
   return `
     <table class="bom-challan-table">
       <colgroup>
