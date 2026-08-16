@@ -77,6 +77,44 @@ function createBomTrackRegisterModule(ctx) {
       return d.toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
     }
 
+    // Horizontal life-cycle overview (Created -> Partially Dispatched ->
+    // Fully Dispatched), shown ABOVE the item table / trip timeline below.
+    // Purely a summary derived from data already on the record (data.status
+    // + data.trips' own timestamps) — no new API field required. Existing
+    // per-trip timeline (bomRenderTrackResultHtml's own tripSteps below)
+    // still shows every individual trip in detail; this adds the missing
+    // "which overall stage is this order at, right now" view on top of it.
+    function bomRenderLifecycleStepperHtml(data) {
+      const trips = data.trips || [];
+      const status = data.status || 'Pending';
+      const firstTripAt = trips.length ? trips[0].dispatchedAt : null;
+      const lastTripAt = trips.length ? trips[trips.length - 1].dispatchedAt : null;
+      const stages = [
+        { key: 'created', label: 'BOM Created', done: true, at: data.createdAt || (data.header && data.header.createdAt) || null },
+        { key: 'partial', label: 'Dispatch Started', done: trips.length > 0, at: firstTripAt },
+        { key: 'done', label: 'Fully Dispatched', done: status === 'Dispatched', at: status === 'Dispatched' ? lastTripAt : null },
+      ];
+      const stepsHtml = stages.map((s, i) => {
+        const isLast = i === stages.length - 1;
+        const circleBg = s.done ? '#1a7f37' : '#3a3a3a';
+        const circleColor = s.done ? '#fff' : 'var(--txt-muted)';
+        const lineBg = (s.done && stages[i + 1] && stages[i + 1].done) ? '#1a7f37' : '#3a3a3a';
+        return `
+          <div style="display:flex; align-items:center; flex:${isLast ? '0 0 auto' : '1 1 auto'};">
+            <div style="display:flex; flex-direction:column; align-items:center; min-width:120px;">
+              <div style="width:28px; height:28px; border-radius:50%; background:${circleBg}; color:${circleColor}; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0;">
+                <i class="fa-solid ${s.done ? 'fa-check' : 'fa-circle'}" style="${s.done ? '' : 'font-size:8px;'}"></i>
+              </div>
+              <div style="font-size:12px; font-weight:600; margin-top:6px; text-align:center; color:${s.done ? 'var(--txt, #eee)' : 'var(--txt-muted)'};">${bomEsc(s.label)}</div>
+              <div style="font-size:11px; color:var(--txt-muted); margin-top:2px; text-align:center;">${s.at ? bomEsc(ctx.bomFmtDateTime(s.at)) : (s.done ? '' : 'Pending')}</div>
+            </div>
+            ${!isLast ? `<div style="height:2px; flex:1; background:${lineBg}; margin:0 4px; margin-bottom:34px;"></div>` : ''}
+          </div>
+        `;
+      }).join('');
+      return `<div style="display:flex; align-items:flex-start; margin-bottom:20px; padding:14px 8px; background:rgba(255,255,255,0.03); border-radius:8px;">${stepsHtml}</div>`;
+    }
+
     // Renders the real per-item breakdown + trip-by-trip dispatch history
     // returned by GET /api/bom/orders/by-order-no/:orderNo. `data.trips` is
     // ordered oldest-first, so each trip is one visual "step" — a genuine
@@ -122,6 +160,7 @@ function createBomTrackRegisterModule(ctx) {
             <div style="margin-top:6px;">${ctx.bomTrackStatusPill(data.status)}</div>
           </div>
         </div>
+        ${bomRenderLifecycleStepperHtml(data)}
         <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
           <thead><tr>
             <th style="text-align:left; padding:6px 8px; border-bottom:2px solid var(--border, #ddd);">Item</th>

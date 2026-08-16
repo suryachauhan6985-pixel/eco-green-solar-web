@@ -265,6 +265,19 @@ window.PAGES.bom = {
     ctx.updateVerifyButtonState = updateVerifyButtonState;
     ctx.getHeaderValues = getHeaderValues;
     ctx.computeAndApplyFitZoom = computeAndApplyFitZoom;
+    // Same reasoning as every other early-grab comment in this block:
+    // createBomDispatchModule's factory (Object.assign'd below) reads
+    // ctx.homeBtnRegister SYNCHRONOUSLY at its own call time (to wire the
+    // "BOM Register" button's click listener) — not just inside a function
+    // it hands back. This used to be assigned much later, at the same spot
+    // as homeBtnCreate/homeBtnTrack/homeBtnRefresh below, which are only
+    // ever read from inside callbacks (safe to leave late) — but
+    // homeBtnRegister's `if (ctx.homeBtnRegister) ctx.homeBtnRegister.addEventListener(...)`
+    // ran while it was still `undefined`, so the condition was always
+    // false and the "BOM Register" button's click handler was NEVER
+    // attached: clicking it silently did nothing, with no error, no matter
+    // how many times you clicked.
+    ctx.homeBtnRegister = ctx.$('bomHomeBtnRegister');
 
     // Pull in the functions that used to be nested directly inside this
     // init() but were split out into separate files per
@@ -390,7 +403,8 @@ window.PAGES.bom = {
 
     ctx.homeBtnCreate = ctx.$('bomHomeBtnCreate');
     ctx.homeBtnTrack = ctx.$('bomHomeBtnTrack');
-    ctx.homeBtnRegister = ctx.$('bomHomeBtnRegister');
+    // ctx.homeBtnRegister moved up above the Object.assign(...) factory
+    // calls block — see the comment there for why it had to move.
     ctx.homeBtnRefresh = ctx.$('bomHomeBtnRefresh');
     if (ctx.homeBtnCreate) {
       ctx.homeBtnCreate.addEventListener('click', () => {

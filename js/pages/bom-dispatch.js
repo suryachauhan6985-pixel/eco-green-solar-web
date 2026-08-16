@@ -206,7 +206,18 @@ function createBomDispatchModule(ctx) {
 
     // `backLabel`/`showBack` let the same form read right whether it's
     // sitting inside the Register modal ("Back to list") or inline on the
-    // BOM Home double-click flow ("Back to BOM Home").
+    // BOM Home double-click flow ("Back to BOM Home"). Rendered as a real
+    // table (Sr No./Item Name/Category/Qty/Serial No.) — same
+    // .table-wrap/.bom-items-form-table classes the Kit Items table and
+    // every other item-list screen in this app already use — instead of
+    // the old stacked "one <label> block per item" layout, so a dispatch
+    // trip on an existing order reads the same way the main "Create BOM"
+    // item list does. Still its own dedicated form (see the note above
+    // bomParseBlockedRows on why this can't just reuse ctx.currentKitState/
+    // bomRenderScreenItemsHtml outright — bom_orders only stores a flat
+    // per-item baseline, not the original kit's section layout) — every
+    // data-cont-* attribute and id below is UNCHANGED from before, so
+    // bomLoadContinueDispatchForm's wiring/collection logic needs no changes.
     function bomRenderContinueFormHtml(order, backLabel) {
       const pendingItems = (order.items || []).filter((it) => it.remaining > 0);
       if (!pendingItems.length) {
@@ -218,24 +229,36 @@ function createBomDispatchModule(ctx) {
       // ctx.bomLoadContinueDispatchForm below for the click wiring.
       const rows = pendingItems.map((it, idx) => {
         const taId = `bomContSerial_${idx}`;
+        const qtyCell = it.serialMandatory
+          ? `<div style="display:flex; gap:8px; align-items:flex-start;">
+               <textarea id="${taId}" data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="serial" data-cont-total="${it.total}" rows="2" placeholder="Up to ${it.remaining} serial no(s), comma or newline separated" style="flex:1;"></textarea>
+               <button type="button" class="ss-scan-icon-btn" data-cont-scan-target="${taId}" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
+             </div>
+             <p class="note" id="${taId}Note" style="margin-top:6px;"></p>`
+          : `<input type="number" min="0" max="${it.remaining}" value="${it.remaining}" data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="qty" data-cont-total="${it.total}">`;
         return `
-        <div class="field" style="margin-bottom:14px;">
-          <label>${bomEsc(it.name)} <span class="note">(${bomEsc(it.category || '')} — ${it.remaining} of ${it.total} pending, ${it.dispatched} already dispatched)</span></label>
-          ${it.serialMandatory
-            ? `<div style="display:flex; gap:8px; align-items:flex-start;">
-                 <textarea id="${taId}" data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="serial" data-cont-total="${it.total}" rows="2" placeholder="Enter up to ${it.remaining} serial number(s), comma or newline separated" style="flex:1;"></textarea>
-                 <button type="button" class="ss-scan-icon-btn" data-cont-scan-target="${taId}" title="Scan barcode / QR"><i class="fa-solid fa-barcode"></i></button>
-               </div>
-               <p class="note" id="${taId}Note" style="margin-top:6px;"></p>`
-            : `<input type="number" min="0" max="${it.remaining}" value="${it.remaining}" data-cont-name="${bomEscAttr(it.name)}" data-cont-kind="qty" data-cont-total="${it.total}">`
-          }
-        </div>
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${bomEsc(it.name)}</td>
+          <td>${bomEsc(it.category || '')}</td>
+          <td style="white-space:nowrap;">${it.remaining} of ${it.total} pending<br><span class="note">${it.dispatched} already dispatched</span></td>
+          <td>${qtyCell}</td>
+        </tr>
       `;
       }).join('');
       return `
         <p class="note" style="margin-bottom:10px;">Order No <b>${bomEsc(order.orderNo)}</b> — enter what's going out on THIS trip; leave the rest for a later trip.</p>
-        ${rows}
-        <div class="actions-row">
+        <div class="table-wrap">
+          <table class="bom-items-form-table">
+            <colgroup>
+              <col style="width:6%;"><col style="width:22%;"><col style="width:16%;">
+              <col style="width:18%;"><col style="width:38%;">
+            </colgroup>
+            <thead><tr><th>Sr No.</th><th>Item Name</th><th>Category</th><th>Qty</th><th>Serial No. / Qty to Dispatch</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div class="actions-row" style="margin-top:14px;">
           <button type="button" class="btn btn-green" id="bomRegisterContinueBtn"><i class="fa-solid fa-truck"></i> Continue Dispatch</button>
           <button type="button" class="btn btn-ghost" id="bomRegisterBackBtn"><i class="fa-solid fa-arrow-left"></i> ${bomEsc(backLabel)}</button>
           <button type="button" class="btn btn-ghost" id="bomRegisterTrackBtn"><i class="fa-solid fa-route"></i> Track This BOM</button>
