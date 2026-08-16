@@ -56,6 +56,13 @@ const ExcelJS = require('exceljs'); // already a project dependency (see api/rou
 
 const TEMPLATE_PATH = path.join(__dirname, '..', 'templates', 'challan_template.xlsx');
 
+// Shared alignment object used everywhere in the dynamic item-table pool
+// (Sr./Item Name/Model/Size/Qty./Unit/Description) so every row — GI Pipe
+// blocks, fixed categories, and blank pool rows alike — renders centered
+// both horizontally and vertically, regardless of which physical row a
+// category ends up landing on this render.
+const CENTER_ALIGN = { horizontal: 'center', vertical: 'middle' };
+
 // One header field -> { customer cell, company cell }
 const HEADER_CELLS = {
   challanNo:    { customer: 'H3',  company: 'Q3'  },
@@ -191,6 +198,34 @@ function buildChallanRowPlan(items) {
       unit,
       qtyKey: `${sr}|`,
       descKey: `${sr}|`,
+    });
+    row += 1;
+    printSr += 1;
+  });
+
+  // Extra, software-added lines (see bomChallanAddExtraItemRow /
+  // bomCollectChallanExtraItems in bom-challan.js) — arbitrary Name/Model/
+  // Qty/Unit/Description typed straight into the Challan entry modal,
+  // outside the 14 fixed categories above. Printed right after the fixed
+  // categories, borrowing rows from the SAME shared blank-row pool they
+  // already leave spare — no template/layout change needed, and if more
+  // extra items are added than there's room left, the leftover ones are
+  // simply skipped (defensive `row > POOL_END_ROW` guard, same as the
+  // fixed categories above) rather than corrupting the fixed 26-row grid.
+  const extraItems = Array.isArray(items && items.extra) ? items.extra : [];
+  extraItems.forEach((extra, i) => {
+    if (row > POOL_END_ROW) return;
+    const name = String((extra && extra.name) || '').trim();
+    if (!name) return; // a truly blank extra row was already filtered out client-side, but stay defensive here too
+    plan.push({
+      kind: 'extra',
+      row,
+      printSr,
+      name,
+      model: String((extra && extra.model) || ''),
+      unit: String((extra && extra.unit) || 'Nos'),
+      qty: (extra && extra.qty) || '',
+      desc: String((extra && extra.desc) || ''),
     });
     row += 1;
     printSr += 1;
@@ -670,13 +705,20 @@ function applyChallanRowPlan(sheet, plan, items) {
           sheet.getCell(`${cols.sr}${r}`).value = entry.printSr;
           sheet.getCell(`${cols.name}${r}`).value = 'GI Pipe';
           sheet.getCell(`${cols.model}${r}`).value = entry.model;
+          sheet.getCell(`${cols.sr}${r}`).alignment = CENTER_ALIGN;
+          sheet.getCell(`${cols.name}${r}`).alignment = CENTER_ALIGN;
+          sheet.getCell(`${cols.model}${r}`).alignment = CENTER_ALIGN;
           const desc = (items[entry.descKey] && items[entry.descKey].desc) || '';
           if (desc) sheet.getCell(`${cols.desc}${r}`).value = desc;
+          sheet.getCell(`${cols.desc}${r}`).alignment = CENTER_ALIGN;
         }
         const qty = (items[entry.qtyKey] && items[entry.qtyKey].qty) || '';
         sheet.getCell(`${cols.size}${r}`).value = entry.size;
         sheet.getCell(`${cols.qty}${r}`).value = qty;
         sheet.getCell(`${cols.unit}${r}`).value = entry.unit;
+        sheet.getCell(`${cols.size}${r}`).alignment = CENTER_ALIGN;
+        sheet.getCell(`${cols.qty}${r}`).alignment = CENTER_ALIGN;
+        sheet.getCell(`${cols.unit}${r}`).alignment = CENTER_ALIGN;
 
         // Box border: only the block's top row gets a top edge, only its
         // bottom row gets a bottom edge — same visual as Excel's own
@@ -700,11 +742,16 @@ function applyChallanRowPlan(sheet, plan, items) {
         sheet.mergeCells(`${cols.name}${r}:${cols.size}${r}`); // name spans C:E — no separate model/size column needed
         sheet.getCell(`${cols.sr}${r}`).value = entry.printSr;
         sheet.getCell(`${cols.name}${r}`).value = entry.name;
+        sheet.getCell(`${cols.sr}${r}`).alignment = CENTER_ALIGN;
+        sheet.getCell(`${cols.name}${r}`).alignment = CENTER_ALIGN;
         const qty = (items[entry.qtyKey] && items[entry.qtyKey].qty) || '';
         sheet.getCell(`${cols.qty}${r}`).value = qty;
         sheet.getCell(`${cols.unit}${r}`).value = entry.unit;
+        sheet.getCell(`${cols.qty}${r}`).alignment = CENTER_ALIGN;
+        sheet.getCell(`${cols.unit}${r}`).alignment = CENTER_ALIGN;
         const desc = (items[entry.descKey] && items[entry.descKey].desc) || '';
         if (desc) sheet.getCell(`${cols.desc}${r}`).value = desc;
+        sheet.getCell(`${cols.desc}${r}`).alignment = CENTER_ALIGN;
 
         [cols.sr, cols.name].forEach((col) => {
           setBorder(sheet.getCell(`${col}${r}`), {
@@ -719,12 +766,41 @@ function applyChallanRowPlan(sheet, plan, items) {
         return;
       }
 
-      // blank pool row — just the running Sr. No., everything else stays empty
+      if (entry.kind === 'extra') {
+        // Model gets its own column here (unlike "fixed", which has no
+        // separate model text) — merge only Name; Model/Size stay two
+        // distinct cells so a typed-in model still has somewhere to go.
+        sheet.getCell(`${cols.sr}${r}`).value = entry.printSr;
+        sheet.getCell(`${cols.name}${r}`).value = entry.name;
+        sheet.getCell(`${cols.model}${r}`).value = entry.model;
+        sheet.getCell(`${cols.qty}${r}`).value = entry.qty;
+        sheet.getCell(`${cols.unit}${r}`).value = entry.unit;
+        if (entry.desc) sheet.getCell(`${cols.desc}${r}`).value = entry.desc;
+        [cols.sr, cols.name, cols.model, cols.qty, cols.unit, cols.desc].forEach((col) => {
+          sheet.getCell(`${col}${r}`).alignment = CENTER_ALIGN;
+        });
+        setBorder(sheet.getCell(`${cols.sr}${r}`), { top: 'thin', bottom: 'thin', left: outerLeft, right: 'thin' });
+        [cols.name, cols.model, cols.size].forEach((col) => {
+          setBorder(sheet.getCell(`${col}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin' });
+        });
+        setBorder(sheet.getCell(`${cols.qty}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'none' });
+        setBorder(sheet.getCell(`${cols.unit}${r}`), { top: 'thin', bottom: 'thin', left: 'none', right: 'thin' });
+        setBorder(sheet.getCell(`${cols.desc}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: outerRight });
+        return;
+      }
+
+      // blank pool row — just the running Sr. No., everything else stays empty.
+      // Name/Model/Size MUST be merged into one cell here (same as the
+      // "fixed" category branch above) — leaving them as 3 separate bordered
+      // cells with nothing merged is what drew a stray vertical line down
+      // the middle of every blank row (13-28 on a typical challan), since
+      // each of those 3 cells still got its own left+right border independently.
+      sheet.mergeCells(`${cols.name}${r}:${cols.size}${r}`);
       sheet.getCell(`${cols.sr}${r}`).value = entry.printSr;
+      sheet.getCell(`${cols.sr}${r}`).alignment = CENTER_ALIGN;
+      sheet.getCell(`${cols.name}${r}`).alignment = CENTER_ALIGN;
       setBorder(sheet.getCell(`${cols.sr}${r}`), { top: 'thin', bottom: 'thin', left: outerLeft, right: 'thin' });
-      [cols.name, cols.model, cols.size].forEach((col) => {
-        setBorder(sheet.getCell(`${col}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin' });
-      });
+      setBorder(sheet.getCell(`${cols.name}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin' });
       setBorder(sheet.getCell(`${cols.qty}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'none' });
       setBorder(sheet.getCell(`${cols.unit}${r}`), { top: 'thin', bottom: 'thin', left: 'none', right: 'thin' });
       setBorder(sheet.getCell(`${cols.desc}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: outerRight });

@@ -76,6 +76,24 @@ module.exports = function registerChallanRoutes(app, deps) {
     res.json(rows);
   }));
 
+  // Auto-generate the next Challan No. — MAX(challan_no)+1 over every
+  // already-saved challan whose challan_no happens to be a plain number
+  // (older/hand-typed non-numeric challan_no values, if any, are ignored
+  // rather than breaking the MAX()). Starts at 1 if none exist yet. Purely
+  // a SUGGESTED starting value for the "Convert into Challan" modal's
+  // Challan No. field — it stays a normal editable text input, so this
+  // never blocks someone from typing over it. MUST be registered before
+  // GET '/api/challan/:id' (see route-order note at top of file).
+  app.get('/api/challan/next-no', route(async (req, res) => {
+    const [[row]] = await pool.query(
+      `SELECT MAX(CAST(challan_no AS UNSIGNED)) AS maxNo
+       FROM bom_challans
+       WHERE challan_no REGEXP '^[0-9]+$'`
+    );
+    const nextNo = ((row && row.maxNo) || 0) + 1;
+    res.json({ nextNo: String(nextNo) });
+  }));
+
   // Returns the fixed category list + every currently-known item_name ->
   // category mapping. MUST be registered before GET '/api/challan/:id'
   // (see route-order note at top of file) — otherwise this never gets hit.

@@ -277,25 +277,110 @@ function bomRenderChallanTemplateItemsHtml(template) {
   `;
 }
 
+// yyyy-mm-dd for TODAY in the browser's own local timezone — NOT
+// new Date().toISOString().slice(0,10), which reads UTC and can silently
+// land on the wrong calendar day (e.g. showing tomorrow's date) for any
+// user west of UTC in the evening/night. Used to default the Challan
+// Date field and as the "is this a future date?" comparison baseline.
+function bomTodayLocalDateStr() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function bomRenderChallanEntryModalHtml(header, kit) {
   return `
     <div id="bomChallanEntryModalRoot">
       <div class="form-grid cols-2">
         <div class="field"><label>Challan No.</label><input type="text" id="bomChallanModalNo" placeholder="Challan no."></div>
-        <div class="field"><label>Challan Date</label><input type="date" id="bomChallanModalDate"></div>
-        <div class="field"><label>Order No.</label><input type="text" id="bomChallanModalOrderNo" value="${bomEscAttr(header.orderNo)}" placeholder="Order no."></div>
+        <div class="field">
+          <label>Challan Date</label>
+          <input type="date" id="bomChallanModalDate" value="${bomEscAttr(bomTodayLocalDateStr())}">
+          <div id="bomChallanModalDateWarning" class="note" style="display:none;color:var(--red,#c0392b);margin-top:4px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> This is a future date — double-check before saving.
+          </div>
+        </div>
+        <div class="field">
+          <label>Order No.</label>
+          <input type="text" id="bomChallanModalOrderNo" value="${bomEscAttr(header.orderNo)}" placeholder="Order no. / Customer short code" list="bomChallanModalOrderNoList" autocomplete="off">
+          <datalist id="bomChallanModalOrderNoList"></datalist>
+        </div>
         <div class="field"><label>Capacity (kW)</label><input type="text" id="bomChallanModalCapacity" value="${bomEscAttr(kit.kw)}"></div>
         <div class="field"><label>Name</label><input type="text" id="bomChallanModalName" value="${bomEscAttr(header.customerName)}" placeholder="Customer / Party"></div>
         <div class="field"><label>City</label><input type="text" id="bomChallanModalCity" placeholder="City"></div>
         <div class="field"><label>Vehicle No.</label><input type="text" id="bomChallanModalVehicleNo" placeholder="e.g. GJ-03-BZ-7562"></div>
       </div>
-      <h4 style="margin:16px 0 8px;"><i class="fa-solid fa-list"></i> Items <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(fixed Challan template)</span></h4>
+      <h4 style="margin:16px 0 8px;"><i class="fa-solid fa-list"></i> Items <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(fixed Challan template + any extra lines you add below)</span></h4>
       ${bomRenderChallanTemplateItemsHtml(BOM_CHALLAN_TEMPLATE)}
+      <div id="bomChallanExtraItemsWrap" style="margin-top:10px;">
+        <div class="table-wrap">
+          <table class="bom-items-form-table" id="bomChallanExtraItemsTable">
+            <colgroup>
+              <col style="width:6%;"><col style="width:24%;"><col style="width:16%;">
+              <col style="width:14%;"><col style="width:10%;"><col style="width:24%;"><col style="width:6%;">
+            </colgroup>
+            <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Qty.</th><th>Unit</th><th>Description</th><th></th></tr></thead>
+            <tbody id="bomChallanExtraItemsBody"></tbody>
+          </table>
+        </div>
+        <button type="button" class="btn btn-ghost" id="bomChallanAddItemBtn" style="margin-top:8px;"><i class="fa-solid fa-plus"></i> Add Item</button>
+      </div>
       <div class="actions-row" style="margin-top:14px;">
+        <button type="button" class="btn btn-ghost" id="bomChallanSaveBtn"><i class="fa-solid fa-floppy-disk"></i> Save Challan</button>
         <button type="button" class="btn btn-blue" id="bomChallanPrintBtn"><i class="fa-solid fa-print"></i> Print Challan</button>
       </div>
     </div>
   `;
+}
+
+// ---------- Extra (software-added) Challan item rows ----------
+// Fixed BOM_CHALLAN_TEMPLATE rows above stay exactly as they were — this is
+// an ADDITIONAL, fully free-form list appended below them, wired to
+// #bomChallanExtraItemsBody. Every row here is entirely user-typed (Name/
+// Model/Qty/Unit/Description, no dropdown, no auto-fill), so any item that
+// doesn't fit one of the 14 fixed categories can still go on the Challan
+// without touching this file's hardcoded template. Collected separately
+// (bomCollectChallanExtraItems) and sent to the server as items.extra —
+// see challanPdf.js's buildChallanRowPlan, which prints each into the same
+// shared blank-row pool the fixed template already pads out to 26 rows
+// with, so no template/print layout change was needed to support this.
+let bomChallanExtraItemSeq = 0;
+
+function bomChallanAddExtraItemRow() {
+  const tbody = document.getElementById('bomChallanExtraItemsBody');
+  if (!tbody) return;
+  const idx = bomChallanExtraItemSeq++;
+  const tr = document.createElement('tr');
+  tr.dataset.extraIdx = String(idx);
+  tr.innerHTML = `
+    <td class="bom-challan-extra-sr">&mdash;</td>
+    <td><input type="text" class="bom-field-input" data-extra-field="name" placeholder="Item name"></td>
+    <td><input type="text" class="bom-field-input" data-extra-field="model" placeholder="Model"></td>
+    <td><input type="number" min="0" class="bom-field-input" data-extra-field="qty" placeholder="Qty."></td>
+    <td><input type="text" class="bom-field-input" data-extra-field="unit" placeholder="Nos"></td>
+    <td><input type="text" class="bom-field-input" data-extra-field="desc" placeholder="Description"></td>
+    <td><button type="button" class="btn btn-ghost bom-challan-extra-remove" title="Remove item"><i class="fa-solid fa-xmark"></i></button></td>
+  `;
+  tbody.appendChild(tr);
+  const removeBtn = tr.querySelector('.bom-challan-extra-remove');
+  if (removeBtn) removeBtn.addEventListener('click', () => tr.remove());
+}
+
+// Reads every extra row's current values into a plain array, skipping any
+// row where BOTH Item Name and Qty were left empty (an added-then-untouched
+// blank row shouldn't turn into a printed "blank" line with a Sr No wasted
+// on it).
+function bomCollectChallanExtraItems() {
+  const rows = Array.from(document.querySelectorAll('#bomChallanExtraItemsBody tr'));
+  return rows.map((tr) => {
+    const get = (f) => {
+      const el = tr.querySelector(`[data-extra-field="${f}"]`);
+      return el ? el.value.trim() : '';
+    };
+    return { name: get('name'), model: get('model'), qty: get('qty'), unit: get('unit') || 'Nos', desc: get('desc') };
+  }).filter((it) => it.name || it.qty);
 }
 
 // ---------- "Convert into Challan" — PRINT-ONLY sheet (exact Excel replica) ----------

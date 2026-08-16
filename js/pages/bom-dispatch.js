@@ -456,6 +456,113 @@ function createBomDispatchModule(ctx) {
         const modalCity = document.getElementById('bomChallanModalCity');
         const modalVehicleNo = document.getElementById('bomChallanModalVehicleNo');
         const printBtn = document.getElementById('bomChallanPrintBtn');
+        const saveBtn = document.getElementById('bomChallanSaveBtn');
+        const addItemBtn = document.getElementById('bomChallanAddItemBtn');
+        const dateWarningEl = document.getElementById('bomChallanModalDateWarning');
+        const orderNoListEl = document.getElementById('bomChallanModalOrderNoList');
+
+        // ---------------- Challan No.: auto-generate a starting value ----
+        // Still a plain editable text input — this only PRE-FILLS it with
+        // the next number in sequence (server computes MAX(challan_no)+1
+        // over every already-saved challan) so a fresh challan doesn't open
+        // to a blank required field; the person can freely overwrite it.
+        if (modalNo) {
+          (async () => {
+            try {
+              const next = await window.Api.get('/challan/next-no', { silent: true });
+              if (modalNo && !modalNo.value.trim() && next && next.nextNo) modalNo.value = next.nextNo;
+            } catch (e) {
+              // offline/first-load — leave it blank, same as before this feature existed
+            }
+          })();
+        }
+
+        // ---------------- Challan Date: warn (don't block) on a future date ----
+        function checkChallanDateWarning() {
+          if (!modalDate || !dateWarningEl) return;
+          const today = bomTodayLocalDateStr();
+          dateWarningEl.style.display = (modalDate.value && modalDate.value > today) ? '' : 'none';
+        }
+        if (modalDate) {
+          modalDate.addEventListener('change', checkChallanDateWarning);
+          modalDate.addEventListener('input', checkChallanDateWarning);
+          checkChallanDateWarning();
+        }
+
+        // ---------------- Order No.: live ledger lookup, same pattern as ----
+        // the main BOM Entry form's own Order No field (see
+        // ctx.searchBomCustomerShortCodes / ctx.fillBomCustomerDatalist in
+        // bom-party-autocomplete.js) — typing a saved customer's short code
+        // here auto-fills Name with that ledger's full name, editable after.
+        if (modalOrderNo && orderNoListEl) {
+          let orderNoTimer = null;
+          modalOrderNo.addEventListener('input', () => {
+            const text = modalOrderNo.value;
+            clearTimeout(orderNoTimer);
+            orderNoTimer = setTimeout(async () => {
+              const ledgers = await ctx.searchBomCustomerShortCodes(text);
+              ctx.fillBomCustomerDatalist(orderNoListEl, ledgers, 'short');
+              const exact = ledgers.find((l) => String(l.short || '').trim().toLowerCase() === text.trim().toLowerCase());
+              if (exact && modalName) modalName.value = exact.name || '';
+            }, 250);
+          });
+          modalOrderNo.addEventListener('focus', async () => {
+            if (modalOrderNo.value.trim()) return;
+            const ledgers = await ctx.searchBomCustomerShortCodes('');
+            ctx.fillBomCustomerDatalist(orderNoListEl, ledgers, 'short');
+          });
+        }
+
+        // ---------------- Extra (software-added) item rows ----------------
+        if (addItemBtn) addItemBtn.addEventListener('click', () => bomChallanAddExtraItemRow());
+
+        // Shared by both Save and Print below so the two buttons can never
+        // send different data for the same on-screen state.
+        function buildChallanSavePayload() {
+          return {
+            challanNo: modalNo ? modalNo.value.trim() : '',
+            challanDate: modalDate ? modalDate.value : '',
+            orderNo: modalOrderNo ? modalOrderNo.value : '',
+            capacityKw: modalCapacity ? modalCapacity.value : kw,
+            customerName: modalName ? modalName.value : '',
+            city: modalCity ? modalCity.value : '',
+            vehicleNo: modalVehicleNo ? modalVehicleNo.value : '',
+            installerName: header.installerName || '',
+            fabricatorName: header.fabricatorName || '',
+            dealerName: header.dealerName || '',
+            items: Object.assign({}, bomCollectChallanTemplateValues(), { extra: bomCollectChallanExtraItems() }),
+          };
+        }
+
+        // Writes the saved Challan No./Date straight back into the main BOM
+        // Entry form's own Challan No./Ch. Date fields, so the person never
+        // has to retype what was just saved on the Challan itself.
+        function syncSavedChallanBackToBom(payload) {
+          const bomChallanNoEl = ctx.$('bomChallanNo');
+          const bomChallanDateEl = ctx.$('bomChallanDate');
+          if (bomChallanNoEl) bomChallanNoEl.value = payload.challanNo;
+          if (bomChallanDateEl) bomChallanDateEl.value = payload.challanDate;
+        }
+
+        if (saveBtn) {
+          saveBtn.addEventListener('click', async () => {
+            const payload = buildChallanSavePayload();
+            saveBtn.disabled = true;
+            const originalLabel = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+            try {
+              await window.Api.post('/challan', payload);
+              syncSavedChallanBackToBom(payload);
+              if (window.showToast) window.showToast('Challan saved.');
+              ctx.closeChallanModal();
+            } catch (err) {
+              window.openModal('Save Failed', `<p>${bomEsc((err && err.message) || 'Could not save the Challan. Please try again.')}</p>`);
+            } finally {
+              saveBtn.disabled = false;
+              saveBtn.innerHTML = originalLabel;
+            }
+          });
+        }
 
         if (printBtn) {
           printBtn.addEventListener('click', async () => {
@@ -476,26 +583,13 @@ function createBomDispatchModule(ctx) {
             // entirely — that function + #bomChallanPrintRoot HTML sheet are
             // no longer used by this button (left in place, unused, in case
             // of rollback; safe to delete once this is verified in production).
-            const challanNo = modalNo ? modalNo.value.trim() : '';
             // TEMP: mandatory check disabled for testing — re-enable before going live
-            // if (!challanNo) {
+            // if (!(modalNo && modalNo.value.trim())) {
             //   window.openModal('Challan No. Required', '<p>Please enter a Challan No. before printing.</p>');
             //   return;
             // }
 
-            const payload = {
-              challanNo,
-              challanDate: modalDate ? modalDate.value : '',
-              orderNo: modalOrderNo ? modalOrderNo.value : '',
-              capacityKw: modalCapacity ? modalCapacity.value : kw,
-              customerName: modalName ? modalName.value : '',
-              city: modalCity ? modalCity.value : '',
-              vehicleNo: modalVehicleNo ? modalVehicleNo.value : '',
-              installerName: header.installerName || '',
-              fabricatorName: header.fabricatorName || '',
-              dealerName: header.dealerName || '',
-              items: bomCollectChallanTemplateValues(),
-            };
+            const payload = buildChallanSavePayload();
 
             printBtn.disabled = true;
             const originalLabel = printBtn.innerHTML;
@@ -506,6 +600,7 @@ function createBomDispatchModule(ctx) {
               // also covers the whole "Saving -> generating PDF on the
               // server" wait on this page itself.
               const saved = await window.Api.post('/challan', payload);
+              syncSavedChallanBackToBom(payload);
               const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
               // NOTE: window.open(pdfUrl, '_blank') directly on the URL was
               // used previously, but that's a plain browser navigation — it
