@@ -627,8 +627,32 @@ function setBorder(cell, sides) {
   cell.border = next;
 }
 
+// Wipes any leftover value (item name / model / size / qty / unit / desc)
+// from every cell in the pool, both copies, before the new plan writes
+// anything. REQUIRED because challan_template.xlsx has real static text
+// baked into these rows (e.g. row 21 = "Earthing & LA Kit", row 23 =
+// "PVC Pipe") from the original fixed-row design — if a category now
+// lands on a DIFFERENT row than that baked text (e.g. because GI Pipe used
+// fewer/zero rows this time and everything shifted up), the leftover text
+// stays sitting in whatever row it's still baked into and bleeds through
+// as duplicate/garbled text on rows the new plan marked "blank". Only `sr`
+// is left alone here since every plan row (gi/fixed/blank) always
+// overwrites it anyway.
+function clearPoolZone(sheet) {
+  for (let r = POOL_START_ROW; r <= POOL_END_ROW; r++) {
+    ['customer', 'company'].forEach((copy) => {
+      const cols = POOL_COLS[copy];
+      [cols.name, cols.model, cols.size, cols.qty, cols.unit, cols.desc].forEach((col) => {
+        sheet.getCell(`${col}${r}`).value = null;
+      });
+    });
+  }
+}
+
 // Writes one render's row plan (from buildChallanRowPlan) into both copies.
-// Call unmergePoolZone(sheet) once before this, for the same sheet.
+// Call unmergePoolZone(sheet) then clearPoolZone(sheet) once before this,
+// for the same sheet, in that order (unmerge before clearing values, since
+// a non-anchor cell of a still-active merge can't be written directly).
 function applyChallanRowPlan(sheet, plan, items) {
   ['customer', 'company'].forEach((copy) => {
     const cols = POOL_COLS[copy];
@@ -754,6 +778,7 @@ async function fillTemplateAndConvertToPdf(record) {
 
     const items = record.items || {}; // { "sr|size": { qty, desc } }
     unmergePoolZone(sheet);
+    clearPoolZone(sheet);
     const rowPlan = buildChallanRowPlan(items);
     applyChallanRowPlan(sheet, rowPlan, items);
 
