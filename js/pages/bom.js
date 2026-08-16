@@ -553,6 +553,14 @@ window.PAGES.bom = {
     // bom-kit-helpers.js) so a kit saved on one device shows up on every
     // device/login instead of being stuck in that browser's localStorage.
     await bomHydrateCustomKits();
+    // populateKitDropdown() already ran once inside createBomKitBuilderModule's
+    // factory call above (synchronously, at module-setup time) — at that
+    // point bomCustomKitsCache was still empty because this hydrate call
+    // hadn't resolved yet, so the dropdown was built from an empty
+    // catalogue. Re-run it now that the real server-backed kit list has
+    // loaded, or every saved kit stays invisible in the dropdown until some
+    // other action (e.g. saving a new kit) happens to call this again.
+    ctx.populateKitDropdown();
 
     ctx.btnDeleteKit = ctx.$('bomBtnDeleteKit');
     ctx.btnEditKit = ctx.$('bomBtnEditKit');
