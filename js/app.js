@@ -1115,6 +1115,8 @@ window.attachColumnFilters = function (table) {
         if (!res.ok || !data.success) {
           otpError.textContent = data.error || 'Incorrect OTP.';
           otpError.classList.add('show');
+          loginOtpBoxesCtl.clear();
+          loginOtpBoxesCtl.focusFirst();
           return;
         }
         finishLogin(data);
@@ -1227,6 +1229,8 @@ window.attachColumnFilters = function (table) {
         if (!res.ok || !data.success) {
           regOtpError.textContent = data.error || 'Incorrect OTP.';
           regOtpError.classList.add('show');
+          regOtpBoxesCtl.clear();
+          regOtpBoxesCtl.focusFirst();
           return;
         }
         // Account is verified and the server already granted a session —

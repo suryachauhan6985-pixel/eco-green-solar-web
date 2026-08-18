@@ -180,6 +180,39 @@ html[data-theme="light"] .login-grid{
   border-color:var(--blue);
   box-shadow:0 0 0 3px rgba(59,142,208,.18);
 }
+/* OTP boxes sit inside .login-field — must NOT inherit the icon left-padding
+   or the single digit is pushed outside the 48px box (looks "empty"). */
+.login-field .otp-boxes .otp-box,
+.otp-boxes .otp-box{
+  padding:0 !important;
+  width:44px !important;
+  min-width:44px;
+  max-width:44px;
+  height:48px !important;
+  min-height:48px;
+  aspect-ratio:auto;
+  text-align:center !important;
+  font-size:22px !important;
+  font-weight:800 !important;
+  line-height:48px !important;
+  color:#ffffff !important;
+  -webkit-text-fill-color:#ffffff !important;
+  caret-color:var(--blue);
+  background:#1a1f2a !important;
+  border:1px solid var(--border-light) !important;
+  border-radius:12px !important;
+  box-shadow:none;
+}
+html[data-theme="light"] .login-field .otp-boxes .otp-box,
+html[data-theme="light"] .otp-boxes .otp-box{
+  color:#1a1d21 !important;
+  -webkit-text-fill-color:#1a1d21 !important;
+  background:#ffffff !important;
+}
+.login-field .otp-boxes .otp-box:focus{
+  border-color:var(--blue) !important;
+  box-shadow:0 0 0 3px rgba(59,142,208,.25) !important;
+}
 .login-pwd-wrap{ position:relative; }
 .login-pwd-wrap input{ padding-right:42px; }
 .login-toggle-pwd{
