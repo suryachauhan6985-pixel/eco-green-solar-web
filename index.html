@@ -51,12 +51,6 @@
   <aside class="sidebar" id="sidebar">
     <div class="brand"><i class="fa-solid fa-bolt bolt"></i><span>ECO GREEN SOLAR</span></div>
     <div class="nav-scroll" id="navScroll"></div>
-    <div class="theme-switcher" id="themeSwitcher" title="App theme">
-      <span class="theme-label">Theme</span>
-      <button type="button" class="theme-btn" data-theme-set="dark" title="Dark"><i class="fa-solid fa-moon"></i></button>
-      <button type="button" class="theme-btn" data-theme-set="gray" title="Gray"><i class="fa-solid fa-circle-half-stroke"></i></button>
-      <button type="button" class="theme-btn" data-theme-set="light" title="Light"><i class="fa-solid fa-sun"></i></button>
-    </div>
     <div class="profile-box">
       <div class="avatar">S</div>
       <div>
@@ -72,7 +66,7 @@
   <div class="mobile-topbar-row">
     <button class="hamburger" onclick="openSidebar()"><i class="fa-solid fa-bars"></i></button>
     <div class="brand"><i class="fa-solid fa-bolt bolt"></i><span>ECO GREEN SOLAR</span></div>
-    <div class="avatar" style="width:34px;height:34px;font-size:13px;">S</div>
+    <button type="button" class="avatar mobile-profile-avatar" id="mobileProfileAvatar" style="width:34px;height:34px;font-size:13px;border:none;padding:0;" title="Profile">S</button>
   </div>
   <div class="search-mini mobile-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="egs-quick-search-mobile" id="egsQuickSearchMobile" placeholder="Quick search anything..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" onblur="if(!this.value) this.setAttribute('readonly','readonly');"></div>
 </div>

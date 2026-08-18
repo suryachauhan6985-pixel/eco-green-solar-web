@@ -1,5 +1,5 @@
 // Theme controller — Dark / Gray / Light
-// Preference stored in localStorage key "egs-theme".
+// localStorage for instant paint; server preferences for cross-device sync.
 (function () {
   const KEY = 'egs-theme';
   const ALLOWED = ['dark', 'gray', 'light'];
@@ -9,37 +9,64 @@
     return ALLOWED.includes(t) ? t : 'dark';
   }
 
-  function applyTheme(name) {
+  function applyTheme(name, opts) {
     const t = ALLOWED.includes(name) ? name : 'dark';
     document.documentElement.setAttribute('data-theme', t);
-    try { localStorage.setItem(KEY, t); } catch (e) { /* ignore */ }
+    try { localStorage.setItem(KEY, t); } catch (e) {}
 
-    // Browser chrome (mobile address bar)
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) {
       const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#111111';
       meta.setAttribute('content', bg);
     }
 
-    // Highlight active button(s)
     document.querySelectorAll('[data-theme-set]').forEach((btn) => {
       btn.classList.toggle('active', btn.getAttribute('data-theme-set') === t);
     });
+
+    // Persist to server when logged in (cross-device)
+    if (!opts || !opts.skipServer) {
+      try {
+        if (window.currentAuthToken && window.Api && window.Api.put) {
+          window.Api.put('/auth/preferences', { preferences: { theme: t } }).catch(function () {});
+        }
+      } catch (e) {}
+    }
   }
 
-  function wire() {
-    document.querySelectorAll('[data-theme-set]').forEach((btn) => {
-      btn.addEventListener('click', () => applyTheme(btn.getAttribute('data-theme-set')));
+  function wireButtons(root) {
+    (root || document).querySelectorAll('[data-theme-set]').forEach((btn) => {
+      if (btn.dataset.themeWired) return;
+      btn.dataset.themeWired = '1';
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyTheme(btn.getAttribute('data-theme-set'));
+      });
     });
-    applyTheme(currentTheme());
+  }
+
+  async function loadThemeFromServer() {
+    try {
+      if (!window.currentAuthToken || !window.Api) return;
+      const data = await window.Api.get('/auth/preferences', { silent: true });
+      const theme = data && data.preferences && data.preferences.theme;
+      if (theme && ALLOWED.includes(theme)) applyTheme(theme, { skipServer: true });
+    } catch (e) {}
+  }
+
+  function boot() {
+    wireButtons(document);
+    applyTheme(currentTheme(), { skipServer: true });
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', wire);
+    document.addEventListener('DOMContentLoaded', boot);
   } else {
-    wire();
+    boot();
   }
 
   window.setAppTheme = applyTheme;
   window.getAppTheme = currentTheme;
+  window.wireThemeButtons = wireButtons;
+  window.loadThemeFromServer = loadThemeFromServer;
 })();

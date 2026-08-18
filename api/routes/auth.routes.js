@@ -479,4 +479,29 @@ module.exports = function registerAuthRoutes(app, deps) {
     res.json({ success: true, affected: result.affectedRows || 0 });
   }));
 
+
+  // User preferences (theme etc.) — synced across devices
+  app.get('/api/auth/preferences', route(async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Please log in.' });
+    const [[row]] = await pool.query(`SELECT preferences_json FROM users WHERE username=?`, [req.user.username]);
+    let prefs = {};
+    try { prefs = row && row.preferences_json ? JSON.parse(row.preferences_json) : {}; } catch (e) { prefs = {}; }
+    res.json({ preferences: prefs && typeof prefs === 'object' ? prefs : {} });
+  }));
+
+  app.put('/api/auth/preferences', route(async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Please log in.' });
+    const incoming = req.body && typeof req.body === 'object' ? (req.body.preferences || req.body) : {};
+    const [[row]] = await pool.query(`SELECT preferences_json FROM users WHERE username=?`, [req.user.username]);
+    let current = {};
+    try { current = row && row.preferences_json ? JSON.parse(row.preferences_json) : {}; } catch (e) { current = {}; }
+    if (!current || typeof current !== 'object') current = {};
+    const merged = Object.assign({}, current, incoming);
+    // Only allow known keys
+    const clean = {};
+    if (merged.theme === 'dark' || merged.theme === 'light' || merged.theme === 'gray') clean.theme = merged.theme;
+    await pool.query(`UPDATE users SET preferences_json=? WHERE username=?`, [JSON.stringify(clean), req.user.username]);
+    res.json({ success: true, preferences: clean });
+  }));
+
 };

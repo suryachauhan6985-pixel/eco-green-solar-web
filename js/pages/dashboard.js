@@ -325,24 +325,38 @@ window.PAGES.dashboard = {
     // funnel button's on-screen position) so .table-wrap's horizontal
     // scroll box never clips it.
     const tbody = document.getElementById('dashSnapshotBody');
-    const filterBtns = document.querySelectorAll('.th-filter-btn');
+    const filterBtns = document.querySelectorAll('#dashSnapshotTable .th-filter-btn, .panel .th-filter-btn');
     if (tbody && filterBtns.length) {
-      const allRows = Array.from(tbody.querySelectorAll('tr'));
-      const colIndex = {};
-      allRows[0].querySelectorAll('td').forEach((td, i) => {
-        colIndex[td.dataset.label] = i;
-      });
-      const activeFilters = {}; // { colName: Set of allowed values } — absent key = no filter on that column
+      // IMPORTANT: rows are loaded async from /dashboard/summary — never cache
+      // NodeList at init time (it would be empty or stale). Always read live.
+      function liveRows() { return Array.from(tbody.querySelectorAll('tr')); }
+      function buildColIndex(row) {
+        const colIndex = {};
+        if (!row) return colIndex;
+        row.querySelectorAll('td').forEach((td, i) => {
+          const key = td.dataset.label || (td.getAttribute('data-label') || '').trim();
+          if (key) colIndex[key] = i;
+        });
+        // Fallback by header order if data-label missing
+        if (!Object.keys(colIndex).length) {
+          ['Category','Avail.','Assigned','Sold','Damaged'].forEach((k, i) => { colIndex[k] = i; });
+        }
+        return colIndex;
+      }
+      const activeFilters = {}; // { colName: Set of allowed values }
       let openMenuEl = null;
 
       function cellValue(row, col) {
-        return row.children[colIndex[col]].textContent.trim();
+        const colIndex = buildColIndex(row);
+        const idx = colIndex[col];
+        if (idx == null || !row.children[idx]) return '';
+        return row.children[idx].textContent.trim();
       }
       function uniqueValues(col) {
-        return Array.from(new Set(allRows.map(r => cellValue(r, col))));
+        return Array.from(new Set(liveRows().map(r => cellValue(r, col)).filter(Boolean)));
       }
       function applyAllFilters() {
-        allRows.forEach((row) => {
+        liveRows().forEach((row) => {
           const visible = Object.keys(activeFilters).every((col) => activeFilters[col].has(cellValue(row, col)));
           row.style.display = visible ? '' : 'none';
         });
@@ -367,6 +381,10 @@ window.PAGES.dashboard = {
         closeMenu();
 
         const values = uniqueValues(col);
+        if (!values.length) {
+          if (window.showToast) window.showToast('Table data still loading…');
+          return;
+        }
         const selected = activeFilters[col] || new Set(values); // if no filter yet, everything is "checked"
 
         const menu = document.createElement('div');

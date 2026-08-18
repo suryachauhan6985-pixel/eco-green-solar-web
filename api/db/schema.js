@@ -18,8 +18,19 @@ async function ensureAuthDeviceSessionsSchema(pool) {
   }
 }
 
+
+async function ensureUserPreferencesSchema(pool) {
+  try {
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences_json LONGTEXT NULL`);
+  } catch (e) {
+    console.warn('[User preferences] Could not ensure preferences_json column:', e.message);
+  }
+}
+
 async function ensureStartupSchema(pool) {
-  await ensureSessionSchema, ensureAuthDeviceSessionsSchema(pool);
+  await ensureUserPreferencesSchema(pool);
+
+  await ensureSessionSchema(pool);
   await ensureAuthDeviceSessionsSchema(pool);
   await ensureSerialRuleSchema(pool);
   await ensureLedgerTypeSchema(pool);
@@ -176,8 +187,6 @@ async function ensureWattUnitSchema(pool) {
     await pool.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS watt_unit VARCHAR(4) NOT NULL DEFAULT 'W'`);
   } catch (e) { console.warn('[Watt unit schema] Could not ensure watt_unit column on items (will retry lazily on first use):', e.message); }
 }
-
-module.exports = { ensureStartupSchema };
 
 // Goal 4, Step 2: "Create Dispatch" moves from a frontend-only stub to a
 // real, transactional stock deduction. Two additions:
@@ -364,3 +373,5 @@ async function ensureBomKitTemplatesSchema(pool) {
     )`);
   } catch (e) { console.warn('[BOM kit templates schema] Could not ensure bom_kit_templates table:', e.message); }
 }
+
+module.exports = { ensureStartupSchema };

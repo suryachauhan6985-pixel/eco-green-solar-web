@@ -451,6 +451,10 @@ window.attachColumnFilters = function (table) {
   // SuperAdmin any more.
   const HEARTBEAT_MS = 20000;
   let heartbeatTimer = null;
+  function applyUserPreferencesFromServer() {
+    if (window.loadThemeFromServer) window.loadThemeFromServer();
+  }
+
   function startHeartbeat() {
     if (heartbeatTimer || !window.currentUsername) return;
     const ping = () => {
@@ -952,7 +956,7 @@ window.attachColumnFilters = function (table) {
       saveSession(data.username, data.role, rememberChk.checked, data.token);
       updateProfileDisplay(data.username, data.role);
       showApp();
-      startHeartbeat();
+      startHeartbeat(); applyUserPreferencesFromServer();
       resetIdleTimer();
       if (typeof window.showToast === 'function') {
         window.showToast(`Login successful! Welcome, ${data.username}.`);
@@ -1481,6 +1485,13 @@ window.attachColumnFilters = function (table) {
       <div class="profile-accounts">${accountRows || '<p class="note" style="padding:8px 12px;margin:0;">No saved accounts yet</p>'}</div>
       <button type="button" class="profile-menu-item" id="profileAddAccount"><i class="fa-solid fa-user-plus"></i> Add account</button>
       <div class="profile-menu-divider"></div>
+      <div class="profile-menu-section-label">Theme</div>
+      <div class="profile-theme-row">
+        <button type="button" class="theme-btn" data-theme-set="dark" title="Dark"><i class="fa-solid fa-moon"></i> Dark</button>
+        <button type="button" class="theme-btn" data-theme-set="gray" title="Gray"><i class="fa-solid fa-circle-half-stroke"></i> Gray</button>
+        <button type="button" class="theme-btn" data-theme-set="light" title="Light"><i class="fa-solid fa-sun"></i> Light</button>
+      </div>
+      <div class="profile-menu-divider"></div>
       <button type="button" class="profile-menu-item" id="profileLoginActivity"><i class="fa-solid fa-mobile-screen-button"></i> Login activity</button>
       <button type="button" class="profile-menu-item danger" id="profileLogout"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>`;
     document.body.appendChild(menu);
@@ -1490,6 +1501,12 @@ window.attachColumnFilters = function (table) {
     menu.style.left = Math.max(10, rect.left) + 'px';
     menu.style.top = Math.max(10, rect.top - menuRect.height - 8) + 'px';
     profileMenuEl = menu;
+    if (window.wireThemeButtons) window.wireThemeButtons(menu);
+    if (window.getAppTheme) {
+      menu.querySelectorAll('[data-theme-set]').forEach((btn) => {
+        btn.classList.toggle('active', btn.getAttribute('data-theme-set') === window.getAppTheme());
+      });
+    }
 
     menu.querySelectorAll('[data-switch-user]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -1527,12 +1544,18 @@ window.attachColumnFilters = function (table) {
     menu.addEventListener('click', (e) => e.stopPropagation());
   }
 
+  function toggleProfileMenu(e) {
+    if (e) e.stopPropagation();
+    if (profileMenuEl) closeProfileMenu();
+    else openProfileMenu();
+  }
   if (profileBox) {
-    profileBox.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (profileMenuEl) closeProfileMenu();
-      else openProfileMenu();
-    });
+    profileBox.addEventListener('click', toggleProfileMenu);
+  }
+  // Mobile topbar avatar — same menu as sidebar profile
+  const mobileAvatar = document.getElementById('mobileProfileAvatar');
+  if (mobileAvatar) {
+    mobileAvatar.addEventListener('click', toggleProfileMenu);
   }
   document.addEventListener('click', closeProfileMenu);
 
@@ -1680,7 +1703,7 @@ window.attachColumnFilters = function (table) {
     window.currentAuthToken = restoredSession.token;
     updateProfileDisplay(restoredSession.username, restoredSession.role);
     showApp();
-    startHeartbeat();
+    startHeartbeat(); applyUserPreferencesFromServer();
     resetIdleTimer();
   } else {
     showLoginOverlay();
