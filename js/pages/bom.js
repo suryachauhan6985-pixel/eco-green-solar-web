@@ -453,19 +453,16 @@ window.PAGES.bom = {
 
     function bomOpenCreateBomModal() {
       if (!ctx.currentKitState) {
-        window.openModal('Select a Kit', '<p>Please select a BOM Kit before generating a BOM.</p>');
         if (window.focusInvalidField) window.focusInvalidField(ctx.$('bomKitSelect'));
         return;
       }
       const header = ctx.getHeaderValues();
       const orderNo = (header.orderNo || '').trim();
       if (!orderNo) {
-        window.openModal('Order No. Required', '<p>Please enter an <b>Order No.</b> before generating a BOM.</p>');
         if (window.focusInvalidField) window.focusInvalidField(ctx.$('bomOrderNo'));
         return;
       }
       if (!(header.customerName || '').trim()) {
-        window.openModal('Customer Name Required', '<p>Please enter a <b>Customer Name</b> before generating a BOM.</p>');
         if (window.focusInvalidField) window.focusInvalidField(ctx.$('bomCustomerName'));
         return;
       }

@@ -106,12 +106,10 @@ function createBomDispatchModule(ctx) {
       // flow — Verify BOM / stock check don't persist anything, so they
       // never needed it.
       if (!header.orderNo || !header.orderNo.trim()) {
-        window.openModal('Order No. Required', '<p>Please enter an <b>Order No.</b> before creating a dispatch — it\'s how partial dispatches for this BOM get tracked together.</p>');
         if (window.focusInvalidField) window.focusInvalidField(ctx.$('bomOrderNo'));
         return false;
       }
       if (!header.customerName || !header.customerName.trim()) {
-        window.openModal('Customer Name Required', '<p>Please enter a <b>Customer Name</b> before creating a dispatch.</p>');
         if (window.focusInvalidField) window.focusInvalidField(ctx.$('bomCustomerName'));
         return false;
       }

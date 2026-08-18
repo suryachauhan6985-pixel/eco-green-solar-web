@@ -42,9 +42,9 @@ const APP_SHELL = [
   '/js/pages/bom-kit-builder.js?v=2',
   '/js/pages/bom-serial-scan.js?v=1',
   '/js/pages/bom-serial-modal.js?v=1',
-  '/js/pages/bom-dispatch.js?v=2',
-  '/js/pages/bom.js?v=17',
-  '/js/app.js?v=12',
+  '/js/pages/bom-dispatch.js?v=3',
+  '/js/pages/bom.js?v=18',
+  '/js/app.js?v=13',
   '/js/theme.js?v=2'
 ];
 

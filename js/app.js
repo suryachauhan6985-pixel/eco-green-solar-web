@@ -71,7 +71,7 @@ window.focusInvalidField = function focusInvalidField(el) {
   const doFocus = () => { if (el.focus) el.focus({ preventScroll: true }); };
   // Give the smooth-scroll a beat to land before focusing/highlighting —
   // focusing mid-scroll on some mobile browsers cancels the scroll early.
-  setTimeout(doFocus, 220);
+  setTimeout(doFocus, 120);
 
   el.classList.remove('egs-field-invalid'); // restart the shake if already flagged
   // eslint-disable-next-line no-unused-expressions
@@ -88,7 +88,7 @@ window.focusInvalidField = function focusInvalidField(el) {
   };
   el.addEventListener('input', clear);
   el.addEventListener('change', clear);
-  setTimeout(clear, 4000); // safety auto-clear, e.g. for datalist picks that skip 'input'
+  setTimeout(clear, 3500); // safety auto-clear, e.g. for datalist picks that skip 'input'
 };
 
 // Injects the red-outline/shake styling for window.focusInvalidField() once.
@@ -102,20 +102,21 @@ window.focusInvalidField = function focusInvalidField(el) {
   style.id = 'egsInvalidFieldStyles';
   style.textContent = `
     .egs-field-invalid {
-      outline: 2px solid #e5484d !important;
-      outline-offset: 1px !important;
       border-color: #e5484d !important;
-      box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.25) !important;
-      animation: egsFieldShake 0.35s ease-in-out;
+      box-shadow: 0 0 0 1px rgba(229, 72, 77, 0.55) !important;
+      outline: none !important;
+      animation: egsFieldShake 0.4s ease-in-out;
     }
     @keyframes egsFieldShake {
       0%, 100% { transform: translateX(0); }
-      20% { transform: translateX(-6px); }
-      40% { transform: translateX(5px); }
-      60% { transform: translateX(-4px); }
-      80% { transform: translateX(3px); }
+      15% { transform: translateX(-3px); }
+      30% { transform: translateX(3px); }
+      45% { transform: translateX(-2px); }
+      60% { transform: translateX(2px); }
+      75% { transform: translateX(-1px); }
     }
   `;
+
   document.head.appendChild(style);
 })();
 
