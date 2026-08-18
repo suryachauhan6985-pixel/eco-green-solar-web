@@ -581,16 +581,13 @@ window.attachColumnFilters = function (table) {
             <h1 class="login-brand-title">Eco Green Solar</h1>
             <p class="login-brand-tag">ERP for stock, sales &amp; field operations</p>
             <ul class="login-brand-points">
-              <li><i class="fa-solid fa-shield-halved"></i> Secure OTP sign-in</li>
-              <li><i class="fa-solid fa-boxes-stacked"></i> Live stock &amp; dispatch</li>
-              <li><i class="fa-solid fa-mobile-screen"></i> Works on phone &amp; desktop</li>
+              <li><i class="fa-solid fa-lock"></i> Protected access with email OTP</li>
+              <li><i class="fa-solid fa-chart-line"></i> Real-time inventory visibility</li>
+              <li><i class="fa-solid fa-briefcase"></i> Built for field &amp; office teams</li>
             </ul>
           </div>
         </div>
         <div class="login-card">
-          <div class="login-card-top mobile-only">
-            <div class="login-logo login-logo-sm"><img src="assets/logo.png" alt="Eco Green Solar" class="brand-logo"></div>
-          </div>
 
         <div id="loginStepCreds" class="login-step">
           <div class="login-step-head">
@@ -842,10 +839,17 @@ window.attachColumnFilters = function (table) {
     // reading/writing otpInput.value exactly as before — nothing else has
     // to change). Handles auto-advance on type, backspace-to-previous, and
     // pasting a full 6-digit code into any one of the boxes. ----------
-    function wireOtpBoxes(boxesEl, hiddenEl) {
+    function wireOtpBoxes(boxesEl, hiddenEl, onComplete) {
       if (!boxesEl || !hiddenEl) return { focusFirst() {}, clear() {} };
       const boxes = Array.from(boxesEl.querySelectorAll('.otp-box'));
-      function sync() { hiddenEl.value = boxes.map((b) => b.value).join(''); }
+      let completed = false;
+      function sync() {
+        hiddenEl.value = boxes.map((b) => b.value).join('');
+        if (!completed && hiddenEl.value.length === boxes.length && typeof onComplete === 'function') {
+          completed = true;
+          setTimeout(() => { completed = false; onComplete(hiddenEl.value); }, 40);
+        }
+      }
       boxes.forEach((box, i) => {
         box.addEventListener('input', () => {
           box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
@@ -853,6 +857,12 @@ window.attachColumnFilters = function (table) {
           sync();
         });
         box.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            sync();
+            if (hiddenEl.value.length === boxes.length && typeof onComplete === 'function') onComplete(hiddenEl.value);
+            return;
+          }
           if (e.key === 'Backspace' && !box.value && i > 0) {
             boxes[i - 1].focus();
           } else if (e.key === 'ArrowLeft' && i > 0) {
@@ -875,12 +885,13 @@ window.attachColumnFilters = function (table) {
       });
       return {
         focusFirst() { boxes[0].focus(); },
-        clear() { boxes.forEach((b) => { b.value = ''; }); hiddenEl.value = ''; },
+        clear() { boxes.forEach((b) => { b.value = ''; }); hiddenEl.value = ''; completed = false; },
       };
     }
-    const loginOtpBoxesCtl = wireOtpBoxes(otpBoxes, otpInput);
-    const regOtpBoxesCtl = wireOtpBoxes(regOtpBoxes, regOtpInput);
-    const resetOtpBoxesCtl = wireOtpBoxes(resetOtpBoxes, resetOtpInput);
+    // Bound after verify handlers are defined (see bottom of buildLoginOverlay).
+    let loginOtpBoxesCtl = { focusFirst() {}, clear() {} };
+    let regOtpBoxesCtl = { focusFirst() {}, clear() {} };
+    let resetOtpBoxesCtl = { focusFirst() {}, clear() {} };
 
     // ---------- Resend OTP cooldown: 10 seconds ----------
     // Disables a resend button/link and counts down "Resend OTP in 10s"
@@ -1027,17 +1038,12 @@ window.attachColumnFilters = function (table) {
         <div class="login-success-pop">
           <div class="login-success-icon"><i class="fa-solid fa-circle-check"></i></div>
           <h3 style="margin:10px 0 6px;font-size:18px;">Login successful</h3>
-          <p style="margin:0;color:var(--txt-muted);font-size:13px;">Welcome back, <b style="color:var(--txt);">${data.username}</b>. You're signed in securely.</p>
-          <div style="margin-top:16px;text-align:right;">
-            <button type="button" class="btn btn-blue" id="loginSuccessContinueBtn"><i class="fa-solid fa-arrow-right"></i> Continue</button>
-          </div>
+          <p style="margin:0;color:var(--txt-muted);font-size:13px;">Welcome back, <b style="color:var(--txt);">${data.username}</b>.</p>
         </div>`;
       if (typeof window.openModal === 'function') {
         window.openModal('Welcome', welcomeHtml);
-        setTimeout(() => {
-          const btn = document.getElementById('loginSuccessContinueBtn');
-          if (btn) btn.addEventListener('click', () => window.closeModal && window.closeModal());
-        }, 0);
+        // Brief confirmation only — no Continue click required
+        setTimeout(() => { if (window.closeModal) window.closeModal(); }, 900);
       } else if (typeof window.showToast === 'function') {
         window.showToast(`Login successful! Welcome, ${data.username}.`);
       }
@@ -1384,6 +1390,7 @@ window.attachColumnFilters = function (table) {
     pwdInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptLogin(); });
     userInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') pwdInput.focus(); });
 
+    loginOtpBoxesCtl = wireOtpBoxes(otpBoxes, otpInput, () => attemptVerifyOtp());
     otpSubmitBtn.addEventListener('click', attemptVerifyOtp);
     otpInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptVerifyOtp(); });
     otpBackBtn.addEventListener('click', showCredsStep);
@@ -1406,6 +1413,7 @@ window.attachColumnFilters = function (table) {
     regSubmitBtn.addEventListener('click', attemptRegister);
     regConfirmPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptRegister(); });
 
+    regOtpBoxesCtl = wireOtpBoxes(regOtpBoxes, regOtpInput, () => attemptVerifyRegisterOtp());
     regOtpSubmitBtn.addEventListener('click', attemptVerifyRegisterOtp);
     regOtpInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptVerifyRegisterOtp(); });
     regOtpBackBtn.addEventListener('click', showRegisterStep);
@@ -1421,6 +1429,7 @@ window.attachColumnFilters = function (table) {
       resetToggleBtn.classList.toggle('active', !showing);
       resetToggleBtn.innerHTML = showing ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
     });
+    resetOtpBoxesCtl = wireOtpBoxes(resetOtpBoxes, resetOtpInput);
     resetSubmitBtn.addEventListener('click', attemptResetPassword);
     resetNewPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptResetPassword(); });
     resetBackBtn.addEventListener('click', showForgotStep);
