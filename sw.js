@@ -1,10 +1,10 @@
-const CACHE_NAME = 'eco-green-solar-erp-v23';
+const CACHE_NAME = 'eco-green-solar-erp-v24';
 
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/css/style.css?v=20',
+  '/css/style.css?v=22',
   '/css/modules/base.css',
   '/css/modules/layout.css',
   '/css/modules/components.css',
@@ -21,7 +21,7 @@ const APP_SHELL = [
   '/js/data/purchase-data.js?v=3',
   '/js/data/api.js?v=4',
   '/js/data/sheets-store.js?v=3',
-  '/js/pages/dashboard.js?v=4',
+  '/js/pages/dashboard.js?v=5',
   '/js/pages/scansheet.js?v=22',
   '/js/pages/masters.js?v=5',
   '/js/pages/purchase.js?v=4',
@@ -44,7 +44,8 @@ const APP_SHELL = [
   '/js/pages/bom-serial-modal.js?v=1',
   '/js/pages/bom-dispatch.js?v=2',
   '/js/pages/bom.js?v=17',
-  '/js/app.js?v=6'
+  '/js/app.js?v=7',
+  '/js/theme.js?v=2'
 ];
 
 self.addEventListener('install', (event) => {

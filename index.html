@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Eco Solar">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Eco Green Solar ERP — Web</title>
-<link rel="manifest" href="manifest.webmanifest?v=3">
+<link rel="manifest" href="manifest.webmanifest?v=4">
 <link rel="icon" href="assets/icon.ico" type="image/x-icon">
 <link rel="icon" href="assets/icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="icon" href="assets/icons/icon-512.png" sizes="512x512" type="image/png">
@@ -27,7 +27,7 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=21">
+<link rel="stylesheet" href="css/style.css?v=22">
 <!-- Barcode/QR camera scanning (Sheets feature) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <!-- XLSX parsing for Sheets "Import CSV/XLSX" (CSV import needs no library) -->
@@ -124,7 +124,7 @@
 <!-- Sheets (Scan To Sheet) feature: offline localStorage layer, loaded before its page module -->
 <script src="js/data/sheets-store.js?v=3"></script>
 <!-- Each page's markup + data lives in its own file, like dashboard.py / masters.py in the desktop app -->
-<script src="js/pages/dashboard.js?v=4"></script>
+<script src="js/pages/dashboard.js?v=5"></script>
 <script src="js/pages/scansheet.js?v=22"></script>
 <script src="js/pages/masters.js?v=5"></script>
 <script src="js/pages/purchase.js?v=4"></script>
@@ -152,7 +152,7 @@
 <script src="js/pages/bom-dispatch.js?v=2"></script>
 <script src="js/pages/bom.js?v=17"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
-<script src="js/app.js?v=6"></script>
+<script src="js/app.js?v=7"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -178,6 +178,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script src="js/theme.js?v=1"></script>
+<script src="js/theme.js?v=2"></script>
 </body>
 </html>

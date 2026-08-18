@@ -454,7 +454,11 @@ window.PAGES.dashboard = {
       // scoped with { once:true }-style cleanup via named handlers so
       // revisiting the Dashboard page doesn't stack up duplicate listeners.
       document.addEventListener('click', closeMenu);
-      window.addEventListener('scroll', closeMenu, true);
+      function onScroll(e) {
+        if (openMenuEl && e.target && openMenuEl.contains(e.target)) return;
+        closeMenu();
+      }
+      window.addEventListener('scroll', onScroll, true);
       window.addEventListener('resize', closeMenu);
     }
   }
