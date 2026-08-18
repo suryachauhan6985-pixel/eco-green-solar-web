@@ -277,11 +277,14 @@ module.exports = function registerBomRoutes(app, deps) {
   // every item until the first real trip, which is what "Pending" (not
   // yet started) looks like. getOrCreateBomOrder (used by /dispatch) needs
   // no changes — it already finds and extends this row on the first trip.
-  // Body: { orderNo, header: {...}, items: [{ name, qty }] }
+  // Body: { orderNo, header: {...}, items: [{ name, qty }], kitSnapshot?: { kitKey, label, kw, sections } }
+  // kitSnapshot is the full on-screen kit at Generate BOM time — stored so
+  // Continue Dispatch can reopen the same full BOM Entry UI later.
   app.post('/api/bom/orders', route(async (req, res) => {
     const orderNo = String(req.body.orderNo || '').trim();
     const header = req.body.header && typeof req.body.header === 'object' ? req.body.header : {};
     const items = Array.isArray(req.body.items) ? req.body.items : [];
+    const kitSnapshot = req.body.kitSnapshot && typeof req.body.kitSnapshot === 'object' ? req.body.kitSnapshot : null;
     if (!orderNo) return res.status(400).json({ error: 'Order No. is required.' });
 
     const baseline = {};
@@ -303,8 +306,8 @@ module.exports = function registerBomRoutes(app, deps) {
 
     try {
       const [result] = await pool.query(
-        `INSERT INTO bom_orders (order_no, header_json, items_json, status, created_by) VALUES (?, ?, ?, 'Open', ?)`,
-        [orderNo, JSON.stringify(header), JSON.stringify(baseline), req.user ? req.user.username : null]
+        `INSERT INTO bom_orders (order_no, header_json, items_json, kit_snapshot_json, status, created_by) VALUES (?, ?, ?, ?, 'Open', ?)`,
+        [orderNo, JSON.stringify(header), JSON.stringify(baseline), kitSnapshot ? JSON.stringify(kitSnapshot) : null, req.user ? req.user.username : null]
       );
       res.json({ success: true, id: result.insertId, orderNo, status: 'Open' });
     } catch (e) {
@@ -369,6 +372,9 @@ module.exports = function registerBomRoutes(app, deps) {
       return { id: t.id, dispatchedBy: t.dispatched_by, dispatchedAt: t.dispatched_at, items: tripItems };
     });
 
+    let kitSnapshot = null;
+    try { kitSnapshot = row.kit_snapshot_json ? JSON.parse(row.kit_snapshot_json) : null; } catch (e) { kitSnapshot = null; }
+
     res.json({
       id: row.id,
       orderNo: row.order_no,
@@ -378,6 +384,7 @@ module.exports = function registerBomRoutes(app, deps) {
       createdAt: row.created_at,
       items,
       trips,
+      kitSnapshot,
     });
   }));
 
@@ -386,9 +393,14 @@ module.exports = function registerBomRoutes(app, deps) {
   // baseline item, not just the pending ones — the frontend filters to
   // remaining>0 itself, but keeping the full list here makes this
   // endpoint equally useful for a future "order history" view.
-  app.get('/api/bom/orders/:id', route(async (req, res) => {    const [[row]] = await pool.query(`SELECT * FROM bom_orders WHERE id=?`, [req.params.id]);
+  // Also returns kitSnapshot (full sections captured at Generate BOM) so
+  // the frontend can reopen the full BOM Entry UI instead of the flat form.
+  app.get('/api/bom/orders/:id', route(async (req, res) => {
+    const [[row]] = await pool.query(`SELECT * FROM bom_orders WHERE id=?`, [req.params.id]);
     if (!row) return res.status(404).json({ error: 'BOM order not found.' });
     const { items } = await pendingForOrder(pool, row, true);
+    let kitSnapshot = null;
+    try { kitSnapshot = row.kit_snapshot_json ? JSON.parse(row.kit_snapshot_json) : null; } catch (e) { kitSnapshot = null; }
     res.json({
       id: row.id,
       orderNo: row.order_no,
@@ -397,6 +409,7 @@ module.exports = function registerBomRoutes(app, deps) {
       createdBy: row.created_by,
       createdAt: row.created_at,
       items,
+      kitSnapshot,
     });
   }));
 
