@@ -656,11 +656,11 @@ function createBomDispatchModule(ctx) {
       }
 
       ctx.bomContinueMode = true;
+      ctx.bomGeneratedForCurrentOrder = true; // continue = already generated BOM
       ctx.setVerified(false);
       ctx.updateVerifyButtonState();
 
       if (ctx.btnCreateBom) ctx.btnCreateBom.style.display = 'none';
-      if (ctx.btnVerify) ctx.btnVerify.disabled = !ctx.allItemsChecked();
       if (ctx.btnDispatch) ctx.btnDispatch.disabled = true;
       if (ctx.btnChallan) ctx.btnChallan.disabled = true;
 
@@ -769,6 +769,39 @@ function createBomDispatchModule(ctx) {
         // ---------------- Extra (software-added) item rows ----------------
         if (addItemBtn) addItemBtn.addEventListener('click', () => bomChallanAddExtraItemRow());
 
+        // Collect ONLY Solar Panel serial numbers for the auto Excel
+        // that is written to the NAS folder when a Challan is saved/printed.
+        // Matches section title / item name / category containing "panel"
+        // (case-insensitive). Also picks up serials typed in the Continue
+        // Dispatch form textareas for panel-named lines.
+        function bomCollectPanelSerials() {
+          const seen = new Set();
+          const out = [];
+          function addAll(list) {
+            (list || []).forEach((s) => {
+              const v = String(s || '').trim();
+              if (!v || seen.has(v)) return;
+              seen.add(v);
+              out.push(v);
+            });
+          }
+          (ctx.currentKitState || []).forEach((sec) => {
+            const secIsPanel = /panel/i.test(sec.title || '');
+            (sec.items || []).forEach((it) => {
+              const itemIsPanel = secIsPanel
+                || /panel/i.test(it.name || '')
+                || /panel/i.test(it.category || '');
+              if (itemIsPanel) addAll(bomSplitSerials(it.serials || ''));
+            });
+          });
+          // Continue Dispatch form: serial textareas tagged with the item name
+          document.querySelectorAll('#bomContinuePanel textarea[data-cont-kind="serial"]').forEach((ta) => {
+            const name = ta.getAttribute('data-cont-name') || '';
+            if (/panel/i.test(name)) addAll(bomSplitSerials(ta.value || ''));
+          });
+          return out;
+        }
+
         // Shared by both Save and Print below so the two buttons can never
         // send different data for the same on-screen state.
         function buildChallanSavePayload() {
@@ -784,6 +817,7 @@ function createBomDispatchModule(ctx) {
             fabricatorName: header.fabricatorName || '',
             dealerName: header.dealerName || '',
             items: Object.assign({}, bomCollectChallanTemplateValues(), { extra: bomCollectChallanExtraItems() }),
+            panelSerials: bomCollectPanelSerials(),
           };
         }
 
@@ -804,9 +838,16 @@ function createBomDispatchModule(ctx) {
             const originalLabel = saveBtn.innerHTML;
             saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
             try {
-              await window.Api.post('/challan', payload);
+              const saved = await window.Api.post('/challan', payload);
               syncSavedChallanBackToBom(payload);
-              if (window.showToast) window.showToast('Challan saved.');
+              if (window.showToast) {
+                const excelInfo = saved && saved.panelSerialsExcel;
+                if (excelInfo && excelInfo.count) {
+                  window.showToast(`Challan saved. Panel serials Excel (${excelInfo.count}) → ${excelInfo.folder}/${excelInfo.fileName}`);
+                } else {
+                  window.showToast('Challan saved.');
+                }
+              }
               ctx.closeChallanModal();
             } catch (err) {
               window.openModal('Save Failed', `<p>${bomEsc((err && err.message) || 'Could not save the Challan. Please try again.')}</p>`);
@@ -896,7 +937,14 @@ function createBomDispatchModule(ctx) {
               // delay so the new tab has time to actually load/render the PDF
               // before the underlying blob is freed.
               setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-              if (window.showToast) window.showToast('Challan saved — opening PDF for print.');
+              if (window.showToast) {
+                const excelInfo = saved && saved.panelSerialsExcel;
+                if (excelInfo && excelInfo.count) {
+                  window.showToast(`Challan saved — PDF opening. Panel serials Excel (${excelInfo.count}) → ${excelInfo.folder}/${excelInfo.fileName}`);
+                } else {
+                  window.showToast('Challan saved — opening PDF for print.');
+                }
+              }
             } catch (err) {
               if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
               window.openModal('Print Failed', `<p>${(err && err.message) || 'Could not generate the Challan PDF.'}</p>`);

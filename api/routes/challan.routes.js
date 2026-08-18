@@ -2,6 +2,9 @@
 // -----------------------------------------------------------------------------
 // BOM Challan — persisted version of what used to be a client-only print.
 //   POST   /api/challan          -> Save (called right before Print)
+//                                   Also auto-writes a Panel Serials Excel
+//                                   to the NAS folder when panelSerials[] is
+//                                   present in the body.
 //   GET    /api/challan          -> register/history list
 //   GET    /api/challan/:id      -> single record (for reprint)
 //   GET    /api/challan/:id/pdf  -> fills the real Excel template, converts
@@ -33,6 +36,9 @@
 // handler ("Challan not found"), so the frontend's category dropdown stayed
 // empty ("0 Challan categories available"). Keep the static route first.
 // -----------------------------------------------------------------------------
+const fs = require('fs');
+const path = require('path');
+const ExcelJS = require('exceljs');
 const { fillTemplateAndConvertToPdf } = require('../services/challanPdf');
 
 // Fixed set of Challan summary rows a BOM item can be filed under — kept in
@@ -47,12 +53,97 @@ const CHALLAN_CATEGORIES = [
   'Reti Bag', 'Kapchi Bag', 'Cement Bag', 'Ferma',
 ];
 
+// NAS root (same machine path used by backup.routes.js). Override with
+// BACKUP_NAS_PATH if the server runs elsewhere.
+const NAS_ROOT = process.env.BACKUP_NAS_PATH
+  || '\\\\As6302t-989d\\work\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB';
+const PANEL_SERIALS_FOLDER = 'SERAIL NO. (ORD. & CHLN)';
+
+// Sanitize a folder/file name so Windows path separators / reserved chars
+// cannot escape the target directory.
+function safePathSegment(raw) {
+  return String(raw || '')
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120) || 'UNKNOWN';
+}
+
+// Pick a non-colliding .xlsx filename inside `dir`.
+// First try baseName.xlsx; if that exists, try baseName (1).xlsx, (2), ...
+function uniqueXlsxPath(dir, baseName) {
+  const clean = safePathSegment(baseName).replace(/\.xlsx$/i, '');
+  let candidate = path.join(dir, `${clean}.xlsx`);
+  if (!fs.existsSync(candidate)) return candidate;
+  for (let n = 1; n < 1000; n += 1) {
+    candidate = path.join(dir, `${clean} (${n}).xlsx`);
+    if (!fs.existsSync(candidate)) return candidate;
+  }
+  // Extremely unlikely — fall back to timestamp suffix
+  return path.join(dir, `${clean}_${Date.now()}.xlsx`);
+}
+
+// Build + write the Panel Serials Excel.
+// Format: A1="SR. NO."  B1="SERIAL NO."  then A2=1 B2=<serial> ...
+// Folder: NAS_ROOT / SERAIL NO. (ORD. & CHLN) / <OrderNo | ChallanNo> /
+// Returns { ok, filePath, fileName, onNas } or { ok:false, error }.
+async function writePanelSerialsExcel({ orderNo, challanNo, serials }) {
+  const list = Array.isArray(serials)
+    ? serials.map((s) => String(s || '').trim()).filter(Boolean)
+    : [];
+  if (!list.length) return { ok: false, skipped: true, reason: 'no serials' };
+
+  const folderKey = safePathSegment(orderNo || challanNo || 'NO_ORDER');
+  const baseName = challanNo
+    ? `Panel_Serials_Challan_${safePathSegment(challanNo)}`
+    : 'Panel_Serials';
+
+  // Prefer NAS; fall back to a local folder next to this server so a
+  // temporary network outage never blocks challan save itself.
+  let targetDir;
+  let onNas = true;
+  try {
+    const nasDir = path.join(NAS_ROOT, PANEL_SERIALS_FOLDER, folderKey);
+    fs.mkdirSync(nasDir, { recursive: true });
+    targetDir = nasDir;
+  } catch (e) {
+    onNas = false;
+    const localRoot = path.join(__dirname, '..', 'Panel_Serials_Local');
+    targetDir = path.join(localRoot, folderKey);
+    fs.mkdirSync(targetDir, { recursive: true });
+  }
+
+  const filePath = uniqueXlsxPath(targetDir, baseName);
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Panel Serials');
+  sheet.getCell('A1').value = 'SR. NO.';
+  sheet.getCell('B1').value = 'SERIAL NO.';
+  sheet.getCell('A1').font = { bold: true };
+  sheet.getCell('B1').font = { bold: true };
+  list.forEach((serial, idx) => {
+    sheet.getCell(`A${idx + 2}`).value = idx + 1;
+    sheet.getCell(`B${idx + 2}`).value = serial;
+  });
+  sheet.getColumn(1).width = 12;
+  sheet.getColumn(2).width = 36;
+  await workbook.xlsx.writeFile(filePath);
+  return {
+    ok: true,
+    filePath,
+    fileName: path.basename(filePath),
+    folder: folderKey,
+    onNas,
+    count: list.length,
+  };
+}
+
 module.exports = function registerChallanRoutes(app, deps) {
   const { pool, route, requireRole } = deps;
 
   app.post('/api/challan', route(async (req, res) => {
     const b = req.body || {};
     const challanNo = String(b.challanNo || '').trim();
+    const orderNo = String(b.orderNo || '').trim();
     // if (!challanNo) return res.status(400).json({ error: 'Challan No. is required.' });
 
     const [result] = await pool.query(
@@ -60,12 +151,48 @@ module.exports = function registerChallanRoutes(app, deps) {
         (challan_no, challan_date, order_no, customer_name, installer_name,
          fabricator_name, dealer_name, capacity_kw, city, vehicle_no, items_json, created_by)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [challanNo, b.challanDate || '', b.orderNo || '', b.customerName || '',
+      [challanNo, b.challanDate || '', orderNo, b.customerName || '',
        b.installerName || '', b.fabricatorName || '', b.dealerName || '',
        b.capacityKw || '', b.city || '', b.vehicleNo || '',
        JSON.stringify(b.items || {}), req.user ? req.user.username : null]
     );
-    res.json({ success: true, id: result.insertId });
+
+    // Auto-generate Panel Serials Excel every time a challan is created.
+    // Best-effort: never fail the challan save if the NAS is unreachable.
+    let panelSerialsExcel = null;
+    try {
+      const serials = Array.isArray(b.panelSerials) ? b.panelSerials : [];
+      if (serials.length) {
+        panelSerialsExcel = await writePanelSerialsExcel({
+          orderNo,
+          challanNo,
+          serials,
+        });
+        if (panelSerialsExcel && panelSerialsExcel.ok) {
+          console.log(
+            `[Challan] Panel serials Excel saved (${panelSerialsExcel.count} serials):`,
+            panelSerialsExcel.filePath,
+            panelSerialsExcel.onNas ? '(NAS)' : '(local fallback)'
+          );
+        }
+      }
+    } catch (e) {
+      console.warn('[Challan] Panel serials Excel failed (challan still saved):', e.message);
+      panelSerialsExcel = { ok: false, error: e.message };
+    }
+
+    res.json({
+      success: true,
+      id: result.insertId,
+      panelSerialsExcel: panelSerialsExcel && panelSerialsExcel.ok
+        ? {
+            fileName: panelSerialsExcel.fileName,
+            folder: panelSerialsExcel.folder,
+            count: panelSerialsExcel.count,
+            onNas: panelSerialsExcel.onNas,
+          }
+        : null,
+    });
   }));
 
   app.get('/api/challan', route(async (req, res) => {

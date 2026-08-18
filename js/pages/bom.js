@@ -308,9 +308,11 @@ window.PAGES.bom = {
     ctx.newEntryPanel = ctx.$('bomNewEntryPanel');
     ctx.btnBackHome = ctx.$('bomBtnBackHome');
     ctx.bomInlineContinueOrderId = null; // set while bomContinuePanel is showing a specific order
+    ctx.bomGeneratedForCurrentOrder = false; // true after Generate BOM (or detected existing order)
 
     function showBomHome() {
       ctx.bomInlineContinueOrderId = null;
+      ctx.bomGeneratedForCurrentOrder = false;
       if (ctx.entryView) ctx.entryView.style.display = 'none';
       if (ctx.homeView) ctx.homeView.style.display = '';
       ctx.bomLoadHomePendingTable();
@@ -324,6 +326,7 @@ window.PAGES.bom = {
     // entry screen's own "Back"-free default state.
     function showBomEntryForNewKit() {
       ctx.bomInlineContinueOrderId = null;
+      ctx.bomGeneratedForCurrentOrder = false;
       ctx.bomContinueMode = false;
       if (ctx.continuePanel) ctx.continuePanel.style.display = 'none';
       if (ctx.newEntryPanel) ctx.newEntryPanel.style.display = '';
@@ -348,7 +351,7 @@ window.PAGES.bom = {
       const panelH3 = ctx.newEntryPanel && ctx.newEntryPanel.querySelector('h3');
       if (panelH3) panelH3.innerHTML = '<i class="fa-solid fa-box-open"></i> New BOM Entry';
       if (ctx.verifyStatus) {
-        ctx.verifyStatus.innerHTML = '<i class="fa-solid fa-circle-info"></i> Tick every item in the <b>Check</b> column below, then click <b>Verify BOM</b>. "Create Dispatch" stays locked until then.';
+        ctx.verifyStatus.innerHTML = '<i class="fa-solid fa-circle-info"></i> Pehle <b>Generate BOM</b> karein, phir items tick karke <b>Verify BOM</b>. "Create Dispatch" Verify ke baad unlock hoga.';
       }
 
       // Refresh kit items from currently selected kit (fresh state)
@@ -515,6 +518,7 @@ window.PAGES.bom = {
             window.openModal('Could Not Generate BOM', `<p>${bomEsc((e && e.message) || 'Server error. Please try again.')}</p>`);
             return;
           }
+          ctx.bomGeneratedForCurrentOrder = true;
           window.closeModal();
           if (window.showToast) window.showToast('BOM generated — it now appears in BOM Home / BOM Register as Pending.');
           ctx.showBomHome();
@@ -552,7 +556,12 @@ window.PAGES.bom = {
       return ctx.currentKitState.every((sec) => sec.items.length && sec.items.every((it) => it.checked));
     }
     function updateVerifyButtonState() {
-      if (ctx.btnVerify) ctx.btnVerify.disabled = !ctx.allItemsChecked();
+      // Verify stays locked until: (1) every item is ticked, AND
+      // (2) a BOM has already been generated for this Order No.
+      // Continue-Dispatch mode (ctx.bomInlineContinueOrderId) already has a
+      // generated order, so it only needs the tick check.
+      const bomReady = !!(ctx.bomInlineContinueOrderId || ctx.bomGeneratedForCurrentOrder);
+      if (ctx.btnVerify) ctx.btnVerify.disabled = !(ctx.allItemsChecked() && bomReady);
     }
 
     // "Tick All" — ticks every item's Check box in one click instead of
@@ -657,6 +666,33 @@ window.PAGES.bom = {
           return;
         }
 
+        // Rule: BOM must be generated first (creates the tracked bom_orders
+        // row). Continue-Dispatch already has one; new entry must click
+        // Generate BOM (or we detect an existing order by Order No.).
+        const orderNoEl = ctx.$('bomOrderNo');
+        const orderNo = orderNoEl ? String(orderNoEl.value || '').trim() : '';
+        const alreadyGenerated = !!(ctx.bomInlineContinueOrderId || ctx.bomGeneratedForCurrentOrder);
+        if (!alreadyGenerated) {
+          if (!orderNo) {
+            window.openModal('Generate BOM First', '<p>Pehle <b>Order No.</b> bharein aur <b>Generate BOM</b> click karein. Uske baad hi Verify BOM possible hai.</p>');
+            return;
+          }
+          // Soft check against server — if this Order No. already exists as
+          // a bom_order, treat it as generated and unlock for this session.
+          try {
+            const existing = await window.Api.get(`/bom/orders/by-order-no/${encodeURIComponent(orderNo)}`, { silent: true });
+            if (existing && existing.id) {
+              ctx.bomGeneratedForCurrentOrder = true;
+            } else {
+              window.openModal('Generate BOM First', '<p>Is Order No. ke liye abhi BOM generate nahi hua. Pehle <b>Generate BOM</b> click karein, phir Verify BOM karein.</p>');
+              return;
+            }
+          } catch (e) {
+            window.openModal('Generate BOM First', '<p>Is Order No. ke liye abhi BOM generate nahi hua. Pehle <b>Generate BOM</b> click karein, phir Verify BOM karein.</p>');
+            return;
+          }
+        }
+
         // Real stock check now happens HERE (moved off Convert into
         // Challan) — checks whether Dispatch Qty for every item is
         // actually available right now. Convert into Challan and Create
@@ -666,7 +702,7 @@ window.PAGES.bom = {
         ctx.btnVerify.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking Stock...';
         const canProceed = await ctx.bomRunStockCheck();
         ctx.btnVerify.innerHTML = originalLabel;
-        ctx.updateVerifyButtonState(); // restores the normal enabled/disabled state (still gated on ctx.allItemsChecked)
+        ctx.updateVerifyButtonState(); // restores the normal enabled/disabled state
         if (!canProceed) return;
 
         const confirmed = await window.confirmDialog(
