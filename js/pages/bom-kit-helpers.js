@@ -466,11 +466,72 @@ function bomBuildCategoryOptionsHtml(selectedCategory) {
 // Panel -> "Adani 545". Falls back to keeping the already-selected name in
 // the list even if it's not (yet) found under this category, so a saved
 // value never silently disappears while data is loading.
+// Hide redundant "generic" item names when typed variants exist.
+// Example: if DEYE_3.3_ON-GRID (and/or OFF-GRID) exists, do not also list
+// DEYE_3.3 or DEYE_3.3_Others — those are leftover / incomplete master rows
+// from purchases without a solar type. Keeps BOM Model dropdown clean.
+function bomFilterRedundantItemNames(nameList) {
+  const list = Array.from(nameList || []).filter(Boolean);
+  if (list.length < 2) return list;
+
+  function parseSlug(name) {
+    const raw = String(name || '').trim();
+    const parts = raw.split('_').filter(Boolean);
+    if (parts.length >= 3) {
+      const type = parts[parts.length - 1];
+      const wattPart = parts[parts.length - 2];
+      const wattNum = Number(wattPart);
+      if (!Number.isNaN(wattNum) && wattPart !== '') {
+        return {
+          brand: parts.slice(0, -2).join('_'),
+          watt: String(wattPart),
+          type: type,
+          isGenericType: !type || /^others$/i.test(type),
+          name: raw,
+        };
+      }
+    }
+    if (parts.length === 2) {
+      const wattNum = Number(parts[1]);
+      if (!Number.isNaN(wattNum) && parts[1] !== '') {
+        // brand_watt with no solar type → generic
+        return { brand: parts[0], watt: String(parts[1]), type: '', isGenericType: true, name: raw };
+      }
+    }
+    return { brand: raw, watt: '', type: '', isGenericType: true, name: raw };
+  }
+
+  const parsed = list.map(parseSlug);
+  const groups = new Map();
+  parsed.forEach((p) => {
+    if (!p.watt) return; // only apply rule to watt-based inverter/panel style names
+    const key = `${p.brand.toLowerCase()}|${p.watt}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  });
+
+  const drop = new Set();
+  groups.forEach((group) => {
+    if (group.length < 2) return;
+    const hasSpecific = group.some((p) => !p.isGenericType);
+    if (!hasSpecific) return;
+    group.forEach((p) => {
+      if (p.isGenericType) drop.add(p.name);
+    });
+  });
+
+  return list.filter((n) => !drop.has(n));
+}
+
 function bomBuildCategoryItemOptionsHtml(category, selectedName) {
   const list = (category && bomItemsByCategory[category]) || [];
-  const names = new Set(list);
-  if (selectedName) names.add(selectedName);
-  const optionsHtml = Array.from(names).map((n) => `
+  let names = bomFilterRedundantItemNames(list);
+  // Always keep the currently selected value visible even if it would be filtered
+  if (selectedName && !names.includes(selectedName)) names = names.concat([selectedName]);
+  names = Array.from(new Set(names)).sort((a, b) =>
+    String(a).localeCompare(String(b), undefined, { sensitivity: 'base', numeric: true })
+  );
+  const optionsHtml = names.map((n) => `
     <option value="${bomEscAttr(n)}" ${n === selectedName ? 'selected' : ''}>${bomEsc(n)}</option>
   `).join('');
   return `<option value="">-- Select Item --</option>${optionsHtml}`;
