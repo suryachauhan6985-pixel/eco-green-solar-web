@@ -463,6 +463,16 @@ window.attachColumnFilters = function (table) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: window.currentUsername }),
         egsSilent: true, // runs every 20s in the background — must not flash the global loader
+      }).then(async (res) => {
+        if (!res || !res.ok) return;
+        try {
+          const data = await res.json();
+          // Sliding session: server may return a fresh token (same device jti).
+          if (data && data.token && window.currentUsername) {
+            const persist = !!localStorage.getItem(SESSION_KEY);
+            saveSession(window.currentUsername, window.currentRole || (loadSession() || {}).role, persist, data.token);
+          }
+        } catch (e) { /* ignore parse errors */ }
       }).catch(() => { /* offline momentarily — next tick retries */ });
     };
     ping(); // mark online immediately, don't wait for the first interval tick
@@ -547,11 +557,11 @@ window.attachColumnFilters = function (table) {
   // the same: drop the stale session and send them back to a normal login
   // instead of leaving the app stuck making failed requests.
   window.addEventListener('egs:session-expired', () => {
-    if (window.freshLoginInProgress) return; // don't disturb an in-progress fresh login/OTP screen
     stopHeartbeat();
-    stopIdleTimer();
+    // Clear ONLY auth session. Theme / UI preferences stay in localStorage
+    // (and on the server under preferences_json) so re-login restores them.
     clearSession();
-    showLoginOverlay('Your session has expired. Please sign in again.');
+    showLoginOverlay('Please sign in again to continue.');
   });
 
   function buildLoginOverlay() {

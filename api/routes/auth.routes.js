@@ -395,7 +395,14 @@ module.exports = function registerAuthRoutes(app, deps) {
         [req.user.jti]
       );
     }
-    res.json({ success: true });
+    // Sliding session: re-issue token with same jti so expiry keeps extending
+    // while the tab is open. Explicit logout / remote revoke still ends it.
+    let token = null;
+    try {
+      const issued = issueToken(uname, req.user.role, req.user.jti || undefined);
+      token = issued.token;
+    } catch (e) { /* non-fatal */ }
+    res.json({ success: true, token: token || undefined });
   }));
 
   // GET /api/sessions/live — real, database-backed "Live Network Users" list

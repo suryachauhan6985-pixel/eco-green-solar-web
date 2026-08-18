@@ -3,9 +3,9 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString('hex');
 if (!process.env.JWT_SECRET) {
-  console.warn('[Auth] JWT_SECRET is not set - using a random secret generated for this process only. Every logged-in session will be invalidated on restart/redeploy.');
+  console.warn('[Auth] CRITICAL: JWT_SECRET is not set. A random secret is used for THIS process only — every Render restart/redeploy will log everyone out. Set JWT_SECRET in the host environment (Render Dashboard → Environment) to a long random string and keep it stable.');
 }
-const JWT_EXPIRES_IN = '7d';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '3650d'; // ~10 years — session ends only on explicit logout / remote revoke
 const PUBLIC_API_PATHS = new Set([
   '/api/health', '/api/auth/login', '/api/auth/verify-otp', '/api/auth/resend-otp',
   '/api/auth/register', '/api/auth/verify-register-otp', '/api/auth/forgot-password',
@@ -71,4 +71,4 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { authenticateToken, issueToken, requireRole, setAuthPool, newJti, JWT_SECRET };
+module.exports = { authenticateToken, issueToken, requireRole, setAuthPool, newJti, JWT_SECRET, JWT_EXPIRES_IN };
