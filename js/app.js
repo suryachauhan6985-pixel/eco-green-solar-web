@@ -1034,6 +1034,13 @@ window.attachColumnFilters = function (table) {
       showApp();
       startHeartbeat(); applyUserPreferencesFromServer();
       resetIdleTimer();
+      // Boot may have already rendered Dashboard while logged-out (API calls
+      // returned empty/zeros). Re-run the current page now that the token is set
+      // so real numbers load without a manual refresh.
+      try {
+        const pageId = (window.location.hash || '#dashboard').replace(/^#/, '') || 'dashboard';
+        if (typeof go === 'function') go(window.PAGES[pageId] ? pageId : 'dashboard');
+      } catch (e) { /* ignore */ }
       const welcomeHtml = `
         <div class="login-success-pop">
           <div class="login-success-icon"><i class="fa-solid fa-circle-check"></i></div>
@@ -1802,11 +1809,12 @@ window.attachColumnFilters = function (table) {
     showLoginOverlay();
   }
 
-  // Start on whichever page the URL hash points to (e.g. "#sales" after a
-  // refresh) — falls back to Dashboard if there's no hash yet, or if the
-  // hash doesn't match a real page (unknown/old id, or someone typed junk).
-  const startPageId = (window.location.hash || '').replace('#', '');
-  go(window.PAGES[startPageId] ? startPageId : 'dashboard');
+  // Only load a page when a session exists. If still on login, finishLogin
+  // will call go() after the token is saved (avoids first paint of all zeros).
+  if (restoredSession) {
+    const startPageId = (window.location.hash || '').replace('#', '');
+    go(window.PAGES[startPageId] ? startPageId : 'dashboard');
+  }
 
   // Also react to Back/Forward browser buttons and manual hash edits, so
   // the visible page always matches the URL hash, not just on first load.
