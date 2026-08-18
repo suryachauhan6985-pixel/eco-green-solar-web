@@ -182,3 +182,13 @@ body.no-scroll{overflow:hidden; height:100%;}
   border:1px solid var(--border);
 }
 #statementModal .modal-body{ padding-top:8px; }
+
+.party-item.kbd-active{
+  outline:2px solid var(--blue);
+  outline-offset:-2px;
+}
+#stmtTbody tr.stmt-table-row.kbd-active{
+  outline:2px solid var(--blue);
+  outline-offset:-2px;
+  background:rgba(59,142,208,.12) !important;
+}

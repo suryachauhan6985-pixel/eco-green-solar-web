@@ -208,7 +208,7 @@ window.PAGES.partyledger = {
         listEl.innerHTML = `<li class="pl-empty-hint">No parties match this search/filter.</li>`;
         return;
       }
-      directory.forEach((p) => {
+      directory.forEach((p, idx) => {
         const li = document.createElement('li');
         li.className = 'party-item' + (!p.ledgerId ? ' unregistered' : '') + (selected && selected.partyName === p.partyName ? ' selected' : '');
         const iconMap = {
@@ -227,11 +227,70 @@ window.PAGES.partyledger = {
           <span class="p-tag ${tagClass}">${p.type}</span>
           ${!p.ledgerId ? '<span class="p-badge-unreg">(unregistered)</span>' : ''}
         `;
-        li.addEventListener('click', () => selectParty(p));
+        li.dataset.partyIdx = String(idx);
+        li.tabIndex = -1;
+        li.addEventListener('click', () => {
+          partyFocusIdx = idx;
+          selectParty(p);
+          highlightPartyListFocus();
+        });
         li.addEventListener('dblclick', () => { selectParty(p).then(openStatement); });
         listEl.appendChild(li);
       });
+      // Keep focus index in range after re-render
+      const items = listEl.querySelectorAll('.party-item');
+      if (partyFocusIdx >= items.length) partyFocusIdx = Math.max(0, items.length - 1);
+      highlightPartyListFocus();
     }
+
+    let partyFocusIdx = 0;
+    function highlightPartyListFocus() {
+      const items = listEl.querySelectorAll('.party-item');
+      items.forEach((el, i) => el.classList.toggle('kbd-active', i === partyFocusIdx));
+      if (items[partyFocusIdx]) items[partyFocusIdx].scrollIntoView({ block: 'nearest' });
+    }
+
+    function partyListKeyHandler(e) {
+      // Statement modal owns keys while open
+      if (stOverlay && stOverlay.classList.contains('show')) return;
+      if (lfOverlay && lfOverlay.classList.contains('show')) return;
+      const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+      // Allow arrows/enter from search only for Enter when party already selected? Prefer list nav always except typing in inputs for search
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+        // From search box: Enter opens statement if a party is selected
+        if (e.key === 'Enter' && selected && (e.target === searchEl || e.target.id === 'partySearch')) {
+          e.preventDefault();
+          openStatement();
+        }
+        return;
+      }
+
+      const items = listEl.querySelectorAll('.party-item');
+      if (!items.length) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        partyFocusIdx = Math.min(partyFocusIdx + 1, items.length - 1);
+        highlightPartyListFocus();
+        const p = directory[partyFocusIdx];
+        if (p) selectParty(p);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        partyFocusIdx = Math.max(partyFocusIdx - 1, 0);
+        highlightPartyListFocus();
+        const p = directory[partyFocusIdx];
+        if (p) selectParty(p);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const p = directory[partyFocusIdx] || selected;
+        if (!p) return;
+        selectParty(p).then(() => openStatement());
+      }
+    }
+    document.addEventListener('keydown', partyListKeyHandler);
 
     async function selectParty(p) {
       selected = p;
