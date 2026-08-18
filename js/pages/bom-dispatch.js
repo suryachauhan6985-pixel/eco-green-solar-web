@@ -162,51 +162,138 @@ function createBomDispatchModule(ctx) {
       });
     }
 
-    function bomRenderRegisterListHtml(orders) {
-      if (!orders || !orders.length) {
-        return `<p class="note" style="padding:20px 0;"><i class="fa-solid fa-circle-check" style="color:var(--green);"></i> Nothing pending — every BOM order has been fully dispatched.</p>`;
+    // Derive display status from API fields (DB only stores Open|Completed).
+    // Pending = Open + nothing dispatched yet
+    // Partial = Open + some dispatched
+    // Completed = status Completed (or remaining 0)
+    function bomRegisterDisplayStatus(o) {
+      if ((o.status || '').toLowerCase() === 'completed' || (Number(o.pendingQty) || 0) <= 0 && (Number(o.dispatchedQty) || 0) > 0) {
+        return 'Completed';
       }
-      const rows = orders.map((o) => `
+      if ((Number(o.dispatchedQty) || 0) > 0) return 'Partial';
+      return 'Pending';
+    }
+
+    function bomRegisterStatusBadge(label) {
+      const colors = {
+        Pending: 'background:#3b82f6;color:#fff;',
+        Partial: 'background:#f59e0b;color:#111;',
+        Completed: 'background:#16a34a;color:#fff;',
+      };
+      const style = colors[label] || 'background:#6b7280;color:#fff;';
+      return `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;${style}">${bomEsc(label)}</span>`;
+    }
+
+    function bomRenderRegisterListHtml(orders, activeFilter) {
+      activeFilter = activeFilter || 'all';
+      const filterBar = `
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;">
+          <span class="note" style="margin:0;">Filter:</span>
+          ${['all', 'Pending', 'Partial', 'Completed'].map((f) => {
+            const label = f === 'all' ? 'All' : f;
+            const on = activeFilter === f;
+            return `<button type="button" class="btn bom-mini-btn ${on ? 'btn-blue' : 'btn-ghost'}" data-bom-reg-filter="${f}">${label}</button>`;
+          }).join('')}
+          <span class="note" style="margin:0 0 0 auto;">${orders.length} record(s)</span>
+        </div>
+      `;
+
+      if (!orders || !orders.length) {
+        const emptyMsg = activeFilter === 'all'
+          ? 'No BOM orders yet.'
+          : `No <b>${bomEsc(activeFilter)}</b> BOM orders.`;
+        return filterBar + `<p class="note" style="padding:20px 0;"><i class="fa-solid fa-inbox"></i> ${emptyMsg}</p>`;
+      }
+
+      const rows = orders.map((o) => {
+        const st = bomRegisterDisplayStatus(o);
+        const pendingTxt = st === 'Completed'
+          ? 'Fully dispatched'
+          : `${o.pendingItemCount} item(s) / ${o.pendingQty} unit(s) pending`;
+        const action = st === 'Completed'
+          ? `<button type="button" class="btn btn-ghost bom-mini-btn" data-bom-order-track="${bomEsc(o.orderNo)}"><i class="fa-solid fa-route"></i> Track</button>`
+          : `<button type="button" class="btn btn-blue bom-mini-btn" data-bom-order-id="${o.id}"><i class="fa-solid fa-truck"></i> ${st === 'Partial' ? 'Continue' : 'Open'}</button>`;
+        return `
         <tr>
           <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${bomEsc(o.orderNo)}</td>
           <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${bomEsc((o.header && o.header.customerName) || '-')}</td>
-          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${o.pendingItemCount} item(s) / ${o.pendingQty} unit(s) pending</td>
+          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${bomRegisterStatusBadge(st)}</td>
+          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${pendingTxt}</td>
           <td style="padding:8px; border-bottom:1px solid var(--border, #eee);">${bomEsc((o.createdAt || '').slice(0, 10))}</td>
-          <td style="padding:8px; border-bottom:1px solid var(--border, #eee);"><button type="button" class="btn btn-blue bom-mini-btn" data-bom-order-id="${o.id}"><i class="fa-solid fa-truck"></i> Continue Dispatch</button></td>
-        </tr>
-      `).join('');
-      return `
-        <table style="width:100%; border-collapse:collapse;">
-          <thead><tr>
-            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Order No</th>
-            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Customer</th>
-            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Pending</th>
-            <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Started</th>
-            <th style="border-bottom:2px solid var(--border, #ddd);"></th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
+          <td style="padding:8px; border-bottom:1px solid var(--border, #eee); white-space:nowrap;">${action}</td>
+        </tr>`;
+      }).join('');
+
+      return filterBar + `
+        <div class="table-wrap" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+          <table style="width:100%; min-width:640px; border-collapse:collapse;">
+            <thead><tr>
+              <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Order No</th>
+              <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Customer</th>
+              <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Status</th>
+              <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Pending</th>
+              <th style="text-align:left; padding:8px; border-bottom:2px solid var(--border, #ddd);">Started</th>
+              <th style="border-bottom:2px solid var(--border, #ddd);"></th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
       `;
     }
 
-    async function bomLoadRegisterList() {
-      ctx.openRegisterModal('<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading pending BOM orders...</p>');
-      let orders;
-      try {
-        orders = await window.Api.get('/bom/orders?status=Open');
-      } catch (e) {
-        ctx.openRegisterModal(`<p class="note" style="color:var(--red);">Could not load the register — ${bomEsc((e && e.message) || 'server error')}.</p>`);
-        return;
-      }
-      ctx.openRegisterModal(ctx.bomRenderRegisterListHtml(orders));
-      ctx.registerModalBody.querySelectorAll('[data-bom-order-id]').forEach((btn) => {
+    function bomWireRegisterListInteractions(allOrders, activeFilter) {
+      const body = ctx.registerModalBody;
+      if (!body) return;
+
+      body.querySelectorAll('[data-bom-reg-filter]').forEach((btn) => {
         btn.addEventListener('click', () => {
-          // Prefer the full BOM Entry UI (same as Home → Open). Close the
-          // register modal first so the entry screen is visible.
+          const f = btn.getAttribute('data-bom-reg-filter') || 'all';
+          const filtered = f === 'all'
+            ? allOrders
+            : allOrders.filter((o) => bomRegisterDisplayStatus(o) === f);
+          ctx.openRegisterModal(ctx.bomRenderRegisterListHtml(filtered, f));
+          bomWireRegisterListInteractions(allOrders, f);
+        });
+      });
+
+      body.querySelectorAll('[data-bom-order-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
           if (ctx.closeRegisterModal) ctx.closeRegisterModal();
           ctx.bomOpenOrderInline(btn.getAttribute('data-bom-order-id'));
         });
       });
+
+      body.querySelectorAll('[data-bom-order-track]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const orderNo = btn.getAttribute('data-bom-order-track');
+          if (ctx.closeRegisterModal) ctx.closeRegisterModal();
+          if (ctx.bomOpenTrackForOrderNo) {
+            ctx.bomOpenTrackForOrderNo(orderNo);
+          } else if (ctx.bomOpenTrackModal) {
+            ctx.bomOpenTrackModal();
+          }
+        });
+      });
+    }
+
+    async function bomLoadRegisterList() {
+      // Title: full register (not only pending)
+      const titleEl = ctx.$('bomRegisterOverlay') && ctx.$('bomRegisterOverlay').querySelector('.modal-head h3');
+      if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-clipboard-list"></i> BOM Register';
+
+      ctx.openRegisterModal('<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading BOM register...</p>');
+      let orders;
+      try {
+        // All statuses — Home page stays Pending-only; Register shows everything.
+        orders = await window.Api.get('/bom/orders?status=all');
+      } catch (e) {
+        ctx.openRegisterModal(`<p class="note" style="color:var(--red);">Could not load the register — ${bomEsc((e && e.message) || 'server error')}.</p>`);
+        return;
+      }
+      if (!Array.isArray(orders)) orders = [];
+      ctx._bomRegisterAllOrders = orders;
+      ctx.openRegisterModal(ctx.bomRenderRegisterListHtml(orders, 'all'));
+      bomWireRegisterListInteractions(orders, 'all');
     }
 
     // `backLabel`/`showBack` let the same form read right whether it's

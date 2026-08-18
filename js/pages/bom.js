@@ -202,7 +202,7 @@ window.PAGES.bom = {
     <div class="modal-overlay modal-fullscreen" id="bomRegisterOverlay">
       <div class="modal-box" onclick="event.stopPropagation()">
         <div class="modal-head">
-          <h3><i class="fa-solid fa-clipboard-list"></i> Pending BOM Register</h3>
+          <h3><i class="fa-solid fa-clipboard-list"></i> BOM Register</h3>
           <button class="modal-close" id="bomRegisterCloseBtn"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="modal-body" id="bomRegisterModalBody"></div>
