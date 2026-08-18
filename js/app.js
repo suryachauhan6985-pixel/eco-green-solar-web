@@ -568,36 +568,67 @@ window.attachColumnFilters = function (table) {
     loginOverlay = document.createElement('div');
     loginOverlay.className = 'login-overlay';
     loginOverlay.innerHTML = `
-      <div class="login-card">
-        <div class="login-logo"><img src="assets/logo.png" alt="Eco Green Solar" class="brand-logo"></div>
+      <div class="login-bg" aria-hidden="true">
+        <span class="login-orb login-orb-a"></span>
+        <span class="login-orb login-orb-b"></span>
+        <span class="login-orb login-orb-c"></span>
+        <span class="login-grid"></span>
+      </div>
+      <div class="login-shell">
+        <div class="login-brand-panel">
+          <div class="login-brand-inner">
+            <div class="login-logo"><img src="assets/logo.png" alt="Eco Green Solar" class="brand-logo"></div>
+            <h1 class="login-brand-title">Eco Green Solar</h1>
+            <p class="login-brand-tag">ERP for stock, sales &amp; field operations</p>
+            <ul class="login-brand-points">
+              <li><i class="fa-solid fa-shield-halved"></i> Secure OTP sign-in</li>
+              <li><i class="fa-solid fa-boxes-stacked"></i> Live stock &amp; dispatch</li>
+              <li><i class="fa-solid fa-mobile-screen"></i> Works on phone &amp; desktop</li>
+            </ul>
+          </div>
+        </div>
+        <div class="login-card">
+          <div class="login-card-top mobile-only">
+            <div class="login-logo login-logo-sm"><img src="assets/logo.png" alt="Eco Green Solar" class="brand-logo"></div>
+          </div>
 
-        <div id="loginStepCreds">
+        <div id="loginStepCreds" class="login-step">
+          <div class="login-step-head">
+            <h2>Welcome back</h2>
+            <p>Sign in to continue to your workspace</p>
+          </div>
           <div class="login-field">
             <label>Username or Email</label>
-            <input type="text" id="loginUsername" placeholder="Username or Email" autocomplete="username">
+            <div class="login-input-icon">
+              <i class="fa-solid fa-user"></i>
+              <input type="text" id="loginUsername" placeholder="Username or Email" autocomplete="username">
+            </div>
           </div>
           <div class="login-field">
             <label>Password</label>
-            <div class="login-pwd-wrap">
+            <div class="login-pwd-wrap login-input-icon">
+              <i class="fa-solid fa-lock"></i>
               <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
               <button type="button" class="login-toggle-pwd" id="loginTogglePwd"><i class="fa-solid fa-eye"></i></button>
             </div>
           </div>
-          <label class="login-remember"><input type="checkbox" id="loginRemember"> Remember Me on this Computer</label>
+          <label class="login-remember"><input type="checkbox" id="loginRemember"> Remember Me on this device</label>
           <div class="login-error" id="loginError">Please enter both username/email and password.</div>
-          <button type="button" class="login-btn" id="loginSubmit">Sign In</button>
+          <button type="button" class="login-btn" id="loginSubmit"><span>Sign In</span> <i class="fa-solid fa-arrow-right"></i></button>
           <div class="login-links">
             <a href="#" id="loginGoForgot">Forgot Password?</a>
             <a href="#" id="loginGoRegister">Create Account</a>
           </div>
         </div>
 
-        <div id="loginStepOtp" style="display:none;">
-          <div style="color:var(--txt-muted); font-size:13px; margin-bottom:12px;" id="loginOtpHint">
-            Enter the 6-digit OTP sent to your email.
+        <div id="loginStepOtp" class="login-step" style="display:none;">
+          <div class="login-step-head">
+            <div class="login-step-icon"><i class="fa-solid fa-envelope-circle-check"></i></div>
+            <h2>Verify OTP</h2>
+            <p id="loginOtpHint">Enter the 6-digit OTP sent to your email.</p>
           </div>
           <div class="login-field">
-            <label>OTP <span style="color:var(--red);">*</span></label>
+            <label>One-time password</label>
             <div class="otp-boxes" id="loginOtpBoxes">
               <input type="text" class="otp-box" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
               <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
@@ -609,49 +640,65 @@ window.attachColumnFilters = function (table) {
             <input type="hidden" id="loginOtpInput">
           </div>
           <div class="otp-note" id="loginOtpNote">
-            OTP sent successfully, and it is valid for 5 mins.
-            Didn't receive OTP? <button type="button" class="otp-resend-link" id="loginOtpResend">Resend OTP</button>
+            OTP is valid for a few minutes.
+            Didn't receive it? <button type="button" class="otp-resend-link" id="loginOtpResend">Resend OTP</button>
           </div>
           <div class="login-error" id="loginOtpError"></div>
-          <button type="button" class="login-btn" id="loginOtpSubmit">Verify &amp; Sign In</button>
-          <div style="display:flex; justify-content:center; margin-top:10px;">
-            <button type="button" class="btn btn-ghost" id="loginOtpBack" style="padding:6px 10px; font-size:12px;">&larr; Back</button>
+          <button type="button" class="login-btn" id="loginOtpSubmit"><span>Verify &amp; Continue</span> <i class="fa-solid fa-check"></i></button>
+          <div class="login-back-wrap">
+            <button type="button" class="login-back-btn" id="loginOtpBack"><i class="fa-solid fa-arrow-left"></i> Back</button>
           </div>
         </div>
 
-        <div id="loginStepRegister" style="display:none;">
+        <div id="loginStepRegister" class="login-step" style="display:none;">
+          <div class="login-step-head">
+            <h2>Create account</h2>
+            <p>Register with your work email</p>
+          </div>
           <div class="login-field">
-            <label>Choose a Username</label>
-            <input type="text" id="regUsername" placeholder="Username" autocomplete="username">
+            <label>Username</label>
+            <div class="login-input-icon">
+              <i class="fa-solid fa-user"></i>
+              <input type="text" id="regUsername" placeholder="Choose a username" autocomplete="username">
+            </div>
           </div>
           <div class="login-field">
             <label>Email</label>
-            <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email">
+            <div class="login-input-icon">
+              <i class="fa-solid fa-envelope"></i>
+              <input type="email" id="regEmail" placeholder="you@company.com" autocomplete="email">
+            </div>
           </div>
           <div class="login-field">
             <label>Password</label>
-            <div class="login-pwd-wrap">
+            <div class="login-pwd-wrap login-input-icon">
+              <i class="fa-solid fa-lock"></i>
               <input type="password" id="regPassword" placeholder="At least 6 characters" autocomplete="new-password">
               <button type="button" class="login-toggle-pwd" id="regTogglePwd"><i class="fa-solid fa-eye"></i></button>
             </div>
           </div>
           <div class="login-field">
             <label>Confirm Password</label>
-            <input type="password" id="regConfirmPassword" placeholder="Re-enter password" autocomplete="new-password">
+            <div class="login-input-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="regConfirmPassword" placeholder="Re-enter password" autocomplete="new-password">
+            </div>
           </div>
           <div class="login-error" id="regError"></div>
-          <button type="button" class="login-btn" id="regSubmit">Create Account</button>
+          <button type="button" class="login-btn" id="regSubmit"><span>Continue</span> <i class="fa-solid fa-arrow-right"></i></button>
           <div class="login-links">
             <a href="#" id="regGoLogin">&larr; Back to Sign In</a>
           </div>
         </div>
 
-        <div id="loginStepRegisterOtp" style="display:none;">
-          <div style="color:var(--txt-muted); font-size:13px; margin-bottom:12px;" id="regOtpHint">
-            Enter the 6-digit OTP sent to your email to activate your account.
+        <div id="loginStepRegisterOtp" class="login-step" style="display:none;">
+          <div class="login-step-head">
+            <div class="login-step-icon"><i class="fa-solid fa-envelope-circle-check"></i></div>
+            <h2>Verify email</h2>
+            <p id="regOtpHint">Enter the 6-digit OTP sent to your email to activate your account.</p>
           </div>
           <div class="login-field">
-            <label>OTP <span style="color:var(--red);">*</span></label>
+            <label>One-time password</label>
             <div class="otp-boxes" id="regOtpBoxes">
               <input type="text" class="otp-box" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
               <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
@@ -663,37 +710,42 @@ window.attachColumnFilters = function (table) {
             <input type="hidden" id="regOtpInput">
           </div>
           <div class="otp-note" id="regOtpNote">
-            OTP sent successfully, and it is valid for 5 mins.
             Didn't receive OTP? <button type="button" class="otp-resend-link" id="regOtpResend">Resend OTP</button>
           </div>
           <div class="login-error" id="regOtpError"></div>
-          <button type="button" class="login-btn" id="regOtpSubmit">Verify &amp; Continue</button>
-          <div style="display:flex; justify-content:center; margin-top:10px;">
-            <button type="button" class="btn btn-ghost" id="regOtpBack" style="padding:6px 10px; font-size:12px;">&larr; Back</button>
+          <button type="button" class="login-btn" id="regOtpSubmit"><span>Verify &amp; Continue</span> <i class="fa-solid fa-check"></i></button>
+          <div class="login-back-wrap">
+            <button type="button" class="login-back-btn" id="regOtpBack"><i class="fa-solid fa-arrow-left"></i> Back</button>
           </div>
         </div>
 
-        <div id="loginStepForgot" style="display:none;">
-          <div style="color:var(--txt-muted); font-size:13px; margin-bottom:12px;">
-            Enter your username or email — we'll send a 6-digit OTP to reset your password.
+        <div id="loginStepForgot" class="login-step" style="display:none;">
+          <div class="login-step-head">
+            <h2>Forgot password</h2>
+            <p>We'll email you a one-time code</p>
           </div>
           <div class="login-field">
             <label>Username or Email</label>
-            <input type="text" id="forgotIdentifier" placeholder="Username or Email" autocomplete="username">
+            <div class="login-input-icon">
+              <i class="fa-solid fa-user"></i>
+              <input type="text" id="forgotIdentifier" placeholder="Username or Email" autocomplete="username">
+            </div>
           </div>
           <div class="login-error" id="forgotError"></div>
-          <button type="button" class="login-btn" id="forgotSubmit">Send OTP</button>
+          <button type="button" class="login-btn" id="forgotSubmit"><span>Send OTP</span> <i class="fa-solid fa-paper-plane"></i></button>
           <div class="login-links">
             <a href="#" id="forgotGoLogin">&larr; Back to Sign In</a>
           </div>
         </div>
 
-        <div id="loginStepReset" style="display:none;">
-          <div style="color:var(--txt-muted); font-size:13px; margin-bottom:12px;" id="resetHint">
-            Enter the OTP sent to your email, and choose a new password.
+        <div id="loginStepReset" class="login-step" style="display:none;">
+          <div class="login-step-head">
+            <div class="login-step-icon"><i class="fa-solid fa-key"></i></div>
+            <h2>Reset password</h2>
+            <p id="resetHint">Enter OTP and your new password</p>
           </div>
           <div class="login-field">
-            <label>OTP <span style="color:var(--red);">*</span></label>
+            <label>OTP</label>
             <div class="otp-boxes" id="resetOtpBoxes">
               <input type="text" class="otp-box" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
               <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
@@ -710,18 +762,21 @@ window.attachColumnFilters = function (table) {
           </div>
           <div class="login-field">
             <label>New Password</label>
-            <div class="login-pwd-wrap">
+            <div class="login-pwd-wrap login-input-icon">
+              <i class="fa-solid fa-lock"></i>
               <input type="password" id="resetNewPassword" placeholder="At least 6 characters" autocomplete="new-password">
               <button type="button" class="login-toggle-pwd" id="resetTogglePwd"><i class="fa-solid fa-eye"></i></button>
             </div>
           </div>
           <div class="login-error" id="resetError"></div>
-          <button type="button" class="login-btn" id="resetSubmit">Reset Password &amp; Sign In</button>
-          <div style="display:flex; justify-content:center; margin-top:10px;">
-            <button type="button" class="btn btn-ghost" id="resetBack" style="padding:6px 10px; font-size:12px;">&larr; Back</button>
+          <button type="button" class="login-btn" id="resetSubmit"><span>Reset Password &amp; Sign In</span> <i class="fa-solid fa-check"></i></button>
+          <div class="login-back-wrap">
+            <button type="button" class="login-back-btn" id="resetBack"><i class="fa-solid fa-arrow-left"></i> Back</button>
           </div>
         </div>
-      </div>`;
+        </div>
+      </div>
+    `;
     document.body.appendChild(loginOverlay);
 
     const stepCreds = loginOverlay.querySelector('#loginStepCreds');
@@ -968,7 +1023,22 @@ window.attachColumnFilters = function (table) {
       showApp();
       startHeartbeat(); applyUserPreferencesFromServer();
       resetIdleTimer();
-      if (typeof window.showToast === 'function') {
+      const welcomeHtml = `
+        <div class="login-success-pop">
+          <div class="login-success-icon"><i class="fa-solid fa-circle-check"></i></div>
+          <h3 style="margin:10px 0 6px;font-size:18px;">Login successful</h3>
+          <p style="margin:0;color:var(--txt-muted);font-size:13px;">Welcome back, <b style="color:var(--txt);">${data.username}</b>. You're signed in securely.</p>
+          <div style="margin-top:16px;text-align:right;">
+            <button type="button" class="btn btn-blue" id="loginSuccessContinueBtn"><i class="fa-solid fa-arrow-right"></i> Continue</button>
+          </div>
+        </div>`;
+      if (typeof window.openModal === 'function') {
+        window.openModal('Welcome', welcomeHtml);
+        setTimeout(() => {
+          const btn = document.getElementById('loginSuccessContinueBtn');
+          if (btn) btn.addEventListener('click', () => window.closeModal && window.closeModal());
+        }, 0);
+      } else if (typeof window.showToast === 'function') {
         window.showToast(`Login successful! Welcome, ${data.username}.`);
       }
     }

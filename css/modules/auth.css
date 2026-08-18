@@ -1,75 +1,253 @@
-/* =================== LOGIN SCREEN ===================
-   Injected + controlled entirely by js/app.js (createLoginOverlay /
-   showLoginOverlay / showApp). Matches the desktop .py app's LoginWidget:
-   centered card, logo, username/password, "Remember me", Sign In button. */
+/* =================== LOGIN / OTP OVERLAY =================== */
 .login-overlay{
-  position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center;
-  background:radial-gradient(circle at 30% 20%, #254d2f 0%, #222121 70%);
-  padding:20px;
+  position:fixed; inset:0; z-index:100000;
+  display:none; align-items:center; justify-content:center;
+  padding:18px;
+  background:var(--bg);
+  overflow:auto;
 }
+.login-overlay[style*="flex"]{ animation: loginFadeIn .35s ease; }
+
+@keyframes loginFadeIn{
+  from{ opacity:0; }
+  to{ opacity:1; }
+}
+@keyframes loginCardIn{
+  from{ opacity:0; transform:translateY(18px) scale(.98); }
+  to{ opacity:1; transform:translateY(0) scale(1); }
+}
+@keyframes loginOrb{
+  0%,100%{ transform:translate(0,0) scale(1); }
+  50%{ transform:translate(12px,-18px) scale(1.08); }
+}
+@keyframes loginPulse{
+  0%,100%{ box-shadow:0 0 0 0 rgba(59,142,208,.35); }
+  50%{ box-shadow:0 0 0 12px rgba(59,142,208,0); }
+}
+
+.login-bg{
+  position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0;
+}
+.login-orb{
+  position:absolute; border-radius:50%; filter:blur(40px); opacity:.45;
+}
+.login-orb-a{
+  width:340px; height:340px; left:-80px; top:-60px;
+  background:radial-gradient(circle, var(--blue), transparent 70%);
+  animation:loginOrb 10s ease-in-out infinite;
+}
+.login-orb-b{
+  width:280px; height:280px; right:-60px; bottom:10%;
+  background:radial-gradient(circle, var(--gold), transparent 70%);
+  animation:loginOrb 12s ease-in-out infinite reverse;
+}
+.login-orb-c{
+  width:200px; height:200px; left:40%; bottom:-40px;
+  background:radial-gradient(circle, var(--green), transparent 70%);
+  opacity:.25;
+  animation:loginOrb 14s ease-in-out infinite;
+}
+.login-grid{
+  position:absolute; inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size:48px 48px;
+  mask-image:radial-gradient(ellipse at center, #000 20%, transparent 75%);
+  opacity:.5;
+}
+html[data-theme="light"] .login-grid{
+  background-image:
+    linear-gradient(rgba(0,0,0,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,.04) 1px, transparent 1px);
+}
+
+.login-shell{
+  position:relative; z-index:1;
+  width:min(920px, 100%);
+  display:grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap:0;
+  border-radius:20px;
+  overflow:hidden;
+  border:1px solid var(--border-light);
+  background:var(--panel);
+  box-shadow: var(--shadow), 0 0 0 1px rgba(255,255,255,.03);
+  animation: loginCardIn .45s cubic-bezier(.2,.8,.2,1);
+}
+@media (max-width:820px){
+  .login-shell{ grid-template-columns:1fr; max-width:440px; }
+  .login-brand-panel{ display:none; }
+  .mobile-only{ display:flex !important; }
+}
+
+.login-brand-panel{
+  background: linear-gradient(160deg, rgba(59,142,208,.18), transparent 50%), var(--panel-alt);
+  border-right:1px solid var(--border);
+  padding:36px 32px;
+  display:flex; align-items:center;
+}
+.login-brand-inner{ width:100%; }
+.login-brand-title{
+  margin:14px 0 6px; font-size:22px; font-weight:800; color:var(--txt);
+  letter-spacing:.2px;
+}
+.login-brand-tag{
+  margin:0 0 22px; color:var(--txt-muted); font-size:13px; line-height:1.45;
+}
+.login-brand-points{
+  list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:12px;
+}
+.login-brand-points li{
+  display:flex; align-items:center; gap:10px;
+  font-size:13px; font-weight:600; color:var(--txt-label);
+}
+.login-brand-points i{
+  width:28px; height:28px; border-radius:8px;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:rgba(59,142,208,.15); color:var(--blue); font-size:12px;
+}
+
 .login-card{
-  width:100%; max-width:480px; background:var(--panel); border:1px solid #1A301E; border-radius:25px;
-  padding:30px 35px 35px; box-shadow:0 20px 60px rgba(0,0,0,.55);
-  display:flex; flex-direction:column; gap:25px;
+  padding:28px 28px 24px;
+  display:flex; flex-direction:column; gap:0;
+  background:var(--panel);
 }
-.login-logo{display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:6px;}
-.login-logo i{color:var(--blue); font-size:22px;}
-.login-logo span{color:var(--blue); font-weight:800; font-size:20px; letter-spacing:.5px;}
-.login-field{display:flex; flex-direction:column; gap:6px;}
-.login-field label{font-size:12px; color:var(--txt-label); font-weight:600;}
-.login-field input{
-  background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt);
-  padding:10px 12px; border-radius:20px; font-size:13px; outline:none; width:100%; box-sizing:border-box;
+.login-card-top.mobile-only{ display:none; justify-content:center; margin-bottom:8px; }
+.login-logo{ display:flex; justify-content:flex-start; }
+.login-logo .brand-logo{ height:72px; width:auto; object-fit:contain; }
+.login-logo-sm .brand-logo{ height:56px; }
+
+.login-step{ animation: loginCardIn .35s ease; }
+.login-step-head{ margin-bottom:18px; }
+.login-step-head h2{
+  margin:0 0 6px; font-size:20px; font-weight:800; color:var(--txt);
 }
-.login-field input:focus{border-color:var(--blue);}
-.login-pwd-wrap{position:relative;}
-.login-pwd-wrap input{padding-right:38px;}
+.login-step-head p{
+  margin:0; font-size:13px; color:var(--txt-muted); line-height:1.45;
+}
+.login-step-icon{
+  width:48px; height:48px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(59,142,208,.14); color:var(--blue);
+  font-size:20px; margin-bottom:12px;
+  animation: loginPulse 2.4s ease-in-out infinite;
+}
+
+.login-field{ display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+.login-field label{
+  font-size:12px; font-weight:700; color:var(--txt-label);
+}
+.login-input-icon{
+  position:relative; display:flex; align-items:center;
+}
+.login-input-icon > i:first-child{
+  position:absolute; left:12px; color:var(--txt-muted); font-size:13px; pointer-events:none;
+}
+.login-field input[type="text"],
+.login-field input[type="password"],
+.login-field input[type="email"]{
+  width:100%; box-sizing:border-box;
+  background:var(--input-bg); color:var(--txt);
+  border:1px solid var(--border-light); border-radius:12px;
+  padding:12px 12px 12px 38px; font-size:14px; outline:none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.login-field input:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px rgba(59,142,208,.18);
+}
+.login-pwd-wrap{ position:relative; }
+.login-pwd-wrap input{ padding-right:42px; }
 .login-toggle-pwd{
   position:absolute; right:8px; top:50%; transform:translateY(-50%);
-  background:transparent; border:none; border-radius: 50px; color:#b4afa6; font-size:12px; padding:2px 4px 2px 4px; cursor:pointer;
+  background:transparent; border:none; color:var(--txt-muted);
+  font-size:14px; padding:6px; cursor:pointer;
 }
-.login-toggle-pwd.active{color:var(--gold);}
-.login-remember{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--txt-label); cursor:pointer; user-select:none;}
-.login-remember input{cursor:pointer;}
+.login-toggle-pwd.active{ color:var(--gold); }
+
+.login-remember{
+  display:flex; align-items:center; gap:8px;
+  font-size:12.5px; color:var(--txt-label); cursor:pointer; user-select:none;
+  margin-bottom:10px;
+}
+.login-remember input{ cursor:pointer; accent-color:var(--blue); }
+
 .login-btn{
-  width:100%; box-sizing:border-box; background:#077e11; color:#fff; border:none; padding:14px;
-  font-weight:700; font-size:15px; border-radius:20px; cursor:pointer; margin-top:4px;
+  width:100%; box-sizing:border-box;
+  display:inline-flex; align-items:center; justify-content:center; gap:10px;
+  background:linear-gradient(135deg, var(--blue), var(--blue-hover, #2F7AB8));
+  color:#fff; border:none; padding:13px 16px;
+  font-weight:800; font-size:14.5px; border-radius:12px; cursor:pointer;
+  margin-top:4px;
+  box-shadow:0 8px 20px rgba(59,142,208,.28);
+  transition: transform .12s ease, filter .12s ease;
 }
-.login-btn:hover{filter:brightness(1.08);}
+.login-btn:hover{ filter:brightness(1.06); }
+.login-btn:active{ transform:translateY(1px); }
+.login-btn:disabled{ opacity:.65; cursor:default; filter:none; }
+
 .login-error{
-  display:none; color:var(--red); font-size:11.5px; background:rgba(231,76,60,.12);
-  border:1px solid var(--red); border-radius:20px; padding:8px 10px;
+  display:none; color:var(--red); font-size:12px;
+  background:rgba(231,76,60,.1);
+  border:1px solid rgba(231,76,60,.45); border-radius:10px;
+  padding:9px 11px; margin-bottom:8px;
 }
-.login-error.show{display:block;}
+.login-error.show{ display:block; animation: loginCardIn .25s ease; }
 
-.login-links{display:flex; align-items:center; justify-content:space-between; margin-top:4px;}
-.login-links a{color:var(--blue); font-size:12.5px; text-decoration:none; font-weight:600;}
-.login-links a:hover{text-decoration:underline;}
+.login-links{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-top:14px; gap:10px; flex-wrap:wrap;
+}
+.login-links a{
+  color:var(--blue); font-size:12.5px; text-decoration:none; font-weight:700;
+}
+.login-links a:hover{ text-decoration:underline; }
 
-.brand-logo{height:32px; width:auto; object-fit:contain;}
-.login-logo .brand-logo{height:100px;}
+.login-back-wrap{ display:flex; justify-content:center; margin-top:12px; }
+.login-back-btn{
+  background:transparent; border:none; color:var(--txt-muted);
+  font-size:12.5px; font-weight:700; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px; padding:6px 8px;
+}
+.login-back-btn:hover{ color:var(--blue); }
 
-/* =================== OTP BOXES (6 separate digit inputs) ===================
-   Used on the Login-OTP, Register-OTP and Reset-Password-OTP steps. Each
-   step keeps a hidden <input> that mirrors the combined 6-digit value, so
-   the verify/resend logic elsewhere in app.js reads it exactly like before. */
-.otp-boxes{display:flex; gap:8px; justify-content:space-between;}
+.brand-logo{ height:32px; width:auto; object-fit:contain; }
+
+/* OTP */
+.otp-boxes{ display:flex; gap:8px; justify-content:space-between; }
 .otp-box{
-  width:100%; aspect-ratio:1/1; max-width:46px; text-align:center;
+  width:100%; aspect-ratio:1/1; max-width:48px; text-align:center;
   background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt);
-  border-radius:12px; font-size:18px; font-weight:700; outline:none;
+  border-radius:12px; font-size:18px; font-weight:800; outline:none;
   box-sizing:border-box; padding:0;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .1s ease;
 }
-.otp-box:focus{border-color:var(--blue);}
+.otp-box:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px rgba(59,142,208,.2);
+  transform:scale(1.04);
+}
 .otp-note{
-  font-size:12px; color:var(--txt-muted); margin-top:6px; line-height:1.5;
+  font-size:12px; color:var(--txt-muted); margin:8px 0 10px; line-height:1.5;
 }
 .otp-resend-link{
   background:transparent; border:none; color:var(--blue); font-weight:700;
   font-size:12px; padding:0; cursor:pointer;
 }
-.otp-resend-link:hover{text-decoration:underline;}
-.otp-resend-link:disabled{color:var(--txt-muted); cursor:default; text-decoration:none;}
+.otp-resend-link:hover{ text-decoration:underline; }
+.otp-resend-link:disabled{ color:var(--txt-muted); cursor:default; text-decoration:none; }
+
+.login-success-pop{ text-align:center; padding:6px 4px 2px; }
+.login-success-icon{
+  width:56px; height:56px; margin:0 auto;
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(39,174,96,.15); color:var(--green);
+  font-size:28px;
+  animation: loginPulse 2s ease-in-out infinite;
+}
+.login-success-pop h3{ color:var(--txt); }
 
 
 /* =================== PROFILE MENU (sidebar avatar) ===================
