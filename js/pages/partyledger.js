@@ -586,6 +586,14 @@ window.PAGES.partyledger = {
       detachStatementKeyboardNav();
     }
     document.getElementById('closeStatement').addEventListener('click', closeStatement);
+    const btnEditVoucher = document.getElementById('btnEditVoucher');
+    const btnDeleteVoucher = document.getElementById('btnDeleteVoucher');
+    if (btnEditVoucher) btnEditVoucher.addEventListener('click', () => {
+      if (stRef) editVoucher(stRef.movement, stRef.key);
+    });
+    if (btnDeleteVoucher) btnDeleteVoucher.addEventListener('click', () => {
+      if (stRef) deleteVoucher(stRef.movement, stRef.key);
+    });
     stOverlay.addEventListener('click', closeStatement);
     document.getElementById('btnExportStatement').addEventListener('click', () => {
       if (!selected || !selectedRows.length) { window.openModal('No Data', '<p>No records found to export.</p>'); return; }
@@ -665,8 +673,80 @@ window.PAGES.partyledger = {
       else renderSerials(tbody);
       updateBreadcrumb();
       updateAttachmentsPanel();
+      updateVoucherBar();
       stmtCurrentRow = 0;
       highlightStatementRow(0);
+    }
+
+    function updateVoucherBar() {
+      const bar = document.getElementById('stmtVoucherBar');
+      const label = document.getElementById('stmtVoucherLabel');
+      if (!bar) return;
+      if (stRef && stRef.key && stRef.key !== '-') {
+        bar.style.display = 'flex';
+        const kind = stRef.movement === 'IN' ? 'Purchase' : 'Sale / Challan';
+        label.textContent = `${kind} · ${stRef.key}`;
+      } else {
+        bar.style.display = 'none';
+      }
+    }
+
+    async function editVoucher(movement, refKey) {
+      if (!refKey || refKey === '-') {
+        window.openModal('Cannot Edit', '<p>This row has no invoice/challan number, so it cannot be opened for edit.</p>');
+        return;
+      }
+      closeStatement();
+      if (movement === 'IN') {
+        if (typeof go === 'function') go('purchase');
+        setTimeout(() => {
+          if (window.PurchasePageAPI && typeof window.PurchasePageAPI.loadInvoiceForEdit === 'function') {
+            window.PurchasePageAPI.loadInvoiceForEdit(refKey);
+          } else if (window.showToast) {
+            window.showToast('Open Purchase Inward and search invoice: ' + refKey);
+          }
+        }, 120);
+      } else {
+        if (typeof go === 'function') go('sales');
+        setTimeout(() => {
+          if (window.SalesPageAPI && typeof window.SalesPageAPI.loadChallanForEdit === 'function') {
+            window.SalesPageAPI.loadChallanForEdit(refKey);
+          } else if (window.showToast) {
+            window.showToast('Open Project Sales and search challan: ' + refKey);
+          }
+        }, 120);
+      }
+    }
+
+    async function deleteVoucher(movement, refKey) {
+      if (!refKey || refKey === '-') {
+        window.openModal('Cannot Delete', '<p>This row has no invoice/challan number.</p>');
+        return;
+      }
+      const kind = movement === 'IN' ? 'purchase invoice' : 'sale / challan';
+      const ok = await window.confirmDanger(
+        'Delete voucher?',
+        `Permanently delete ${kind} <b>${refKey}</b>?<br><br>` +
+        (movement === 'IN'
+          ? 'Stock rows for this purchase will be removed (only if none are already sold).'
+          : 'Sold items will return to Available stock and the sale link will be cleared.')
+      );
+      if (!ok) return;
+      try {
+        if (movement === 'IN') {
+          await window.Api.delete('/purchase/' + encodeURIComponent(refKey));
+        } else {
+          await window.Api.delete('/sales/delete/' + encodeURIComponent(refKey));
+        }
+        if (window.showToast) window.showToast('Voucher deleted.');
+        // Refresh statement data
+        selectedRows = await fetchStatementRows(selected.partyName, selected.type);
+        stRef = null;
+        renderSummary();
+        renderLevel();
+      } catch (err) {
+        window.openModal('Delete failed', `<p>${(err && err.message) || 'Could not delete this voucher.'}</p>`);
+      }
     }
 
     // ---------------- Voucher Attachments panel ----------------
@@ -851,7 +931,7 @@ window.PAGES.partyledger = {
     }
 
     function renderRefs(tbody) {
-      setHead(['Voucher / Challan / Invoice No', 'Movement', 'Serial Count', 'Category', 'Warehouse']);
+      setHead(['Voucher / Challan / Invoice No', 'Movement', 'Serial Count', 'Category', 'Warehouse', 'Actions']);
       const groups = {};
       const order = [];
       selectedRows.filter((r) => r.date === stDate).forEach((r) => {
@@ -867,12 +947,30 @@ window.PAGES.partyledger = {
         const whText = g.whs.size === 1 ? [...g.whs][0] : 'Multiple';
         const tr = document.createElement('tr');
         tr.className = 'stmt-table-row';
+        const canAct = g.ref && g.ref !== '-';
         tr.innerHTML = `<td data-label="Ref">🧾 ${refDisplay(g.first)}</td>
           <td data-label="Movement" style="text-align:center; font-weight:700; color:${g.movement === 'IN' ? '#2ECC71' : 'var(--red)'};">${g.movement === 'IN' ? 'INWARD' : 'OUTWARD'}</td>
           <td data-label="Count" style="text-align:center;">${g.rows.length}</td>
           <td data-label="Category" style="text-align:center;">${catText}</td>
-          <td data-label="Warehouse" style="text-align:center;">${whText}</td>`;
-        tr.addEventListener('click', () => { stRef = { movement: g.movement, key: g.ref }; renderLevel(); });
+          <td data-label="Warehouse" style="text-align:center;">${whText}</td>
+          <td data-label="Actions" class="stmt-row-actions" style="text-align:center; white-space:nowrap;">
+            <button type="button" class="btn btn-ghost stmt-act-edit" title="Edit voucher" ${canAct ? '' : 'disabled'} style="padding:4px 8px;font-size:11px;"><i class="fa-solid fa-pen"></i></button>
+            <button type="button" class="btn btn-ghost stmt-act-del" title="Delete voucher" ${canAct ? '' : 'disabled'} style="padding:4px 8px;font-size:11px;color:var(--red);"><i class="fa-solid fa-trash"></i></button>
+          </td>`;
+        tr.addEventListener('click', (e) => {
+          if (e.target.closest('.stmt-act-edit')) {
+            e.stopPropagation();
+            editVoucher(g.movement, g.ref);
+            return;
+          }
+          if (e.target.closest('.stmt-act-del')) {
+            e.stopPropagation();
+            deleteVoucher(g.movement, g.ref);
+            return;
+          }
+          stRef = { movement: g.movement, key: g.ref };
+          renderLevel();
+        });
         tbody.appendChild(tr);
       });
     }

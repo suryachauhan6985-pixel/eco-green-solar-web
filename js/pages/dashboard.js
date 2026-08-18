@@ -6,6 +6,7 @@ window.PAGES.dashboard = {
   icon: 'fa-chart-pie',
   sub: 'Live overview of stock & operations',
   html: `
+   <div class="dash-shell">
    <div class="banner"><i class="fa-solid fa-triangle-exclamation"></i>
       <div><strong id="dashLowStockCount">0 items</strong> are at or below minimum stock level.
         <a href="#" onclick="go('lowstock');return false;" class="gold-txt">View Low Stock Alert →</a></div>
@@ -70,7 +71,7 @@ window.PAGES.dashboard = {
           </tbody></table></div>
       </div>
     </div>
-  `,
+  </div>`,
   init() {
     // ---------- NEW: pull real numbers from the shared database via the
     // backend API (server.js). Falls back silently to the demo numbers

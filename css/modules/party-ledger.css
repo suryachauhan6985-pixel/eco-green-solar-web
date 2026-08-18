@@ -34,21 +34,21 @@
 .pl-left .btn{width:100%; justify-content:flex-start;}
 
 .pl-right{background:var(--panel); border:1px solid var(--purple); border-radius:var(--radius); padding:16px; min-width:0;}
-.pl-right > h3{margin:0 0 12px; font-size:15px; color:var(--blue); font-weight:800; display:flex; flex-wrap:wrap; gap:6px; align-items:baseline;}
+.pl-right > h3{margin:0 0 12px; font-size:15px; color:var(--purple); font-weight:800; display:flex; flex-wrap:wrap; gap:6px; align-items:baseline;}
 
 .pl-toolbar{display:flex; gap:10px; align-items:center; background:var(--panel-alt); border:1px solid var(--border); border-radius:8px; padding:9px 12px; margin-bottom:12px; flex-wrap:wrap;}
 .pl-toolbar input{flex:1; min-width:140px; background:transparent; border:none; color:var(--txt); outline:none; font-size:13px;}
 .pl-toolbar select{background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt); padding:7px 10px; border-radius:6px; font-size:12.5px;}
-.pl-toolbar i{color:var(--blue);}
+.pl-toolbar i{color:var(--purple);}
 
 .party-list{list-style:none; margin:0 0 14px; padding:0; background:var(--table-bg); border:1px solid var(--border); border-radius:8px; max-height:320px; overflow-y:auto;}
 .party-item{display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid #232323; cursor:pointer; flex-wrap:wrap;}
 .party-item:last-child{border-bottom:none;}
-.party-item:hover{background:var(--nav-btn-bg);}
-.party-item.selected{background:var(--blue); color:#fff;}
+.party-item:hover{background:#232323;}
+.party-item.selected{background:#5B2C6F; color:#fff;}
 .party-item.selected .p-tag{background:rgba(255,255,255,.18);}
 .party-item.unregistered{color:var(--txt-muted);}
-.party-item i{color:var(--blue); width:16px; text-align:center;}
+.party-item i{color:var(--purple); width:16px; text-align:center;}
 .party-item.selected i{color:#fff;}
 .party-item .p-name{flex:1; font-size:13px; font-weight:600; min-width:120px;}
 .party-item .p-tag{font-size:10.5px; padding:3px 9px; border-radius:20px; font-weight:700; background:rgba(255,255,255,.08); white-space:nowrap;}
@@ -101,7 +101,7 @@ body.no-scroll{overflow:hidden; height:100%;}
 
 /* Keyboard-selected row inside the statement drill-down table (Arrow keys +
    Enter to drill in, Backspace to go back — mirrors the desktop app). */
-#stmtTbody tr.kbd-active{outline:2px solid var(--blue); outline-offset:-2px; background:var(--panel-alt);}
+#stmtTbody tr.kbd-active{outline:2px solid var(--blue); outline-offset:-2px; background:#1c2733;}
 
 .stmt-head{display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
 .stmt-actions{display:flex; gap:8px; flex-wrap:wrap;}
@@ -117,7 +117,7 @@ body.no-scroll{overflow:hidden; height:100%;}
 .stmt-unreg{color:var(--orange); font-style:italic; font-size:13px; background:var(--panel-alt); border:1px solid var(--border); border-radius:8px; padding:12px 14px; margin-bottom:14px;}
 
 .stmt-nav{display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap;}
-.stmt-nav .breadcrumb{color:var(--blue); font-size:13px; font-weight:700;}
+.stmt-nav .breadcrumb{color:var(--purple); font-size:13px; font-weight:700;}
 .stmt-nav .hint{color:var(--txt-muted); font-size:11px; font-style:italic; margin-left:auto;}
 
 /* ---------- Voucher Attachments panel (Party Ledger drill-down) ---------- */
@@ -140,13 +140,13 @@ body.no-scroll{overflow:hidden; height:100%;}
 .stmt-attach-chip .attach-remove:hover{color:var(--red);}
 
 .stmt-table-row{cursor:pointer;}
-.stmt-table-row:hover{background:var(--panel-alt);}
+.stmt-table-row:hover{background:#1c2733;}
 .stmt-table-row.leaf{cursor:default;}
 .stmt-table-row.leaf:hover{background:inherit;}
 
 /* ---------- Lightweight toast (used across pages for "UI preview" actions) ---------- */
 .toast-wrap{position:fixed; bottom:20px; right:20px; z-index:80; display:flex; flex-direction:column; gap:8px; max-width:calc(100% - 40px);}
-.toast{background:var(--panel); border:1px solid var(--blue); color:var(--txt); padding:10px 16px; border-radius:8px; font-size:12.5px; box-shadow:var(--shadow); opacity:0; transform:translateY(8px); transition:all .25s ease;}
+.toast{background:var(--panel); border:1px solid var(--purple); color:var(--txt); padding:10px 16px; border-radius:8px; font-size:12.5px; box-shadow:0 8px 24px rgba(0,0,0,.4); opacity:0; transform:translateY(8px); transition:all .25s ease;}
 .toast.show{opacity:1; transform:translateY(0);}
 @media (max-width:560px){
   .toast-wrap{left:16px; right:16px; bottom:16px; align-items:stretch;}
@@ -156,3 +156,29 @@ body.no-scroll{overflow:hidden; height:100%;}
   .modal-head h3{font-size:13px; line-height:1.35;}
   .modal-close{width:28px; height:28px; min-width:28px; font-size:12px;}
 }
+
+
+/* ---- Voucher action bar (edit / delete from statement) ---- */
+.stmt-voucher-bar{
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  margin:10px 0 12px; padding:10px 14px;
+  border-radius:12px;
+  border:1px solid rgba(59,142,208,.35);
+  background:linear-gradient(135deg, rgba(59,142,208,.12), rgba(46,204,113,.06));
+}
+.stmt-voucher-meta .sv-label{
+  display:block; font-size:10px; font-weight:700; letter-spacing:.04em;
+  text-transform:uppercase; color:var(--txt-muted); margin-bottom:2px;
+}
+.stmt-voucher-meta strong{ font-size:13px; color:var(--txt); }
+.stmt-voucher-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.stmt-row-actions .btn{ min-width:32px; }
+.stmt-row-actions .btn:disabled{ opacity:.35; cursor:not-allowed; }
+
+/* Statement summary polish */
+#statementModal .mini-stat{
+  border-radius:12px;
+  background:var(--panel-alt);
+  border:1px solid var(--border);
+}
+#statementModal .modal-body{ padding-top:8px; }

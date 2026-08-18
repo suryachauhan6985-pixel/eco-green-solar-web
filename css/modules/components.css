@@ -273,3 +273,33 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
 .confirm-btns button:hover{background:var(--confirm-accent, var(--gold)); color:#fff;}
 .confirm-btns button.confirm-primary{background:var(--confirm-accent, var(--gold)); color:#fff;}
 .confirm-btns button.confirm-primary:hover{filter:brightness(1.1);}
+
+
+/* ---- Dashboard polish (aligned with login aesthetic) ---- */
+.dash-shell{ position:relative; }
+.stat-grid .stat-card{
+  border-radius:16px;
+  border:1px solid var(--border-light);
+  background:linear-gradient(165deg, rgba(255,255,255,.03), transparent 50%), var(--panel);
+  box-shadow:0 8px 24px rgba(0,0,0,.18);
+  transition: transform .15s ease, border-color .15s ease;
+}
+.stat-grid .stat-card:hover{
+  transform:translateY(-2px);
+  border-color:rgba(59,142,208,.45);
+}
+.stat-grid .stat-card .value{
+  font-weight:800;
+  letter-spacing:-.02em;
+}
+.panel{
+  border-radius:16px;
+  border:1px solid var(--border-light);
+  background:var(--panel);
+  box-shadow:0 8px 24px rgba(0,0,0,.12);
+}
+.banner{
+  border-radius:14px;
+  border:1px solid rgba(231,76,60,.35);
+  background:linear-gradient(90deg, rgba(231,76,60,.14), rgba(243,156,18,.08));
+}
