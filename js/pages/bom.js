@@ -86,7 +86,7 @@ window.PAGES.bom = {
         <div class="field"><label>Installer Name</label><input id="bomInstallerName" placeholder="Installer name or short name" list="bomInstallerList" autocomplete="off"><datalist id="bomInstallerList"></datalist></div>
         <div class="field"><label>Fabricatore Name</label><input id="bomFabricatorName" placeholder="Fabricator name or short name" list="bomFabricatorList" autocomplete="off"><datalist id="bomFabricatorList"></datalist></div>
 
-        <div class="field"><label>Challan No.</label><input id="bomChallanNo" placeholder="Challan no."></div>
+        <div class="field"><label>Challan No.</label><input id="bomChallanNo" name="egs_challan_no" placeholder="Challan no." autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true"></div>
         <div class="field"><label>Ch. Date</label><input id="bomChallanDate" type="date"></div>
       </div>
       <div class="actions-row">
@@ -596,6 +596,22 @@ window.PAGES.bom = {
     // otherwise (see bomLoadItemMasterNames). Load once, up front.
     await bomLoadItemMasterNames();
     await ctx.bomLoadSerialMandatoryInfo();
+
+    // Suggest next challan no. from Admin settings when field is empty
+    (async function egsSuggestChallanNo() {
+      const el = ctx.$ ? ctx.$('bomChallanNo') : document.getElementById('bomChallanNo');
+      if (!el || (el.value || '').trim()) return;
+      try {
+        const data = await window.Api.get('/auth/app-settings', { silent: true });
+        const s = (data && data.settings) || {};
+        const next = parseInt(s.challan_next || '1', 10) || 1;
+        const pad = Math.min(10, Math.max(0, parseInt(s.challan_pad || '4', 10) || 0));
+        const prefix = (s.challan_prefix || '').trim();
+        const num = pad ? String(next).padStart(pad, '0') : String(next);
+        el.placeholder = prefix + num;
+      } catch (e) { /* ignore */ }
+    })();
+
     await bomLoadChallanCategoryMap();
     // Kit templates ("New Kit" / "Edit Kit") — now database-backed (see
     // bom-kit-helpers.js) so a kit saved on one device shows up on every

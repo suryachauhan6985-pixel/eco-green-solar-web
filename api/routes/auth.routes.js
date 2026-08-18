@@ -1,5 +1,5 @@
 module.exports = function registerAuthRoutes(app, deps) {
-  const { pool, route, issueToken, hashPassword, verifyPassword, generateOtp, sendOtpEmail, maskEmail, OTP_TTL_MINUTES, loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter } = deps;
+  const { pool, route, requireRole, issueToken, hashPassword, verifyPassword, generateOtp, sendOtpEmail, maskEmail, OTP_TTL_MINUTES, loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter } = deps;
   const SESSION_STALE_SECONDS = 40;
 
   function parseDeviceLabel(ua) {
@@ -509,6 +509,47 @@ module.exports = function registerAuthRoutes(app, deps) {
     if (merged.theme === 'dark' || merged.theme === 'light' || merged.theme === 'gray') clean.theme = merged.theme;
     await pool.query(`UPDATE users SET preferences_json=? WHERE username=?`, [JSON.stringify(clean), req.user.username]);
     res.json({ success: true, preferences: clean });
+  }));
+
+
+  // App-wide settings (challan sequence etc.) — Admin / SuperAdmin only for write
+  app.get('/api/auth/app-settings', route(async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Please log in.' });
+    const [rows] = await pool.query(`SELECT setting_key, setting_value FROM app_settings`);
+    const settings = {};
+    (rows || []).forEach((r) => { settings[r.setting_key] = r.setting_value; });
+    // Defaults
+    if (settings.challan_prefix == null) settings.challan_prefix = '';
+    if (settings.challan_next == null) settings.challan_next = '1';
+    if (settings.challan_pad == null) settings.challan_pad = '4';
+    res.json({ settings });
+  }));
+
+  app.put('/api/auth/app-settings', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Please log in.' });
+    const body = (req.body && req.body.settings) ? req.body.settings : (req.body || {});
+    const allowed = ['challan_prefix', 'challan_next', 'challan_pad'];
+    for (const key of allowed) {
+      if (body[key] == null) continue;
+      let val = String(body[key]).trim();
+      if (key === 'challan_next') {
+        const n = parseInt(val, 10);
+        if (!Number.isFinite(n) || n < 1) return res.status(400).json({ error: 'Challan next number must be a positive integer.' });
+        val = String(n);
+      }
+      if (key === 'challan_pad') {
+        const n = parseInt(val, 10);
+        if (!Number.isFinite(n) || n < 0 || n > 10) return res.status(400).json({ error: 'Pad length must be 0–10.' });
+        val = String(n);
+      }
+      if (key === 'challan_prefix' && val.length > 30) return res.status(400).json({ error: 'Prefix too long.' });
+      await pool.query(
+        `INSERT INTO app_settings (setting_key, setting_value, updated_by) VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value), updated_by=VALUES(updated_by)`,
+        [key, val, req.user.username]
+      );
+    }
+    res.json({ success: true });
   }));
 
 };

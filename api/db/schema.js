@@ -27,8 +27,23 @@ async function ensureUserPreferencesSchema(pool) {
   }
 }
 
+
+async function ensureAppSettingsSchema(pool) {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS app_settings (
+      setting_key VARCHAR(100) PRIMARY KEY,
+      setting_value TEXT NULL,
+      updated_by VARCHAR(100) NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`);
+  } catch (e) {
+    console.warn('[App settings] Could not ensure table:', e.message);
+  }
+}
+
 async function ensureStartupSchema(pool) {
   await ensureUserPreferencesSchema(pool);
+  await ensureAppSettingsSchema(pool);
 
   await ensureSessionSchema(pool);
   await ensureAuthDeviceSessionsSchema(pool);

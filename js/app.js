@@ -1448,6 +1448,108 @@ window.attachColumnFilters = function (table) {
     resetResendBtn.addEventListener('click', attemptResendForgotOtp);
   }
 
+
+  // =================== APP SETTINGS PANEL ===================
+  async function openAppSettingsPanel() {
+    const role = (window.currentRole || '').toLowerCase();
+    const isAdmin = role === 'admin' || role === 'superadmin';
+    let settings = { challan_prefix: '', challan_next: '1', challan_pad: '4' };
+    try {
+      const data = await window.Api.get('/auth/app-settings');
+      if (data && data.settings) settings = Object.assign(settings, data.settings);
+    } catch (e) { /* defaults */ }
+
+    const theme = (window.getAppTheme && window.getAppTheme()) || 'dark';
+    const themeBlock = `
+      <div class="egs-set-section">
+        <button type="button" class="egs-set-accordion" id="egsSetThemeToggle">
+          <span><i class="fa-solid fa-palette"></i> Theme</span>
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="egs-set-panel" id="egsSetThemePanel" style="display:none;">
+          <div class="profile-theme-row" style="padding:8px 0;">
+            <button type="button" class="theme-btn" data-theme-set="dark"><i class="fa-solid fa-moon"></i> Dark</button>
+            <button type="button" class="theme-btn" data-theme-set="gray"><i class="fa-solid fa-circle-half-stroke"></i> Gray</button>
+            <button type="button" class="theme-btn" data-theme-set="light"><i class="fa-solid fa-sun"></i> Light</button>
+          </div>
+        </div>
+      </div>`;
+
+    const challanBlock = isAdmin ? `
+      <div class="egs-set-section">
+        <button type="button" class="egs-set-accordion" id="egsSetChallanToggle">
+          <span><i class="fa-solid fa-hashtag"></i> Challan number</span>
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="egs-set-panel" id="egsSetChallanPanel" style="display:none;">
+          <p class="note" style="margin:0 0 10px;font-size:12px;">Admin only — set prefix, next number and zero-padding. Example: prefix <b>CH</b>, next <b>127</b>, pad <b>4</b> → <b>CH0127</b>.</p>
+          <div class="field" style="margin-bottom:8px;"><label>Prefix</label>
+            <input id="egsChallanPrefix" type="text" value="${String(settings.challan_prefix || '').replace(/"/g,'&quot;')}" placeholder="e.g. CH or blank" autocomplete="off">
+          </div>
+          <div class="field" style="margin-bottom:8px;"><label>Next number</label>
+            <input id="egsChallanNext" type="number" min="1" value="${String(settings.challan_next || '1').replace(/"/g,'&quot;')}" autocomplete="off">
+          </div>
+          <div class="field" style="margin-bottom:8px;"><label>Zero pad length</label>
+            <input id="egsChallanPad" type="number" min="0" max="10" value="${String(settings.challan_pad || '4').replace(/"/g,'&quot;')}" autocomplete="off">
+          </div>
+          <div style="text-align:right;margin-top:8px;">
+            <button type="button" class="btn btn-blue" id="egsChallanSave"><i class="fa-solid fa-floppy-disk"></i> Save challan settings</button>
+          </div>
+        </div>
+      </div>` : `
+      <p class="note" style="font-size:12px;margin:8px 0 0;">Challan sequence settings are available to Admin / Super Admin only.</p>`;
+
+    const html = `
+      <div class="egs-settings">
+        ${themeBlock}
+        ${challanBlock}
+      </div>`;
+
+    if (typeof window.openModal !== 'function') return;
+    window.openModal('Settings', html);
+
+    setTimeout(() => {
+      const themeToggle = document.getElementById('egsSetThemeToggle');
+      const themePanel = document.getElementById('egsSetThemePanel');
+      if (themeToggle && themePanel) {
+        themeToggle.addEventListener('click', () => {
+          const open = themePanel.style.display !== 'none';
+          themePanel.style.display = open ? 'none' : 'block';
+        });
+      }
+      if (window.wireThemeButtons) window.wireThemeButtons(document.getElementById('modalBody') || document);
+      if (window.getAppTheme) {
+        document.querySelectorAll('#modalBody [data-theme-set]').forEach((btn) => {
+          btn.classList.toggle('active', btn.getAttribute('data-theme-set') === window.getAppTheme());
+        });
+      }
+      const chToggle = document.getElementById('egsSetChallanToggle');
+      const chPanel = document.getElementById('egsSetChallanPanel');
+      if (chToggle && chPanel) {
+        chToggle.addEventListener('click', () => {
+          chPanel.style.display = chPanel.style.display !== 'none' ? 'none' : 'block';
+        });
+      }
+      const saveBtn = document.getElementById('egsChallanSave');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+          try {
+            await window.Api.put('/auth/app-settings', {
+              settings: {
+                challan_prefix: (document.getElementById('egsChallanPrefix') || {}).value || '',
+                challan_next: (document.getElementById('egsChallanNext') || {}).value || '1',
+                challan_pad: (document.getElementById('egsChallanPad') || {}).value || '4',
+              },
+            });
+            if (window.showToast) window.showToast('Challan settings saved');
+          } catch (err) {
+            window.openModal('Save failed', `<p>${(err && err.message) || 'Could not save settings.'}</p>`);
+          }
+        });
+      }
+    }, 0);
+  }
+
   // =================== PROFILE MENU (sidebar avatar) ===================
   // Clicking the rounded avatar in the sidebar opens a small dropdown, like
   // the desktop app's show_profile_menu(): header (@username / role), then
@@ -1625,6 +1727,14 @@ window.attachColumnFilters = function (table) {
       clearSession();
       showLoginOverlay('Add another account — your previous account stays saved for switching.');
     });
+
+    const settingsBtn = menu.querySelector('#profileOpenSettings');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        closeProfileMenu();
+        openAppSettingsPanel();
+      });
+    }
 
     menu.querySelector('#profileLoginActivity').addEventListener('click', () => openLoginActivityPanel());
 
@@ -1889,4 +1999,194 @@ window.attachColumnFilters = function (table) {
     });
   });
   autofillObserver.observe(document.body, { childList: true, subtree: true });
+})();
+
+// =================== Custom date picker (replaces native boring calendar) ===================
+(function () {
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function toISO(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function parseISO(s) {
+    if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+    const [y, m, d] = s.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return Number.isNaN(dt.getTime()) ? null : dt;
+  }
+  function startOfToday() {
+    const t = new Date();
+    return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  }
+  function formatDisplay(iso) {
+    const d = parseISO(iso);
+    if (!d) return '';
+    return pad(d.getDate()) + '-' + pad(d.getMonth() + 1) + '-' + d.getFullYear();
+  }
+
+  function enhanceDateInput(native) {
+    if (!native || native.dataset.egsDp === '1') return;
+    if (native.closest('.login-overlay')) return;
+    native.dataset.egsDp = '1';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'egs-dp-wrap';
+    native.parentNode.insertBefore(wrap, native);
+    wrap.appendChild(native);
+    native.style.position = 'absolute';
+    native.style.opacity = '0';
+    native.style.pointerEvents = 'none';
+    native.style.width = '1px';
+    native.style.height = '1px';
+    native.tabIndex = -1;
+
+    const display = document.createElement('input');
+    display.type = 'text';
+    display.className = 'egs-dp-input';
+    display.readOnly = true;
+    display.placeholder = native.placeholder || 'dd-mm-yyyy';
+    display.autocomplete = 'off';
+    if (native.value) display.value = formatDisplay(native.value);
+    else {
+      // default today when empty on first enhance (optional — only if data-default-today)
+      if (native.dataset.defaultToday === '1' || native.id === 'bomChallanDate') {
+        const iso = toISO(startOfToday());
+        native.value = iso;
+        display.value = formatDisplay(iso);
+      }
+    }
+    wrap.appendChild(display);
+
+    const icon = document.createElement('i');
+    icon.className = 'fa-solid fa-calendar-days egs-dp-icon';
+    wrap.appendChild(icon);
+
+    let pop = null;
+    let view = parseISO(native.value) || startOfToday();
+
+    function closePop() {
+      if (pop) { pop.remove(); pop = null; }
+      document.removeEventListener('mousedown', onDocDown, true);
+    }
+    function onDocDown(e) {
+      if (pop && !pop.contains(e.target) && !wrap.contains(e.target)) closePop();
+    }
+
+    function renderPop() {
+      closePop();
+      pop = document.createElement('div');
+      pop.className = 'egs-dp-pop';
+      const y = view.getFullYear();
+      const m = view.getMonth();
+      const first = new Date(y, m, 1);
+      const startPad = first.getDay();
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const selected = native.value;
+      const todayIso = toISO(startOfToday());
+
+      let cells = DOW.map((d) => `<div class="egs-dp-dow">${d}</div>`).join('');
+      for (let i = 0; i < startPad; i++) cells += `<button type="button" class="egs-dp-day muted" disabled></button>`;
+      for (let day = 1; day <= daysInMonth; day++) {
+        const iso = y + '-' + pad(m + 1) + '-' + pad(day);
+        const isFuture = iso > todayIso;
+        const cls = ['egs-dp-day'];
+        if (iso === selected) cls.push('selected');
+        if (iso === todayIso) cls.push('today');
+        if (isFuture) cls.push('future-warn');
+        cells += `<button type="button" class="${cls.join(' ')}" data-iso="${iso}">${day}</button>`;
+      }
+
+      pop.innerHTML = `
+        <div class="egs-dp-head">
+          <button type="button" data-nav="-1" aria-label="Previous month"><i class="fa-solid fa-chevron-left"></i></button>
+          <div class="egs-dp-title">${MONTHS[m]} ${y}</div>
+          <button type="button" data-nav="1" aria-label="Next month"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        <div class="egs-dp-grid">${cells}</div>
+        <div class="egs-dp-foot">
+          <button type="button" class="btn btn-ghost" data-today>Today</button>
+          <button type="button" class="btn btn-ghost" data-clear>Clear</button>
+        </div>`;
+      wrap.appendChild(pop);
+      document.addEventListener('mousedown', onDocDown, true);
+
+      pop.querySelectorAll('[data-nav]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const delta = Number(btn.getAttribute('data-nav'));
+          view = new Date(view.getFullYear(), view.getMonth() + delta, 1);
+          renderPop();
+        });
+      });
+      pop.querySelectorAll('.egs-dp-day[data-iso]').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const iso = btn.getAttribute('data-iso');
+          if (iso > todayIso) {
+            const ok = await window.confirmDialog(
+              'Future date',
+              'You selected a <b>future date</b>. Continue with this date?',
+              { kind: 'warning', okLabel: 'Use date', cancelLabel: 'Cancel' }
+            );
+            if (!ok) return;
+          }
+          native.value = iso;
+          display.value = formatDisplay(iso);
+          native.dispatchEvent(new Event('change', { bubbles: true }));
+          native.dispatchEvent(new Event('input', { bubbles: true }));
+          closePop();
+        });
+      });
+      const tBtn = pop.querySelector('[data-today]');
+      if (tBtn) tBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const iso = todayIso;
+        native.value = iso;
+        display.value = formatDisplay(iso);
+        view = startOfToday();
+        native.dispatchEvent(new Event('change', { bubbles: true }));
+        closePop();
+      });
+      const cBtn = pop.querySelector('[data-clear]');
+      if (cBtn) cBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        native.value = '';
+        display.value = '';
+        native.dispatchEvent(new Event('change', { bubbles: true }));
+        closePop();
+      });
+    }
+
+    function open() {
+      view = parseISO(native.value) || startOfToday();
+      renderPop();
+    }
+    display.addEventListener('click', open);
+    display.addEventListener('focus', open);
+  }
+
+  function scan(root) {
+    (root || document).querySelectorAll('input[type="date"]').forEach(enhanceDateInput);
+  }
+
+  window.egsInitDatePickers = scan;
+
+  const mo = new MutationObserver((muts) => {
+    for (const m of muts) {
+      m.addedNodes && m.addedNodes.forEach((n) => {
+        if (n.nodeType !== 1) return;
+        if (n.matches && n.matches('input[type="date"]')) enhanceDateInput(n);
+        if (n.querySelectorAll) n.querySelectorAll('input[type="date"]').forEach(enhanceDateInput);
+      });
+    }
+  });
+  if (document.body) {
+    mo.observe(document.body, { childList: true, subtree: true });
+    scan(document);
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      mo.observe(document.body, { childList: true, subtree: true });
+      scan(document);
+    });
+  }
 })();
