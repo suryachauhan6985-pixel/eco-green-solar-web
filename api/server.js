@@ -14,7 +14,7 @@ const path = require('path');
 const { corsMiddleware } = require('./config/cors');
 const { pool } = require('./db/pool');
 const { ensureStartupSchema } = require('./db/schema');
-const { authenticateToken, issueToken, requireRole } = require('./middleware/auth.middleware');
+const { authenticateToken, issueToken, requireRole, setAuthPool } = require('./middleware/auth.middleware');
 const { loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter } = require('./middleware/rateLimiters');
 const { hashPassword, verifyPassword } = require('./services/passwords');
 const { OTP_TTL_MINUTES, generateOtp, sendOtpEmail, maskEmail } = require('./services/email');
@@ -42,6 +42,8 @@ app.use(corsMiddleware());
 app.use(express.json({ limit: '20mb' }));
 app.use(authenticateToken);
 app.use(express.static(path.join(__dirname, '..')));
+
+setAuthPool(pool);
 
 const deps = { pool, route, requireRole, issueToken, hashPassword, verifyPassword, OTP_TTL_MINUTES, generateOtp, sendOtpEmail, maskEmail, loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter, itemNameSlug, getItemId, validateSalesLineSerials, getOrCreateItem, getISTParts, ledgerTimestamp };
 

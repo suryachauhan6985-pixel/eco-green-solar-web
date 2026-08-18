@@ -1,5 +1,26 @@
+async function ensureAuthDeviceSessionsSchema(pool) {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS auth_device_sessions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      jti VARCHAR(64) NOT NULL,
+      username VARCHAR(100) NOT NULL,
+      device_label VARCHAR(200) NULL,
+      user_agent VARCHAR(500) NULL,
+      ip VARCHAR(64) NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+      revoked_at DATETIME NULL,
+      UNIQUE INDEX uniq_auth_device_jti (jti),
+      INDEX idx_auth_device_user (username)
+    )`);
+  } catch (e) {
+    console.warn('[Auth device sessions] Could not ensure table:', e.message);
+  }
+}
+
 async function ensureStartupSchema(pool) {
-  await ensureSessionSchema(pool);
+  await ensureSessionSchema, ensureAuthDeviceSessionsSchema(pool);
+  await ensureAuthDeviceSessionsSchema(pool);
   await ensureSerialRuleSchema(pool);
   await ensureLedgerTypeSchema(pool);
   await ensureAuthOtpSchema(pool);

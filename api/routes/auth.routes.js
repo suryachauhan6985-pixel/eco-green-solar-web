@@ -2,29 +2,49 @@ module.exports = function registerAuthRoutes(app, deps) {
   const { pool, route, issueToken, hashPassword, verifyPassword, generateOtp, sendOtpEmail, maskEmail, OTP_TTL_MINUTES, loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter } = deps;
   const SESSION_STALE_SECONDS = 40;
 
-  async function completeLoginSession(uname, role, res) {
-    // ---------- Multiple devices/browsers allowed per user ----------
-    // Previously this blocked a second login with a 409 ("already logged in
-    // on another device") by checking user_sessions.is_logged_in first.
-    // That restriction has been removed on request — the same account can
-    // now be signed in from as many devices/browsers/tabs at once as
-    // needed. user_sessions is still updated below purely for the "Live
-    // Network Users" online/offline display; it no longer gates login.
+  function parseDeviceLabel(ua) {
+    const s = String(ua || '');
+    let browser = 'Browser';
+    if (/Edg\//i.test(s)) browser = 'Edge';
+    else if (/Chrome\//i.test(s) && !/Chromium/i.test(s)) browser = 'Chrome';
+    else if (/Firefox\//i.test(s)) browser = 'Firefox';
+    else if (/Safari\//i.test(s) && !/Chrome/i.test(s)) browser = 'Safari';
+    else if (/OPR\//i.test(s) || /Opera/i.test(s)) browser = 'Opera';
+    let os = 'Device';
+    if (/Android/i.test(s)) os = 'Android';
+    else if (/iPhone|iPad|iPod/i.test(s)) os = 'iOS';
+    else if (/Windows/i.test(s)) os = 'Windows';
+    else if (/Mac OS X|Macintosh/i.test(s)) os = 'Mac';
+    else if (/Linux/i.test(s)) os = 'Linux';
+    return browser + ' · ' + os;
+  }
 
-    // Mark this user ONLINE right away — same row the desktop app's
-    // "Live Network Users" tracker reads, so a login from either app shows
-    // up for everyone immediately.
+  async function completeLoginSession(uname, role, res, req) {
     await pool.query(
       `INSERT INTO user_sessions (username, is_logged_in, last_login_time, last_seen)
        VALUES (?, 1, NOW(), NOW())
        ON DUPLICATE KEY UPDATE is_logged_in=1, last_login_time=NOW(), last_seen=NOW()`,
       [uname]
     );
-    // This is the only place a token is ever handed out — only after the OTP
-    // step has actually succeeded. The frontend stores it and sends it back
-    // as "Authorization: Bearer <token>" on every subsequent API call.
-    const token = issueToken(uname, role);
-    res.json({ success: true, username: uname, role, token });
+
+    const issued = issueToken(uname, role);
+    const token = issued.token;
+    const jti = issued.jti;
+    const ua = (req && (req.headers['user-agent'] || '')) || '';
+    const ip = (req && (req.headers['x-forwarded-for'] || req.ip || '')) || '';
+    const ipOne = String(ip).split(',')[0].trim().slice(0, 64);
+    const label = parseDeviceLabel(ua);
+    try {
+      await pool.query(
+        `INSERT INTO auth_device_sessions (jti, username, device_label, user_agent, ip, created_at, last_seen)
+         VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+        [jti, uname, label, String(ua).slice(0, 500), ipOne]
+      );
+    } catch (e) {
+      console.warn('[Auth] could not insert device session:', e.message);
+    }
+
+    res.json({ success: true, username: uname, role, token, sessionId: jti, deviceLabel: label });
   }
 
   app.post('/api/auth/login', loginLimiter, route(async (req, res) => {
@@ -115,7 +135,7 @@ module.exports = function registerAuthRoutes(app, deps) {
     await pool.query(`DELETE FROM otp_codes WHERE username=?`, [uname]);
     const [[user]] = await pool.query(`SELECT role FROM users WHERE username=?`, [uname]);
     if (!user) return res.status(404).json({ error: 'User not found.' });
-    await completeLoginSession(uname, user.role, res);
+    await completeLoginSession(uname, user.role, res, req);
   }));
 
   // Resend — reuses step 1's already-verified identity (the OTP row only
@@ -241,7 +261,7 @@ module.exports = function registerAuthRoutes(app, deps) {
     const [[user]] = await pool.query(`SELECT role FROM users WHERE username=?`, [uname]);
     if (!user) return res.status(404).json({ error: 'User not found.' });
     await pool.query(`UPDATE users SET is_verified=1 WHERE username=?`, [uname]);
-    await completeLoginSession(uname, user.role, res);
+    await completeLoginSession(uname, user.role, res, req);
   }));
 
   // ---------------------------------------------------------------------------
@@ -326,9 +346,33 @@ module.exports = function registerAuthRoutes(app, deps) {
   // clicks Logout / Switch User, so they disappear from the live list
   // instantly instead of waiting for the heartbeat to go stale.
   app.post('/api/auth/logout', route(async (req, res) => {
-    const uname = String(req.body.username || '').trim().toLowerCase();
-    if (!uname) return res.status(400).json({ error: 'Username is required.' });
-    await pool.query(`UPDATE user_sessions SET is_logged_in=0 WHERE username=?`, [uname]);
+    const header = req.headers['authorization'] || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7).trim() : null;
+    let uname = null;
+    let jti = null;
+    if (token) {
+      try {
+        const jwt = require('jsonwebtoken');
+        const { JWT_SECRET } = require('../middleware/auth.middleware');
+        const payload = jwt.verify(token, JWT_SECRET);
+        uname = payload.username;
+        jti = payload.jti || null;
+      } catch (e) { /* expired token */ }
+    }
+    if (!uname) uname = String((req.body && req.body.username) || '').trim().toLowerCase() || null;
+
+    if (jti) {
+      await pool.query(`UPDATE auth_device_sessions SET revoked_at=NOW() WHERE jti=? AND revoked_at IS NULL`, [jti]);
+    }
+    if (uname) {
+      const [[left]] = await pool.query(
+        `SELECT COUNT(*) AS c FROM auth_device_sessions WHERE username=? AND revoked_at IS NULL`,
+        [uname]
+      );
+      if (!left || !Number(left.c)) {
+        await pool.query(`UPDATE user_sessions SET is_logged_in=0 WHERE username=?`, [uname]);
+      }
+    }
     res.json({ success: true });
   }));
 
@@ -338,8 +382,6 @@ module.exports = function registerAuthRoutes(app, deps) {
   // tab / lost network without logging out" — a session whose last_seen goes
   // stale gets auto-marked offline for everyone, even without a clean logout.
   app.post('/api/auth/heartbeat', route(async (req, res) => {
-    // req.user comes from the verified JWT (see authenticateToken above), not
-    // from the request body — a logged-in user can only heartbeat as themself.
     const uname = req.user.username;
     await pool.query(
       `INSERT INTO user_sessions (username, is_logged_in, last_login_time, last_seen)
@@ -347,6 +389,12 @@ module.exports = function registerAuthRoutes(app, deps) {
        ON DUPLICATE KEY UPDATE is_logged_in=1, last_seen=NOW()`,
       [uname]
     );
+    if (req.user.jti) {
+      await pool.query(
+        `UPDATE auth_device_sessions SET last_seen=NOW() WHERE jti=? AND revoked_at IS NULL`,
+        [req.user.jti]
+      );
+    }
     res.json({ success: true });
   }));
 
@@ -378,6 +426,57 @@ module.exports = function registerAuthRoutes(app, deps) {
       lastLoginTime: r.last_login_time && r.last_login_time !== '-' ? r.last_login_time : null,
       lastSeen: r.last_seen || null,
     })));
+  }));
+
+
+  // Instagram-style Login activity / remote logout
+  app.get('/api/auth/my-sessions', route(async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Please log in.' });
+    const uname = req.user.username;
+    const [rows] = await pool.query(
+      `SELECT id, jti, device_label, ip, created_at, last_seen, revoked_at
+       FROM auth_device_sessions
+       WHERE username=?
+       ORDER BY (revoked_at IS NULL) DESC, last_seen DESC
+       LIMIT 40`,
+      [uname]
+    );
+    res.json({
+      currentJti: req.user.jti || null,
+      sessions: rows.map((r) => ({
+        id: r.id,
+        jti: r.jti,
+        deviceLabel: r.device_label || 'Unknown device',
+        ip: r.ip || null,
+        createdAt: r.created_at,
+        lastSeen: r.last_seen,
+        revoked: !!r.revoked_at,
+        isCurrent: !!(req.user.jti && r.jti === req.user.jti),
+      })),
+    });
+  }));
+
+  app.post('/api/auth/sessions/:id/revoke', route(async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Please log in.' });
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ error: 'Invalid session id.' });
+    const [result] = await pool.query(
+      `UPDATE auth_device_sessions SET revoked_at=NOW()
+       WHERE id=? AND username=? AND revoked_at IS NULL`,
+      [id, req.user.username]
+    );
+    res.json({ success: true, affected: result.affectedRows || 0 });
+  }));
+
+  app.post('/api/auth/sessions/revoke-others', route(async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Please log in.' });
+    const jti = req.user.jti || '';
+    const [result] = await pool.query(
+      `UPDATE auth_device_sessions SET revoked_at=NOW()
+       WHERE username=? AND revoked_at IS NULL AND (jti IS NULL OR jti<>?)`,
+      [req.user.username, jti]
+    );
+    res.json({ success: true, affected: result.affectedRows || 0 });
   }));
 
 };

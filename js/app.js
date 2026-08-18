@@ -394,24 +394,45 @@ window.attachColumnFilters = function (table) {
   //     also survives closing and reopening the browser entirely.
   // No password is ever stored, only the already-verified username + role.
   const SESSION_KEY = 'egs_session';
+  const ACCOUNTS_KEY = 'egs_accounts'; // Instagram-style multi-account list
+
+  function loadSavedAccounts() {
+    try {
+      const raw = localStorage.getItem(ACCOUNTS_KEY);
+      const list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list.filter((a) => a && a.username && a.token) : [];
+    } catch (e) { return []; }
+  }
+  function persistSavedAccounts(list) {
+    try { localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list.slice(0, 8))); } catch (e) {}
+  }
+  function upsertSavedAccount(username, role, token) {
+    const list = loadSavedAccounts().filter((a) => a.username !== username);
+    list.unshift({ username, role, token, lastUsed: Date.now() });
+    persistSavedAccounts(list);
+  }
+  function removeSavedAccount(username) {
+    persistSavedAccounts(loadSavedAccounts().filter((a) => a.username !== username));
+  }
+
   function saveSession(username, role, persist, token) {
     const payload = JSON.stringify({ username, role, token });
     window.currentAuthToken = token || null;
+    window.currentUsername = username;
+    window.currentRole = role;
     try { sessionStorage.setItem(SESSION_KEY, payload); } catch (e) { /* storage unavailable */ }
     try {
       if (persist) localStorage.setItem(SESSION_KEY, payload);
       else localStorage.removeItem(SESSION_KEY);
     } catch (e) { /* storage unavailable */ }
+    // Always keep multi-account list updated so Switch Account works like Instagram
+    if (token && username) upsertSavedAccount(username, role, token);
   }
   function loadSession() {
     try {
       const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
       if (!raw) return null;
       const data = JSON.parse(raw);
-      // Older sessions saved before token-based auth won't have a `token`
-      // field — treat those as already signed out, since the API will
-      // reject every call without one anyway. This sends the person back
-      // to a normal login instead of a confusing wall of failed requests.
       if (data && data.username && data.role && data.token) return data;
     } catch (e) { /* corrupt/unavailable storage — just fall through to login */ }
     return null;
@@ -1340,43 +1361,168 @@ window.attachColumnFilters = function (table) {
     showLoginOverlay();
   }
 
+  function updateProfileBox(username, role) {
+    const roleEl = document.querySelector('.profile-box .role');
+    const userEl = document.querySelector('.profile-box .user');
+    const av = document.querySelector('.profile-box .avatar');
+    if (roleEl) roleEl.textContent = role || '';
+    if (userEl) userEl.textContent = username ? '@' + username : '';
+    if (av && username) av.textContent = (username[0] || '?').toUpperCase();
+  }
+
+  async function switchToAccount(acc) {
+    closeProfileMenu();
+    if (!acc || !acc.token) return;
+    // Activate saved token locally (no password) — Instagram-style quick switch
+    saveSession(acc.username, acc.role, true, acc.token);
+    updateProfileBox(acc.username, acc.role);
+    if (window.showToast) window.showToast('Switched to @' + acc.username);
+    // Soft reload current page data
+    try {
+      const hash = (location.hash || '#dashboard').replace(/^#/, '') || 'dashboard';
+      if (typeof go === 'function') go(hash);
+    } catch (e) { location.reload(); }
+  }
+
+  async function openLoginActivityPanel() {
+    closeProfileMenu();
+    let data;
+    try {
+      data = await window.Api.get('/auth/my-sessions');
+    } catch (e) {
+      window.openModal('Login activity', `<p class="note" style="color:var(--red);">${(e && e.message) || 'Could not load sessions.'}</p>`);
+      return;
+    }
+    const sessions = (data && data.sessions) || [];
+    const active = sessions.filter((s) => !s.revoked);
+    const rows = active.length ? active.map((s) => {
+      const when = s.lastSeen ? String(s.lastSeen).replace('T', ' ').slice(0, 16) : '—';
+      const badge = s.isCurrent ? '<span class="sess-badge current">This device</span>' : '';
+      const btn = s.isCurrent
+        ? ''
+        : `<button type="button" class="btn btn-ghost bom-mini-btn" data-revoke-id="${s.id}"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>`;
+      return `<div class="sess-row">
+        <div class="sess-icon"><i class="fa-solid fa-desktop"></i></div>
+        <div class="sess-meta">
+          <div class="sess-title">${s.deviceLabel || 'Device'} ${badge}</div>
+          <div class="sess-sub">Last active ${when}${s.ip ? ' · ' + s.ip : ''}</div>
+        </div>
+        <div class="sess-actions">${btn}</div>
+      </div>`;
+    }).join('') : '<p class="note">No active sessions.</p>';
+
+    window.openModal('Login activity', `
+      <p class="note" style="margin-top:0;">Where you're logged in — log out any device you don't recognise.</p>
+      <div class="sess-list">${rows}</div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-ghost" id="sessRevokeOthers"><i class="fa-solid fa-shield-halved"></i> Log out other devices</button>
+      </div>
+    `);
+
+    const body = document.getElementById('modalBody');
+    if (!body) return;
+    body.querySelectorAll('[data-revoke-id]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-revoke-id');
+        try {
+          await window.Api.post('/auth/sessions/' + id + '/revoke', {});
+          if (window.showToast) window.showToast('Device logged out');
+          openLoginActivityPanel();
+        } catch (e) {
+          window.openModal('Error', `<p>${(e && e.message) || 'Failed'}</p>`);
+        }
+      });
+    });
+    const others = body.querySelector('#sessRevokeOthers');
+    if (others) {
+      others.addEventListener('click', async () => {
+        const ok = await window.confirmDialog('Log out other devices', 'All other devices will be signed out. This device stays logged in.', { kind: 'warning', okLabel: 'Log out others' });
+        if (!ok) return;
+        try {
+          await window.Api.post('/auth/sessions/revoke-others', {});
+          if (window.showToast) window.showToast('Other devices logged out');
+          openLoginActivityPanel();
+        } catch (e) {
+          window.openModal('Error', `<p>${(e && e.message) || 'Failed'}</p>`);
+        }
+      });
+    }
+  }
+
   function openProfileMenu() {
     closeProfileMenu();
     const roleEl = document.querySelector('.profile-box .role');
     const userEl = document.querySelector('.profile-box .user');
-    const roleTxt = roleEl ? roleEl.textContent : 'Super Admin';
-    const userTxt = userEl ? userEl.textContent : '@user';
+    const roleTxt = roleEl ? roleEl.textContent : (window.currentRole || '');
+    const userTxt = userEl ? userEl.textContent : ('@' + (window.currentUsername || 'user'));
+    const currentUser = (window.currentUsername || '').toLowerCase();
+    const accounts = loadSavedAccounts();
+
+    const accountRows = accounts.map((a) => {
+      const isCur = a.username.toLowerCase() === currentUser;
+      return `<button type="button" class="profile-account-row${isCur ? ' current' : ''}" data-switch-user="${a.username}">
+        <span class="pa-avatar">${(a.username[0] || '?').toUpperCase()}</span>
+        <span class="pa-meta">
+          <span class="pa-name">@${a.username}</span>
+          <span class="pa-role">${a.role || ''}${isCur ? ' · Active' : ''}</span>
+        </span>
+        ${isCur ? '<i class="fa-solid fa-check pa-check"></i>' : ''}
+      </button>`;
+    }).join('');
 
     const menu = document.createElement('div');
-    menu.className = 'profile-menu';
+    menu.className = 'profile-menu profile-menu-wide';
     menu.innerHTML = `
       <div class="profile-menu-header">
         <div class="name">${userTxt}</div>
         <div class="role">${roleTxt}</div>
       </div>
-      <button type="button" class="profile-menu-item" id="profileSwitchUser"><i class="fa-solid fa-user-group"></i> Switch User</button>
-      <button type="button" class="profile-menu-item danger" id="profileLogout"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>`;
+      <div class="profile-menu-section-label">Accounts</div>
+      <div class="profile-accounts">${accountRows || '<p class="note" style="padding:8px 12px;margin:0;">No saved accounts yet</p>'}</div>
+      <button type="button" class="profile-menu-item" id="profileAddAccount"><i class="fa-solid fa-user-plus"></i> Add account</button>
+      <div class="profile-menu-divider"></div>
+      <button type="button" class="profile-menu-item" id="profileLoginActivity"><i class="fa-solid fa-mobile-screen-button"></i> Login activity</button>
+      <button type="button" class="profile-menu-item danger" id="profileLogout"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>`;
     document.body.appendChild(menu);
 
-    // Open ABOVE the avatar — it sits near the bottom of the sidebar, so
-    // opening downward would push the menu off-screen (same reasoning as
-    // the desktop app's show_profile_menu()).
     const rect = profileBox.getBoundingClientRect();
     const menuRect = menu.getBoundingClientRect();
     menu.style.left = Math.max(10, rect.left) + 'px';
     menu.style.top = Math.max(10, rect.top - menuRect.height - 8) + 'px';
-
     profileMenuEl = menu;
+
+    menu.querySelectorAll('[data-switch-user]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const uname = btn.getAttribute('data-switch-user');
+        const acc = accounts.find((a) => a.username === uname);
+        if (acc && acc.username.toLowerCase() !== currentUser) switchToAccount(acc);
+        else closeProfileMenu();
+      });
+    });
+
+    menu.querySelector('#profileAddAccount').addEventListener('click', () => {
+      closeProfileMenu();
+      // Do NOT revoke current device on server — user is only opening login
+      // to add another account (Instagram-style). Token stays in egs_accounts.
+      clearSession();
+      showLoginOverlay('Add another account — your previous account stays saved for switching.');
+    });
+
+    menu.querySelector('#profileLoginActivity').addEventListener('click', () => openLoginActivityPanel());
 
     menu.querySelector('#profileLogout').addEventListener('click', async () => {
       closeProfileMenu();
-      const ok = await window.confirmDialog('Confirm Logout', 'Are you sure you want to logout?', { kind: 'question', okLabel: 'Logout' });
-      if (ok) endSessionAndShowLogin();
-    });
-    menu.querySelector('#profileSwitchUser').addEventListener('click', async () => {
-      closeProfileMenu();
-      const ok = await window.confirmDialog('Switch User', 'This will close the current session so another user can login. Continue?', { kind: 'question', okLabel: 'Continue' });
-      if (ok) endSessionAndShowLogin();
+      const ok = await window.confirmDialog('Log out', 'Log out of this device?', { kind: 'question', okLabel: 'Log out' });
+      if (!ok) return;
+      const u = window.currentUsername;
+      await notifyServerLogout();
+      clearSession();
+      // Keep account in switcher list (token cleared for this session only) — remove token so dead session isn't reusable
+      if (u) {
+        const list = loadSavedAccounts().map((a) => a.username === u ? { ...a, token: '' } : a).filter((a) => a.token);
+        persistSavedAccounts(list);
+      }
+      showLoginOverlay();
     });
     menu.addEventListener('click', (e) => e.stopPropagation());
   }
