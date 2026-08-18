@@ -441,7 +441,7 @@
     "type": "file",
     "label": "js/pages/bom-challan.js",
     "file": "js/pages/bom-challan.js",
-    "detail": "Defines 20 function(s) implementing supporting logic."
+    "detail": "Defines 24 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -481,9 +481,27 @@
   },
   {
     "type": "function",
+    "label": "bomTodayLocalDateStr",
+    "file": "js/pages/bom-challan.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "bomRenderChallanEntryModalHtml",
     "file": "js/pages/bom-challan.js",
     "detail": "(header, kit)"
+  },
+  {
+    "type": "function",
+    "label": "bomChallanAddExtraItemRow",
+    "file": "js/pages/bom-challan.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "bomCollectChallanExtraItems",
+    "file": "js/pages/bom-challan.js",
+    "detail": "()"
   },
   {
     "type": "function",
@@ -495,7 +513,7 @@
     "type": "function",
     "label": "bomChallanBuildRowGroups",
     "file": "js/pages/bom-challan.js",
-    "detail": "(template)"
+    "detail": "(template, values)"
   },
   {
     "type": "function",
@@ -544,6 +562,12 @@
     "label": "descInput",
     "file": "js/pages/bom-challan.js",
     "detail": "(sr)"
+  },
+  {
+    "type": "function",
+    "label": "get",
+    "file": "js/pages/bom-challan.js",
+    "detail": "(f)"
   },
   {
     "type": "function",
@@ -658,6 +682,24 @@
     "label": "bomOpenOrderInline",
     "file": "js/pages/bom-dispatch.js",
     "detail": "(orderId)"
+  },
+  {
+    "type": "function",
+    "label": "checkChallanDateWarning",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "buildChallanSavePayload",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
+    "label": "syncSavedChallanBackToBom",
+    "file": "js/pages/bom-dispatch.js",
+    "detail": "(payload)"
   },
   {
     "type": "function",
@@ -1179,7 +1221,7 @@
     "type": "file",
     "label": "js/pages/bom-track-register.js",
     "file": "js/pages/bom-track-register.js",
-    "detail": "Defines 11 function(s) implementing supporting logic."
+    "detail": "Defines 12 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -1210,6 +1252,12 @@
     "label": "bomFmtDateTime",
     "file": "js/pages/bom-track-register.js",
     "detail": "(v)"
+  },
+  {
+    "type": "function",
+    "label": "bomRenderLifecycleStepperHtml",
+    "file": "js/pages/bom-track-register.js",
+    "detail": "(data)"
   },
   {
     "type": "function",
@@ -2605,6 +2653,12 @@
   },
   {
     "type": "function",
+    "label": "saleScanRequiredQty",
+    "file": "js/pages/sales.js",
+    "detail": "()"
+  },
+  {
+    "type": "function",
     "label": "saleScanBeep",
     "file": "js/pages/sales.js",
     "detail": "()"
@@ -3871,6 +3925,12 @@
   },
   {
     "type": "function",
+    "label": "buildChallanRowPlan",
+    "file": "api/services/challanPdf.js",
+    "detail": "(items)"
+  },
+  {
+    "type": "function",
     "label": "runSoffice",
     "file": "api/services/challanPdf.js",
     "detail": "(xlsxPath, outDir)"
@@ -3898,6 +3958,30 @@
     "label": "applySheetFormatting",
     "file": "api/services/challanPdf.js",
     "detail": "(sheet, config)"
+  },
+  {
+    "type": "function",
+    "label": "unmergePoolZone",
+    "file": "api/services/challanPdf.js",
+    "detail": "(sheet)"
+  },
+  {
+    "type": "function",
+    "label": "setBorder",
+    "file": "api/services/challanPdf.js",
+    "detail": "(cell, sides)"
+  },
+  {
+    "type": "function",
+    "label": "clearPoolZone",
+    "file": "api/services/challanPdf.js",
+    "detail": "(sheet)"
+  },
+  {
+    "type": "function",
+    "label": "applyChallanRowPlan",
+    "file": "api/services/challanPdf.js",
+    "detail": "(sheet, plan, items)"
   },
   {
     "type": "function",
@@ -4413,7 +4497,7 @@
     "type": "file",
     "label": "api/db/schema.js",
     "file": "api/db/schema.js",
-    "detail": "Defines 17 function(s) implementing supporting logic."
+    "detail": "Defines 18 function(s) implementing supporting logic."
   },
   {
     "type": "function",
@@ -4514,6 +4598,12 @@
   {
     "type": "function",
     "label": "ensureChallanCategoryMapSchema",
+    "file": "api/db/schema.js",
+    "detail": "(pool)"
+  },
+  {
+    "type": "function",
+    "label": "ensureBomKitTemplatesSchema",
     "file": "api/db/schema.js",
     "detail": "(pool)"
   },
@@ -4718,6 +4808,12 @@
   {
     "type": "route",
     "label": "PUT /api/challan/category-map",
+    "file": "api/routes/challan.routes.js",
+    "detail": "public"
+  },
+  {
+    "type": "route",
+    "label": "GET /api/challan/next-no",
     "file": "api/routes/challan.routes.js",
     "detail": "public"
   },
@@ -5192,6 +5288,12 @@
   {
     "type": "table",
     "label": "challan_category_map",
+    "file": "api/db/schema.js",
+    "detail": "SQL table"
+  },
+  {
+    "type": "table",
+    "label": "bom_kit_templates",
     "file": "api/db/schema.js",
     "detail": "SQL table"
   }

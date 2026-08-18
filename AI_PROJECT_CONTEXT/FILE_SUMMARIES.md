@@ -107,12 +107,12 @@ Deep analysis of every important source file.
 
 ## `js/pages/bom-challan.js`
 
-- **Purpose:** Defines 20 function(s) implementing supporting logic.
-- **Lines of code:** 536
-- **Complexity:** High (heuristic score: 75)
+- **Purpose:** Defines 24 function(s) implementing supporting logic.
+- **Lines of code:** 659
+- **Complexity:** High (heuristic score: 91)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** bomLoadChallanCategoryMap(), bomGiPipeFeetToPieces(totalFeet), bomGiPipeModelSr(modelText), bomComputeChallanAutoQty(sections), bomApplyChallanAutoQty(sections), bomRenderChallanTemplateItemsHtml(template), bomRenderChallanEntryModalHtml(header, kit), bomCollectChallanTemplateValues(), bomChallanBuildRowGroups(template), bomRenderChallanBodyRowsHtml(groups, values), bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy), bomRenderChallanTableHeadRowHtml(), bomRenderChallanFooterRowsHtml(header), bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy), bomRenderChallanPrintSheetHtml(header, kit, templateValues), qtyInput(sr, sizeLabel), descInput(sr), setVal(key, patch), getQty(sr, size), getDesc(sr)
+- **Functions:** bomLoadChallanCategoryMap(), bomGiPipeFeetToPieces(totalFeet), bomGiPipeModelSr(modelText), bomComputeChallanAutoQty(sections), bomApplyChallanAutoQty(sections), bomRenderChallanTemplateItemsHtml(template), bomTodayLocalDateStr(), bomRenderChallanEntryModalHtml(header, kit), bomChallanAddExtraItemRow(), bomCollectChallanExtraItems(), bomCollectChallanTemplateValues(), bomChallanBuildRowGroups(template, values), bomRenderChallanBodyRowsHtml(groups, values), bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy), bomRenderChallanTableHeadRowHtml(), bomRenderChallanFooterRowsHtml(header), bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy), bomRenderChallanPrintSheetHtml(header, kit, templateValues), qtyInput(sr, sizeLabel), descInput(sr), get(f), setVal(key, patch), getQty(sr, size), getDesc(sr)
 - **Classes:** None
 - **API endpoints:** None
 - **Database usage:** Raw SQL detected (4 statement keywords: JOIN)
@@ -127,11 +127,11 @@ Deep analysis of every important source file.
 ## `js/pages/bom-dispatch.js`
 
 - **Purpose:** Defines 1 class(es) implementing core logic.
-- **Lines of code:** 700
-- **Complexity:** High (heuristic score: 126)
+- **Lines of code:** 817
+- **Complexity:** High (heuristic score: 147)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** createBomDispatchModule(ctx), bomCollectItemsForStockCheck(), bomCollectItemsForDispatch(), bomShowStockIssuesModal(title, intro, rows), bomRunStockCheck(), bomRunDispatch(), bomParseBlockedRows(msg), bomRenderRegisterListHtml(orders), bomLoadRegisterList(), bomRenderContinueFormHtml(order, backLabel), bomContSerialDupes(text), bomUpdateContSerialNote(box), bomWireContSerialTextarea(box), bomLoadContinueDispatchForm(orderId, target), bomOpenOrderInline(orderId), setBody(html)
+- **Functions:** createBomDispatchModule(ctx), bomCollectItemsForStockCheck(), bomCollectItemsForDispatch(), bomShowStockIssuesModal(title, intro, rows), bomRunStockCheck(), bomRunDispatch(), bomParseBlockedRows(msg), bomRenderRegisterListHtml(orders), bomLoadRegisterList(), bomRenderContinueFormHtml(order, backLabel), bomContSerialDupes(text), bomUpdateContSerialNote(box), bomWireContSerialTextarea(box), bomLoadContinueDispatchForm(orderId, target), bomOpenOrderInline(orderId), checkChallanDateWarning(), buildChallanSavePayload(), syncSavedChallanBackToBom(payload), setBody(html)
 - **Classes:** in
 - **API endpoints:** None
 - **Database usage:** Raw SQL detected (13 statement keywords: JOIN, SELECT)
@@ -236,15 +236,15 @@ Deep analysis of every important source file.
 
 ## `js/pages/bom-track-register.js`
 
-- **Purpose:** Defines 11 function(s) implementing supporting logic.
-- **Lines of code:** 206
-- **Complexity:** Medium (heuristic score: 41)
+- **Purpose:** Defines 12 function(s) implementing supporting logic.
+- **Lines of code:** 244
+- **Complexity:** Medium (heuristic score: 43)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** createBomTrackRegisterModule(ctx), openRegisterModal(bodyHtml), closeRegisterModal(), bomTrackStatusPill(status), bomFmtDateTime(v), bomRenderTrackResultHtml(data), bomFetchAndRenderTrack(orderNo, resultBox), bomOpenTrackModal(), runTrack(), bomOpenTrackForOrderNo(orderNo), bomTrackCurrentOrder()
+- **Functions:** createBomTrackRegisterModule(ctx), openRegisterModal(bodyHtml), closeRegisterModal(), bomTrackStatusPill(status), bomFmtDateTime(v), bomRenderLifecycleStepperHtml(data), bomRenderTrackResultHtml(data), bomFetchAndRenderTrack(orderNo, resultBox), bomOpenTrackModal(), runTrack(), bomOpenTrackForOrderNo(orderNo), bomTrackCurrentOrder()
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (3 statement keywords: JOIN)
+- **Database usage:** Raw SQL detected (4 statement keywords: JOIN)
 - **Environment variables used:** None
 - **Potential improvements:**
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
@@ -254,8 +254,8 @@ Deep analysis of every important source file.
 ## `js/pages/bom.js`
 
 - **Purpose:** Defines 1 class(es) implementing core logic.
-- **Lines of code:** 710
-- **Complexity:** High (heuristic score: 101)
+- **Lines of code:** 734
+- **Complexity:** High (heuristic score: 104)
 - **Imports:** None
 - **Exports:** None
 - **Functions:** bomRenderHomeViewHtml(), showBomHome(), showBomEntry(), showBomEntryForNewKit(), bomOverallStatusFromItems(items), bomRenderHomePendingTableHtml(orders), bomLoadHomePendingTable(), bomCollectItemsForCreate(), bomOpenCreateBomModal(), setVerified(isVerified), allItemsChecked(), updateVerifyButtonState(), getHeaderValues(), computeAndApplyFitZoom()
@@ -433,11 +433,11 @@ Deep analysis of every important source file.
 ## `js/pages/sales.js`
 
 - **Purpose:** Defines 1 class(es) implementing core logic.
-- **Lines of code:** 1636
-- **Complexity:** High (heuristic score: 316)
+- **Lines of code:** 1663
+- **Complexity:** High (heuristic score: 321)
 - **Imports:** None
 - **Exports:** None
-- **Functions:** fillSelect(selectEl, items, placeholder), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadCategoryWattRules(), isWattMandatory(cat), isSerialMandatory(cat), saleCategoryNeedsModel(cat), splitSerials(text), wireSerialBox(el, btToggleGetter), saleScanBeep(), saleScanSetStatus(msg), openSaleScanner(targetId), saleScanSwallowKeydown(e), startSaleCamera(), launchSaleCamera(), onSaleScanSuccess(decodedText), showSaleScanResult(text), hideSaleScanResult(), retrySaleScan(), confirmSaleScan(), toggleSaleTorch(), flipSaleCamera(), closeSaleScanner(), wireSerialBtToggle(opts), requiredQty(), focusBox(), applyUi(), hideCard(), showCard(code, flags), reset(), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), loadSaleCategories(), refreshSaleBrandsAndWatt(), refreshSaleWattage(), refreshSaleModels(), refreshSaleType(), updateSaleSerialFieldVisibility(), updateSaleWattModelVisibility(), updateSaleEditQtyFieldVisibility(), updateSaleEditWattModelVisibility(), searchCustomerLedgers(q), searchCustomerShortCodes(q), fillCustomerDatalist(listEl, ledgers, key), applyLedgerToCustomerFields(l), wireCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), clearSalesForm(), refreshSaleEditBrandsAndWatt(injectBrand, injectWatt), refreshSaleEditWattage(injectWatt), refreshSaleEditModels(injectModel), refreshSaleEditType(injectType), loadEditCascadeForLine(line), clearEditPanel(), findSalesOrderForEditing(term), prefillFromAssign(customerName, orderNo, mobile, address, lines), $(id), finish(), qtyLineKey(l)
+- **Functions:** fillSelect(selectEl, items, placeholder), fillSelectFromApi(selectEl, apiPath, emptyLabel, injectValue), loadCategoryWattRules(), isWattMandatory(cat), isSerialMandatory(cat), saleCategoryNeedsModel(cat), splitSerials(text), wireSerialBox(el, btToggleGetter), saleScanRequiredQty(), saleScanBeep(), saleScanSetStatus(msg), openSaleScanner(targetId), saleScanSwallowKeydown(e), startSaleCamera(), launchSaleCamera(), onSaleScanSuccess(decodedText), showSaleScanResult(text), hideSaleScanResult(), retrySaleScan(), confirmSaleScan(), toggleSaleTorch(), flipSaleCamera(), closeSaleScanner(), wireSerialBtToggle(opts), requiredQty(), focusBox(), applyUi(), hideCard(), showCard(code, flags), reset(), renderLineList(container, lines, emptyText), wireLineSelection(container), selectedLineIndex(container), wireProofButtons(fileInputId, attachBtnId, clearBtnId, labelId, state), renderFileList(), loadSaleCategories(), refreshSaleBrandsAndWatt(), refreshSaleWattage(), refreshSaleModels(), refreshSaleType(), updateSaleSerialFieldVisibility(), updateSaleWattModelVisibility(), updateSaleEditQtyFieldVisibility(), updateSaleEditWattModelVisibility(), searchCustomerLedgers(q), searchCustomerShortCodes(q), fillCustomerDatalist(listEl, ledgers, key), applyLedgerToCustomerFields(l), wireCustomerAutocomplete(inputEl, listEl, matchKey, searchFn), clearSalesForm(), refreshSaleEditBrandsAndWatt(injectBrand, injectWatt), refreshSaleEditWattage(injectWatt), refreshSaleEditModels(injectModel), refreshSaleEditType(injectType), loadEditCascadeForLine(line), clearEditPanel(), findSalesOrderForEditing(term), prefillFromAssign(customerName, orderNo, mobile, address, lines), $(id), finish(), qtyLineKey(l)
 - **Classes:** Step
 - **API endpoints:** None
 - **Database usage:** Raw SQL detected (57 statement keywords: SELECT, JOIN)
@@ -617,11 +617,11 @@ Deep analysis of every important source file.
 ## `api/services/challanPdf.js`
 
 - **Purpose:** Implements business logic as a service layer.
-- **Lines of code:** 553
-- **Complexity:** High (heuristic score: 67)
+- **Lines of code:** 879
+- **Complexity:** High (heuristic score: 104)
 - **Imports:** fs, os, path, crypto, child_process, exceljs
 - **Exports:** module.exports
-- **Functions:** runSoffice(xlsxPath, outDir), normalizeBorderSide(side), applySheetStructure(sheet, config), applySheetValues(sheet, config), applySheetFormatting(sheet, config), fillTemplateAndConvertToPdf(record), cleanup()
+- **Functions:** buildChallanRowPlan(items), runSoffice(xlsxPath, outDir), normalizeBorderSide(side), applySheetStructure(sheet, config), applySheetValues(sheet, config), applySheetFormatting(sheet, config), unmergePoolZone(sheet), setBorder(cell, sides), clearPoolZone(sheet), applyChallanRowPlan(sheet, plan, items), fillTemplateAndConvertToPdf(record), cleanup()
 - **Classes:** None
 - **API endpoints:** None
 - **Database usage:** Raw SQL detected (6 statement keywords: JOIN)
@@ -773,14 +773,14 @@ Deep analysis of every important source file.
 ## `api/routes/challan.routes.js`
 
 - **Purpose:** Defines HTTP route handlers (controller/router layer).
-- **Lines of code:** 142
-- **Complexity:** Low (heuristic score: 13)
+- **Lines of code:** 160
+- **Complexity:** Low (heuristic score: 16)
 - **Imports:** ../services/challanPdf
 - **Exports:** module.exports
 - **Functions:** registerChallanRoutes(app, deps)
 - **Classes:** None
-- **API endpoints:** POST /api/challan, GET /api/challan, GET /api/challan/category-map, PUT /api/challan/category-map, GET /api/challan/:id, GET /api/challan/:id/pdf
-- **Database usage:** Raw SQL detected (8 statement keywords: INSERT INTO, SELECT, DELETE FROM, UPDATE)
+- **API endpoints:** POST /api/challan, GET /api/challan, GET /api/challan/next-no, GET /api/challan/category-map, PUT /api/challan/category-map, GET /api/challan/:id, GET /api/challan/:id/pdf
+- **Database usage:** Raw SQL detected (9 statement keywords: INSERT INTO, SELECT, DELETE FROM, UPDATE)
 - **Environment variables used:** None
 - **Potential improvements:**
   - Raw SQL strings detected — verify parameterized queries are used to prevent SQL injection.
@@ -980,15 +980,15 @@ Deep analysis of every important source file.
 
 ## `api/db/schema.js`
 
-- **Purpose:** Defines 17 function(s) implementing supporting logic.
-- **Lines of code:** 309
-- **Complexity:** High (heuristic score: 65)
+- **Purpose:** Defines 18 function(s) implementing supporting logic.
+- **Lines of code:** 338
+- **Complexity:** High (heuristic score: 68)
 - **Imports:** None
 - **Exports:** module.exports
-- **Functions:** ensureStartupSchema(pool), ensureSessionSchema(pool), ensureSerialRuleSchema(pool), ensureLedgerTypeSchema(pool), ensureAuthOtpSchema(pool), ensureEmailRoleUniqueSchema(pool), ensureAttachmentsSchema(pool), ensureScanSheetSchema(pool), ensureBomChallanSchema(pool), ensureStockQuantitySchema(pool), ensureItemOverrideSchema(pool), ensureStockModelSchema(pool), ensureWattDecimalSchema(pool), ensureWattUnitSchema(pool), ensureBomDispatchSchema(pool), ensureBomOrderSchema(pool), ensureChallanCategoryMapSchema(pool)
+- **Functions:** ensureStartupSchema(pool), ensureSessionSchema(pool), ensureSerialRuleSchema(pool), ensureLedgerTypeSchema(pool), ensureAuthOtpSchema(pool), ensureEmailRoleUniqueSchema(pool), ensureAttachmentsSchema(pool), ensureScanSheetSchema(pool), ensureBomChallanSchema(pool), ensureStockQuantitySchema(pool), ensureItemOverrideSchema(pool), ensureStockModelSchema(pool), ensureWattDecimalSchema(pool), ensureWattUnitSchema(pool), ensureBomDispatchSchema(pool), ensureBomOrderSchema(pool), ensureChallanCategoryMapSchema(pool), ensureBomKitTemplatesSchema(pool)
 - **Classes:** None
 - **API endpoints:** None
-- **Database usage:** Raw SQL detected (30 statement keywords: ALTER TABLE, CREATE TABLE, SELECT, UPDATE)
+- **Database usage:** Raw SQL detected (34 statement keywords: ALTER TABLE, CREATE TABLE, SELECT, UPDATE)
 - **Environment variables used:** None
 - **Potential improvements:**
   - File defines a large number of functions — consider splitting into smaller modules.

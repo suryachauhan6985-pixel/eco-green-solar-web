@@ -324,10 +324,35 @@ window.PAGES.bom = {
     // entry screen's own "Back"-free default state.
     function showBomEntryForNewKit() {
       ctx.bomInlineContinueOrderId = null;
+      ctx.bomContinueMode = false;
       if (ctx.continuePanel) ctx.continuePanel.style.display = 'none';
       if (ctx.newEntryPanel) ctx.newEntryPanel.style.display = '';
       const kip = ctx.$('bomKitItemsPanel');
       if (kip) kip.style.display = '';
+
+      // Unlock header + kit fields that may have been locked by Continue Dispatch
+      ['bomOrderNo', 'bomCustomerName', 'bomDealerName', 'bomInstallerName',
+       'bomFabricatorName', 'bomChallanNo', 'bomChallanDate'].forEach((id) => {
+        const el = ctx.$(id);
+        if (el) {
+          el.removeAttribute('readonly');
+          el.removeAttribute('disabled');
+        }
+      });
+      if (ctx.kitSelect) ctx.kitSelect.removeAttribute('disabled');
+      if (ctx.btnNewKit) ctx.btnNewKit.style.display = ctx.bomIsAdmin ? '' : 'none';
+      if (ctx.btnCreateBom) ctx.btnCreateBom.style.display = ctx.bomIsAdmin ? '' : 'none';
+      if (ctx.updateKitActionButtons) ctx.updateKitActionButtons();
+
+      // Restore panel title
+      const panelH3 = ctx.newEntryPanel && ctx.newEntryPanel.querySelector('h3');
+      if (panelH3) panelH3.innerHTML = '<i class="fa-solid fa-box-open"></i> New BOM Entry';
+      if (ctx.verifyStatus) {
+        ctx.verifyStatus.innerHTML = '<i class="fa-solid fa-circle-info"></i> Tick every item in the <b>Check</b> column below, then click <b>Verify BOM</b>. "Create Dispatch" stays locked until then.';
+      }
+
+      // Refresh kit items from currently selected kit (fresh state)
+      if (ctx.refreshItemsPreview) ctx.refreshItemsPreview();
       ctx.showBomEntry();
     }
     if (ctx.btnBackHome) ctx.btnBackHome.addEventListener('click', ctx.showBomHome);
@@ -474,7 +499,19 @@ window.PAGES.bom = {
           confirmBtn.disabled = true;
           confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
           try {
-            await window.Api.post('/bom/orders', { orderNo, header, items });
+            // Snapshot the full kit (sections + key/label/kw) so Continue
+            // Dispatch can later reopen this exact BOM Entry UI instead of
+            // the simplified flat form.
+            const kitKey = ctx.kitSelect ? ctx.kitSelect.value : '';
+            const allKits = bomGetAllKits();
+            const kitMeta = allKits[kitKey] || {};
+            const kitSnapshot = {
+              kitKey,
+              label: kitMeta.label || '',
+              kw: kitMeta.kw || '',
+              sections: JSON.parse(JSON.stringify(ctx.currentKitState || [])),
+            };
+            await window.Api.post('/bom/orders', { orderNo, header, items, kitSnapshot });
           } catch (e) {
             confirmBtn.disabled = false;
             confirmBtn.innerHTML = originalLabel;

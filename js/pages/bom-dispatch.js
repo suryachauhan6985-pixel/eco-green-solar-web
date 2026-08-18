@@ -200,7 +200,12 @@ function createBomDispatchModule(ctx) {
       }
       ctx.openRegisterModal(ctx.bomRenderRegisterListHtml(orders));
       ctx.registerModalBody.querySelectorAll('[data-bom-order-id]').forEach((btn) => {
-        btn.addEventListener('click', () => ctx.bomLoadContinueDispatchForm(btn.getAttribute('data-bom-order-id')));
+        btn.addEventListener('click', () => {
+          // Prefer the full BOM Entry UI (same as Home → Open). Close the
+          // register modal first so the entry screen is visible.
+          if (ctx.closeRegisterModal) ctx.closeRegisterModal();
+          ctx.bomOpenOrderInline(btn.getAttribute('data-bom-order-id'));
+        });
       });
     }
 
@@ -428,19 +433,159 @@ function createBomDispatchModule(ctx) {
       }
     }
 
-    // Opens a pending order directly INSIDE the BOM Entry screen (the
-    // literal "double-click -> redirected inside the BOM" flow) instead of
-    // the Pending BOM Register modal. Kit-selection panel is hidden while
-    // this is showing; "Back to BOM Home" (top of the entry screen) and
-    // the form's own "Back to BOM Home" button both return to the launcher.
-    function bomOpenOrderInline(orderId) {
+    // Opens a pending order inside the FULL BOM Entry UI (same layout as
+    // Create BOM) instead of the simplified Continue Dispatch form.
+    // Structure/header/kit are locked (read-only); Dispatch Qty + Serials
+    // stay editable so the user can finish remaining items. Falls back to
+    // the old flat Continue form only when no kit_snapshot was saved
+    // (orders created before this feature).
+    async function bomOpenOrderInline(orderId) {
       ctx.bomInlineContinueOrderId = orderId;
       ctx.showBomEntry();
-      if (ctx.newEntryPanel) ctx.newEntryPanel.style.display = 'none';
+
+      // Show full entry panels; hide the simplified continue panel.
+      if (ctx.continuePanel) ctx.continuePanel.style.display = 'none';
+      if (ctx.newEntryPanel) ctx.newEntryPanel.style.display = '';
       const kip = ctx.$('bomKitItemsPanel');
-      if (kip) kip.style.display = 'none';
-      if (ctx.continuePanel) ctx.continuePanel.style.display = '';
-      ctx.bomLoadContinueDispatchForm(orderId, 'inline');
+      if (kip) kip.style.display = '';
+
+      // Loading placeholder while we fetch the order.
+      if (ctx.itemsPreview) {
+        ctx.itemsPreview.innerHTML = '<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Loading BOM order...</p>';
+      }
+
+      let order;
+      try {
+        order = await window.Api.get(`/bom/orders/${orderId}`);
+      } catch (e) {
+        if (ctx.itemsPreview) {
+          ctx.itemsPreview.innerHTML = `<p class="note" style="color:var(--red);">Could not load this order — ${bomEsc((e && e.message) || 'server error')}.</p>`;
+        }
+        return;
+      }
+
+      // ---- Fill header fields (locked) ----
+      const h = order.header || {};
+      const setLocked = (id, val) => {
+        const el = ctx.$(id);
+        if (!el) return;
+        el.value = val != null ? String(val) : '';
+        el.setAttribute('readonly', 'readonly');
+        el.setAttribute('disabled', 'disabled');
+      };
+      setLocked('bomOrderNo', order.orderNo || h.orderNo || '');
+      setLocked('bomCustomerName', h.customerName || '');
+      setLocked('bomDealerName', h.dealerName || '');
+      setLocked('bomInstallerName', h.installerName || '');
+      setLocked('bomFabricatorName', h.fabricatorName || '');
+      setLocked('bomChallanNo', h.challanNo || '');
+      setLocked('bomChallanDate', h.challanDate || '');
+
+      // Kit dropdown: lock to snapshot kit (or "-- Saved BOM --")
+      if (ctx.kitSelect) {
+        const snap = order.kitSnapshot;
+        const kitKey = (snap && snap.kitKey) || '';
+        if (kitKey && !Array.from(ctx.kitSelect.options).some((o) => o.value === kitKey)) {
+          const opt = document.createElement('option');
+          opt.value = kitKey;
+          opt.textContent = (snap && snap.label) || kitKey;
+          ctx.kitSelect.appendChild(opt);
+        }
+        ctx.kitSelect.value = kitKey || '';
+        if (!kitKey) {
+          let ph = Array.from(ctx.kitSelect.options).find((o) => o.value === '__saved_bom__');
+          if (!ph) {
+            ph = document.createElement('option');
+            ph.value = '__saved_bom__';
+            ph.textContent = 'Saved BOM (locked)';
+            ctx.kitSelect.appendChild(ph);
+          }
+          ctx.kitSelect.value = '__saved_bom__';
+        }
+        ctx.kitSelect.setAttribute('disabled', 'disabled');
+      }
+      if (ctx.btnEditKit) ctx.btnEditKit.style.display = 'none';
+      if (ctx.btnDeleteKit) ctx.btnDeleteKit.style.display = 'none';
+      if (ctx.btnNewKit) ctx.btnNewKit.style.display = 'none';
+
+      // ---- Build currentKitState from snapshot (or flat fallback) ----
+      const remainingByName = {};
+      (order.items || []).forEach((it) => {
+        remainingByName[(it.name || '').trim()] = {
+          remaining: Number(it.remaining) || 0,
+          total: Number(it.total) || 0,
+          dispatched: Number(it.dispatched) || 0,
+        };
+      });
+
+      let sections;
+      if (order.kitSnapshot && Array.isArray(order.kitSnapshot.sections) && order.kitSnapshot.sections.length) {
+        sections = JSON.parse(JSON.stringify(order.kitSnapshot.sections));
+      } else {
+        // Legacy order without snapshot — single flat section from items list
+        sections = [{
+          title: 'Items',
+          items: (order.items || []).map((it, idx) => ({
+            sr: idx + 1,
+            name: it.name || '',
+            model: '',
+            qty: String(it.total || 0),
+            remarks: '',
+            serials: '',
+            checked: false,
+            dispatchQty: String(it.remaining || 0),
+          })),
+        }];
+      }
+
+      // Apply remaining qty as dispatchQty
+      sections.forEach((sec) => {
+        (sec.items || []).forEach((it) => {
+          const info = remainingByName[(it.name || '').trim()];
+          if (info) {
+            if (info.total > 0) it.qty = String(info.total);
+            it.dispatchQty = String(info.remaining);
+            it.serials = '';
+            it.checked = false;
+          } else {
+            it.dispatchQty = '0';
+            it.serials = '';
+            it.checked = false;
+          }
+        });
+      });
+
+      ctx.currentKitState = sections;
+      bomNormalizeDispatchQty(ctx.currentKitState);
+
+      // Force User-mode column layout (Dispatch Qty visible) even for Admin.
+      if (ctx.itemsPreview) {
+        ctx.itemsPreview.innerHTML = bomRenderScreenItemsHtml(ctx.currentKitState, {
+          isAdmin: false,
+          needsSerial: ctx.bomItemNeedsSerial,
+        });
+        // Lock structure: only Dispatch Qty, Serial buttons, and Check stay interactive.
+        ctx.itemsPreview.querySelectorAll('select, input[data-field="sr"], input[data-field="qty"], input[data-field="remarks"], input[data-field="sectitle"], input[data-field="model"], .bom-section-title-input').forEach((el) => {
+          el.setAttribute('disabled', 'disabled');
+        });
+      }
+
+      ctx.bomContinueMode = true;
+      ctx.setVerified(false);
+      ctx.updateVerifyButtonState();
+
+      if (ctx.btnCreateBom) ctx.btnCreateBom.style.display = 'none';
+      if (ctx.btnVerify) ctx.btnVerify.disabled = !ctx.allItemsChecked();
+      if (ctx.btnDispatch) ctx.btnDispatch.disabled = true;
+      if (ctx.btnChallan) ctx.btnChallan.disabled = true;
+
+      const panelH3 = ctx.newEntryPanel && ctx.newEntryPanel.querySelector('h3');
+      if (panelH3) {
+        panelH3.innerHTML = `<i class="fa-solid fa-truck"></i> Continue Dispatch — Order <b>${bomEsc(order.orderNo || '')}</b>`;
+      }
+      if (ctx.verifyStatus) {
+        ctx.verifyStatus.innerHTML = '<i class="fa-solid fa-circle-info"></i> This BOM is locked (structure &amp; header cannot be edited). Set <b>Dispatch Qty</b> / Serials for what is going out now, tick <b>Check</b>, then <b>Verify BOM</b>.';
+      }
     }
 
     // Bare local ref, not ctx.bomLoadRegisterList — same reasoning as the

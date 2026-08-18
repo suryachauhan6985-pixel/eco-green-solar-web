@@ -1,12 +1,12 @@
 # API Documentation
 
-Total endpoints detected: **102**
+Total endpoints detected: **103**
 
 ## Endpoints by Method
 
 | Method | Count |
 | --- | --- |
-| GET | 44 |
+| GET | 45 |
 | POST | 30 |
 | DELETE | 13 |
 | PUT | 15 |
@@ -48,6 +48,7 @@ Total endpoints detected: **102**
 | GET | /api/challan/:id/pdf | api/routes/challan.routes.js | No |
 | GET | /api/challan/category-map | api/routes/challan.routes.js | No |
 | PUT | /api/challan/category-map | api/routes/challan.routes.js | No |
+| GET | /api/challan/next-no | api/routes/challan.routes.js | No |
 | GET | /api/dashboard/summary | api/routes/health.js | No |
 | GET | /api/health | api/routes/health.js | No |
 | GET | /api/ledgers | api/routes/ledgers.routes.js | No |

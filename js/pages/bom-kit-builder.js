@@ -655,10 +655,20 @@ function createBomKitBuilderModule(ctx) {
       return document.scrollingElement || document.documentElement;
     }
 
+    function bomLockContinueModeFields(root) {
+      if (!ctx.bomContinueMode || !root) return;
+      root.querySelectorAll('select, input[data-field="sr"], input[data-field="qty"], input[data-field="remarks"], input[data-field="sectitle"], input[data-field="model"], .bom-section-title-input').forEach((el) => {
+        el.setAttribute('disabled', 'disabled');
+      });
+    }
+
     function rerenderItemsPreview() {
       const scrollParent = ctx.bomFindScrollParent(ctx.itemsPreview);
       const scrollTop = scrollParent.scrollTop;
-      ctx.itemsPreview.innerHTML = bomRenderScreenItemsHtml(ctx.currentKitState, { isAdmin: ctx.bomIsAdmin, needsSerial: ctx.bomItemNeedsSerial });
+      // Continue mode always uses User layout (Dispatch Qty column + no structural buttons)
+      const isAdmin = ctx.bomContinueMode ? false : ctx.bomIsAdmin;
+      ctx.itemsPreview.innerHTML = bomRenderScreenItemsHtml(ctx.currentKitState, { isAdmin, needsSerial: ctx.bomItemNeedsSerial });
+      bomLockContinueModeFields(ctx.itemsPreview);
       scrollParent.scrollTop = scrollTop;
       ctx.setVerified(false);
       ctx.updateVerifyButtonState();
@@ -678,10 +688,13 @@ function createBomKitBuilderModule(ctx) {
       if (!ctx.currentKitState || !ctx.currentKitState[si] || !ctx.currentKitState[si].items[ii]) return;
       const rowEl = ctx.itemsPreview.querySelector(`tr[data-row-sec="${si}"][data-row-idx="${ii}"]`);
       if (!rowEl) { ctx.rerenderItemsPreview(); return; }
-      const html = bomRenderScreenItemRowHtml(ctx.currentKitState[si], si, ctx.currentKitState[si].items[ii], ii, { isAdmin: ctx.bomIsAdmin, needsSerial: ctx.bomItemNeedsSerial });
+      const isAdmin = ctx.bomContinueMode ? false : ctx.bomIsAdmin;
+      const html = bomRenderScreenItemRowHtml(ctx.currentKitState[si], si, ctx.currentKitState[si].items[ii], ii, { isAdmin, needsSerial: ctx.bomItemNeedsSerial });
       const tmp = document.createElement('tbody');
       tmp.innerHTML = html;
-      rowEl.replaceWith(tmp.firstElementChild);
+      const newRow = tmp.firstElementChild;
+      rowEl.replaceWith(newRow);
+      bomLockContinueModeFields(newRow);
       ctx.setVerified(false);
       ctx.updateVerifyButtonState();
     }

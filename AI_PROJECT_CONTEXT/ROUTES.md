@@ -34,6 +34,7 @@
 | GET | /api/challan/:id/pdf | api/routes/challan.routes.js |
 | GET | /api/challan/category-map | api/routes/challan.routes.js |
 | PUT | /api/challan/category-map | api/routes/challan.routes.js |
+| GET | /api/challan/next-no | api/routes/challan.routes.js |
 | GET | /api/dashboard/summary | api/routes/health.js |
 | GET | /api/health | api/routes/health.js |
 | GET | /api/ledgers | api/routes/ledgers.routes.js |

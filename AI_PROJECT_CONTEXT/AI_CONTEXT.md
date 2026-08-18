@@ -10,7 +10,7 @@
 - **Root path:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
 - **Name:** eco-green-solar-web
 - **Description:** Not specified in package.json
-- **Generated:** 2026-08-14T09:51:50.628Z
+- **Generated:** 2026-08-18T07:12:37.292Z
 
 ## 2. Architecture Overview
 
@@ -113,14 +113,14 @@ sw.js
 - `js/app.js` — Application entry point / bootstrap file.
 - `js/pages/backup.js` — Defines 3 function(s) implementing supporting logic.
 - `js/pages/bom-challan-map.js` — Defines 7 function(s) implementing supporting logic.
-- `js/pages/bom-challan.js` — Defines 20 function(s) implementing supporting logic.
+- `js/pages/bom-challan.js` — Defines 24 function(s) implementing supporting logic.
 - `js/pages/bom-dispatch.js` — Defines 1 class(es) implementing core logic.
 - `js/pages/bom-kit-builder.js` — Defines 12 function(s) implementing supporting logic.
 - `js/pages/bom-kit-helpers.js` — Defines 30 function(s) implementing supporting logic.
 - `js/pages/bom-party-autocomplete.js` — Defines 10 function(s) implementing supporting logic.
 - `js/pages/bom-serial-modal.js` — Defines 10 function(s) implementing supporting logic.
 - `js/pages/bom-serial-scan.js` — Defines 17 function(s) implementing supporting logic.
-- `js/pages/bom-track-register.js` — Defines 11 function(s) implementing supporting logic.
+- `js/pages/bom-track-register.js` — Defines 12 function(s) implementing supporting logic.
 - `js/pages/bom.js` — Defines 1 class(es) implementing core logic.
 - `js/pages/dashboard.js` — Defines 18 function(s) implementing supporting logic.
 - `js/pages/lowstock.js` — Defines 12 function(s) implementing supporting logic.
@@ -160,11 +160,11 @@ No route-level authentication middleware detected (verify manually if auth is ex
 
 ## 7. Database
 
-9 SQL table(s): backup_log, otp_codes, attachments, scan_sheets, scan_sheet_entries, bom_challans, bom_dispatches, bom_orders, challan_category_map
+10 SQL table(s): backup_log, otp_codes, attachments, scan_sheets, scan_sheet_entries, bom_challans, bom_dispatches, bom_orders, challan_category_map, bom_kit_templates
 
 ## 8. API
 
-102 HTTP endpoint(s) detected. Method breakdown: GET=44, POST=30, DELETE=13, PUT=15.
+103 HTTP endpoint(s) detected. Method breakdown: GET=45, POST=30, DELETE=13, PUT=15.
 
 ## 9. Services & Utilities
 

@@ -1,7 +1,7 @@
 # Project Overview
 
 **Project root:** `D:\ERF SOFTWARE - RENDER\eco_green_solar_web`
-**Generated:** 2026-08-14T09:51:50.628Z
+**Generated:** 2026-08-18T07:12:37.292Z
 
 ## Summary
 
@@ -9,7 +9,7 @@
 - Files deeply analyzed: 58
 - Detected technologies: Node.js, Express, MySQL, JWT Authentication, HTML, JavaScript, CSS, PWA
 - Database layer present: Yes
-- HTTP API detected: Yes (102 endpoints)
+- HTTP API detected: Yes (103 endpoints)
 - package.json present: Yes
 
 ## Package Metadata

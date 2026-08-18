@@ -223,6 +223,13 @@ async function ensureBomOrderSchema(pool) {
       UNIQUE INDEX uniq_bom_orders_order_no (order_no)
     )`);
     await pool.query(`ALTER TABLE bom_dispatches ADD COLUMN IF NOT EXISTS bom_order_id INT NULL DEFAULT NULL`);
+    // Full kit snapshot (sections + kitKey/label/kw) captured at "Generate BOM"
+    // time so Continue Dispatch can reopen the same full BOM Entry UI
+    // (read-only structure, editable dispatch qty/serials) instead of the
+    // simplified flat Continue form. Nullable — older orders created before
+    // this column existed simply have NULL and fall back to a reconstructed
+    // single-section view from items_json.
+    await pool.query(`ALTER TABLE bom_orders ADD COLUMN IF NOT EXISTS kit_snapshot_json LONGTEXT NULL`);
   } catch (e) { console.warn('[BOM order schema] Could not ensure bom_orders table / bom_order_id column (will retry lazily on first use):', e.message); }
 }
 
