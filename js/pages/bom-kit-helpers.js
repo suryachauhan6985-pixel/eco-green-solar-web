@@ -467,44 +467,53 @@ function bomBuildCategoryOptionsHtml(selectedCategory) {
 // the list even if it's not (yet) found under this category, so a saved
 // value never silently disappears while data is loading.
 // Hide redundant "generic" item names when typed variants exist.
-// Example: if DEYE_3.3_ON-GRID (and/or OFF-GRID) exists, do not also list
-// DEYE_3.3 or DEYE_3.3_Others — those are leftover / incomplete master rows
-// from purchases without a solar type. Keeps BOM Model dropdown clean.
+// Handles BOTH naming styles that exist in the DB:
+//   "DEYE 3.3"           (space-separated, often older rows)
+//   "DEYE_3.3"           (underscore, no type)
+//   "DEYE_3.3_ON-GRID"   (underscore + type)
+//   "DEYE 3.3 ON-GRID"   (spaces + type)
+// If any specific type (ON-GRID / OFF-GRID / …) exists for brand+watt,
+// bare / Others variants are removed from the BOM dropdown.
 function bomFilterRedundantItemNames(nameList) {
   const list = Array.from(nameList || []).filter(Boolean);
   if (list.length < 2) return list;
 
+  const TYPE_RE = /^(on[-\s]?grid|off[-\s]?grid|hybrid|others)$/i;
+
   function parseSlug(name) {
     const raw = String(name || '').trim();
-    const parts = raw.split('_').filter(Boolean);
-    if (parts.length >= 3) {
-      const type = parts[parts.length - 1];
-      const wattPart = parts[parts.length - 2];
-      const wattNum = Number(wattPart);
-      if (!Number.isNaN(wattNum) && wattPart !== '') {
-        return {
-          brand: parts.slice(0, -2).join('_'),
-          watt: String(wattPart),
-          type: type,
-          isGenericType: !type || /^others$/i.test(type),
-          name: raw,
-        };
-      }
+    // Normalize separators so "DEYE 3.3 ON-GRID" and "DEYE_3.3_ON-GRID" parse alike
+    const norm = raw.replace(/[_\s]+/g, ' ').trim();
+    const tokens = norm.split(' ').filter(Boolean);
+    if (!tokens.length) {
+      return { brand: raw, watt: '', type: '', isGenericType: true, name: raw };
     }
-    if (parts.length === 2) {
-      const wattNum = Number(parts[1]);
-      if (!Number.isNaN(wattNum) && parts[1] !== '') {
-        // brand_watt with no solar type → generic
-        return { brand: parts[0], watt: String(parts[1]), type: '', isGenericType: true, name: raw };
-      }
+
+    // Find last token that looks like a solar type
+    let type = '';
+    let end = tokens.length;
+    if (tokens.length >= 2 && TYPE_RE.test(tokens[tokens.length - 1])) {
+      type = tokens[tokens.length - 1];
+      end = tokens.length - 1;
     }
-    return { brand: raw, watt: '', type: '', isGenericType: true, name: raw };
+
+    // Find wattage token (number like 3.3 / 5.2 / 10) just before type (or at end)
+    let watt = '';
+    let brandEnd = end;
+    if (end >= 1 && !Number.isNaN(Number(tokens[end - 1])) && tokens[end - 1] !== '') {
+      watt = String(tokens[end - 1]);
+      brandEnd = end - 1;
+    }
+
+    const brand = tokens.slice(0, brandEnd).join(' ').trim() || raw;
+    const isGenericType = !type || /^others$/i.test(type);
+    return { brand, watt, type, isGenericType, name: raw };
   }
 
   const parsed = list.map(parseSlug);
   const groups = new Map();
   parsed.forEach((p) => {
-    if (!p.watt) return; // only apply rule to watt-based inverter/panel style names
+    if (!p.watt || !p.brand) return;
     const key = `${p.brand.toLowerCase()}|${p.watt}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(p);
