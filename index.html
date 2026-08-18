@@ -15,7 +15,19 @@
 <link rel="icon" href="assets/icons/icon-512.png" sizes="512x512" type="image/png">
 <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="css/style.css?v=20">
+<script>
+/* Apply saved theme BEFORE CSS paints to avoid flash of wrong theme */
+(function(){
+  try {
+    var t = localStorage.getItem('egs-theme') || 'dark';
+    if (t !== 'light' && t !== 'gray' && t !== 'dark') t = 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+})();
+</script>
+<link rel="stylesheet" href="css/style.css?v=21">
 <!-- Barcode/QR camera scanning (Sheets feature) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <!-- XLSX parsing for Sheets "Import CSV/XLSX" (CSV import needs no library) -->
@@ -39,6 +51,12 @@
   <aside class="sidebar" id="sidebar">
     <div class="brand"><i class="fa-solid fa-bolt bolt"></i><span>ECO GREEN SOLAR</span></div>
     <div class="nav-scroll" id="navScroll"></div>
+    <div class="theme-switcher" id="themeSwitcher" title="App theme">
+      <span class="theme-label">Theme</span>
+      <button type="button" class="theme-btn" data-theme-set="dark" title="Dark"><i class="fa-solid fa-moon"></i></button>
+      <button type="button" class="theme-btn" data-theme-set="gray" title="Gray"><i class="fa-solid fa-circle-half-stroke"></i></button>
+      <button type="button" class="theme-btn" data-theme-set="light" title="Light"><i class="fa-solid fa-sun"></i></button>
+    </div>
     <div class="profile-box">
       <div class="avatar">S</div>
       <div>
@@ -166,5 +184,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<script src="js/theme.js?v=1"></script>
 </body>
 </html>

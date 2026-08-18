@@ -79,7 +79,7 @@
   padding:9px 10px; border-radius:7px; font-size:13px; width:100%; outline:none;
 }
 .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--blue);}
-.field textarea{resize:vertical; min-height:70px; font-family:'Courier New',monospace; color:var(--orange); background:#111;}
+.field textarea{resize:vertical; min-height:70px; font-family:'Courier New',monospace; color:var(--orange); background:var(--input-bg);}
 .field.span-2{grid-column:span 2;}
 .field.span-3{grid-column:span 3;}
 .field.span-full{grid-column:1/-1;}
@@ -147,7 +147,7 @@ thead th i{margin-left:6px; color:var(--txt-muted); font-size:10px; cursor:point
 .th-filter-actions{display:flex; justify-content:flex-end; gap:8px;}
 .th-filter-actions .btn{padding:6px 12px; font-size:11.5px;}
 tbody td{padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap; color:var(--txt);}
-tbody tr:hover{background:#1c1c1c;}
+tbody tr:hover{background:var(--panel-alt);}
 .pill{padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; display:inline-block;}
 .pill.available{background:rgba(46,204,113,.15); color:#2ECC71;}
 .pill.assigned{background:rgba(59,142,208,.15); color:var(--blue);}
@@ -204,7 +204,7 @@ tbody tr:hover{background:#1c1c1c;}
   padding:7px 10px; margin-bottom:5px; cursor:pointer; color:var(--txt);
 }
 .line-list .line-item:hover{border-color:var(--border-light);}
-.line-list .line-item.selected{border-color:var(--blue); background:#1c2733;}
+.line-list .line-item.selected{border-color:var(--blue); background:var(--panel-alt);}
 .line-list .line-item .qty-badge{color:var(--gold); font-weight:700; margin-left:8px;}
 .line-btns{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
 .line-btns .btn{padding:8px 12px; font-size:12px;}
