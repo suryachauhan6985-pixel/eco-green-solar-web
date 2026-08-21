@@ -1,4 +1,4 @@
-// js/pages/dashboard.js
+﻿// js/pages/dashboard.js
 window.PAGES = window.PAGES || {};
 
 window.PAGES.dashboard = {
@@ -6,101 +6,208 @@ window.PAGES.dashboard = {
   icon: 'fa-chart-pie',
   sub: 'Live overview of stock & operations',
   html: `
-   <div class="dash-shell">
-   <div class="banner"><i class="fa-solid fa-triangle-exclamation"></i>
-      <div><strong id="dashLowStockCount">0 items</strong> are at or below minimum stock level.
-        <a href="#" onclick="go('lowstock');return false;" class="gold-txt">View Low Stock Alert →</a></div>
-    </div>
+    <div class="dash-shell">
+      <!-- Welcome & Quick Action Bar -->
+      <div class="dash-welcome-bar">
+        <div class="dash-greeting">
+          <h2>Hello, <span class="dash-user-name" id="dashUserGreeting">Admin</span> 👋</h2>
+          <div class="dash-meta-badge">
+            <span class="dash-live-dot"></span>
+            <span id="dashLiveClock">Live Operations</span> • Eco Green Solar ERP Operations
+          </div>
+        </div>
+        <div class="dash-actions-row">
+          <button type="button" class="dash-btn-quick primary" onclick="go('bom')"><i class="fa-solid fa-file-invoice"></i> BOM & Challan</button>
+          <button type="button" class="dash-btn-quick" onclick="go('purchase')"><i class="fa-solid fa-truck-ramp-box"></i> Inward</button>
+          <button type="button" class="dash-btn-quick" onclick="go('sales')"><i class="fa-solid fa-cart-shopping"></i> Sales</button>
+          <button type="button" class="dash-btn-quick" onclick="go('scansheet')"><i class="fa-solid fa-qrcode"></i> Scan Sheets</button>
+          <button type="button" class="dash-btn-quick" id="dashRefreshBtn" title="Refresh Live Data"><i class="fa-solid fa-rotate-right"></i></button>
+        </div>
+      </div>
 
-    <div class="stat-grid">
-      <div class="stat-card available" data-snap-key="avail">
-        <div class="top"><span class="label">Available Stock</span><i class="fa-solid fa-boxes-stacked" style="color:#2ECC71;"></i></div>
-        <div class="stat-slider-viewport"><div class="stat-slider"><div class="stat-slide"><span class="stat-slide-tag">Total</span><div class="value" id="dashAvailableVal">0</div></div></div></div>
-        <div class="stat-dots"></div>
-        <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
+      <!-- Low Stock Alert Banner -->
+      <div class="banner">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div class="banner-content">
+          <strong id="dashLowStockCount">0 items</strong> are at or below minimum stock level. Immediate reorder recommended.
+        </div>
+        <a href="#" onclick="go('lowstock');return false;" class="banner-btn">Review Low Stock <i class="fa-solid fa-arrow-right"></i></a>
       </div>
-      <div class="stat-card assigned" data-snap-key="assigned">
-        <div class="top"><span class="label">Assigned</span><i class="fa-solid fa-hand-holding" style="color:var(--blue);"></i></div>
-        <div class="stat-slider-viewport"><div class="stat-slider"><div class="stat-slide"><span class="stat-slide-tag">Total</span><div class="value" id="dashAssignedVal">0</div></div></div></div>
-        <div class="stat-dots"></div>
-        <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
-      </div>
-      <div class="stat-card sold" data-snap-key="sold">
-        <div class="top"><span class="label">Sold</span><i class="fa-solid fa-file-invoice-dollar" style="color:var(--red);"></i></div>
-        <div class="stat-slider-viewport"><div class="stat-slider"><div class="stat-slide"><span class="stat-slide-tag">Total</span><div class="value" id="dashSoldVal">0</div></div></div></div>
-        <div class="stat-dots"></div>
-        <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
-      </div>
-      <div class="stat-card damaged" data-snap-key="damaged">
-        <div class="top"><span class="label">Damaged</span><i class="fa-solid fa-triangle-exclamation" style="color:var(--orange);"></i></div>
-        <div class="stat-slider-viewport"><div class="stat-slider"><div class="stat-slide"><span class="stat-slide-tag">Total</span><div class="value" id="dashDamagedVal">0</div></div></div></div>
-        <div class="stat-dots"></div>
-        <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
-      </div>
-    </div>
 
-    <div class="dashboard-grid">
-      <!-- PC/desktop: this panel is hidden by CSS (.dash-usersession-panel,
-           @media min-width:901px) because the same "User Sessions" control
-           is injected into the header/topbar instead — see init() below.
-           Mobile: unchanged, shows here exactly like before. -->
-      <div class="panel dash-usersession-panel">
-        <h3><i class="fa-solid fa-users"></i> User Sessions</h3>
-        <!-- Matches current software: not shown inline — click opens a
-             popup with live online/offline status of every user. -->
-        <button class="live-btn" id="btnLiveUsers">
-          <span class="dot"></span>
-          <span>
-            <strong>Loading…</strong>
-            <small>Click to view live session status of all users</small>
-          </span>
-          <i class="fa-solid fa-chevron-right chevron"></i>
-        </button>
+      <!-- 4 Big Metric KPI Cards -->
+      <div class="stat-grid">
+        <div class="stat-card available" data-snap-key="avail">
+          <div class="top">
+            <span class="label">Available Stock</span>
+            <div class="stat-icon-wrap"><i class="fa-solid fa-boxes-stacked"></i></div>
+          </div>
+          <div class="stat-slider-viewport">
+            <div class="stat-slider">
+              <div class="stat-slide">
+                <span class="stat-slide-tag">Total</span>
+                <div class="value" id="dashAvailableVal">0</div>
+              </div>
+            </div>
+          </div>
+          <span class="stat-badge-tag"><i class="fa-solid fa-check"></i> Ready in Warehouse</span>
+          <div class="stat-dots"></div>
+          <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+
+        <div class="stat-card assigned" data-snap-key="assigned">
+          <div class="top">
+            <span class="label">Assigned Stock</span>
+            <div class="stat-icon-wrap"><i class="fa-solid fa-hand-holding-hand"></i></div>
+          </div>
+          <div class="stat-slider-viewport">
+            <div class="stat-slider">
+              <div class="stat-slide">
+                <span class="stat-slide-tag">Total</span>
+                <div class="value" id="dashAssignedVal">0</div>
+              </div>
+            </div>
+          </div>
+          <span class="stat-badge-tag"><i class="fa-solid fa-diagram-project"></i> Allocated to Projects</span>
+          <div class="stat-dots"></div>
+          <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+
+        <div class="stat-card sold" data-snap-key="sold">
+          <div class="top">
+            <span class="label">Total Sold</span>
+            <div class="stat-icon-wrap"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+          </div>
+          <div class="stat-slider-viewport">
+            <div class="stat-slider">
+              <div class="stat-slide">
+                <span class="stat-slide-tag">Total</span>
+                <div class="value" id="dashSoldVal">0</div>
+              </div>
+            </div>
+          </div>
+          <span class="stat-badge-tag"><i class="fa-solid fa-truck-fast"></i> Dispatched to Clients</span>
+          <div class="stat-dots"></div>
+          <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+
+        <div class="stat-card damaged" data-snap-key="damaged">
+          <div class="top">
+            <span class="label">Damaged / Issue</span>
+            <div class="stat-icon-wrap"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          </div>
+          <div class="stat-slider-viewport">
+            <div class="stat-slider">
+              <div class="stat-slide">
+                <span class="stat-slide-tag">Total</span>
+                <div class="value" id="dashDamagedVal">0</div>
+              </div>
+            </div>
+          </div>
+          <span class="stat-badge-tag"><i class="fa-solid fa-shield-halved"></i> Under Inspection</span>
+          <div class="stat-dots"></div>
+          <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
       </div>
-      <div class="panel">
-        <h3><i class="fa-solid fa-chart-pie"></i> Category-wise Snapshot</h3>
-        <div class="table-wrap"><table><thead><tr>
-            <th data-col="Category">Category <button class="th-filter-btn" data-col="Category" type="button"><i class="fa-solid fa-filter"></i></button></th>
-            <th data-col="Avail.">Avail. <button class="th-filter-btn" data-col="Avail." type="button"><i class="fa-solid fa-filter"></i></button></th>
-            <th data-col="Assigned">Assigned <button class="th-filter-btn" data-col="Assigned" type="button"><i class="fa-solid fa-filter"></i></button></th>
-            <th data-col="Sold">Sold <button class="th-filter-btn" data-col="Sold" type="button"><i class="fa-solid fa-filter"></i></button></th>
-            <th data-col="Damaged">Damaged <button class="th-filter-btn" data-col="Damaged" type="button"><i class="fa-solid fa-filter"></i></button></th>
-          </tr></thead>
-         <tbody id="dashSnapshotBody">
-            <tr><td colspan="5" style="text-align:center;color:var(--txt-muted);">Loading live data…</td></tr>
-          </tbody></table></div>
+
+      <!-- Category Stock Distribution Card -->
+      <div class="dash-dist-card" id="dashDistCard" style="display:none;">
+        <div class="dash-dist-header">
+          <h3><i class="fa-solid fa-chart-simple" style="color:var(--blue);"></i> Category Stock Distribution</h3>
+          <div class="dash-dist-legend" id="dashDistLegend"></div>
+        </div>
+        <div class="dash-dist-bar-wrap" id="dashDistBar"></div>
       </div>
-    </div>
-  </div>`,
+
+      <div class="dashboard-grid">
+        <!-- PC/desktop: this panel is hidden by CSS (.dash-usersession-panel,
+             @media min-width:901px) because the same "User Sessions" control
+             is injected into the header/topbar instead — see init() below.
+             Mobile: unchanged, shows here exactly like before. -->
+        <div class="panel dash-usersession-panel">
+          <h3><i class="fa-solid fa-users"></i> User Sessions</h3>
+          <button class="live-btn" id="btnLiveUsers">
+            <span class="dot"></span>
+            <span>
+              <strong>Loading…</strong>
+              <small>Click to view live session status of all users</small>
+            </span>
+            <i class="fa-solid fa-chevron-right chevron"></i>
+          </button>
+        </div>
+
+        <!-- Category Snapshot Table Panel -->
+        <div class="dash-table-panel">
+          <div class="dash-table-header-row">
+            <h3><i class="fa-solid fa-layer-group"></i> Category-wise Snapshot</h3>
+            <div class="dash-table-tools">
+              <div class="dash-table-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="dashCatSearchInput" placeholder="Filter categories...">
+              </div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="dashSnapshotTable">
+              <thead>
+                <tr>
+                  <th data-col="Category" style="min-width:180px;">Category <button class="th-filter-btn" data-col="Category" type="button"><i class="fa-solid fa-filter"></i></button></th>
+                  <th data-col="Avail." style="text-align:right;">Avail. <button class="th-filter-btn" data-col="Avail." type="button"><i class="fa-solid fa-filter"></i></button></th>
+                  <th data-col="Assigned" style="text-align:right;">Assigned <button class="th-filter-btn" data-col="Assigned" type="button"><i class="fa-solid fa-filter"></i></button></th>
+                  <th data-col="Sold" style="text-align:right;">Sold <button class="th-filter-btn" data-col="Sold" type="button"><i class="fa-solid fa-filter"></i></button></th>
+                  <th data-col="Damaged" style="text-align:right;">Damaged <button class="th-filter-btn" data-col="Damaged" type="button"><i class="fa-solid fa-filter"></i></button></th>
+                </tr>
+              </thead>
+              <tbody id="dashSnapshotBody">
+                <tr><td colspan="5" style="text-align:center;color:var(--txt-muted);padding:24px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading live data…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>`,
   init() {
-    // ---------- NEW: pull real numbers from the shared database via the
-    // backend API (server.js). Falls back silently to the demo numbers
-    // already in the HTML above if the API isn't reachable (e.g. you're
-    // previewing the UI without the backend running yet). ----------
-    (async function loadRealDashboardData() {
-      if (!window.Api) return; // api.js not loaded — stay on demo data
+    function getCategoryIcon(cat) {
+      const c = String(cat || '').toUpperCase();
+      if (c.includes('SOLAR') || c.includes('PANEL')) return 'fa-solar-panel';
+      if (c.includes('INVERTER')) return 'fa-bolt';
+      if (c.includes('BATTERY')) return 'fa-car-battery';
+      if (c.includes('STRUCTURE') || c.includes('PIPE')) return 'fa-cubes-stacked';
+      if (c.includes('WIRE') || c.includes('ELECTRICAL')) return 'fa-plug';
+      if (c.includes('FASTNER') || c.includes('NOZZLE')) return 'fa-screwdriver-wrench';
+      if (c.includes('CIVIL')) return 'fa-trowel-bricks';
+      if (c.includes('EARTHING')) return 'fa-shield-halved';
+      return 'fa-box';
+    }
+
+    function qtyPill(val, type) {
+      const n = Number(val || 0);
+      if (n <= 0) return `<span class="dash-qty-pill zero">0</span>`;
+      return `<span class="dash-qty-pill ${type}">${n.toLocaleString('en-IN')}</span>`;
+    }
+
+    function updateLiveGreeting() {
+      const greetingEl = document.getElementById('dashUserGreeting');
+      if (greetingEl) {
+        greetingEl.textContent = window.currentUsername || 'Admin';
+      }
+      const clockEl = document.getElementById('dashLiveClock');
+      if (clockEl) {
+        const now = new Date();
+        clockEl.textContent = now.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' }) + ' • ' + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      }
+    }
+    updateLiveGreeting();
+
+    // Pull real numbers from shared database
+    async function loadRealDashboardData() {
+      if (!window.Api) return;
       try {
         const data = await window.Api.get('/dashboard/summary');
 
         const fmt = (n) => Number(n || 0).toLocaleString('en-IN');
         const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-        // Count-up animation for the 4 big stat cards (Available / Assigned /
-        // Sold / Damaged): instead of the final number just appearing, it
-        // ramps up to it with a quick counting motion — runs fresh every
-        // time the Dashboard loads, so it plays again on every refresh or
-        // reopen of the site, not just once.
-        //
-        // It does NOT always start counting from 0 — for a number in the
-        // thousands/lakhs that would mean a huge, unnatural jump every
-        // frame. Instead it starts from a small gap just below the final
-        // value (same feel as "28 -> 33"), scaled to the number's size:
-        //   final 33        -> starts ~28   (gap 5, the floor)
-        //   final 12,400     -> starts ~12,380 (gap ~15% capped at 60)
-        //   final 3,40,000   -> starts ~3,39,940 (gap capped at 60)
-        // so it always reads as a short, natural "counting up the last bit",
-        // never a long sweep from zero.
-        function animateCountUp(el, endValue, duration = 900) {
+        function animateCountUp(el, endValue, duration = 800) {
           if (!el) return;
           const target = Number(endValue) || 0;
           const gap = Math.min(60, Math.max(5, Math.round(target * 0.15)));
@@ -108,7 +215,7 @@ window.PAGES.dashboard = {
           const startTime = performance.now();
           function tick(now) {
             const progress = Math.min((now - startTime) / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic — fast start, gentle landing
+            const eased = 1 - Math.pow(1 - progress, 3);
             const current = Math.round(start + (target - start) * eased);
             el.textContent = current.toLocaleString('en-IN');
             if (progress < 1) requestAnimationFrame(tick);
@@ -123,37 +230,71 @@ window.PAGES.dashboard = {
         animateCountUp(document.getElementById('dashDamagedVal'), data.damaged);
         setText('dashLowStockCount', `${data.lowStockCount || 0} items`);
 
-         const snapshotBody = document.getElementById('dashSnapshotBody');
+        const snapshotBody = document.getElementById('dashSnapshotBody');
         if (snapshotBody && Array.isArray(data.categorySnapshot)) {
           snapshotBody.innerHTML = data.categorySnapshot.length
             ? data.categorySnapshot.map((r) => `
             <tr>
-              <td data-label="Category">${r.category}</td>
-              <td data-label="Avail.">${fmt(r.avail)}</td>
-              <td data-label="Assigned">${fmt(r.assigned)}</td>
-              <td data-label="Sold">${fmt(r.sold)}</td>
-              <td data-label="Damaged">${fmt(r.damaged)}</td>
+              <td data-label="Category">
+                <div class="dash-category-cell">
+                  <div class="dash-cat-icon"><i class="fa-solid ${getCategoryIcon(r.category)}"></i></div>
+                  <span>${r.category}</span>
+                </div>
+              </td>
+              <td data-label="Avail." style="text-align:right;">${qtyPill(r.avail, 'avail')}</td>
+              <td data-label="Assigned" style="text-align:right;">${qtyPill(r.assigned, 'active')}</td>
+              <td data-label="Sold" style="text-align:right;">${qtyPill(r.sold, 'sold')}</td>
+              <td data-label="Damaged" style="text-align:right;">${qtyPill(r.damaged, 'damaged')}</td>
             </tr>`).join('')
-            : `<tr><td colspan="5" style="text-align:center;color:var(--txt-muted);">No data available.</td></tr>`;
+            : `<tr><td colspan="5" style="text-align:center;color:var(--txt-muted);padding:20px;">No data available.</td></tr>`;
         }
-        // ---------- Stat card sliders: Total -> Panel -> Inverter -> ... ----------
-        // Each of the 4 big cards above (Available/Assigned/Sold/Damaged) starts
-        // on "Total" (unchanged look). If item-wise data came back, we append one
-        // more slide per category (reusing the same numbers already computed for
-        // the Category-wise Snapshot table below) and turn on the corner arrow
-        // (desktop) / swipe (mobile) so the person can flip through and see how
-        // much of that total is Panel, Inverter, etc.
+
+        // Distribution Card
+        const distCard = document.getElementById('dashDistCard');
+        const distBar = document.getElementById('dashDistBar');
+        const distLegend = document.getElementById('dashDistLegend');
+
+        if (distCard && distBar && distLegend && Array.isArray(data.categorySnapshot)) {
+          const colors = ['#2ecc71', '#3b8ed0', '#f39c12', '#9b59b6', '#e74c3c', '#1abc9c', '#e67e22', '#34495e'];
+          const activeCats = data.categorySnapshot.filter((r) => Number(r.avail || 0) > 0);
+          const totalAvail = activeCats.reduce((sum, r) => sum + Number(r.avail || 0), 0);
+
+          if (totalAvail > 0) {
+            distCard.style.display = 'flex';
+            distBar.innerHTML = activeCats.map((r, i) => {
+              const pct = ((Number(r.avail) / totalAvail) * 100).toFixed(1);
+              const color = colors[i % colors.length];
+              return `<div class="dash-dist-segment" style="width:${pct}%; background:${color};" title="${r.category}: ${r.avail} (${pct}%)"></div>`;
+            }).join('');
+
+            distLegend.innerHTML = activeCats.slice(0, 6).map((r, i) => {
+              const pct = ((Number(r.avail) / totalAvail) * 100).toFixed(0);
+              const color = colors[i % colors.length];
+              return `
+                <div class="dash-legend-item">
+                  <span class="dash-legend-dot" style="background:${color};"></span>
+                  <span>${r.category} <b style="color:var(--txt);">${pct}%</b></span>
+                </div>`;
+            }).join('');
+          } else {
+            distCard.style.display = 'none';
+          }
+        }
+
+        // Stat Card Sliders
         if (Array.isArray(data.categorySnapshot) && data.categorySnapshot.length) {
           document.querySelectorAll('.stat-card[data-snap-key]').forEach((card) => {
-            const snapKey = card.dataset.snapKey; // 'avail' | 'assigned' | 'sold' | 'damaged'
+            const snapKey = card.dataset.snapKey;
             const slider = card.querySelector('.stat-slider');
             const dotsWrap = card.querySelector('.stat-dots');
             const arrowBtn = card.querySelector('.stat-nav-arrow');
             if (!slider) return;
 
-            // Slide 0 (Total) already exists in the HTML — leave it as-is, its
-            // value is already being count-up animated above. Just append one
-            // slide per category after it.
+            // Reset extra slides
+            while (slider.children.length > 1) {
+              slider.removeChild(slider.lastChild);
+            }
+
             data.categorySnapshot.forEach((row) => {
               if (!row.category) return;
               const slide = document.createElement('div');
@@ -163,7 +304,7 @@ window.PAGES.dashboard = {
             });
 
             const slideEls = Array.from(slider.children);
-            if (slideEls.length <= 1) return; // nothing to flip through
+            if (slideEls.length <= 1) return;
 
             card.classList.add('has-slides');
             dotsWrap.innerHTML = slideEls.map((_, i) => `<span class="stat-dot${i === 0 ? ' active' : ''}"></span>`).join('');
@@ -176,40 +317,54 @@ window.PAGES.dashboard = {
               dotEls.forEach((d, di) => d.classList.toggle('active', di === index));
             }
 
-            // Desktop: corner arrow steps to the next item, wraps back to Total.
-            arrowBtn.addEventListener('click', () => goTo(index + 1));
+            arrowBtn.onclick = () => goTo(index + 1);
 
-            // Mobile: swipe the value area left/right instead of the arrow.
             const viewport = card.querySelector('.stat-slider-viewport');
             let touchStartX = null;
-            viewport.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
-            viewport.addEventListener('touchend', (e) => {
+            viewport.ontouchstart = (e) => { touchStartX = e.touches[0].clientX; };
+            viewport.ontouchend = (e) => {
               if (touchStartX === null) return;
               const dx = e.changedTouches[0].clientX - touchStartX;
               if (Math.abs(dx) > 35) goTo(dx < 0 ? index + 1 : index - 1);
               touchStartX = null;
-            }, { passive: true });
+            };
           });
         }
-
-        console.log('[Dashboard] Loaded live data from database.');
       } catch (err) {
         console.warn('[Dashboard] Could not reach API:', err.message);
         const snapshotBody = document.getElementById('dashSnapshotBody');
         if (snapshotBody) {
-          snapshotBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--txt-muted);">No data available.</td></tr>`;
+          snapshotBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--txt-muted);padding:20px;">No data available.</td></tr>`;
         }
       }
-    })();
+    }
+    loadRealDashboardData();
 
-    // ---------- Live Network Users — real, database-backed, auto-refreshing ----------
-    // Reads GET /api/sessions/live (every row in `users`, joined with its
-    // current `user_sessions` status) — same real-time signal the desktop
-    // app's session tracker bar uses, and visible to EVERY role now (not
-    // SuperAdmin-only). Polls every 5s while Dashboard is open, and also
-    // live-updates the modal's contents if it's open when a refresh lands,
-    // so someone logging out elsewhere disappears from this list within a
-    // few seconds without anyone needing to reopen anything.
+    // Instant Search Filter for Snapshot table
+    const catSearchInput = document.getElementById('dashCatSearchInput');
+    if (catSearchInput) {
+      catSearchInput.addEventListener('input', () => {
+        const q = catSearchInput.value.toLowerCase().trim();
+        const rows = document.querySelectorAll('#dashSnapshotBody tr');
+        rows.forEach((tr) => {
+          const text = tr.textContent.toLowerCase();
+          tr.style.display = (!q || text.includes(q)) ? '' : 'none';
+        });
+      });
+    }
+
+    // Refresh Button Handler
+    const refreshBtn = document.getElementById('dashRefreshBtn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', async () => {
+        refreshBtn.classList.add('rotating');
+        await loadRealDashboardData();
+        setTimeout(() => refreshBtn.classList.remove('rotating'), 600);
+        if (window.showToast) window.showToast('Dashboard data refreshed.', 'info');
+      });
+    }
+
+    // Live Network Users Session Tracker
     let liveSessions = [];
     let liveUsersTimer = null;
 
@@ -235,7 +390,7 @@ window.PAGES.dashboard = {
         <div class="table-wrap"><table>
           <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Last Active</th></tr></thead>
           <tbody>
-            ${liveSessions.map(r => `
+            ${liveSessions.map((r) => `
               <tr>
                 <td data-label="User">${r.username}${r.username === window.currentUsername ? ' <span class="gold-txt">(you)</span>' : ''}</td>
                 <td data-label="Role">${r.role === 'SuperAdmin' ? 'Super Admin' : r.role}</td>
@@ -262,16 +417,11 @@ window.PAGES.dashboard = {
 
     async function refreshLiveSessions() {
       try {
-        // silent: true — this runs every 5s in the background; it must not
-        // trigger the global full-screen loader overlay on every tick.
         liveSessions = await window.Api.get('/sessions/live', { silent: true });
       } catch (e) {
         liveSessions = [];
       }
       updateSummaryLabels();
-      // If the Live User Sessions modal happens to be open right now, refresh
-      // its table in place too — this is what makes a logout show up for
-      // everyone else within a few seconds, without them reopening anything.
       const modalOverlay = document.getElementById('modalOverlay');
       const modalTitle = document.getElementById('modalTitle');
       if (modalOverlay && modalOverlay.classList.contains('show') && modalTitle && modalTitle.textContent === 'Live User Sessions') {
@@ -281,12 +431,9 @@ window.PAGES.dashboard = {
 
     function openLiveUsersModal() {
       window.openModal('Live User Sessions', liveUsersTableHtml());
-      refreshLiveSessions(); // pull the freshest data the moment it's opened
+      refreshLiveSessions();
     }
 
-    // Poll every 5s while this page is on screen; self-clears the moment the
-    // Dashboard's own table leaves the DOM (same pattern js/pages/lowstock.js
-    // uses), so navigating away doesn't leave a stray timer running.
     refreshLiveSessions();
     liveUsersTimer = setInterval(() => {
       if (!document.body.contains(document.getElementById('dashSnapshotBody'))) {
@@ -296,13 +443,9 @@ window.PAGES.dashboard = {
       refreshLiveSessions();
     }, 5000);
 
-    // Mobile panel button (unchanged from before)
     const btn = document.getElementById('btnLiveUsers');
     if (btn) btn.addEventListener('click', openLiveUsersModal);
 
-    // PC/desktop: build the same control inside the header (.topbar), like
-    // the desktop .py app. window.topbarExtra is created once by app.js and
-    // is only ever visible on the PC layout (mobile hides .topbar via CSS).
     if (window.topbarExtra) {
       window.topbarExtra.innerHTML = `
         <button class="topbar-live-btn" id="topbarBtnLiveUsers" type="button">
@@ -318,18 +461,10 @@ window.PAGES.dashboard = {
       updateSummaryLabels();
     }
 
-    // ---------- Category-wise Snapshot: Excel-style header filters ----------
-    // Click the funnel icon in any column header -> a dropdown lists every
-    // unique value in that column with checkboxes (like Excel AutoFilter).
-    // Filters across columns combine with AND; within one column, OR.
-    // The menu is appended to <body> with position:fixed (anchored to the
-    // funnel button's on-screen position) so .table-wrap's horizontal
-    // scroll box never clips it.
+    // Category-wise Snapshot: Excel Header Filters
     const tbody = document.getElementById('dashSnapshotBody');
-    const filterBtns = document.querySelectorAll('#dashSnapshotTable .th-filter-btn, .panel .th-filter-btn');
+    const filterBtns = document.querySelectorAll('#dashSnapshotTable .th-filter-btn, .panel .th-filter-btn, .dash-table-panel .th-filter-btn');
     if (tbody && filterBtns.length) {
-      // IMPORTANT: rows are loaded async from /dashboard/summary — never cache
-      // NodeList at init time (it would be empty or stale). Always read live.
       function liveRows() { return Array.from(tbody.querySelectorAll('tr')); }
       function buildColIndex(row) {
         const colIndex = {};
@@ -338,13 +473,12 @@ window.PAGES.dashboard = {
           const key = td.dataset.label || (td.getAttribute('data-label') || '').trim();
           if (key) colIndex[key] = i;
         });
-        // Fallback by header order if data-label missing
         if (!Object.keys(colIndex).length) {
-          ['Category','Avail.','Assigned','Sold','Damaged'].forEach((k, i) => { colIndex[k] = i; });
+          ['Category', 'Avail.', 'Assigned', 'Sold', 'Damaged'].forEach((k, i) => { colIndex[k] = i; });
         }
         return colIndex;
       }
-      const activeFilters = {}; // { colName: Set of allowed values }
+      const activeFilters = {};
       let openMenuEl = null;
 
       function cellValue(row, col) {
@@ -354,22 +488,22 @@ window.PAGES.dashboard = {
         return row.children[idx].textContent.trim();
       }
       function uniqueValues(col) {
-        return Array.from(new Set(liveRows().map(r => cellValue(r, col)).filter(Boolean)));
+        return Array.from(new Set(liveRows().map((r) => cellValue(r, col)).filter(Boolean)));
       }
       function applyAllFilters() {
         liveRows().forEach((row) => {
           const visible = Object.keys(activeFilters).every((col) => activeFilters[col].has(cellValue(row, col)));
           row.style.display = visible ? '' : 'none';
         });
-        filterBtns.forEach((btn) => btn.classList.toggle('active', !!activeFilters[btn.dataset.col]));
+        filterBtns.forEach((b) => b.classList.toggle('active', !!activeFilters[b.dataset.col]));
       }
 
       function closeMenu() {
         if (openMenuEl) { openMenuEl.remove(); openMenuEl = null; }
       }
 
-      function positionMenu(menu, btn) {
-        const rect = btn.getBoundingClientRect();
+      function positionMenu(menu, targetBtn) {
+        const rect = targetBtn.getBoundingClientRect();
         const menuWidth = 210;
         let left = rect.left;
         if (left + menuWidth > window.innerWidth - 10) left = window.innerWidth - menuWidth - 10;
@@ -377,8 +511,8 @@ window.PAGES.dashboard = {
         menu.style.top = (rect.bottom + 4) + 'px';
       }
 
-      function openMenuFor(btn) {
-        const col = btn.dataset.col;
+      function openMenuFor(targetBtn) {
+        const col = targetBtn.dataset.col;
         closeMenu();
 
         const values = uniqueValues(col);
@@ -386,7 +520,7 @@ window.PAGES.dashboard = {
           if (window.showToast) window.showToast('Table data still loading…');
           return;
         }
-        const selected = activeFilters[col] || new Set(values); // if no filter yet, everything is "checked"
+        const selected = activeFilters[col] || new Set(values);
 
         const menu = document.createElement('div');
         menu.className = 'th-filter-menu show';
@@ -396,7 +530,7 @@ window.PAGES.dashboard = {
             <input type="checkbox" ${selected.size === values.length ? 'checked' : ''}> <span>Select All</span>
           </label>
           <div class="th-filter-list">
-            ${values.map(v => `
+            ${values.map((v) => `
               <label class="th-filter-item">
                 <input type="checkbox" value="${v}" ${selected.has(v) ? 'checked' : ''}> <span>${v}</span>
               </label>`).join('')}
@@ -407,7 +541,7 @@ window.PAGES.dashboard = {
           </div>`;
 
         document.body.appendChild(menu);
-        positionMenu(menu, btn);
+        positionMenu(menu, targetBtn);
         openMenuEl = menu;
 
         const selectAllCb = menu.querySelector('.th-filter-selectall input');
@@ -432,7 +566,7 @@ window.PAGES.dashboard = {
         });
 
         menu.querySelector('.th-filter-ok').addEventListener('click', () => {
-          const checked = itemCbs().filter(cb => cb.checked).map(cb => cb.value);
+          const checked = itemCbs().filter((cb) => cb.checked).map((cb) => cb.value);
           if (checked.length === values.length) delete activeFilters[col];
           else activeFilters[col] = new Set(checked);
           closeMenu();
@@ -442,18 +576,15 @@ window.PAGES.dashboard = {
         menu.addEventListener('click', (e) => e.stopPropagation());
       }
 
-      filterBtns.forEach((btn) => {
-        btn.addEventListener('click', (e) => {
+      filterBtns.forEach((b) => {
+        b.addEventListener('click', (e) => {
           e.stopPropagation();
-          const wasOpenForThisBtn = openMenuEl && openMenuEl.dataset.forCol === btn.dataset.col;
+          const wasOpenForThisBtn = openMenuEl && openMenuEl.dataset.forCol === b.dataset.col;
           closeMenu();
-          if (!wasOpenForThisBtn) { openMenuFor(btn); openMenuEl.dataset.forCol = btn.dataset.col; }
+          if (!wasOpenForThisBtn) { openMenuFor(b); openMenuEl.dataset.forCol = b.dataset.col; }
         });
       });
 
-      // Close the dropdown on outside click, page scroll, or window resize —
-      // scoped with { once:true }-style cleanup via named handlers so
-      // revisiting the Dashboard page doesn't stack up duplicate listeners.
       document.addEventListener('click', closeMenu);
       function onScroll(e) {
         if (openMenuEl && e.target && openMenuEl.contains(e.target)) return;

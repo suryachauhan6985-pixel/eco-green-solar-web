@@ -1,8 +1,9 @@
-@import url("modules/base.css?v=26");
-@import url("modules/layout.css?v=26");
-@import url("modules/components.css?v=26");
-@import url("modules/responsive.css?v=26");
-@import url("modules/party-ledger.css?v=26");
-@import url("modules/auth.css?v=26");
-@import url("modules/bom.css?v=26");
-@import url("modules/scan-sheet.css?v=26");
+@import url("modules/base.css?v=28");
+@import url("modules/layout.css?v=28");
+@import url("modules/components.css?v=28");
+@import url("modules/dashboard.css?v=28");
+@import url("modules/responsive.css?v=28");
+@import url("modules/party-ledger.css?v=28");
+@import url("modules/auth.css?v=28");
+@import url("modules/bom.css?v=28");
+@import url("modules/scan-sheet.css?v=28");
