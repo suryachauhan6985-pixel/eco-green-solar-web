@@ -97,23 +97,12 @@ function createBomSerialScanModule(ctx) {
             </div>
           </div>
         </div>
-        <div class="ss-scanner-bottom">
-          <div class="ss-scanner-count-badge" id="bomScanCount">
-            <i class="fa-solid fa-list-check"></i> <span>${existingSerials.length} serial(s) entered</span>
-          </div>
-          <div class="ss-scanner-bottom-actions">
-            <button type="button" class="btn btn-ghost ss-scanner-cancel" id="bomScanCancel"><i class="fa-solid fa-xmark"></i> Cancel</button>
-            <button type="button" class="btn btn-green ss-scanner-finish" id="bomScanDone"><i class="fa-solid fa-check"></i> Done & Return</button>
-          </div>
-        </div>
       `;
       document.body.appendChild(overlay);
       ctx.bomScanState.overlayEl = overlay;
       document.body.style.overflow = 'hidden';
 
       overlay.querySelector('#bomScanBack').onclick = ctx.closeBomScanner;
-      overlay.querySelector('#bomScanCancel').onclick = ctx.closeBomScanner;
-      overlay.querySelector('#bomScanDone').onclick = ctx.closeBomScanner;
       overlay.querySelector('#bomScanTorch').onclick = ctx.toggleBomScanTorch;
       overlay.querySelector('#bomScanFlip').onclick = ctx.flipBomScanCamera;
       overlay.querySelector('#bomScanRetry').onclick = ctx.retryBomScan;
