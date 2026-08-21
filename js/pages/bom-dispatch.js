@@ -688,12 +688,12 @@ function createBomDispatchModule(ctx) {
           return;
         }
 
+        const kw = (bomGetAllKits()[ctx.kitSelect.value] && bomGetAllKits()[ctx.kitSelect.value].kw) || '';
+        const kit = { kw, sections: ctx.currentKitState };
+        const header = (typeof ctx.getHeaderValues === 'function') ? ctx.getHeaderValues() : {};
+
         if (window.showLoader) window.showLoader('Preparing your Challan...', 'Converting BOM kit items & calculating quantities...');
         try {
-          const kw = bomGetAllKits()[ctx.kitSelect.value] ? bomGetAllKits()[ctx.kitSelect.value].kw : '';
-          const kit = { kw, sections: ctx.currentKitState };
-          const header = ctx.getHeaderValues();
-
           // Ensure latest category mappings are hydrated from the server
           await bomLoadChallanCategoryMap();
 
@@ -969,12 +969,11 @@ function createBomDispatchModule(ctx) {
               pdfWindow.document.close();
             }
 
-            const payload = buildChallanSavePayload();
-
             printBtn.disabled = true;
             const originalLabel = printBtn.innerHTML;
             printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving & Preparing PDF...';
             try {
+              const payload = buildChallanSavePayload();
               const saved = await window.Api.post('/challan', payload);
               syncSavedChallanBackToBom(payload);
               const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
