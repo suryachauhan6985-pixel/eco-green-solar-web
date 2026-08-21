@@ -37,16 +37,39 @@
 // ever need to show the overlay around non-fetch work.
 // ---------------------------------------------------------------------------
 let __egsLoaderCount = 0;
-window.showLoader = function showLoader() {
+window.showLoader = function showLoader(title, sub) {
   __egsLoaderCount++;
   const el = document.getElementById('loaderOverlay');
-  if (el) el.classList.add('active');
+  if (el) {
+    let textWrap = el.querySelector('.loader-text-wrap');
+    if (!textWrap) {
+      textWrap = document.createElement('div');
+      textWrap.className = 'loader-text-wrap';
+      el.appendChild(textWrap);
+    }
+    if (title) {
+      textWrap.innerHTML = `
+        <div class="loader-title">${title}</div>
+        ${sub ? `<div class="loader-sub">${sub}</div>` : ''}
+      `;
+      textWrap.style.display = 'flex';
+    } else {
+      textWrap.innerHTML = '';
+      textWrap.style.display = 'none';
+    }
+    el.classList.add('active');
+  }
 };
-window.hideLoader = function hideLoader() {
-  __egsLoaderCount = Math.max(0, __egsLoaderCount - 1);
+window.hideLoader = function hideLoader(force) {
+  if (force) __egsLoaderCount = 0;
+  else __egsLoaderCount = Math.max(0, __egsLoaderCount - 1);
   if (__egsLoaderCount === 0) {
     const el = document.getElementById('loaderOverlay');
-    if (el) el.classList.remove('active');
+    if (el) {
+      el.classList.remove('active');
+      const textWrap = el.querySelector('.loader-text-wrap');
+      if (textWrap) textWrap.innerHTML = '';
+    }
   }
 };
 

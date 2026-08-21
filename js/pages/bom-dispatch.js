@@ -688,25 +688,30 @@ function createBomDispatchModule(ctx) {
           return;
         }
 
-        const kw = bomGetAllKits()[ctx.kitSelect.value] ? bomGetAllKits()[ctx.kitSelect.value].kw : '';
-        const kit = { kw, sections: ctx.currentKitState };
-        const header = ctx.getHeaderValues();
+        if (window.showLoader) window.showLoader('Preparing your Challan...', 'Converting BOM kit items & calculating quantities...');
+        try {
+          const kw = bomGetAllKits()[ctx.kitSelect.value] ? bomGetAllKits()[ctx.kitSelect.value].kw : '';
+          const kit = { kw, sections: ctx.currentKitState };
+          const header = ctx.getHeaderValues();
 
-        // Ensure latest category mappings are hydrated from the server
-        await bomLoadChallanCategoryMap();
+          // Ensure latest category mappings are hydrated from the server
+          await bomLoadChallanCategoryMap();
 
-        const challanModalTitleEl = document.getElementById('bomChallanModalTitle');
-        if (challanModalTitleEl) challanModalTitleEl.innerHTML = '<i class="fa-solid fa-file-invoice"></i> Convert into Challan';
-        ctx.openChallanModal(bomRenderChallanEntryModalHtml(header, kit));
-        // Auto-fill Qty from the actual on-screen kit items (respecting any
-        // partial Dispatch Qty) via the item->category mapping — see
-        // bomComputeChallanAutoQty above. Every field stays editable after
-        // this; it only sets the starting value.
-        const autoResult = bomApplyChallanAutoQty(ctx.currentKitState);
-        if (autoResult && autoResult.unmappedItems && autoResult.unmappedItems.length) {
-          if (window.showToast) window.showToast(`${autoResult.unmappedItems.length} unmapped item(s) skipped from auto-fill.`, 'warning');
-        } else if (window.showToast) {
-          window.showToast('BOM items auto-filled into Challan.', 'success');
+          // Smooth transition delay so loader animation is clearly experienced
+          await new Promise((r) => setTimeout(r, 380));
+
+          const challanModalTitleEl = document.getElementById('bomChallanModalTitle');
+          if (challanModalTitleEl) challanModalTitleEl.innerHTML = '<i class="fa-solid fa-file-invoice"></i> Convert into Challan';
+          ctx.openChallanModal(bomRenderChallanEntryModalHtml(header, kit));
+          // Auto-fill Qty and Model from on-screen kit items
+          const autoResult = bomApplyChallanAutoQty(ctx.currentKitState);
+          if (autoResult && autoResult.unmappedItems && autoResult.unmappedItems.length) {
+            if (window.showToast) window.showToast(`${autoResult.unmappedItems.length} unmapped item(s) skipped from auto-fill.`, 'warning');
+          } else if (window.showToast) {
+            window.showToast('BOM items auto-filled into Challan.', 'success');
+          }
+        } finally {
+          if (window.hideLoader) window.hideLoader();
         }
 
         const modalNo = document.getElementById('bomChallanModalNo');
@@ -877,7 +882,90 @@ function createBomDispatchModule(ctx) {
             // PDF blob once the server finishes generating it below.
             const pdfWindow = window.open('', '_blank');
             if (pdfWindow) {
-              pdfWindow.document.write('<title>Preparing Challan…</title><body style="font-family:sans-serif;background:#1a1a1a;color:#ccc;display:flex;flex-direction:column;gap:16px;align-items:center;justify-content:center;height:100vh;margin:0;"><div style="width:40px;height:40px;border:4px solid #444;border-top-color:#ffb020;border-radius:50%;animation:egsSpin 0.8s linear infinite;"></div><div>Preparing your Challan PDF…</div><style>@keyframes egsSpin{to{transform:rotate(360deg)}}</style></body>');
+              const loaderHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Preparing Challan…</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0b0f17;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .card {
+      background: rgba(18, 24, 38, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 36px 44px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(59, 142, 208, 0.15);
+      backdrop-filter: blur(12px);
+    }
+    .spinner-wrap {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .spinner-wrap::before, .spinner-wrap::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+    }
+    .spinner-wrap::before {
+      inset: 0;
+      border: 3px solid transparent;
+      border-top-color: #3b8ed0;
+      border-right-color: #3b8ed0;
+      animation: spin 0.9s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+      box-shadow: 0 0 16px rgba(59, 142, 208, 0.45);
+    }
+    .spinner-wrap::after {
+      inset: 7px;
+      border: 3px solid transparent;
+      border-bottom-color: #ffb020;
+      border-left-color: #ffb020;
+      animation: spin-rev 1.2s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+      box-shadow: 0 0 16px rgba(255, 176, 32, 0.45);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin-rev { to { transform: rotate(-360deg); } }
+    .title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffb020;
+      letter-spacing: 0.5px;
+      text-shadow: 0 0 10px rgba(255, 176, 32, 0.3);
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: -6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner-wrap"></div>
+    <div class="title">Preparing your Challan...</div>
+    <div class="subtitle">Generating official Challan PDF...</div>
+  </div>
+</body>
+</html>`;
+              pdfWindow.document.write(loaderHtml);
             }
             // NEW FLOW: Save Data -> backend fills the REAL Excel template ->
             // converts to PDF via LibreOffice -> browser opens/prints the

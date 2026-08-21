@@ -113,11 +113,13 @@ input::placeholder,textarea::placeholder{color:var(--txt-muted); opacity:1;}
   inset:0;
   z-index:99999;
   display:none;
+  flex-direction:column;
   align-items:center;
   justify-content:center;
+  gap:20px;
   background:var(--overlay-bg);
-  backdrop-filter:blur(6px);
-  -webkit-backdrop-filter:blur(6px);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
   transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .loader-overlay.active{ display:flex; animation: egsFadeIn 0.2s ease-out; }
@@ -150,6 +152,27 @@ input::placeholder,textarea::placeholder{color:var(--txt-muted); opacity:1;}
   border-left-color: var(--gold);
   animation: loader-spin-reverse 1.2s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
   box-shadow: 0 0 14px rgba(212, 175, 55, 0.35);
+}
+.loader-text-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  animation: egsFadeIn 0.3s ease;
+  max-width: 90vw;
+}
+.loader-title {
+  color: var(--gold, #ffb020);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 14px rgba(255, 176, 32, 0.45);
+}
+.loader-sub {
+  color: var(--txt-muted, #94a3b8);
+  font-size: 13px;
+  font-weight: 500;
 }
 @keyframes loader-spin{ to{ transform:rotate(360deg); } }
 @keyframes loader-spin-reverse{ to{ transform:rotate(-360deg); } }

@@ -221,8 +221,9 @@ function bomGiPipeModelSr(modelText) {
 // Returns { qtyBySr: { [sr]: number }, giPipe: { 3: {size:qty}, 4: {size:qty} }, unmappedItems: [], mappedCount: number }.
 function bomComputeChallanAutoQty(sections) {
   const qtyBySr = {};
+  const modelBySr = {};
   const giPipe = { 3: {}, 4: {}, 15: {} };
-  const presentByCategory = {}; // category -> [{ qty, it }]
+  const presentByCategory = {}; // category -> [{ qty, it, model }]
   const unmappedItems = [];
   let mappedCount = 0;
 
@@ -238,10 +239,11 @@ function bomComputeChallanAutoQty(sections) {
 
       mappedCount++;
 
+      // Extract model: prefer it.model; if it.name is different from category, fallback to it.name or brand
+      const itemModel = String(it.model || (it.name !== category ? it.name : '') || it.brand || '').trim();
+
       if (category === 'GI Pipe') {
         const sr = bomGiPipeModelSr(it.model) || 3;
-        // qty text for GI Pipe is feet (e.g. "60 Feet"), not a plain count —
-        // bomEffectiveQty already returns just the leading number, feet or not.
         const pieces = bomGiPipeFeetToPieces(qty);
         Object.keys(pieces).forEach((size) => {
           giPipe[sr][size] = (giPipe[sr][size] || 0) + pieces[size];
@@ -252,7 +254,7 @@ function bomComputeChallanAutoQty(sections) {
       const sr = BOM_CHALLAN_CATEGORY_SR[category];
       if (!sr) return; // category exists in the map but has no template row (defensive)
       if (!presentByCategory[category]) presentByCategory[category] = [];
-      presentByCategory[category].push({ qty, it });
+      presentByCategory[category].push({ qty, it, model: itemModel });
     });
   });
 
@@ -260,20 +262,20 @@ function bomComputeChallanAutoQty(sections) {
     const list = presentByCategory[category];
     const sr = BOM_CHALLAN_CATEGORY_SR[category];
     qtyBySr[sr] = list.length === 1 ? list[0].qty : 1;
+    const distinctModels = Array.from(new Set(list.map((x) => x.model).filter(Boolean)));
+    if (distinctModels.length) {
+      modelBySr[sr] = distinctModels.join(', ');
+    }
   });
 
-  return { qtyBySr, giPipe, unmappedItems, mappedCount };
+  return { qtyBySr, modelBySr, giPipe, unmappedItems, mappedCount };
 }
 
 // Writes bomComputeChallanAutoQty()'s result straight into the entry
-// modal's Qty <input>s (already in the DOM at this point — called right
-// after openChallanModal). Every value stays a normal, editable number
-// input afterwards — this only sets the starting value, same as any other
-// pre-filled field elsewhere in the app; the person can still overwrite any
-// of them by hand before Print Challan.
+// modal's Qty & Model <input>s
 function bomApplyChallanAutoQty(sections) {
   const result = bomComputeChallanAutoQty(sections);
-  const { qtyBySr, giPipe } = result;
+  const { qtyBySr, modelBySr, giPipe } = result;
   document.querySelectorAll('.bom-challan-qty-input').forEach((inp) => {
     const sr = Number(inp.getAttribute('data-challan-tpl-sr'));
     const size = inp.getAttribute('data-challan-tpl-size');
@@ -284,27 +286,16 @@ function bomApplyChallanAutoQty(sections) {
       inp.value = qtyBySr[sr];
     }
   });
+  document.querySelectorAll('.bom-challan-model-input').forEach((inp) => {
+    const sr = Number(inp.getAttribute('data-challan-tpl-model'));
+    if (modelBySr && modelBySr[sr] !== undefined) {
+      inp.value = modelBySr[sr];
+    }
+  });
   return result;
 }
 
 // ---------- "Convert into Challan" — ENTRY MODAL (software-style, NOT the Excel look) ----------
-// This is the on-screen counterpart to the main BOM entry form (#1 in the
-// file-level split described at the top): same .form-grid/.field pattern,
-// same dark theme, plain <input>s — no white sheet, no purple bars. Items
-// render in the same visual style as the existing on-screen "Kit Items"
-// table (.table-wrap/.bom-items-form-table), from BOM_CHALLAN_TEMPLATE
-// above (Sr/Name/Model/Unit fixed, Qty a blank editable number per
-// line/sub-row) — NOT from currentKitState. The Excel-exact look lives
-// ONLY in bomRenderChallanPrintSheetHtml() below (print-only, part B).
-// This layout mirrors the Excel Challan sheet's real column order: Sr No.
-// | Item Name | Model | Size (only used by GI Pipe's 4 sub-rows) | Qty. |
-// Unit | Description — as a fixed <colgroup> so the Qty. INPUT BOX itself
-// sits in the same column/x-position on every row (regular items and GI
-// Pipe size sub-rows alike), instead of the size label pushing that row's
-// box sideways out of line with the others. Description is a separate,
-// per-item free-text input (one per item, spanning the item's sub-rows
-// via rowspan) — the Excel sheet's "Description" column is blank for the
-// user to fill by hand, same as Qty.
 function bomRenderChallanTemplateItemsHtml(template) {
   const qtyInput = (sr, sizeLabel) => {
     const sizeAttr = sizeLabel ? ` data-challan-tpl-size="${bomEscAttr(sizeLabel)}"` : '';
@@ -312,6 +303,8 @@ function bomRenderChallanTemplateItemsHtml(template) {
   };
   const descInput = (sr) =>
     `<input type="text" class="bom-field-input" data-challan-tpl-desc="${sr}" placeholder="Description">`;
+  const modelInput = (sr, defaultModel) =>
+    `<input type="text" class="bom-field-input bom-challan-model-input" data-challan-tpl-model="${sr}" value="${bomEscAttr(defaultModel || '')}" placeholder="Model / Specification">`;
 
   const rows = template.map((it) => {
     if (it.sizes && it.sizes.length) {
@@ -336,7 +329,7 @@ function bomRenderChallanTemplateItemsHtml(template) {
       <tr>
         <td>${it.sr}</td>
         <td>${bomEsc(it.name)}</td>
-        <td>${bomEsc(it.model || '')}</td>
+        <td>${modelInput(it.sr, it.model)}</td>
         <td class="bom-challan-size-cell">&mdash;</td>
         <td>${qtyInput(it.sr)}</td>
         <td>${bomEsc(it.unit)}</td>
@@ -348,8 +341,8 @@ function bomRenderChallanTemplateItemsHtml(template) {
     <div class="table-wrap">
       <table class="bom-items-form-table">
         <colgroup>
-          <col style="width:6%;"><col style="width:20%;"><col style="width:14%;">
-          <col style="width:12%;"><col style="width:12%;"><col style="width:8%;"><col style="width:28%;">
+          <col style="width:6%;"><col style="width:18%;"><col style="width:18%;">
+          <col style="width:10%;"><col style="width:12%;"><col style="width:8%;"><col style="width:28%;">
         </colgroup>
         <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Size</th><th>Qty.</th><th>Unit</th><th>Description</th></tr></thead>
         <tbody>${rows}</tbody>
@@ -505,6 +498,10 @@ function bomCollectChallanTemplateValues() {
     const size = inp.getAttribute('data-challan-tpl-size') || '';
     setVal(`${sr}|${size}`, { qty: inp.value });
   });
+  document.querySelectorAll('.bom-challan-model-input').forEach((inp) => {
+    const sr = inp.getAttribute('data-challan-tpl-model');
+    setVal(`${sr}|`, { model: inp.value });
+  });
   document.querySelectorAll('[data-challan-tpl-desc]').forEach((inp) => {
     const sr = inp.getAttribute('data-challan-tpl-desc');
     setVal(`${sr}|`, { desc: inp.value });
@@ -513,36 +510,8 @@ function bomCollectChallanTemplateValues() {
 }
 
 // ---------- Challan print sheet — layout engine (CHALLAN_SPEC.md) ----------
-// Everything below reproduces the reverse-engineered Excel layout in
-// CHALLAN_SPEC.md exactly: one flat 7-column <table> per copy (Sr./Item
-// Name/Model/Model-cont./Qty-label/Qty-unit/Description — §3), a fixed
-// 28-row body (§4/§15) padded with blank numbered rows past the real
-// item list, and the exact rowspan/colspan merge pattern from §5. No
-// column widths/row heights/scale are computed here — those are static
-// values in bom.css (§14/§15: "no client-side layout computation").
-
-// Fixed total body-row count the printed table always pads/truncates to
-// (§4: rows 8–35 = 28 rows; §15: "fill remaining rows to reach 28").
 const CHALLAN_PRINT_TOTAL_BODY_ROWS = 28;
 
-// Walks BOM_CHALLAN_TEMPLATE and turns it into physical "row groups": one
-// group per template item, then appends blank, sequentially-numbered
-// groups until the physical row total reaches CHALLAN_PRINT_TOTAL_BODY_ROWS
-// (§15's padding rule) — same as before, EXCEPT a GI Pipe model (it.sizes)
-// now only contributes rows for the feet-values that actually have a
-// qty > 0 on THIS challan (`values`), and contributes ZERO rows (not even
-// a placeholder line) if none of its 4 feet-values were used this trip.
-// Whatever rows that frees up simply become extra blank padding rows at
-// the end, same pool either way — this is what lets a 3rd GI Pipe size
-// (or a GI Pipe model going unused this trip) fit without ever changing
-// CHALLAN_PRINT_TOTAL_BODY_ROWS itself.
-//
-// `sr` on each group stays the item's STABLE storage key (used to look up
-// its Qty/Description in `values`) — it is NOT the printed Sr. No., which
-// is tracked separately as `displaySr` and is always a clean 1, 2, 3, 4...
-// sequence based on what actually ends up on the page, regardless of which
-// stored sr numbers were skipped (e.g. GI Pipe 1 X 1's sr:15 never shows up
-// as "15" in print — it just takes whatever the next real position is).
 function bomChallanBuildRowGroups(template, values) {
   const groups = [];
   let physicalRows = 0;
@@ -560,8 +529,19 @@ function bomChallanBuildRowGroups(template, values) {
       physicalRows += activeSizes.length;
       return;
     }
+    const v = values[`${it.sr}|`];
+    if (!v || !v.qty || Number(v.qty) <= 0) return; // ONLY include items with qty > 0
     displaySr += 1;
     groups.push({ sr: it.sr, displaySr, item: it, rowCount: 1, blank: false });
+    physicalRows += 1;
+  });
+
+  // Extra software-added items (if any)
+  const extraItems = Array.isArray(values && values.extra) ? values.extra : [];
+  extraItems.forEach((extra) => {
+    if (!extra || !extra.qty || Number(extra.qty) <= 0) return;
+    displaySr += 1;
+    groups.push({ sr: null, displaySr, item: extra, isExtra: true, rowCount: 1, blank: false });
     physicalRows += 1;
   });
 
@@ -573,19 +553,20 @@ function bomChallanBuildRowGroups(template, values) {
   return groups;
 }
 
-// Renders rows 8–35 (the item table body) from the row groups above,
-// populated with the actual Qty./Description values collected from the
-// entry modal (bomCollectChallanTemplateValues). Merge pattern per §5:
-//  - Multi-length items (GI Pipe): Sr./Item/Model rowspan across the
-//    sub-rows (A10:A13-style), one unmerged Model-cont. + Qty-label +
-//    Qty-unit cell per sub-row, Description rowspan across the group.
-//  - Single-variant items: Item Name colspan across the Model + Model-cont.
-//    columns (B18:D18-style) since those items carry no sub-model text.
-//  - Blank spacer rows: same colspan shape as a single-variant row, all
-//    cells empty except the auto-numbered Sr. No.
+// Renders rows 8–35 (the item table body) from the row groups above
 function bomRenderChallanBodyRowsHtml(groups, values) {
-  const getQty = (sr, size) => (values[`${sr}|${size || ''}`] && values[`${sr}|${size || ''}`].qty) || '';
-  const getDesc = (sr) => (values[`${sr}|`] && values[`${sr}|`].desc) || '';
+  const getQty = (sr, size, extra) => {
+    if (extra) return extra.qty || '';
+    return (values[`${sr}|${size || ''}`] && values[`${sr}|${size || ''}`].qty) || '';
+  };
+  const getDesc = (sr, extra) => {
+    if (extra) return extra.desc || '';
+    return (values[`${sr}|`] && values[`${sr}|`].desc) || '';
+  };
+  const getModel = (sr, it, extra) => {
+    if (extra) return extra.model || '';
+    return (values[`${sr}|`] && values[`${sr}|`].model) || (it && it.model) || '';
+  };
 
   return groups.map((g) => {
     if (g.blank) {
@@ -599,7 +580,7 @@ function bomRenderChallanBodyRowsHtml(groups, values) {
       </tr>`;
     }
     const it = g.item;
-    if (g.sizes && g.sizes.length) { // g.sizes = only the ACTIVE feet-values for this trip (see bomChallanBuildRowGroups)
+    if (g.sizes && g.sizes.length) { // g.sizes = only the ACTIVE feet-values for this trip
       const desc = getDesc(it.sr);
       return g.sizes.map((size, i) => {
         const leadCells = i === 0
@@ -620,13 +601,27 @@ function bomRenderChallanBodyRowsHtml(groups, values) {
       </tr>`;
       }).join('');
     }
+
+    const modelText = getModel(it ? it.sr : null, it, g.isExtra ? it : null);
+    if (modelText) {
+      return `
+      <tr class="bom-challan-row">
+        <td class="bom-c-sr">${g.displaySr}</td>
+        <td class="bom-c-name">${bomEsc(it.name)}</td>
+        <td class="bom-c-model" colspan="2">${bomEsc(modelText)}</td>
+        <td class="bom-c-qtylabel">${bomEsc(getQty(it ? it.sr : null, null, g.isExtra ? it : null))}</td>
+        <td class="bom-c-qtyunit">${bomEsc(it.unit || 'Nos')}</td>
+        <td class="bom-c-desc">${bomEsc(getDesc(it ? it.sr : null, g.isExtra ? it : null))}</td>
+      </tr>`;
+    }
+
     return `
       <tr class="bom-challan-row">
         <td class="bom-c-sr">${g.displaySr}</td>
         <td class="bom-c-name" colspan="3">${bomEsc(it.name)}</td>
-        <td class="bom-c-qtylabel">${bomEsc(getQty(it.sr))}</td>
-        <td class="bom-c-qtyunit">${bomEsc(it.unit)}</td>
-        <td class="bom-c-desc">${bomEsc(getDesc(it.sr))}</td>
+        <td class="bom-c-qtylabel">${bomEsc(getQty(it ? it.sr : null, null, g.isExtra ? it : null))}</td>
+        <td class="bom-c-qtyunit">${bomEsc(it.unit || 'Nos')}</td>
+        <td class="bom-c-desc">${bomEsc(getDesc(it ? it.sr : null, g.isExtra ? it : null))}</td>
       </tr>`;
   }).join('');
 }

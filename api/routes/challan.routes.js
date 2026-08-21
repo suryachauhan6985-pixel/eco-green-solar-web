@@ -157,28 +157,31 @@ module.exports = function registerChallanRoutes(app, deps) {
        JSON.stringify(b.items || {}), req.user ? req.user.username : null]
     );
 
-    // Auto-generate Panel Serials Excel every time a challan is created.
-    // Best-effort: never fail the challan save if the NAS is unreachable.
+    // Auto-generate Panel Serials Excel in parallel / background
     let panelSerialsExcel = null;
-    try {
-      const serials = Array.isArray(b.panelSerials) ? b.panelSerials : [];
-      if (serials.length) {
-        panelSerialsExcel = await writePanelSerialsExcel({
-          orderNo,
-          challanNo,
-          serials,
+    const serials = Array.isArray(b.panelSerials) ? b.panelSerials : [];
+    if (serials.length) {
+      const excelTask = writePanelSerialsExcel({ orderNo, challanNo, serials })
+        .then((excelRes) => {
+          if (excelRes && excelRes.ok) {
+            console.log(
+              `[Challan] Panel serials Excel saved (${excelRes.count} serials):`,
+              excelRes.filePath,
+              excelRes.onNas ? '(NAS)' : '(local fallback)'
+            );
+          }
+          return excelRes;
+        })
+        .catch((e) => {
+          console.warn('[Challan] Panel serials Excel background write warning:', e.message);
+          return null;
         });
-        if (panelSerialsExcel && panelSerialsExcel.ok) {
-          console.log(
-            `[Challan] Panel serials Excel saved (${panelSerialsExcel.count} serials):`,
-            panelSerialsExcel.filePath,
-            panelSerialsExcel.onNas ? '(NAS)' : '(local fallback)'
-          );
-        }
-      }
-    } catch (e) {
-      console.warn('[Challan] Panel serials Excel failed (challan still saved):', e.message);
-      panelSerialsExcel = { ok: false, error: e.message };
+
+      // Quick timeout race: if local/NAS is fast (<250ms), return metadata immediately; otherwise continue in background
+      panelSerialsExcel = await Promise.race([
+        excelTask,
+        new Promise((r) => setTimeout(() => r(null), 250)),
+      ]);
     }
 
     res.json({

@@ -111,36 +111,31 @@ const HEADER_CELLS = {
 // below is sr:15 (not sr:5) even though it prints 3rd, right after
 // 2.5 X 1.5 — array/list POSITION controls print order, `sr` is just a
 // lookup key.
-const GI_PIPE_MODELS = [
-  { sr: 3,  model: '1.5 X 1.5' },
-  { sr: 4,  model: '2.5 X 1.5' },
-  { sr: 15, model: '1 X 1' }, // NEW 3rd size
-];
 const GI_FEET_ORDER = ['20 Feet', '15 Feet', '10 Feet', '5 Feet'];
 const GI_UNIT = 'Nos';
 
-// Fixed single-row categories, always printed one line each (unlike GI
-// Pipe these are never skipped even at qty 0 — same as the original
-// template's always-visible 13/14-line list). Sr numbers match
-// BOM_CHALLAN_TEMPLATE in bom-challan.js exactly — including sr:9 = Wire
-// Box, which the OLD ITEM_ROWS above never included at all (a real bug:
-// Wire Box quantities were silently never printed, and every category
-// after it in that old list was reading the WRONG sr's data one slot off).
-const FIXED_CATEGORIES = [
-  { sr: 5,  name: 'Bom Box',           unit: 'Box'  },
-  { sr: 6,  name: 'Inverter',          unit: 'Nos'  },
-  { sr: 7,  name: 'Earthing & LA Kit', unit: 'Nos'  },
-  { sr: 8,  name: 'Earthing Bag',      unit: 'Nos'  },
-  { sr: 9,  name: 'Wire Box',          unit: 'Box'  },
-  { sr: 10, name: 'PVC Pipe',          unit: 'Nos'  },
-  { sr: 11, name: 'Ferma',             unit: 'Nos'  },
-  { sr: 12, name: 'Reti Bag',          unit: 'Bori' },
-  { sr: 13, name: 'Kapchi Bag',        unit: 'Bori' },
-  { sr: 14, name: 'Cement Bag',        unit: 'Bori' },
+// Unified categories list for the printed Challan.
+// Only items with Qty > 0 on this challan trip are printed into rows.
+const ALL_CHALLAN_CATEGORIES = [
+  { sr: 1,  name: 'Solar Panel',       unit: 'Nos', isGi: false },
+  { sr: 2,  name: 'GI Structure',      unit: 'Set', isGi: false },
+  { sr: 3,  name: 'GI Pipe',           unit: 'Nos', isGi: true, model: '1.5 X 1.5' },
+  { sr: 4,  name: 'GI Pipe',           unit: 'Nos', isGi: true, model: '2.5 X 1.5' },
+  { sr: 15, name: 'GI Pipe',           unit: 'Nos', isGi: true, model: '1 X 1' },
+  { sr: 5,  name: 'Bom Box',           unit: 'Box', isGi: false },
+  { sr: 6,  name: 'Inverter',          unit: 'Nos', isGi: false },
+  { sr: 7,  name: 'Earthing & LA Kit', unit: 'Nos', isGi: false },
+  { sr: 8,  name: 'Earthing Bag',      unit: 'Nos', isGi: false },
+  { sr: 9,  name: 'Wire Box',          unit: 'Box', isGi: false },
+  { sr: 10, name: 'PVC Pipe',          unit: 'Nos', isGi: false },
+  { sr: 11, name: 'Ferma',             unit: 'Nos', isGi: false },
+  { sr: 12, name: 'Reti Bag',          unit: 'Bori', isGi: false },
+  { sr: 13, name: 'Kapchi Bag',        unit: 'Bori', isGi: false },
+  { sr: 14, name: 'Cement Bag',        unit: 'Bori', isGi: false },
 ];
 
-const POOL_START_ROW = 11;
-const POOL_END_ROW = 36; // inclusive, 26 rows total — NEVER changes.
+const POOL_START_ROW = 9;
+const POOL_END_ROW = 36; // inclusive, 28 rows total (rows 9-36) — NEVER changes.
 
 // Column letters for each logical field, per copy. Mirrors HEADER_CELLS'
 // customer/company split above.
@@ -149,83 +144,80 @@ const POOL_COLS = {
   company:  { sr: 'K', name: 'L', model: 'M', size: 'N', qty: 'O', unit: 'P', desc: 'Q' },
 };
 
-// Builds the row plan for ONE render: which physical row (11-36) gets
+// Builds the row plan for ONE render: which physical row (9-36) gets
 // which content, and what its printed Sr. No. is. Same plan is reused for
 // both copies (Customer/Company), since they always mirror each other.
-//
-// worst case (all 3 GI sizes fully active + all 10 fixed categories) =
-// 12 + 10 = 22 rows, comfortably inside the 26-row pool — the
-// `row > POOL_END_ROW` guard below is defensive only, not expected to hit.
 function buildChallanRowPlan(items) {
   const plan = [];
   let row = POOL_START_ROW;
-  let printSr = 3; // Sr 1/2 (Solar Panel/GI Structure) are static, rows 9-10
+  let printSr = 1;
 
-  GI_PIPE_MODELS.forEach(({ sr, model }) => {
-    const activeFeet = GI_FEET_ORDER.filter((size) => {
-      const v = items[`${sr}|${size}`];
-      return v && Number(v.qty) > 0;
-    });
-    if (!activeFeet.length) return; // this size wasn't dispatched this trip — zero rows, no Sr No used
-    if (row + activeFeet.length - 1 > POOL_END_ROW) return; // pool exhausted — skip rather than overflow
+  ALL_CHALLAN_CATEGORIES.forEach((cat) => {
+    if (row > POOL_END_ROW) return;
 
-    activeFeet.forEach((size, i) => {
-      plan.push({
-        kind: 'gi',
-        row: row + i,
-        blockFirst: i === 0,
-        blockLast: i === activeFeet.length - 1,
-        blockSize: activeFeet.length,
-        printSr,
-        model,
-        size,
-        unit: GI_UNIT,
-        qtyKey: `${sr}|${size}`,
-        descKey: `${sr}|`,
+    if (cat.isGi) {
+      const activeFeet = GI_FEET_ORDER.filter((size) => {
+        const v = items[`${cat.sr}|${size}`];
+        return v && Number(v.qty) > 0;
       });
-    });
-    row += activeFeet.length;
-    printSr += 1;
-  });
+      if (!activeFeet.length) return; // zero qty -> skip!
 
-  FIXED_CATEGORIES.forEach(({ sr, name, unit }) => {
-    if (row > POOL_END_ROW) return; // pool exhausted — defensive, see note above
+      activeFeet.forEach((size, i) => {
+        plan.push({
+          kind: 'gi',
+          row: row + i,
+          blockFirst: i === 0,
+          blockLast: i === activeFeet.length - 1,
+          blockSize: activeFeet.length,
+          printSr,
+          model: cat.model,
+          size,
+          unit: cat.unit,
+          qtyKey: `${cat.sr}|${size}`,
+          descKey: `${cat.sr}|`,
+        });
+      });
+      row += activeFeet.length;
+      printSr += 1;
+      return;
+    }
+
+    // Non-GI category: only include if qty > 0!
+    const itemData = (items && items[`${cat.sr}|`]) || {};
+    const qtyVal = itemData.qty;
+    const hasQty = qtyVal !== undefined && qtyVal !== null && String(qtyVal).trim() !== '' && Number(qtyVal) > 0;
+    if (!hasQty) return;
+
     plan.push({
-      kind: 'fixed',
+      kind: 'item',
       row,
       printSr,
-      name,
-      unit,
-      qtyKey: `${sr}|`,
-      descKey: `${sr}|`,
+      name: cat.name,
+      model: String(itemData.model || cat.model || '').trim(),
+      unit: cat.unit,
+      qty: qtyVal,
+      desc: String(itemData.desc || '').trim(),
     });
     row += 1;
     printSr += 1;
   });
 
-  // Extra, software-added lines (see bomChallanAddExtraItemRow /
-  // bomCollectChallanExtraItems in bom-challan.js) — arbitrary Name/Model/
-  // Qty/Unit/Description typed straight into the Challan entry modal,
-  // outside the 14 fixed categories above. Printed right after the fixed
-  // categories, borrowing rows from the SAME shared blank-row pool they
-  // already leave spare — no template/layout change needed, and if more
-  // extra items are added than there's room left, the leftover ones are
-  // simply skipped (defensive `row > POOL_END_ROW` guard, same as the
-  // fixed categories above) rather than corrupting the fixed 26-row grid.
+  // Extra software-added items
   const extraItems = Array.isArray(items && items.extra) ? items.extra : [];
-  extraItems.forEach((extra, i) => {
+  extraItems.forEach((extra) => {
     if (row > POOL_END_ROW) return;
     const name = String((extra && extra.name) || '').trim();
-    if (!name) return; // a truly blank extra row was already filtered out client-side, but stay defensive here too
+    const qtyVal = extra && extra.qty;
+    if (!name || !qtyVal || Number(qtyVal) <= 0) return;
     plan.push({
-      kind: 'extra',
+      kind: 'item',
       row,
       printSr,
       name,
-      model: String((extra && extra.model) || ''),
+      model: String((extra && extra.model) || '').trim(),
       unit: String((extra && extra.unit) || 'Nos'),
-      qty: (extra && extra.qty) || '',
-      desc: String((extra && extra.desc) || ''),
+      qty: qtyVal,
+      desc: String((extra && extra.desc) || '').trim(),
     });
     row += 1;
     printSr += 1;
@@ -245,8 +237,18 @@ function runSoffice(xlsxPath, outDir) {
     const bin = process.env.SOFFICE_PATH || 'soffice';
     execFile(
       bin,
-      ['--headless', '--norestore', '--convert-to', 'pdf', '--outdir', outDir, xlsxPath],
-      { timeout: 60000 },
+      [
+        '--headless',
+        '--invisible',
+        '--nologo',
+        '--nodefault',
+        '--norestore',
+        '--nolockcheck',
+        '--convert-to', 'pdf',
+        '--outdir', outDir,
+        xlsxPath,
+      ],
+      { timeout: 45000 },
       (err, stdout, stderr) => {
         if (err) return reject(new Error(`LibreOffice conversion failed: ${stderr || err.message}`));
         resolve();
@@ -424,12 +426,10 @@ const SHEET_CONFIG = {
   rows: {
     1:  { height: 20 },
     39: { height: 20 },
-    6: { height: 17 },
-    7: { height: 15 },
-    8: { height: 15 },
+    6:  { height: 17 },
+    7:  { height: 26 }, // 2-line wrap height for Customer Name
+    8:  { height: 15 },
     38: { height: 16 },
-    // Add a row number here to control its height, e.g. 7: { height: 22 }.
-    // Any row left out keeps the template's original height untouched.
   },
 
   unmerges: [
@@ -441,23 +441,12 @@ const SHEET_CONFIG = {
   ],
 
   cells: {
-  B7: { align: 'center', valign: 'middle' },   // "Name:" - customer copy
-    F7: { align: 'center', valign: 'middle' },   // "City:" - customer copy
-    K7: { align: 'center', valign: 'middle' },   // "Name:" - company copy
-    O7: { align: 'center', valign: 'middle' },   // "City:" - company copy
-    // Add cell addresses here to style them, e.g.:
-    // B7: { font: { bold: true, size: 10 } },
-    // C7: { wrap: true, valign: 'middle' },
-    //
-    // Full-width border example — all 4 sides styled independently:
-    // A1: {
-    //   border: {
-    //     top:    { style: 'thick',  color: '000000' },
-    //     bottom: { style: 'thin',   color: '000000' },
-    //     left:   { style: 'dashed', color: 'C00000' },
-    //     right:  'none',
-    //   },
-    // },
+    B7: { align: 'center', valign: 'middle', font: { bold: true, size: 10 } },
+    C7: { align: 'left', valign: 'middle', wrap: true, font: { bold: true, size: 9.5 } },
+    F7: { align: 'center', valign: 'middle' },
+    K7: { align: 'center', valign: 'middle', font: { bold: true, size: 10 } },
+    L7: { align: 'left', valign: 'middle', wrap: true, font: { bold: true, size: 9.5 } },
+    O7: { align: 'center', valign: 'middle' },
   },
 
   values: {
@@ -738,51 +727,32 @@ function applyChallanRowPlan(sheet, plan, items) {
         return;
       }
 
-      if (entry.kind === 'fixed') {
-        sheet.mergeCells(`${cols.name}${r}:${cols.size}${r}`); // name spans C:E — no separate model/size column needed
+      if (entry.kind === 'item') {
         sheet.getCell(`${cols.sr}${r}`).value = entry.printSr;
         sheet.getCell(`${cols.name}${r}`).value = entry.name;
         sheet.getCell(`${cols.sr}${r}`).alignment = CENTER_ALIGN;
         sheet.getCell(`${cols.name}${r}`).alignment = CENTER_ALIGN;
-        const qty = (items[entry.qtyKey] && items[entry.qtyKey].qty) || '';
-        sheet.getCell(`${cols.qty}${r}`).value = qty;
+
+        if (entry.model) {
+          sheet.mergeCells(`${cols.model}${r}:${cols.size}${r}`);
+          sheet.getCell(`${cols.model}${r}`).value = entry.model;
+          sheet.getCell(`${cols.model}${r}`).alignment = CENTER_ALIGN;
+          setBorder(sheet.getCell(`${cols.name}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin' });
+          setBorder(sheet.getCell(`${cols.model}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin' });
+        } else {
+          sheet.mergeCells(`${cols.name}${r}:${cols.size}${r}`);
+          setBorder(sheet.getCell(`${cols.name}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin' });
+        }
+
+        sheet.getCell(`${cols.qty}${r}`).value = entry.qty;
         sheet.getCell(`${cols.unit}${r}`).value = entry.unit;
         sheet.getCell(`${cols.qty}${r}`).alignment = CENTER_ALIGN;
         sheet.getCell(`${cols.unit}${r}`).alignment = CENTER_ALIGN;
-        const desc = (items[entry.descKey] && items[entry.descKey].desc) || '';
-        if (desc) sheet.getCell(`${cols.desc}${r}`).value = desc;
+
+        if (entry.desc) sheet.getCell(`${cols.desc}${r}`).value = entry.desc;
         sheet.getCell(`${cols.desc}${r}`).alignment = CENTER_ALIGN;
 
-        [cols.sr, cols.name].forEach((col) => {
-          setBorder(sheet.getCell(`${col}${r}`), {
-            top: 'thin', bottom: 'thin',
-            left: col === cols.sr ? outerLeft : 'thin',
-            right: 'thin',
-          });
-        });
-        setBorder(sheet.getCell(`${cols.qty}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'none' });
-        setBorder(sheet.getCell(`${cols.unit}${r}`), { top: 'thin', bottom: 'thin', left: 'none', right: 'thin' });
-        setBorder(sheet.getCell(`${cols.desc}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: outerRight });
-        return;
-      }
-
-      if (entry.kind === 'extra') {
-        // Model gets its own column here (unlike "fixed", which has no
-        // separate model text) — merge only Name; Model/Size stay two
-        // distinct cells so a typed-in model still has somewhere to go.
-        sheet.getCell(`${cols.sr}${r}`).value = entry.printSr;
-        sheet.getCell(`${cols.name}${r}`).value = entry.name;
-        sheet.getCell(`${cols.model}${r}`).value = entry.model;
-        sheet.getCell(`${cols.qty}${r}`).value = entry.qty;
-        sheet.getCell(`${cols.unit}${r}`).value = entry.unit;
-        if (entry.desc) sheet.getCell(`${cols.desc}${r}`).value = entry.desc;
-        [cols.sr, cols.name, cols.model, cols.qty, cols.unit, cols.desc].forEach((col) => {
-          sheet.getCell(`${col}${r}`).alignment = CENTER_ALIGN;
-        });
         setBorder(sheet.getCell(`${cols.sr}${r}`), { top: 'thin', bottom: 'thin', left: outerLeft, right: 'thin' });
-        [cols.name, cols.model, cols.size].forEach((col) => {
-          setBorder(sheet.getCell(`${col}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin' });
-        });
         setBorder(sheet.getCell(`${cols.qty}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'none' });
         setBorder(sheet.getCell(`${cols.unit}${r}`), { top: 'thin', bottom: 'thin', left: 'none', right: 'thin' });
         setBorder(sheet.getCell(`${cols.desc}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: outerRight });
