@@ -798,8 +798,10 @@ function bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy) {
       <td class="bom-challan-field-cell" colspan="3"><b>Capacity :</b> ${bomEsc(capText)}</td>
     </tr>
     <tr class="bom-challan-row6">
-      <td class="bom-challan-name-cell" colspan="4"><b>Name:</b> ${bomEsc(header.customerName)}</td>
-      <td class="bom-challan-field-cell" colspan="3"><b>City:</b> ${bomEsc(header.city)}</td>
+      <td class="bom-challan-namelabel-cell">Name:</td>
+      <td class="bom-challan-nameval-cell" colspan="3">${bomEsc(header.customerName)}</td>
+      <td class="bom-challan-citylabel-cell" colspan="2">City:</td>
+      <td class="bom-challan-cityval-cell">${bomEsc(header.city)}</td>
     </tr>
   `;
 }
@@ -1018,7 +1020,7 @@ window.printChallanDirectly = function(challanData) {
   <style>
     @page {
       size: 297mm 210mm;
-      margin: 4mm 5mm;
+      margin: 12mm 5mm;
     }
     * {
       box-sizing: border-box;
@@ -1103,7 +1105,7 @@ window.printChallanDirectly = function(challanData) {
     .bom-challan-row3 { height: 16pt; }
     .bom-challan-row4 { height: 18pt; }
     .bom-challan-row5 { height: 20pt; }
-    .bom-challan-row6 { height: 17pt; }
+    .bom-challan-row6 { height: 19.5pt; }
 
     .bom-challan-table td.bom-challan-logo-cell,
     .bom-challan-table td.bom-challan-gst-cell,
@@ -1171,14 +1173,36 @@ window.printChallanDirectly = function(challanData) {
     }
     .bom-challan-field-cell b { font-weight: 700; }
 
-    .bom-challan-name-cell {
-      font-size: 10pt;
-      font-weight: 400;
-      text-align: left;
-      padding: 0 4px !important;
+    .bom-challan-namelabel-cell {
+      font-size: 9.5pt;
+      font-weight: 700;
+      text-align: center;
       border: 1px solid #000000;
     }
-    .bom-challan-name-cell b { font-weight: 700; }
+
+    .bom-challan-nameval-cell {
+      font-size: 10pt;
+      font-weight: 700;
+      text-align: left;
+      padding-left: 4px !important;
+      border: 1px solid #000000;
+      white-space: nowrap;
+    }
+
+    .bom-challan-citylabel-cell {
+      font-size: 10pt;
+      font-weight: 700;
+      text-align: center;
+      border: 1px solid #000000;
+    }
+
+    .bom-challan-cityval-cell {
+      font-size: 10pt;
+      font-weight: 700;
+      text-align: center;
+      border: 1px solid #000000;
+      white-space: nowrap;
+    }
 
     .bom-challan-tablehead-row { height: 17pt; }
     .bom-challan-tablehead-row th {
@@ -1244,22 +1268,13 @@ window.printChallanDirectly = function(challanData) {
       overflow: hidden !important;
     }
     td.bom-challan-footer-issuedby,
-    td.bom-challan-footer-receivedby {
+    td.bom-challan-footer-receivedby,
+    td.bom-challan-footer-caption {
       border: none !important;
       font-size: 10pt;
       font-weight: 700;
       text-align: center;
       vertical-align: middle;
-    }
-    td.bom-challan-footer-caption {
-      border-top: 1px solid #000000 !important;
-      border-left: none !important;
-      border-right: none !important;
-      border-bottom: none !important;
-      font-size: 10pt;
-      font-weight: 700;
-      text-align: center;
-      vertical-align: top;
     }
   </style>
 </head>

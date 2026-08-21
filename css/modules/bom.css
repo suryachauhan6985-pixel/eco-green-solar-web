@@ -200,7 +200,7 @@
 .bom-challan-row3{height:16pt;}
 .bom-challan-row4{height:18pt;}
 .bom-challan-row5{height:20pt;}
-.bom-challan-row6{height:17pt;}
+.bom-challan-row6{height:19.5pt;}
 
 /* Left 4-column header block (Logo, GST, Green Energy, Addr) - NO INTERNAL BORDERS */
 .bom-challan-table td.bom-challan-logo-cell,
@@ -278,15 +278,35 @@ td.bom-challan-title-cell{
   font-weight:700;
 }
 
-.bom-challan-name-cell{
-  font-size:10pt;
-  font-weight:400;
-  text-align:left;
-  padding:0 4px !important;
+.bom-challan-namelabel-cell{
+  font-size:9.5pt;
+  font-weight:700;
+  text-align:center;
   border:1px solid #000000;
 }
-.bom-challan-name-cell b{
+
+.bom-challan-nameval-cell{
+  font-size:10pt;
   font-weight:700;
+  text-align:left;
+  padding-left:4px !important;
+  border:1px solid #000000;
+  white-space:nowrap;
+}
+
+.bom-challan-citylabel-cell{
+  font-size:10pt;
+  font-weight:700;
+  text-align:center;
+  border:1px solid #000000;
+}
+
+.bom-challan-cityval-cell{
+  font-size:10pt;
+  font-weight:700;
+  text-align:center;
+  border:1px solid #000000;
+  white-space:nowrap;
 }
 
 /* ---------- Table header row (row 7) ---------- */
@@ -358,23 +378,13 @@ td.bom-challan-footer-vehicle{
 }
 
 td.bom-challan-footer-issuedby,
-td.bom-challan-footer-receivedby{
+td.bom-challan-footer-receivedby,
+td.bom-challan-footer-caption{
   border:none !important;
   font-size:10pt;
   font-weight:700;
   text-align:center;
   vertical-align:middle;
-}
-
-td.bom-challan-footer-caption{
-  border-top:1px solid #000000 !important;
-  border-left:none !important;
-  border-right:none !important;
-  border-bottom:none !important;
-  font-size:10pt;
-  font-weight:700;
-  text-align:center;
-  vertical-align:top;
 }
 
 /* Dark-theme category divider row used in the ON-SCREEN "Kit Items" preview table */
