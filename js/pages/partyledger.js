@@ -153,6 +153,7 @@ window.PAGES.partyledger = {
               <strong id="stmtVoucherLabel" style="font-size:13px; color:var(--txt);"></strong>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
+              <button type="button" class="btn btn-ghost" id="stmtVoucherExportSerialsBtn" style="padding:5px 10px; font-size:11px; color:#22c55e;" title="Export Serials Excel"><i class="fa-solid fa-file-excel"></i> Export Serials</button>
               <button type="button" class="btn btn-ghost" id="stmtVoucherPrintBtn" style="display:none; padding:5px 10px; font-size:11px; color:var(--blue);"><i class="fa-solid fa-print"></i> Print Challan</button>
               <button type="button" class="btn btn-ghost" id="stmtVoucherEditBtn" style="padding:5px 10px; font-size:11px;"><i class="fa-solid fa-pen"></i> Edit Voucher</button>
               <button type="button" class="btn btn-ghost" id="stmtVoucherDelBtn" style="padding:5px 10px; font-size:11px; color:var(--red);"><i class="fa-solid fa-trash"></i> Delete</button>
@@ -772,6 +773,51 @@ window.PAGES.partyledger = {
       }
     }
 
+    function exportVoucherSerialsExcel(rows, refName) {
+      if (!rows || !rows.length) {
+        if (window.showToast) window.showToast('No records found for this voucher.', 'warning');
+        return;
+      }
+      const serials = rows.map((r) => r.serial_no).filter((s) => s && s !== '-' && String(s).trim());
+      if (!serials.length) {
+        if (window.showToast) window.showToast('No serial numbers found for this voucher.', 'warning');
+        return;
+      }
+
+      const cleanRef = String(refName || 'Voucher').replace(/[/\\?%*:|"<>]/g, '-').trim();
+      const partyName = selected ? String(selected.short_name || selected.name || selected.partyName || '').replace(/[/\\?%*:|"<>]/g, '-').trim() : '';
+      const fileName = partyName && cleanRef ? `${cleanRef} - ${partyName}.xlsx` : `${cleanRef || 'Serials'}.xlsx`;
+
+      if (typeof XLSX !== 'undefined') {
+        const data = [
+          ['Sr. No.', 'Serial No.']
+        ];
+        serials.forEach((sn, idx) => {
+          data.push([idx + 1, sn]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        ws['!cols'] = [{ wch: 12 }, { wch: 32 }];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Serials');
+
+        XLSX.writeFile(wb, fileName);
+        if (window.showToast) window.showToast(`Exported ${serials.length} serial(s) to ${fileName}`, 'success');
+      } else {
+        window.location.href = `/api/serials/download-excel/${encodeURIComponent(refName)}`;
+      }
+    }
+
+    const stmtVoucherExportSerialsBtn = document.getElementById('stmtVoucherExportSerialsBtn');
+    if (stmtVoucherExportSerialsBtn) {
+      stmtVoucherExportSerialsBtn.addEventListener('click', () => {
+        if (stRef && stRef.key && stRef.key !== '-') {
+          const matched = selectedRows.filter((r) => r.date === stDate && r.movement === stRef.movement && r.ref_key === stRef.key);
+          exportVoucherSerialsExcel(matched, stRef.key);
+        }
+      });
+    }
+
     const stmtVoucherPrintBtn = document.getElementById('stmtVoucherPrintBtn');
     if (stmtVoucherPrintBtn) {
       stmtVoucherPrintBtn.addEventListener('click', () => {
@@ -1062,11 +1108,17 @@ window.PAGES.partyledger = {
           <td data-label="Category" style="text-align:center;">${catText}</td>
           <td data-label="Warehouse" style="text-align:center;">${whText}</td>
           <td data-label="Actions" class="stmt-row-actions" style="text-align:center; white-space:nowrap;">
+            <button type="button" class="btn btn-ghost stmt-act-export-serials" title="Export Serials Excel" style="padding:4px 8px;font-size:11px;color:#22c55e;"><i class="fa-solid fa-file-excel"></i></button>
             ${g.movement === 'OUT' && canAct ? `<button type="button" class="btn btn-ghost stmt-act-print" title="Print Challan" style="padding:4px 8px;font-size:11px;color:var(--blue);"><i class="fa-solid fa-print"></i></button>` : ''}
             <button type="button" class="btn btn-ghost stmt-act-edit" title="Edit voucher" ${canAct ? '' : 'disabled'} style="padding:4px 8px;font-size:11px;"><i class="fa-solid fa-pen"></i></button>
             <button type="button" class="btn btn-ghost stmt-act-del" title="Delete voucher" ${canAct ? '' : 'disabled'} style="padding:4px 8px;font-size:11px;color:var(--red);"><i class="fa-solid fa-trash"></i></button>
           </td>`;
         tr.addEventListener('click', (e) => {
+          if (e.target.closest('.stmt-act-export-serials')) {
+            e.stopPropagation();
+            exportVoucherSerialsExcel(g.rows, g.ref);
+            return;
+          }
           if (e.target.closest('.stmt-act-print')) {
             e.stopPropagation();
             const chNo = (g.first && g.first.chalan_no && g.first.chalan_no !== '-') ? g.first.chalan_no : g.ref;

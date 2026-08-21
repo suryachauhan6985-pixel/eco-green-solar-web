@@ -1308,6 +1308,18 @@ window.PAGES.sales = {
           lines: savedLines,
         });
         if (window.showToast) window.showToast('Sales Dispatch executed successfully!', 'success');
+
+        // Auto-save serials Excel to network path if serials were dispatched
+        const allSalesSerials = savedLines.flatMap((l) => l.serials || []).filter(Boolean);
+        if (allSalesSerials.length) {
+          window.Api.post('/serials/save-excel', {
+            orderNo: orderNo || chalanNo,
+            customerName: customer,
+            shortName: orderNo,
+            date: chalanDate || new Date().toISOString(),
+            serials: allSalesSerials
+          }, { silent: true }).catch(() => {});
+        }
         
         let uploadWarning = '';
         if (chalanNo && saleProof.files.length) {

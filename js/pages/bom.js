@@ -731,6 +731,41 @@ window.PAGES.bom = {
         );
         if (confirmed) {
           ctx.setVerified(true);
+
+          // Collect all scanned serials from kit state
+          const allSerials = [];
+          if (ctx.currentKitState && Array.isArray(ctx.currentKitState.sections)) {
+            for (const sec of ctx.currentKitState.sections) {
+              for (const it of (sec.items || [])) {
+                if (Array.isArray(it.serials) && it.serials.length) {
+                  it.serials.forEach((s) => {
+                    const trimmed = String(s || '').trim();
+                    if (trimmed) allSerials.push(trimmed);
+                  });
+                }
+              }
+            }
+          }
+
+          const custName = ctx.$('bomCustomerName') ? ctx.$('bomCustomerName').value : '';
+          const headerDate = ctx.$('bomChallanDate') ? ctx.$('bomChallanDate').value : '';
+
+          if (allSerials.length > 0) {
+            window.Api.post('/serials/save-excel', {
+              orderNo: orderNo || 'BOM',
+              customerName: custName,
+              shortName: orderNo,
+              date: headerDate || new Date().toISOString(),
+              serials: allSerials
+            }, { silent: true }).then((res) => {
+              if (res && res.success) {
+                if (window.showToast) window.showToast(`Scanned Serials Excel saved (${res.fileName})`, 'success');
+              }
+            }).catch((err) => {
+              console.warn('[SerialExcel] Auto-save note:', err);
+            });
+          }
+
           if (window.showToast) window.showToast('BOM verified — Create Dispatch is now unlocked.');
         }
       });
