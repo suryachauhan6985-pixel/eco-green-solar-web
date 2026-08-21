@@ -979,7 +979,15 @@ function createBomDispatchModule(ctx) {
               syncSavedChallanBackToBom(payload);
               const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
 
-              const pdfRes = await fetch(pdfUrl);
+              const abortCtrl = new AbortController();
+              const timeoutTimer = setTimeout(() => abortCtrl.abort(), 6500);
+              let pdfRes;
+              try {
+                pdfRes = await fetch(pdfUrl, { signal: abortCtrl.signal });
+              } finally {
+                clearTimeout(timeoutTimer);
+              }
+
               if (!pdfRes.ok) {
                 let msg = 'Could not generate the Challan PDF.';
                 try { const j = await pdfRes.json(); if (j && j.error) msg = j.error; } catch (e) { /* ignore */ }
@@ -1005,12 +1013,7 @@ function createBomDispatchModule(ctx) {
 
               setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
               if (window.showToast) {
-                const excelInfo = saved && saved.panelSerialsExcel;
-                if (excelInfo && excelInfo.count) {
-                  window.showToast(`Challan saved — PDF opening. Panel serials Excel (${excelInfo.count}) → ${excelInfo.folder}/${excelInfo.fileName}`);
-                } else {
-                  window.showToast('Challan saved — opening PDF for print.');
-                }
+                window.showToast('Challan saved — opening PDF for print.');
               }
             } catch (err) {
               console.error('Challan PDF generation error:', err);

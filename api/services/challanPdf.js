@@ -235,11 +235,22 @@ function buildChallanRowPlan(items) {
 function runSoffice(xlsxPath, outDir) {
   return new Promise((resolve, reject) => {
     const bin = process.env.SOFFICE_PATH || 'soffice';
+    const profileDir = path.join(os.tmpdir(), `lo_prof_${crypto.randomUUID()}`);
+    const profileUri = 'file:///' + profileDir.replace(/\\/g, '/');
     execFile(
       bin,
-      ['--headless', '--norestore', '--convert-to', 'pdf', '--outdir', outDir, xlsxPath],
-      { timeout: 45000 },
-      (err, stdout, stderr) => {
+      [
+        `-env:UserInstallation=${profileUri}`,
+        '--headless',
+        '--norestore',
+        '--nolockcheck',
+        '--convert-to', 'pdf',
+        '--outdir', outDir,
+        xlsxPath,
+      ],
+      { timeout: 25000 },
+      async (err, stdout, stderr) => {
+        try { await fsp.rm(profileDir, { recursive: true, force: true }); } catch (e) { /* ignore */ }
         if (err) return reject(new Error(`LibreOffice conversion failed: ${stderr || err.message}`));
         resolve();
       }

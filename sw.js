@@ -1,10 +1,10 @@
-const CACHE_NAME = 'eco-green-solar-erp-v31';
+const CACHE_NAME = 'eco-green-solar-erp-v32';
 
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/css/style.css?v=26',
+  '/css/style.css?v=27',
   '/css/modules/base.css?v=26',
   '/css/modules/layout.css?v=26',
   '/css/modules/components.css?v=26',
@@ -42,7 +42,7 @@ const APP_SHELL = [
   '/js/pages/bom-kit-builder.js?v=2',
   '/js/pages/bom-serial-scan.js?v=1',
   '/js/pages/bom-serial-modal.js?v=1',
-  '/js/pages/bom-dispatch.js?v=6',
+  '/js/pages/bom-dispatch.js?v=7',
   '/js/pages/bom.js?v=21',
   '/js/app.js?v=16',
   '/js/theme.js?v=2'
