@@ -249,6 +249,23 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
   width:100%; max-width:540px; max-height:85vh; overflow:auto;
   box-shadow:0 24px 60px rgba(0,0,0,.65);
   animation:egsModalPop .28s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: max-width 0.2s ease, width 0.2s ease;
+}
+.modal-box.modal-box-wide{
+  max-width:960px;
+  width:95vw;
+}
+.modal-box.modal-box-xl{
+  max-width:1200px;
+  width:95vw;
+}
+@media (min-width:992px){
+  .modal-box.modal-box-wide{
+    max-width:1050px;
+  }
+  .modal-box.modal-box-xl{
+    max-width:1250px;
+  }
 }
 @keyframes egsModalPop{
   from{ transform:scale(.92) translateY(14px); opacity:0; }

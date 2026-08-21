@@ -1271,8 +1271,8 @@ window.PAGES.sales = {
       const invoiceNo = $('saleInvNo').value.trim();
       const invoiceDate = invoiceNo ? (PD.dmyFromISO($('saleInvDate').value) || '-') : '-';
 
-      if (!customer) {
-        window.openModal('Missing Fields', '<p>Customer Name is required.</p>');
+      if (!customer || !chalanNo || !chalanDate) {
+        window.openModal('Missing Fields', '<p><strong>Customer Name</strong>, <strong>Challan No</strong>, and <strong>Challan Date</strong> are required for Sales Dispatch.</p>');
         return;
       }
 

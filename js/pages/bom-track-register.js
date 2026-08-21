@@ -1,4 +1,4 @@
-﻿// js/pages/bom-track-register.js
+// js/pages/bom-track-register.js
 // -----------------------------------------------------------------------------
 // Upgraded Track BOM Module: Stage pipeline cards, visual milestones,
 // timestamps, user attribution, and item fulfillment breakdown.
@@ -275,7 +275,7 @@ function createBomTrackRegisterModule(ctx) {
           </div>
         </div>
         <div id="bomTrackResult"></div>
-      `);
+      `, { size: 'xl' });
       const input = document.getElementById('bomTrackOrderInput');
       const searchBtn = document.getElementById('bomTrackSearchBtn');
       const resultBox = document.getElementById('bomTrackResult');
@@ -293,7 +293,7 @@ function createBomTrackRegisterModule(ctx) {
     }
 
     function bomOpenTrackForOrderNo(orderNo) {
-      window.openModal('Track BOM Order', `<div id="bomTrackResult"></div>`);
+      window.openModal('Track BOM Order', `<div id="bomTrackResult"></div>`, { size: 'xl' });
       const resultBox = document.getElementById('bomTrackResult');
       if (resultBox) bomFetchAndRenderTrack(orderNo, resultBox);
     }

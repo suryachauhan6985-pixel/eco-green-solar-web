@@ -467,12 +467,14 @@ td.bom-challan-gst-cell{font-size:10pt; font-weight:700; text-align:left;}
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 12px;
-  background: rgba(0, 0, 0, 0.2);
+  padding: 22px 18px;
+  background: rgba(0, 0, 0, 0.28);
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  width: 100%;
+  box-sizing: border-box;
   overflow-x: auto;
-  gap: 4px;
+  gap: 6px;
 }
 
 .bom-step-node {
@@ -480,20 +482,20 @@ td.bom-challan-gst-cell{font-size:10pt; font-weight:700; text-align:left;}
   flex-direction: column;
   align-items: center;
   text-align: center;
-  min-width: 105px;
+  min-width: 115px;
   position: relative;
   flex: 1;
 }
 
 .bom-step-icon-wrap {
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  margin-bottom: 8px;
+  font-size: 15px;
+  margin-bottom: 10px;
   position: relative;
   z-index: 2;
   transition: all 0.3s ease;

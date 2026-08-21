@@ -2064,9 +2064,19 @@ window.attachColumnFilters = function (table) {
   };
 
   // ---------- Modal (used for "Live User Sessions" popup, etc.) ----------
-  window.openModal = function (title, bodyHtml) {
+  window.openModal = function (title, bodyHtml, opts) {
+    opts = opts || {};
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalBody').innerHTML = bodyHtml;
+    const box = document.querySelector('#modalOverlay .modal-box');
+    if (box) {
+      box.classList.remove('modal-box-wide', 'modal-box-xl');
+      if (opts.size === 'xl') {
+        box.classList.add('modal-box-xl');
+      } else if (opts.size === 'large' || opts.size === 'wide' || opts.wide) {
+        box.classList.add('modal-box-wide');
+      }
+    }
     document.getElementById('modalOverlay').classList.add('show');
   };
   window.closeModal = function (event) {
