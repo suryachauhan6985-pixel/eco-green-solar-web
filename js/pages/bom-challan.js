@@ -498,27 +498,33 @@ function bomRenderChallanEntryModalHtml(header, kit, opts) {
         <i class="fa-solid fa-circle-check"></i> All ${mappedCount || (kit && kit.sections && kit.sections.length ? kit.sections.length : 'order')} line items mapped and quantities auto-filled successfully.
       </div>`;
 
+  const dateVal = header.challanDate ? toISODateStr(header.challanDate) : bomTodayLocalDateStr();
+  const capVal = (kit && kit.kw) ? kit.kw : (header.capacityKw || header.capacity || '');
+  const backBtnHtml = (opts.editMode || opts.customMode)
+    ? `<button type="button" class="btn btn-ghost" id="bomChallanBackToRegBtn" style="margin-right:auto;"><i class="fa-solid fa-arrow-left"></i> Back to Register</button>`
+    : '';
+
   return `
     <div id="bomChallanEntryModalRoot">
       <div class="form-grid cols-2">
-        <div class="field"><label>Challan No.</label><input type="text" id="bomChallanModalNo" placeholder="Challan no."></div>
+        <div class="field"><label>Challan No.</label><input type="text" id="bomChallanModalNo" value="${bomEscAttr(header.challanNo || '')}" placeholder="Challan no."></div>
         <div class="field">
           <label>Challan Date</label>
-          <input type="date" id="bomChallanModalDate" value="${bomEscAttr(bomTodayLocalDateStr())}">
+          <input type="date" id="bomChallanModalDate" value="${bomEscAttr(dateVal)}">
           <div id="bomChallanModalDateWarning" class="note" style="display:none;color:var(--red,#c0392b);margin-top:4px;">
             <i class="fa-solid fa-triangle-exclamation"></i> This is a future date — double-check before saving.
           </div>
         </div>
         <div class="field">
           <label>Order No.</label>
-          <input type="text" id="bomChallanModalOrderNo" value="${bomEscAttr(header.orderNo)}" placeholder="Order no. / Customer short code" list="bomChallanModalOrderNoList" autocomplete="off">
+          <input type="text" id="bomChallanModalOrderNo" value="${bomEscAttr(header.orderNo || '')}" placeholder="Order no. / Customer short code" list="bomChallanModalOrderNoList" autocomplete="off">
           <datalist id="bomChallanModalOrderNoList"></datalist>
         </div>
-        <div class="field"><label>Capacity (kW)</label><input type="text" id="bomChallanModalCapacity" value="${bomEscAttr(kit.kw || '')}"></div>
-        <div class="field"><label>Name</label><input type="text" id="bomChallanModalName" value="${bomEscAttr(header.customerName)}" placeholder="Customer / Party"></div>
-        <div class="field"><label>City</label><input type="text" id="bomChallanModalCity" placeholder="City"></div>
-        <div class="field"><label>Vehicle No.</label><input type="text" id="bomChallanModalVehicleNo" placeholder="e.g. GJ-03-BZ-7562"></div>
-        <div class="field"><label>Vehicle No. 2 (Optional)</label><input type="text" id="bomChallanModalVehicleNo2" placeholder="e.g. GJ-01-AB-1234 (Second vehicle if multi-trip)"></div>
+        <div class="field"><label>Capacity (kW)</label><input type="text" id="bomChallanModalCapacity" value="${bomEscAttr(capVal)}"></div>
+        <div class="field"><label>Name</label><input type="text" id="bomChallanModalName" value="${bomEscAttr(header.customerName || '')}" placeholder="Customer / Party"></div>
+        <div class="field"><label>City</label><input type="text" id="bomChallanModalCity" value="${bomEscAttr(header.city || '')}" placeholder="City"></div>
+        <div class="field"><label>Vehicle No.</label><input type="text" id="bomChallanModalVehicleNo" value="${bomEscAttr(header.vehicleNo || '')}" placeholder="e.g. GJ-03-BZ-7562"></div>
+        <div class="field"><label>Vehicle No. 2 (Optional)</label><input type="text" id="bomChallanModalVehicleNo2" value="${bomEscAttr(header.vehicleNo2 || '')}" placeholder="e.g. GJ-01-AB-1234 (Second vehicle if multi-trip)"></div>
       </div>
 
       <div style="display:flex; align-items:center; justify-content:space-between; margin:18px 0 10px; flex-wrap:wrap; gap:8px;">
@@ -547,7 +553,8 @@ function bomRenderChallanEntryModalHtml(header, kit, opts) {
         <button type="button" class="btn btn-ghost" id="bomChallanAddItemBtn" style="margin-top:8px;"><i class="fa-solid fa-plus"></i> Add Extra Item</button>
       </div>
 
-      <div class="actions-row" style="margin-top:18px;">
+      <div class="actions-row" style="margin-top:18px; display:flex; align-items:center; gap:10px;">
+        ${backBtnHtml}
         <button type="button" class="btn btn-ghost" id="bomChallanSaveBtn"><i class="fa-solid fa-floppy-disk"></i> Save Challan</button>
         <button type="button" class="btn btn-blue" id="bomChallanPrintBtn"><i class="fa-solid fa-print"></i> Print Challan</button>
       </div>
@@ -934,10 +941,68 @@ function bomRenderDirectChallanPrintSheetHtml(challanData) {
 
   let rawItems = [];
   if (Array.isArray(challanData.items) && challanData.items.length) {
-    rawItems = challanData.items;
+    rawItems = challanData.items.map((it) => ({
+      name: it.item_name || it.name || '',
+      model: it.model || '',
+      qty: it.qty != null ? Number(it.qty) : (it.quantity != null ? Number(it.quantity) : 0),
+      unit: it.unit || 'Nos',
+      description: it.description || it.desc || ''
+    }));
+  } else if (challanData.items && typeof challanData.items === 'object') {
+    const itemsMap = challanData.items;
+    BOM_CHALLAN_TEMPLATE.forEach((tpl) => {
+      if (tpl.sizes && tpl.sizes.length) {
+        const baseVal = itemsMap[`${tpl.sr}|`] || {};
+        tpl.sizes.forEach((size) => {
+          const key = `${tpl.sr}|${size}`;
+          const szVal = itemsMap[key];
+          const qty = szVal && szVal.qty != null ? Number(szVal.qty) : 0;
+          if (qty > 0) {
+            rawItems.push({
+              name: baseVal.name || tpl.name,
+              model: baseVal.model || tpl.model ? `${baseVal.model || tpl.model} (${size})` : size,
+              qty: qty,
+              unit: baseVal.unit || tpl.unit || 'Nos',
+              description: baseVal.desc || (szVal && szVal.desc) || ''
+            });
+          }
+        });
+      } else {
+        const key = `${tpl.sr}|`;
+        const itVal = itemsMap[key];
+        if (itVal) {
+          const qty = itVal.qty != null ? Number(itVal.qty) : 0;
+          if (qty > 0 || (itVal.desc && String(itVal.desc).trim())) {
+            rawItems.push({
+              name: itVal.name || tpl.name,
+              model: itVal.model || tpl.model || '',
+              qty: qty,
+              unit: itVal.unit || tpl.unit || 'Nos',
+              description: itVal.desc || ''
+            });
+          }
+        }
+      }
+    });
+
+    if (Array.isArray(itemsMap.extra) && itemsMap.extra.length) {
+      itemsMap.extra.forEach((ex) => {
+        const qty = ex.qty != null ? Number(ex.qty) : 0;
+        const name = (ex.name || '').trim();
+        if (qty > 0 || name) {
+          rawItems.push({
+            name: name || 'Extra Item',
+            model: ex.model || '',
+            qty: qty > 0 ? qty : 1,
+            unit: ex.unit || 'Nos',
+            description: ex.desc || ex.description || ''
+          });
+        }
+      });
+    }
   } else if (Array.isArray(challanData.lines) && challanData.lines.length) {
     rawItems = challanData.lines.map((l) => ({
-      item_name: [l.brand, l.watt ? l.watt + 'W' : '', l.model].filter(Boolean).join(' ') || l.cat || 'Item',
+      name: [l.brand, l.watt ? l.watt + 'W' : '', l.model].filter(Boolean).join(' ') || l.cat || 'Item',
       model: l.model || '',
       qty: l.qty != null ? Number(l.qty) : (Array.isArray(l.serials) ? l.serials.length : 1),
       unit: l.unit || 'Nos',
@@ -950,13 +1015,14 @@ function bomRenderDirectChallanPrintSheetHtml(challanData) {
   let physicalRows = 0;
 
   rawItems.forEach((it) => {
-    const qtyNum = Number(it.qty !== undefined ? it.qty : (it.quantity !== undefined ? it.quantity : 0));
-    const name = (it.item_name || it.name || '').trim();
+    const qtyNum = Number(it.qty !== undefined ? it.qty : 0);
+    const name = (it.name || '').trim();
     if (qtyNum <= 0 && !name) return; // skip empty
     displaySr += 1;
     physicalRows += 1;
     const model = (it.model || '').trim();
     const unit = (it.unit || 'Nos').trim();
+    const desc = (it.description || it.desc || '').trim();
     const itNameLen = name.length;
     const itNameStyle = itNameLen > 30 ? 'font-size: 8pt !important; line-height: 1.1;' : (itNameLen > 20 ? 'font-size: 8.5pt !important;' : '');
     
@@ -1612,7 +1678,12 @@ window.openCustomChallanModal = async function(prefillData) {
   if (typeof bomLoadChallanCategoryMap === 'function') await bomLoadChallanCategoryMap();
   const modalHtml = bomRenderChallanEntryModalHtml(header, kit, { onlyActive: false, customMode: true });
 
-  window.openModal('Custom Challan Entry', modalHtml, { fullscreen: true });
+  window.openModal('Custom Challan Entry', modalHtml, {
+    fullscreen: true,
+    onClose: () => {
+      window.openChallanRegisterModal();
+    }
+  });
 
   const modalNo = document.getElementById('bomChallanModalNo');
   const modalDate = document.getElementById('bomChallanModalDate');
@@ -1625,9 +1696,17 @@ window.openCustomChallanModal = async function(prefillData) {
   const saveBtn = document.getElementById('bomChallanSaveBtn');
   const printBtn = document.getElementById('bomChallanPrintBtn');
   const addItemBtn = document.getElementById('bomChallanAddItemBtn');
+  const backBtn = document.getElementById('bomChallanBackToRegBtn');
 
   if (modalNo && !modalNo.value.trim() && challanNo) modalNo.value = challanNo;
   if (modalDate && !modalDate.value) modalDate.value = todayIso;
+
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      window.closeModal(null, true);
+      window.openChallanRegisterModal();
+    });
+  }
 
   if (addItemBtn) addItemBtn.addEventListener('click', bomChallanAddExtraItemRow);
 
@@ -1661,10 +1740,8 @@ window.openCustomChallanModal = async function(prefillData) {
       try {
         await window.Api.post('/challan', payload);
         if (window.showToast) window.showToast(`Custom Challan #${payload.challanNo} saved successfully!`, 'success');
-        window.closeModal();
-        if (document.getElementById('challanRegisterModalBody')) {
-          window.openChallanRegisterModal();
-        }
+        window.closeModal(null, true);
+        window.openChallanRegisterModal();
       } catch (err) {
         window.openModal('Save Failed', `<p>${(err && err.message) || 'Could not save the Challan.'}</p>`);
       } finally {
@@ -1686,10 +1763,8 @@ window.openCustomChallanModal = async function(prefillData) {
       try {
         await window.Api.post('/challan', payload);
         if (window.showToast) window.showToast(`Custom Challan #${payload.challanNo} saved & opening print preview!`, 'success');
-        window.closeModal();
-        if (document.getElementById('challanRegisterModalBody')) {
-          window.openChallanRegisterModal();
-        }
+        window.closeModal(null, true);
+        window.openChallanRegisterModal();
         window.printChallanDirectly(payload);
       } catch (err) {
         window.openModal('Print Notice', `<p>${(err && err.message) || 'Could not save Custom Challan.'}</p>`);
@@ -1857,7 +1932,12 @@ window.openChallanEditModal = async function(challanId) {
     if (typeof bomLoadChallanCategoryMap === 'function') await bomLoadChallanCategoryMap();
     const modalHtml = bomRenderChallanEntryModalHtml(header, kit, { onlyActive: false, editMode: true });
 
-    window.openModal(`Edit Challan #${record.challan_no}`, modalHtml, { fullscreen: true });
+    window.openModal(`Edit Challan #${record.challan_no}`, modalHtml, {
+      fullscreen: true,
+      onClose: () => {
+        window.openChallanRegisterModal();
+      }
+    });
 
     const modalNo = document.getElementById('bomChallanModalNo');
     const modalDate = document.getElementById('bomChallanModalDate');
@@ -1870,34 +1950,69 @@ window.openChallanEditModal = async function(challanId) {
     const saveBtn = document.getElementById('bomChallanSaveBtn');
     const printBtn = document.getElementById('bomChallanPrintBtn');
     const addItemBtn = document.getElementById('bomChallanAddItemBtn');
+    const backBtn = document.getElementById('bomChallanBackToRegBtn');
+
+    if (modalNo && header.challanNo) modalNo.value = header.challanNo;
+    if (modalDate && header.challanDate) modalDate.value = toISODateStr(header.challanDate);
+    if (modalOrderNo && header.orderNo) modalOrderNo.value = header.orderNo;
+    if (modalCapacity && header.capacityKw) modalCapacity.value = header.capacityKw;
+    if (modalName && header.customerName) modalName.value = header.customerName;
+    if (modalCity && header.city) modalCity.value = header.city;
+    if (modalVehicleNo && header.vehicleNo) modalVehicleNo.value = header.vehicleNo;
+    if (modalVehicleNo2 && header.vehicleNo2) modalVehicleNo2.value = header.vehicleNo2;
+
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        window.closeModal(null, true);
+        window.openChallanRegisterModal();
+      });
+    }
 
     if (saveBtn) saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Update Challan';
 
     // Populate existing item values into the form
     const items = record.items || {};
-    Object.keys(items).forEach((key) => {
-      if (key === 'extra') return;
-      const it = items[key];
-      if (!it) return;
+    if (items && typeof items === 'object' && !Array.isArray(items)) {
+      Object.keys(items).forEach((key) => {
+        if (key === 'extra') return;
+        const it = items[key];
+        if (!it) return;
+        const [srStr, size] = key.split('|');
+        const sr = srStr ? srStr.trim() : '';
+        if (!sr) return;
 
-      const qtyInput = document.querySelector(`[data-challan-tpl-key="${key}"]`);
-      if (qtyInput && it.qty != null) qtyInput.value = it.qty;
+        let qtyInput = null;
+        if (size) {
+          qtyInput = document.querySelector(`.bom-challan-qty-input[data-challan-tpl-sr="${sr}"][data-challan-tpl-size="${size}"]`);
+        } else {
+          qtyInput = document.querySelector(`.bom-challan-qty-input[data-challan-tpl-sr="${sr}"]:not([data-challan-tpl-size])`);
+        }
+        if (qtyInput && it.qty != null && it.qty !== '') qtyInput.value = it.qty;
 
-      const descInput = document.querySelector(`[data-challan-tpl-desc="${key}"]`);
-      if (descInput && it.desc != null) descInput.value = it.desc;
+        if (it.desc != null && it.desc !== '') {
+          const descInput = document.querySelector(`[data-challan-tpl-desc="${sr}"]`);
+          if (descInput) descInput.value = it.desc;
+        }
 
-      const nameInput = document.querySelector(`[data-challan-tpl-name="${key}"]`);
-      if (nameInput && it.name) nameInput.value = it.name;
+        if (it.name) {
+          const nameInput = document.querySelector(`.bom-challan-name-input[data-challan-tpl-name="${sr}"]`);
+          if (nameInput) nameInput.value = it.name;
+        }
 
-      const modelInput = document.querySelector(`[data-challan-tpl-model="${key}"]`);
-      if (modelInput && it.model) modelInput.value = it.model;
+        if (it.model) {
+          const modelInput = document.querySelector(`.bom-challan-model-input[data-challan-tpl-model="${sr}"]`);
+          if (modelInput) modelInput.value = it.model;
+        }
 
-      const unitInput = document.querySelector(`[data-challan-tpl-unit="${key}"]`);
-      if (unitInput && it.unit) unitInput.value = it.unit;
-    });
+        if (it.unit) {
+          const unitInput = document.querySelector(`.bom-challan-unit-input[data-challan-tpl-unit="${sr}"]`);
+          if (unitInput) unitInput.value = it.unit;
+        }
+      });
+    }
 
     // Populate extra items if any
-    if (Array.isArray(items.extra) && items.extra.length) {
+    if (items && Array.isArray(items.extra) && items.extra.length) {
       const extraTbody = document.getElementById('bomChallanExtraItemsBody');
       if (extraTbody) {
         items.extra.forEach((u) => {
@@ -1950,7 +2065,7 @@ window.openChallanEditModal = async function(challanId) {
         try {
           await window.Api.put(`/challan/${challanId}`, payload);
           if (window.showToast) window.showToast(`Challan #${payload.challanNo} updated successfully!`, 'success');
-          window.closeModal();
+          window.closeModal(null, true);
           window.openChallanRegisterModal();
         } catch (err) {
           window.openModal('Update Failed', `<p>${(err && err.message) || 'Could not update the Challan.'}</p>`);
@@ -1973,10 +2088,8 @@ window.openChallanEditModal = async function(challanId) {
         try {
           await window.Api.put(`/challan/${challanId}`, payload);
           if (window.showToast) window.showToast(`Challan #${payload.challanNo} updated & opening print preview!`, 'success');
-          window.closeModal();
-          if (document.getElementById('challanRegisterModalBody')) {
-            window.openChallanRegisterModal();
-          }
+          window.closeModal(null, true);
+          window.openChallanRegisterModal();
           window.printChallanDirectly(payload);
         } catch (err) {
           window.openModal('Print Notice', `<p>${(err && err.message) || 'Could not update Challan.'}</p>`);

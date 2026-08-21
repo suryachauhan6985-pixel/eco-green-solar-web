@@ -2277,8 +2277,10 @@ window.attachColumnFilters = function (table) {
   };
 
   // ---------- Modal (used for "Live User Sessions" popup, etc.) ----------
+  let currentModalCloseCb = null;
   window.openModal = function (title, bodyHtml, opts) {
     opts = opts || {};
+    currentModalCloseCb = typeof opts.onClose === 'function' ? opts.onClose : null;
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalBody').innerHTML = bodyHtml;
     const overlay = document.getElementById('modalOverlay');
@@ -2298,11 +2300,18 @@ window.attachColumnFilters = function (table) {
     }
     overlay.classList.add('show');
   };
-  window.closeModal = function (event) {
+  window.closeModal = function (event, skipCallback) {
     if (event && event.target !== event.currentTarget) return;
     const overlay = document.getElementById('modalOverlay');
     overlay.classList.remove('show');
     overlay.classList.remove('modal-fullscreen');
+    if (!skipCallback && currentModalCloseCb) {
+      const cb = currentModalCloseCb;
+      currentModalCloseCb = null;
+      cb();
+    } else {
+      currentModalCloseCb = null;
+    }
   };
 
   // ---------- Confirm Dialog (drop-in replacement for window.confirm(),

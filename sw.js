@@ -1,19 +1,19 @@
-const CACHE_NAME = 'eco-green-solar-erp-v56';
+const CACHE_NAME = 'eco-green-solar-erp-v57';
 
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/css/style.css?v=45',
-  '/css/modules/base.css?v=45',
-  '/css/modules/layout.css?v=45',
-  '/css/modules/components.css?v=45',
-  '/css/modules/dashboard.css?v=45',
-  '/css/modules/responsive.css?v=45',
-  '/css/modules/party-ledger.css?v=45',
-  '/css/modules/auth.css?v=45',
-  '/css/modules/bom.css?v=45',
-  '/css/modules/scan-sheet.css?v=45',
+  '/css/style.css?v=46',
+  '/css/modules/base.css?v=46',
+  '/css/modules/layout.css?v=46',
+  '/css/modules/components.css?v=46',
+  '/css/modules/dashboard.css?v=46',
+  '/css/modules/responsive.css?v=46',
+  '/css/modules/party-ledger.css?v=46',
+  '/css/modules/auth.css?v=46',
+  '/css/modules/bom.css?v=46',
+  '/css/modules/scan-sheet.css?v=46',
   '/assets/icon.ico',
   '/assets/icons/icon-192.png?v=2',
   '/assets/icons/icon-512.png?v=2',
@@ -36,8 +36,8 @@ const APP_SHELL = [
   '/js/pages/partyledger.js?v=8',
   '/js/pages/lowstock.js?v=4',
   '/js/pages/backup.js?v=3',
-  '/js/pages/bom-kit-helpers.js?v=15',
-  '/js/pages/bom-challan.js?v=22',
+  '/js/pages/bom-kit-helpers.js?v=16',
+  '/js/pages/bom-challan.js?v=23',
   '/js/pages/bom-challan-map.js?v=3',
   '/js/pages/bom-party-autocomplete.js?v=2',
   '/js/pages/bom-track-register.js?v=4',
@@ -46,7 +46,7 @@ const APP_SHELL = [
   '/js/pages/bom-serial-modal.js?v=1',
   '/js/pages/bom-dispatch.js?v=11',
   '/js/pages/bom.js?v=22',
-  '/js/app.js?v=20',
+  '/js/app.js?v=21',
   '/js/theme.js?v=2'
 ];
 
