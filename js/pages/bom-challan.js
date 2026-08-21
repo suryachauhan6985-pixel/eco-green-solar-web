@@ -650,7 +650,7 @@ function bomCollectChallanTemplateValues() {
 }
 
 // ---------- Challan print sheet — layout engine (CHALLAN_SPEC.md) ----------
-const CHALLAN_PRINT_TOTAL_BODY_ROWS = 28;
+const CHALLAN_PRINT_TOTAL_BODY_ROWS = 25;
 
 function bomChallanBuildRowGroups(template, values) {
   const groups = [];
@@ -743,19 +743,24 @@ function bomRenderChallanBodyRowsHtml(groups, values) {
       }).join('');
     }
 
-    const modelText = getModel(it ? it.sr : null, it, g.isExtra ? it : null);
-    const qtyVal = getQty(it ? it.sr : null, null, g.isExtra ? it : null);
-    const unitVal = it ? (it.unit || 'Nos') : '';
-    const descVal = getDesc(it ? it.sr : null, g.isExtra ? it : null);
+    const itName = it ? (it.name || '') : '';
+    const itNameLen = itName.length;
+    const itNameStyle = itNameLen > 30 ? 'font-size: 8pt !important; line-height: 1.1;' : (itNameLen > 20 ? 'font-size: 8.5pt !important;' : '');
+
+    const itModLen = String(modelText || '').length;
+    const itModStyle = itModLen > 24 ? 'font-size: 8pt !important; line-height: 1.1;' : (itModLen > 15 ? 'font-size: 8.5pt !important;' : '');
+
+    const itDescLen = String(descVal || '').length;
+    const itDescStyle = itDescLen > 28 ? 'font-size: 8pt !important; line-height: 1.1;' : '';
 
     return `
       <tr class="bom-challan-row">
         <td class="bom-c-sr">${g.displaySr}</td>
-        <td class="bom-c-name">${bomEsc(it.name)}</td>
-        <td class="bom-c-model" colspan="2">${bomEsc(modelText)}</td>
+        <td class="bom-c-name" style="${itNameStyle}">${bomEsc(itName)}</td>
+        <td class="bom-c-model" colspan="2" style="${itModStyle}">${bomEsc(modelText)}</td>
         <td class="bom-c-qtylabel">${bomEsc(qtyVal)}</td>
         <td class="bom-c-qtyunit">${bomEsc(unitVal)}</td>
-        <td class="bom-c-desc">${bomEsc(descVal)}</td>
+        <td class="bom-c-desc" style="${itDescStyle}">${bomEsc(descVal)}</td>
       </tr>`;
   }).join('');
 }
@@ -793,6 +798,13 @@ function bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy) {
   const rawCap = (kit && kit.kw) ? kit.kw : (header.capacity || '');
   const capText = rawCap ? (String(rawCap).trim().toLowerCase().endsWith('kw') ? String(rawCap).trim() : `${rawCap} kW`) : '';
   const formattedDate = bomFormatChallanDate(header.challanDate);
+  const nameLen = (header.customerName || '').length;
+  let nameStyle = '';
+  if (nameLen > 38) {
+    nameStyle = 'font-size: 8pt !important; line-height: 1.1;';
+  } else if (nameLen > 24) {
+    nameStyle = 'font-size: 8.5pt !important; line-height: 1.15;';
+  }
   return `
     <tr class="bom-challan-row1">
       <td class="bom-challan-logo-cell" colspan="4" rowspan="2">
@@ -820,7 +832,7 @@ function bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy) {
     </tr>
     <tr class="bom-challan-row6">
       <td class="bom-challan-namelabel-cell">Name:</td>
-      <td class="bom-challan-nameval-cell" colspan="3">${bomEsc(header.customerName)}</td>
+      <td class="bom-challan-nameval-cell" colspan="3" style="${nameStyle}">${bomEsc(header.customerName)}</td>
       <td class="bom-challan-citylabel-cell" colspan="2">City:</td>
       <td class="bom-challan-cityval-cell">${bomEsc(header.city)}</td>
     </tr>
@@ -945,16 +957,23 @@ function bomRenderDirectChallanPrintSheetHtml(challanData) {
     physicalRows += 1;
     const model = (it.model || '').trim();
     const unit = (it.unit || 'Nos').trim();
-    const desc = (it.description || it.desc || '').trim();
+    const itNameLen = name.length;
+    const itNameStyle = itNameLen > 30 ? 'font-size: 8pt !important; line-height: 1.1;' : (itNameLen > 20 ? 'font-size: 8.5pt !important;' : '');
+    
+    const itModLen = model.length;
+    const itModStyle = itModLen > 24 ? 'font-size: 8pt !important; line-height: 1.1;' : (itModLen > 15 ? 'font-size: 8.5pt !important;' : '');
+
+    const itDescLen = desc.length;
+    const itDescStyle = itDescLen > 28 ? 'font-size: 8pt !important; line-height: 1.1;' : '';
 
     rowsHtml.push(`
       <tr class="bom-challan-row">
         <td class="bom-c-sr">${displaySr}</td>
-        <td class="bom-c-name">${bomEsc(name)}</td>
-        <td class="bom-c-model" colspan="2">${bomEsc(model)}</td>
+        <td class="bom-c-name" style="${itNameStyle}">${bomEsc(name)}</td>
+        <td class="bom-c-model" colspan="2" style="${itModStyle}">${bomEsc(model)}</td>
         <td class="bom-c-qtylabel">${qtyNum > 0 ? qtyNum : ''}</td>
         <td class="bom-c-qtyunit">${bomEsc(unit)}</td>
-        <td class="bom-c-desc">${bomEsc(desc)}</td>
+        <td class="bom-c-desc" style="${itDescStyle}">${bomEsc(desc)}</td>
       </tr>
     `);
   });
@@ -1102,13 +1121,13 @@ window.printChallanDirectly = function(challanData) {
       border: 2px solid #000000;
       box-sizing: border-box;
     }
-    .bom-challan-col-sr { width: 7.5%; }
+    .bom-challan-col-sr { width: 8.5%; }
     .bom-challan-col-name { width: 23%; }
-    .bom-challan-col-model { width: 14%; }
-    .bom-challan-col-modelcont { width: 12%; }
-    .bom-challan-col-qtylabel { width: 8.5%; }
-    .bom-challan-col-qtyunit { width: 9%; }
-    .bom-challan-col-desc { width: 26%; }
+    .bom-challan-col-model { width: 13.5%; }
+    .bom-challan-col-modelcont { width: 9%; }
+    .bom-challan-col-qtylabel { width: 6.5%; }
+    .bom-challan-col-qtyunit { width: 6.5%; }
+    .bom-challan-col-desc { width: 33%; }
 
     .bom-challan-table th,
     .bom-challan-table td {
@@ -1116,7 +1135,7 @@ window.printChallanDirectly = function(challanData) {
       vertical-align: middle;
       background: #ffffff;
       color: #000000;
-      padding: 0 3px;
+      padding: 0 2px;
       overflow: hidden;
       box-sizing: border-box;
     }
@@ -1126,7 +1145,7 @@ window.printChallanDirectly = function(challanData) {
     .bom-challan-row3 { height: 16pt; }
     .bom-challan-row4 { height: 18pt; }
     .bom-challan-row5 { height: 20pt; }
-    .bom-challan-row6 { height: 23pt; }
+    .bom-challan-row6 { height: 25pt; }
 
     .bom-challan-table td.bom-challan-logo-cell,
     .bom-challan-table td.bom-challan-gst-cell,
@@ -1227,7 +1246,7 @@ window.printChallanDirectly = function(challanData) {
       white-space: nowrap;
     }
 
-    .bom-challan-tablehead-row { height: 14pt; }
+    .bom-challan-tablehead-row { height: 15pt; }
     .bom-challan-tablehead-row th {
       font-size: 9.5pt;
       font-weight: 700;
@@ -1236,17 +1255,20 @@ window.printChallanDirectly = function(challanData) {
       background: #ffffff;
       color: #000000;
       border: 1px solid #000000;
+      white-space: nowrap !important;
+      padding: 0 1px !important;
     }
 
-    .bom-challan-row { height: 12.2pt; }
+    .bom-challan-row { height: 13.4pt; }
     .bom-challan-row td {
       font-size: 9.5pt;
       font-weight: 400;
       padding: 0 3px;
+      vertical-align: middle;
     }
-    .bom-c-sr { text-align: center; border: 1px solid #000000; }
-    .bom-c-name { text-align: left; padding-left: 4px !important; border: 1px solid #000000; white-space: nowrap; }
-    .bom-c-model { text-align: center; border: 1px solid #000000; }
+    .bom-c-sr { text-align: center; border: 1px solid #000000; white-space: nowrap !important; }
+    .bom-c-name { text-align: left; padding-left: 3px !important; border: 1px solid #000000; word-break: break-word; line-height: 1.15; }
+    .bom-c-model { text-align: center; border: 1px solid #000000; word-break: break-word; line-height: 1.15; }
     .bom-c-modelcont { text-align: center; border: 1px solid #000000; }
 
     td.bom-c-qtylabel {
@@ -1268,14 +1290,15 @@ window.printChallanDirectly = function(challanData) {
 
     .bom-c-desc {
       text-align: left;
-      padding-left: 4px !important;
+      padding-left: 3px !important;
       border: 1px solid #000000;
-      white-space: nowrap;
+      word-break: break-word;
+      line-height: 1.15;
     }
     .bom-challan-row-blank td { background: #ffffff; }
 
-    .bom-challan-footer-row1 { height: 18pt; }
-    .bom-challan-footer-row2 { height: 15pt; }
+    .bom-challan-footer-row1 { height: 19pt; }
+    .bom-challan-footer-row2 { height: 16pt; }
 
     td.bom-challan-footer-blank-left,
     td.bom-challan-footer-blank-right,

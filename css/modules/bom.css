@@ -174,13 +174,13 @@
 }
 
 /* Column Ratios for 7-column layout */
-.bom-challan-col-sr{width:7.5%;}
+.bom-challan-col-sr{width:8.5%;}
 .bom-challan-col-name{width:23%;}
-.bom-challan-col-model{width:14%;}
-.bom-challan-col-modelcont{width:12%;}
-.bom-challan-col-qtylabel{width:8.5%;}
-.bom-challan-col-qtyunit{width:9%;}
-.bom-challan-col-desc{width:26%;}
+.bom-challan-col-model{width:13.5%;}
+.bom-challan-col-modelcont{width:9%;}
+.bom-challan-col-qtylabel{width:6.5%;}
+.bom-challan-col-qtyunit{width:6.5%;}
+.bom-challan-col-desc{width:33%;}
 
 /* Default cell borders */
 .bom-challan-table th,
@@ -189,7 +189,7 @@
   vertical-align:middle;
   background:#ffffff;
   color:#000000;
-  padding:0 3px;
+  padding:0 2px;
   overflow:hidden;
   box-sizing:border-box;
 }
@@ -200,7 +200,7 @@
 .bom-challan-row3{height:16pt;}
 .bom-challan-row4{height:18pt;}
 .bom-challan-row5{height:20pt;}
-.bom-challan-row6{height:23pt;}
+.bom-challan-row6{height:25pt;}
 
 /* Left 4-column header block (Logo, GST, Green Energy, Addr) - NO INTERNAL BORDERS */
 .bom-challan-table td.bom-challan-logo-cell,
@@ -312,7 +312,7 @@ td.bom-challan-title-cell{
 }
 
 /* ---------- Table header row (row 7) ---------- */
-.bom-challan-tablehead-row{height:14pt;}
+.bom-challan-tablehead-row{height:15pt;}
 .bom-challan-tablehead-row th{
   font-size:9.5pt;
   font-weight:700;
@@ -321,18 +321,21 @@ td.bom-challan-title-cell{
   background:#ffffff;
   color:#000000;
   border:1px solid #000000;
+  white-space:nowrap !important;
+  padding:0 1px !important;
 }
 
-/* ---------- Body rows (rows 8–35) ---------- */
-.bom-challan-row{height:12.2pt;}
+/* ---------- Body rows (rows 8–32, 25 rows) ---------- */
+.bom-challan-row{height:13.4pt;}
 .bom-challan-row td{
   font-size:9.5pt;
   font-weight:400;
   padding:0 3px;
+  vertical-align:middle;
 }
-.bom-c-sr{text-align:center; border:1px solid #000000;}
-.bom-c-name{text-align:left; padding-left:4px !important; border:1px solid #000000; white-space:nowrap;}
-.bom-c-model{text-align:center; border:1px solid #000000;}
+.bom-c-sr{text-align:center; border:1px solid #000000; white-space:nowrap !important;}
+.bom-c-name{text-align:left; padding-left:3px !important; border:1px solid #000000; word-break:break-word; line-height:1.15;}
+.bom-c-model{text-align:center; border:1px solid #000000; word-break:break-word; line-height:1.15;}
 .bom-c-modelcont{text-align:center; border:1px solid #000000;}
 
 /* Qty Column with NO VERTICAL DIVIDER */
@@ -355,15 +358,16 @@ td.bom-c-qtyunit{
 
 .bom-c-desc{
   text-align:left;
-  padding-left:4px !important;
+  padding-left:3px !important;
   border:1px solid #000000;
-  white-space:nowrap;
+  word-break:break-word;
+  line-height:1.15;
 }
 .bom-challan-row-blank td{background:#ffffff;}
 
-/* ---------- Footer (rows 36–37) - NO VERTICAL LINES ---------- */
-.bom-challan-footer-row1{height:18pt;}
-.bom-challan-footer-row2{height:15pt;}
+/* ---------- Footer (rows 33–34) - NO VERTICAL LINES ---------- */
+.bom-challan-footer-row1{height:19pt;}
+.bom-challan-footer-row2{height:16pt;}
 
 td.bom-challan-footer-blank-left,
 td.bom-challan-footer-blank-right,
