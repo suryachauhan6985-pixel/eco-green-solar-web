@@ -713,7 +713,8 @@ function bomRenderChallanBodyRowsHtml(groups, values) {
       return `
       <tr class="bom-challan-row bom-challan-row-blank">
         <td class="bom-c-sr">${g.displaySr}</td>
-        <td class="bom-c-name" colspan="3"></td>
+        <td class="bom-c-name"></td>
+        <td class="bom-c-model" colspan="2"></td>
         <td class="bom-c-qtylabel"></td>
         <td class="bom-c-qtyunit"></td>
         <td class="bom-c-desc"></td>
@@ -743,25 +744,18 @@ function bomRenderChallanBodyRowsHtml(groups, values) {
     }
 
     const modelText = getModel(it ? it.sr : null, it, g.isExtra ? it : null);
-    if (modelText) {
-      return `
-      <tr class="bom-challan-row">
-        <td class="bom-c-sr">${g.displaySr}</td>
-        <td class="bom-c-name">${bomEsc(it.name)}</td>
-        <td class="bom-c-model" colspan="2">${bomEsc(modelText)}</td>
-        <td class="bom-c-qtylabel">${bomEsc(getQty(it ? it.sr : null, null, g.isExtra ? it : null))}</td>
-        <td class="bom-c-qtyunit">${bomEsc(it.unit || 'Nos')}</td>
-        <td class="bom-c-desc">${bomEsc(getDesc(it ? it.sr : null, g.isExtra ? it : null))}</td>
-      </tr>`;
-    }
+    const qtyVal = getQty(it ? it.sr : null, null, g.isExtra ? it : null);
+    const unitVal = it ? (it.unit || 'Nos') : '';
+    const descVal = getDesc(it ? it.sr : null, g.isExtra ? it : null);
 
     return `
       <tr class="bom-challan-row">
         <td class="bom-c-sr">${g.displaySr}</td>
-        <td class="bom-c-name" colspan="3">${bomEsc(it.name)}</td>
-        <td class="bom-c-qtylabel">${bomEsc(getQty(it ? it.sr : null, null, g.isExtra ? it : null))}</td>
-        <td class="bom-c-qtyunit">${bomEsc(it.unit || 'Nos')}</td>
-        <td class="bom-c-desc">${bomEsc(getDesc(it ? it.sr : null, g.isExtra ? it : null))}</td>
+        <td class="bom-c-name">${bomEsc(it.name)}</td>
+        <td class="bom-c-model" colspan="2">${bomEsc(modelText)}</td>
+        <td class="bom-c-qtylabel">${bomEsc(qtyVal)}</td>
+        <td class="bom-c-qtyunit">${bomEsc(unitVal)}</td>
+        <td class="bom-c-desc">${bomEsc(descVal)}</td>
       </tr>`;
   }).join('');
 }
@@ -776,35 +770,33 @@ function bomRenderChallanBodyRowsHtml(groups, values) {
 // white-on-black) — nothing else differs between the two copies.
 function bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy) {
   const titleClass = isCompanyCopy ? 'bom-challan-title-inverse' : 'bom-challan-title-normal';
+  const capText = (kit && kit.kw) ? `${kit.kw} kW` : (header.capacity ? `${header.capacity} kW` : '');
   return `
     <tr class="bom-challan-row1">
-      <td class="bom-challan-logo-cell" colspan="2">
+      <td class="bom-challan-logo-cell" colspan="4">
         <img class="bom-challan-logo" src="assets/logo.png" alt="Eco Green Solar">
       </td>
-      <td class="bom-challan-spacer-cell" colspan="2"></td>
       <td class="bom-challan-title-cell ${titleClass}" colspan="3">${bomEsc(copyLabel)}</td>
     </tr>
     <tr class="bom-challan-row2">
-      <td class="bom-challan-blank-cell" colspan="4"></td>
-      <td class="bom-challan-field-cell" colspan="3">Challan No.: ${bomEsc(header.challanNo)}</td>
+      <td class="bom-challan-gst-cell" colspan="4">GST NO. 24AAHFG9142N1Z1</td>
+      <td class="bom-challan-field-cell" colspan="3"><b>Challan No.:</b> ${bomEsc(header.challanNo)}</td>
     </tr>
     <tr class="bom-challan-row3">
-      <td class="bom-challan-gst-cell" colspan="4">GST NO. 24AAHFG9142N1Z1</td>
-      <td class="bom-challan-field-cell" colspan="3">Challan Date: ${bomEsc(header.challanDate)}</td>
+      <td class="bom-challan-company-cell" colspan="4">Green Energy</td>
+      <td class="bom-challan-field-cell" colspan="3"><b>Challan Date:</b> ${bomEsc(header.challanDate)}</td>
     </tr>
     <tr class="bom-challan-row4">
-      <td class="bom-challan-address-cell" colspan="4" rowspan="2">
-        <div class="bom-challan-company-name">Green Energy</div>
-        <div class="bom-challan-address">Plot No &ndash; 4,5,6, Gajanand Ind. Area, Rev. S. No.: 183<br>Nr R K Exotica, To.: Chhapra&ndash;360021 Ta. Metoda (Rajkot)</div>
-      </td>
-      <td class="bom-challan-field-cell" colspan="3">Order No.: ${bomEsc(header.orderNo)}</td>
+      <td class="bom-challan-addr1-cell" colspan="4">Plot No &ndash; 4,5,6, Gajanand Ind. Area, Rev. S. No.: 183</td>
+      <td class="bom-challan-field-cell" colspan="3"><b>Order No.:</b> ${bomEsc(header.orderNo)}</td>
     </tr>
     <tr class="bom-challan-row5">
-      <td class="bom-challan-field-cell" colspan="3">Capacity : ${bomEsc(kit.kw)} kW</td>
+      <td class="bom-challan-addr2-cell" colspan="4">Nr R K Exotica,To.: Chhapra&ndash;360021 Ta. Metoda(Rajkot)</td>
+      <td class="bom-challan-field-cell" colspan="3"><b>Capacity :</b> ${bomEsc(capText)}</td>
     </tr>
     <tr class="bom-challan-row6">
-      <td class="bom-challan-name-cell" colspan="4">Name: ${bomEsc(header.customerName)}</td>
-      <td class="bom-challan-field-cell" colspan="3">City: ${bomEsc(header.city)}</td>
+      <td class="bom-challan-name-cell" colspan="4"><b>Name:</b> ${bomEsc(header.customerName)}</td>
+      <td class="bom-challan-field-cell" colspan="3"><b>City:</b> ${bomEsc(header.city)}</td>
     </tr>
   `;
 }
@@ -824,31 +816,26 @@ function bomRenderChallanTableHeadRowHtml() {
   `;
 }
 
-// Renders rows 36–37 — the footer (§11): "Issued by" / "Received by"
-// signature boxes (each rowspan across both footer rows), the Vehicle No.
-// value on row 36, and a blank signature line captioned "Vehicle No."
-// directly beneath it on row 37 — same cell shape/column span on both rows
-// (C36:F36 / C37:F37) so the write-in line sits flush under the value.
+// Renders rows 36–37 — the footer with ZERO vertical borders and clean write-in line
 function bomRenderChallanFooterRowsHtml(header) {
   const v1 = (header.vehicleNo || '').trim();
   const v2 = (header.vehicleNo2 || '').trim();
   const vText = [v1, v2].filter(Boolean).join(' / ') || '—';
   return `
     <tr class="bom-challan-footer-row1">
-      <td class="bom-challan-issuedby-cell" colspan="2" rowspan="2">Issued by</td>
-      <td class="bom-challan-vehicle-cell" colspan="4">${bomEsc(vText)}</td>
-      <td class="bom-challan-receivedby-cell" rowspan="2">Received by</td>
+      <td class="bom-challan-footer-blank-left" colspan="2"></td>
+      <td class="bom-challan-footer-vehicle" colspan="4">${bomEsc(vText)}</td>
+      <td class="bom-challan-footer-blank-right" colspan="1"></td>
     </tr>
     <tr class="bom-challan-footer-row2">
-      <td class="bom-challan-vehicle-caption-cell" colspan="4">Vehicle No.</td>
+      <td class="bom-challan-footer-issuedby" colspan="2">Issued by</td>
+      <td class="bom-challan-footer-caption" colspan="4">Vehicle No.</td>
+      <td class="bom-challan-footer-receivedby" colspan="1">Received by</td>
     </tr>
   `;
 }
 
 // Assembles one full copy (Customer or Company) as a single flat <table>
-// with a fixed 7-column <colgroup> (§3 ratio: 10.4:20.9:13.4:11.9:10.4:
-// 7.5:25.4) — header rows, the column-header row, the fixed 28-row body,
-// then the footer, all inside one continuous grid (§13: no nested tables).
 function bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValues, isCompanyCopy) {
   const groups = bomChallanBuildRowGroups(BOM_CHALLAN_TEMPLATE, templateValues);
   return `
@@ -872,18 +859,16 @@ function bomRenderChallanPrintSheetHalfHtml(header, kit, copyLabel, templateValu
   `;
 }
 
-// Top-level Challan sheet: two structurally identical copies, generated
-// from ONE shared template (bomRenderChallanPrintSheetHalfHtml) so they
-// can never drift out of sync, separated by a fixed-width gutter that
-// carries the dashed "cut here" rule running the sheet's full height
-// (§9/§13 — the gutter is a spacer, not a CSS margin/gap).
+// Top-level Challan sheet with single center dashed cut-line
 function bomRenderChallanPrintSheetHtml(header, kit, templateValues) {
   return `
     <div class="bom-challan-sheet" id="bomChallanSheet">
       <div class="bom-challan-copy bom-challan-copy-customer">
         ${bomRenderChallanPrintSheetHalfHtml(header, kit, 'Customer Copy', templateValues, false)}
       </div>
-      <div class="bom-challan-gutter"></div>
+      <div class="bom-challan-gutter">
+        <div class="bom-challan-cutline"></div>
+      </div>
       <div class="bom-challan-copy bom-challan-copy-company">
         ${bomRenderChallanPrintSheetHalfHtml(header, kit, 'Company Copy', templateValues, true)}
       </div>
@@ -933,28 +918,16 @@ function bomRenderDirectChallanPrintSheetHtml(challanData) {
     const unit = (it.unit || 'Nos').trim();
     const desc = (it.description || it.desc || '').trim();
 
-    if (model) {
-      rowsHtml.push(`
-        <tr class="bom-challan-row">
-          <td class="bom-c-sr">${displaySr}</td>
-          <td class="bom-c-name">${bomEsc(name)}</td>
-          <td class="bom-c-model" colspan="2">${bomEsc(model)}</td>
-          <td class="bom-c-qtylabel">${qtyNum > 0 ? qtyNum : ''}</td>
-          <td class="bom-c-qtyunit">${bomEsc(unit)}</td>
-          <td class="bom-c-desc">${bomEsc(desc)}</td>
-        </tr>
-      `);
-    } else {
-      rowsHtml.push(`
-        <tr class="bom-challan-row">
-          <td class="bom-c-sr">${displaySr}</td>
-          <td class="bom-c-name" colspan="3">${bomEsc(name)}</td>
-          <td class="bom-c-qtylabel">${qtyNum > 0 ? qtyNum : ''}</td>
-          <td class="bom-c-qtyunit">${bomEsc(unit)}</td>
-          <td class="bom-c-desc">${bomEsc(desc)}</td>
-        </tr>
-      `);
-    }
+    rowsHtml.push(`
+      <tr class="bom-challan-row">
+        <td class="bom-c-sr">${displaySr}</td>
+        <td class="bom-c-name">${bomEsc(name)}</td>
+        <td class="bom-c-model" colspan="2">${bomEsc(model)}</td>
+        <td class="bom-c-qtylabel">${qtyNum > 0 ? qtyNum : ''}</td>
+        <td class="bom-c-qtyunit">${bomEsc(unit)}</td>
+        <td class="bom-c-desc">${bomEsc(desc)}</td>
+      </tr>
+    `);
   });
 
   while (physicalRows < CHALLAN_PRINT_TOTAL_BODY_ROWS) {
@@ -963,7 +936,8 @@ function bomRenderDirectChallanPrintSheetHtml(challanData) {
     rowsHtml.push(`
       <tr class="bom-challan-row bom-challan-row-blank">
         <td class="bom-c-sr">${displaySr}</td>
-        <td class="bom-c-name" colspan="3"></td>
+        <td class="bom-c-name"></td>
+        <td class="bom-c-model" colspan="2"></td>
         <td class="bom-c-qtylabel"></td>
         <td class="bom-c-qtyunit"></td>
         <td class="bom-c-desc"></td>
@@ -998,7 +972,9 @@ function bomRenderDirectChallanPrintSheetHtml(challanData) {
       <div class="bom-challan-copy bom-challan-copy-customer">
         ${renderHalf('Customer Copy', false)}
       </div>
-      <div class="bom-challan-gutter"></div>
+      <div class="bom-challan-gutter">
+        <div class="bom-challan-cutline"></div>
+      </div>
       <div class="bom-challan-copy bom-challan-copy-company">
         ${renderHalf('Company Copy', true)}
       </div>
@@ -1021,7 +997,7 @@ window.printChallanDirectly = function(challanData) {
 
   printRoot.innerHTML = bomRenderDirectChallanPrintSheetHtml(challanData);
   if (typeof bomSetPrintPageSize === 'function') {
-    bomSetPrintPageSize('size: A4 landscape; margin: 3mm 4mm;');
+    bomSetPrintPageSize('size: A4 landscape; margin: 4mm 5mm;');
   }
 
   // Ensure DOM has repainted with landscape page size

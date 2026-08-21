@@ -117,115 +117,254 @@
    ============================================================ */
 
 /* ---------- §1/§2 Page — fixed A4 landscape at a flat 96% scale ----------
-   `zoom` (not transform) is used so the box still participates in normal
-   flow/height for print pagination; 96% is the workbook's own manual
-   Page Setup scale, applied unconditionally, never computed. */
+/* =============================================================================
+   CHALLAN PRINT SHEET STYLES (A4 Landscape, Exact 1-to-1 Match with Reference)
+   ============================================================================= */
 #bomChallanPrintRoot .bom-challan-sheet{
-  width:100%;
-  max-width:287mm;
+  width:284mm;
   margin:0 auto;
   background:#ffffff;
-  display:flex; align-items:stretch; justify-content:space-between;
+  display:flex;
+  align-items:stretch;
+  justify-content:space-between;
   box-sizing:border-box;
-  font-family:Calibri, Carlito, 'Segoe UI', Arial, sans-serif; color:#000;
+  font-family:Calibri, Carlito, 'Segoe UI', Arial, sans-serif;
+  color:#000000;
+  padding:0;
 }
 
-/* ---------- §3 Column map — one flat 7-column <table> per copy ---------- */
 .bom-challan-copy{
-  flex:1 1 48.5%;
-  max-width:48.5%;
+  flex:0 0 137.5mm;
+  width:137.5mm;
+  max-width:137.5mm;
   box-sizing:border-box;
 }
-.bom-challan-table{
-  width:100%; border-collapse:collapse; table-layout:fixed; background:#ffffff;
-  font-family:Calibri, Carlito, 'Segoe UI', Arial, sans-serif; color:#000;
-  border:2px solid #000; box-sizing:border-box;
+
+.bom-challan-gutter{
+  flex:0 0 7mm;
+  width:7mm;
+  position:relative;
+  display:flex;
+  justify-content:center;
+  align-self:stretch;
+  box-sizing:border-box;
 }
-.bom-challan-col-sr{width:7%;}
-.bom-challan-col-name{width:25%;}
+
+.bom-challan-cutline{
+  width:0;
+  height:100%;
+  border-left:1px dashed #000000;
+  margin:0 auto;
+}
+
+.bom-challan-table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+  background:#ffffff;
+  font-family:Calibri, Carlito, 'Segoe UI', Arial, sans-serif;
+  color:#000000;
+  border:2px solid #000000;
+  box-sizing:border-box;
+}
+
+/* Column Ratios for 7-column layout */
+.bom-challan-col-sr{width:6.5%;}
+.bom-challan-col-name{width:24%;}
 .bom-challan-col-model{width:14%;}
-.bom-challan-col-modelcont{width:11%;}
-.bom-challan-col-qtylabel{width:9%;}
-.bom-challan-col-qtyunit{width:8%;}
+.bom-challan-col-modelcont{width:12%;}
+.bom-challan-col-qtylabel{width:8.5%;}
+.bom-challan-col-qtyunit{width:9%;}
 .bom-challan-col-desc{width:26%;}
 
-/* ---------- §9 Borders ---------- */
+/* Default cell borders */
 .bom-challan-table th,
 .bom-challan-table td{
-  border:1px solid #000; vertical-align:middle; background:#ffffff; color:#000;
-  padding:0 3px; overflow:hidden;
+  border:1px solid #000000;
+  vertical-align:middle;
+  background:#ffffff;
+  color:#000000;
+  padding:0 3px;
+  overflow:hidden;
+  box-sizing:border-box;
 }
 
-/* ---------- §4/§8 Row heights + typography — header block (rows 1–6) ---------- */
-.bom-challan-row1, .bom-challan-row2, .bom-challan-row3, .bom-challan-row6{height:19pt;}
-.bom-challan-row4, .bom-challan-row5{height:21pt;}
-.bom-challan-row1 td, .bom-challan-row2 td, .bom-challan-row3 td,
-.bom-challan-row4 td, .bom-challan-row5 td, .bom-challan-row6 td{
-  font-size:10.5pt; font-weight:700; text-align:left;
-}
-.bom-challan-logo-cell{text-align:center; vertical-align:middle; padding:2px;}
-.bom-challan-logo{display:block; width:100%; height:auto; max-height:24pt; object-fit:contain; margin:0 auto;}
-.bom-challan-spacer-cell, .bom-challan-blank-cell{background:#ffffff;}
-.bom-challan-field-cell{text-align:left;}
+/* ---------- Header block (rows 1–6) ---------- */
+.bom-challan-row1{height:23pt;}
+.bom-challan-row2{height:16pt;}
+.bom-challan-row3{height:17pt;}
+.bom-challan-row4{height:14pt;}
+.bom-challan-row5{height:14pt;}
+.bom-challan-row6{height:17pt;}
 
-.bom-challan-table td.bom-challan-logo-cell, .bom-challan-table td.bom-challan-spacer-cell,
-.bom-challan-table td.bom-challan-blank-cell, .bom-challan-table td.bom-challan-gst-cell,
-.bom-challan-table td.bom-challan-address-cell{
-  border:none;
+/* Left 4-column header block (Logo, GST, Green Energy, Addr1, Addr2) - NO INTERNAL BORDERS */
+.bom-challan-table td.bom-challan-logo-cell,
+.bom-challan-table td.bom-challan-gst-cell,
+.bom-challan-table td.bom-challan-company-cell,
+.bom-challan-table td.bom-challan-addr1-cell,
+.bom-challan-table td.bom-challan-addr2-cell{
+  border:none !important;
+  text-align:left;
 }
 
-/* §6: "Customer Copy"/"Company Copy" title */
+.bom-challan-logo-cell{
+  padding:1px 4px !important;
+  text-align:left !important;
+}
+
+.bom-challan-logo{
+  display:block;
+  width:auto;
+  max-width:100%;
+  height:auto;
+  max-height:22pt;
+  object-fit:contain;
+  margin:0;
+}
+
+.bom-challan-gst-cell{
+  font-size:9.5pt;
+  font-weight:700;
+  padding:0 4px !important;
+}
+
+.bom-challan-company-cell{
+  font-size:11pt;
+  font-weight:700;
+  padding:0 4px !important;
+}
+
+.bom-challan-addr1-cell,
+.bom-challan-addr2-cell{
+  font-size:7.5pt;
+  font-weight:400;
+  line-height:1.15;
+  white-space:nowrap;
+  padding:0 4px !important;
+}
+
+/* Right 3-column header block (Copy Title, Challan No, Date, Order No, Capacity, City) */
 td.bom-challan-title-cell{
-  font-size:13pt; font-weight:700; text-align:center; vertical-align:middle;
+  font-size:13pt;
+  font-weight:700;
+  text-align:center;
+  vertical-align:middle;
+  border:1px solid #000000;
 }
 .bom-challan-title-normal{background:#ffffff; color:#000000;}
-.bom-challan-title-inverse{background:#000000; color:#ffffff;}
-
-/* §6: GST number line and company name/address */
-td.bom-challan-gst-cell{font-size:9.5pt; font-weight:700; text-align:left;}
-.bom-challan-address-cell{vertical-align:top; text-align:left; white-space:normal; padding:1px 3px;}
-.bom-challan-company-name{font-weight:700; font-size:10.5pt;}
-.bom-challan-address{font-weight:400; font-size:7.5pt; line-height:1.2; white-space:normal;}
-.bom-challan-name-cell{text-align:left;}
-
-/* ---------- §7/§8 Table header row (row 7) ---------- */
-.bom-challan-tablehead-row{height:19pt;}
-.bom-challan-tablehead-row th{
-  font-size:10.5pt; font-weight:700; text-align:center; vertical-align:middle;
-  background:#ffffff; color:#000000; font-family:Calibri, Carlito, 'Segoe UI', Arial, sans-serif;
+.bom-challan-title-inverse{
+  background:#000000 !important;
+  color:#ffffff !important;
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
 }
 
-/* ---------- §7/§8 Body rows (rows 8–35) ---------- */
-.bom-challan-row{height:14pt;}
-.bom-challan-row td{font-size:10pt; font-weight:400;}
-.bom-c-sr{text-align:center;}
-.bom-c-name{text-align:left; white-space:normal;}
-.bom-c-model{text-align:center;}
-.bom-c-modelcont{text-align:center;}
-.bom-c-qtylabel{text-align:center;}
-.bom-c-qtyunit{text-align:center;}
-.bom-c-desc{text-align:left; white-space:normal; overflow:visible; word-break:break-word;}
+.bom-challan-field-cell{
+  font-size:9.5pt;
+  font-weight:400;
+  text-align:left;
+  padding:0 4px !important;
+  border:1px solid #000000;
+}
+.bom-challan-field-cell b{
+  font-weight:700;
+}
+
+.bom-challan-name-cell{
+  font-size:10pt;
+  font-weight:400;
+  text-align:left;
+  padding:0 4px !important;
+  border:1px solid #000000;
+}
+.bom-challan-name-cell b{
+  font-weight:700;
+}
+
+/* ---------- Table header row (row 7) ---------- */
+.bom-challan-tablehead-row{height:17pt;}
+.bom-challan-tablehead-row th{
+  font-size:10pt;
+  font-weight:700;
+  text-align:center;
+  vertical-align:middle;
+  background:#ffffff;
+  color:#000000;
+  border:1px solid #000000;
+}
+
+/* ---------- Body rows (rows 8–35) ---------- */
+.bom-challan-row{height:12.2pt;}
+.bom-challan-row td{
+  font-size:9.5pt;
+  font-weight:400;
+  padding:0 3px;
+}
+.bom-c-sr{text-align:center; border:1px solid #000000;}
+.bom-c-name{text-align:left; padding-left:4px !important; border:1px solid #000000; white-space:nowrap;}
+.bom-c-model{text-align:center; border:1px solid #000000;}
+.bom-c-modelcont{text-align:center; border:1px solid #000000;}
+
+/* Qty Column with NO VERTICAL DIVIDER */
+td.bom-c-qtylabel{
+  border-top:1px solid #000000 !important;
+  border-bottom:1px solid #000000 !important;
+  border-left:1px solid #000000 !important;
+  border-right:none !important;
+  text-align:right !important;
+  padding-right:2px !important;
+}
+td.bom-c-qtyunit{
+  border-top:1px solid #000000 !important;
+  border-bottom:1px solid #000000 !important;
+  border-right:1px solid #000000 !important;
+  border-left:none !important;
+  text-align:left !important;
+  padding-left:2px !important;
+}
+
+.bom-c-desc{
+  text-align:left;
+  padding-left:4px !important;
+  border:1px solid #000000;
+  white-space:nowrap;
+}
 .bom-challan-row-blank td{background:#ffffff;}
 
-/* ---------- §11 Footer (rows 36–37) ---------- */
-.bom-challan-footer-row1, .bom-challan-footer-row2{height:19pt;}
-.bom-challan-issuedby-cell, .bom-challan-receivedby-cell{
-  font-size:10.5pt; font-weight:700; text-align:center; vertical-align:middle;
+/* ---------- Footer (rows 36–37) - NO VERTICAL LINES ---------- */
+.bom-challan-footer-row1{height:18pt;}
+.bom-challan-footer-row2{height:15pt;}
+
+td.bom-challan-footer-blank-left,
+td.bom-challan-footer-blank-right,
+td.bom-challan-footer-vehicle{
+  border:none !important;
 }
-.bom-challan-vehicle-cell{
-  font-size:13pt; font-weight:700; text-align:center; vertical-align:middle;
-  white-space:normal; overflow:visible;
-}
-.bom-challan-vehicle-caption-cell{
-  font-size:10pt; font-weight:700; text-align:center; vertical-align:top;
-  border-top:1px solid #000;
+td.bom-challan-footer-vehicle{
+  font-size:13pt;
+  font-weight:700;
+  text-align:center;
+  vertical-align:middle;
 }
 
-/* ---------- §9/§13 Gutter — the dashed "cut here" line ---------- */
-.bom-challan-gutter{
-  flex:0 0 16px; align-self:stretch;
-  border-left:1px dashed #555; border-right:1px dashed #555;
-  margin:0 2px; box-sizing:border-box;
+td.bom-challan-footer-issuedby,
+td.bom-challan-footer-receivedby{
+  border:none !important;
+  font-size:10pt;
+  font-weight:700;
+  text-align:center;
+  vertical-align:middle;
+}
+
+td.bom-challan-footer-caption{
+  border-top:1px solid #000000 !important;
+  border-left:none !important;
+  border-right:none !important;
+  border-bottom:none !important;
+  font-size:10pt;
+  font-weight:700;
+  text-align:center;
+  vertical-align:top;
 }
 
 /* Dark-theme category divider row used in the ON-SCREEN "Kit Items" preview table */
