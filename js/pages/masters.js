@@ -6,181 +6,231 @@ window.PAGES.masters = {
   icon: "fa-database",
   sub: "Manage items registration, warehouses & property restrictions",
   html: `
-    <div class="page-head"><i class="fa-solid fa-database" style="color:var(--blue);"></i><h2>Masters Configuration Control</h2></div>
-
-    <div class="subtabs" id="mastersSubtabs">
-      <button class="subtab active" data-sub="item-reg">Item Registration Panel</button>
-      <button class="subtab" data-sub="category">Category Master</button>
-      <button class="subtab" data-sub="brand">Brand Master</button>
-      <button class="subtab" data-sub="warehouse">Warehouse Master</button>
-      <button class="subtab" data-sub="uom">UOM Master</button>
-      <button class="subtab" data-sub="users">Users Accounts</button>
+    <div class="page-head">
+      <i class="fa-solid fa-database" style="color:var(--blue);"></i>
+      <h2>Masters & Product Catalog Control</h2>
     </div>
 
-  <div class="subtab-panel active" data-panel="item-reg">
+    <div class="subtabs" id="mastersSubtabs">
+      <button class="subtab active" data-sub="item-reg"><i class="fa-solid fa-boxes-stacked"></i> Item Master</button>
+      <button class="subtab" data-sub="category"><i class="fa-solid fa-tags"></i> Category & Subtypes</button>
+      <button class="subtab" data-sub="brand"><i class="fa-solid fa-trademark"></i> Brand Directory</button>
+      <button class="subtab" data-sub="warehouse"><i class="fa-solid fa-warehouse"></i> Warehouse Master</button>
+      <button class="subtab" data-sub="uom"><i class="fa-solid fa-ruler-combined"></i> UOM Master</button>
+      <button class="subtab" data-sub="users"><i class="fa-solid fa-user-shield"></i> User Accounts</button>
+    </div>
+
+    <div class="subtab-panel active" data-panel="item-reg">
       <div class="grid-2">
 
-          <div class="panel">
-            <h3 id="mItemFormHeading"><i class="fa-solid fa-square-plus"></i> Item Profiler & Registration
-              <button type="button" class="info-btn" data-info="Subtype (DCR, Non-DCR, On-Grid, Off-Grid, Hybrid) is no longer set here. It is now selected per purchase invoice line in Purchase Inward, which automatically creates the matching item variant."><i class="fa-solid fa-circle-info"></i></button>
-            </h3>
+        <!-- LEFT PANEL: 3-STEP ITEM PROFILER -->
+        <div class="panel">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+            <h3 id="mItemFormHeading" style="margin:0;"><i class="fa-solid fa-box-open" style="color:var(--gold);"></i> Item Profiler & Registration</h3>
+            <button type="button" class="info-btn" data-info="Create product master templates. Subtypes (DCR, Non-DCR, Hybrid, etc.) are selected dynamically during Purchase Inward."><i class="fa-solid fa-circle-info"></i></button>
+          </div>
 
-            <div style="background: rgba(212,175,55,0.08); padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid rgba(212,175,55,0.2);">
-  <strong style="color:var(--gold); font-size:12px; display:block; margin-bottom:6px;"><i class="fa-solid fa-sliders"></i> Wattage Rule (set from Category Master)</strong>
-  <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
-    <input type="checkbox" id="cfgWattMandatory" disabled> <span>Wattage / Capacity is mandatory for selected category</span>
-  </label>
-</div>
+          <!-- STEP 1: CATEGORY SELECTION & LIVE SMART STATUS -->
+          <div class="master-step-block">
+            <div class="master-step-title"><span class="step-num">1</span> Product Classification</div>
+            <div class="field">
+              <label>Select Category <span class="req">*</span></label>
+              <select id="mItemCatDropdown"></select>
+            </div>
+            <div class="category-meta-chips" id="mCategoryMetaChips">
+              <span class="chip chip-gold active" id="chipWattStatus"><i class="fa-solid fa-bolt"></i> Wattage Tracked</span>
+              <span class="chip chip-blue active" id="chipSerialStatus"><i class="fa-solid fa-barcode"></i> Serial No. Required</span>
+              <span class="chip active" id="chipSubtypesStatus"><i class="fa-solid fa-tags"></i> Subtypes: Loading...</span>
+            </div>
+            <input type="checkbox" id="cfgWattMandatory" style="display:none;">
+            <input type="checkbox" id="cfgSerialMandatory" style="display:none;">
+          </div>
 
-            <div style="background: rgba(102,153,255,0.08); padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid rgba(102,153,255,0.2);">
-  <strong style="color:var(--blue); font-size:12px; display:block; margin-bottom:6px;"><i class="fa-solid fa-barcode"></i> Serial No. Rule (set from Category Master)</strong>
-  <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
-    <input type="checkbox" id="cfgSerialMandatory" disabled> <span>Serial No. is required for products in selected category</span>
-  </label>
-</div>
-
-            <div style="background: rgba(212,175,55,0.06); padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px dashed rgba(212,175,55,0.25);" id="mItemSubtypeInfoBox">
-  <strong style="color:var(--gold); font-size:12px; display:block; margin-bottom:6px;"><i class="fa-solid fa-tags"></i> Subtypes Available for this Category (info only)</strong>
-  <div id="mItemSubtypeInfo" style="font-size:12px; color:var(--txt-muted);">Select a category above to view its subtypes.</div>
-  <div style="font-size:11px; color:var(--txt-muted); margin-top:6px; font-style:italic;">Subtype is not set here — it is chosen per purchase invoice line in Purchase Inward, which auto-creates the matching item variant.</div>
-</div>
-
-            <div class="form-grid cols-1">
-              <div class="field"><label>Category <span class="req">*</span></label>
-                <select id="mItemCatDropdown"></select></div>
-              <div class="field"><label>Brand Name <span class="req">*</span></label>
-                <input id="mItemBrandInput" placeholder="e.g. Adani"></div>
-              <div class="field" id="mItemWattField"><label>Wattage / Capacity <span class="req" id="mItemWattReq" style="display:none;">*</span></label>
-                <div style="display:flex; gap:8px;">
+          <!-- STEP 2: BRAND & SPECIFICATION -->
+          <div class="master-step-block">
+            <div class="master-step-title"><span class="step-num">2</span> Brand & Specifications</div>
+            <div class="form-grid cols-2">
+              <div class="field">
+                <label>Brand Name <span class="req">*</span></label>
+                <input id="mItemBrandInput" placeholder="e.g. Adani, Vikram, Waree..." list="mExistingBrandsList" autocomplete="off">
+                <datalist id="mExistingBrandsList"></datalist>
+              </div>
+              <div class="field" id="mItemWattField">
+                <label>Wattage / Capacity <span class="req" id="mItemWattReq">*</span></label>
+                <div style="display:flex; gap:6px;">
                   <input id="mItemWattInput" placeholder="e.g. 545" style="flex:1;">
-                  <select id="mItemWattUnitDropdown" style="width:88px;" title="Unit shown after the value (W or kW)">
+                  <select id="mItemWattUnitDropdown" style="width:82px;">
                     <option value="W" selected>W</option>
                     <option value="kW">kW</option>
                   </select>
                 </div>
               </div>
-              <div class="field" id="mItemModelField" style="display:none;"><label>Model <span class="req" id="mItemModelReq">*</span></label>
-                <input id="mItemModelInput" placeholder="e.g. 2 Inch"></div>
-              <div class="field"><label>UOM (Unit of Measure)</label>
-                <select id="mItemUomDropdown"></select></div>
-              <div class="field"><label>Minimum Stock Alert level</label>
-                <input type="number" id="mItemMinStockInput" value="0"></div>
-
-              <div style="display:flex; gap:10px; margin-top:10px;">
-                <button class="btn btn-blue" id="mBtnSaveItem" style="flex:1;"><i class="fa-solid fa-save"></i> Save Product Profile</button>
-                <button class="btn btn-red" id="mBtnCancelItemEdit" style="display:none; background:#3a2222; color:var(--red);"><i class="fa-solid fa-xmark"></i> Cancel</button>
+              <div class="field" id="mItemModelField" style="display:none;">
+                <label>Model / Specification <span class="req" id="mItemModelReq">*</span></label>
+                <input id="mItemModelInput" placeholder="e.g. 1.5 X 1.5, 4Pole / 3Phase">
               </div>
             </div>
           </div>
 
-          <div class="panel">
-            <h3><i class="fa-solid fa-table-list"></i> Registered Inventory Items Sourced
-              <button type="button" class="info-btn" data-info="Double-click any row to edit its properties in the form on the left."><i class="fa-solid fa-circle-info"></i></button>
-            </h3>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
-              <button class="btn btn-ghost" id="mBtnImportItems" style="background:#1F7A4D;"><i class="fa-solid fa-file-import"></i> Upload Excel (Bulk Create Items)</button>
-              <button class="btn btn-ghost" id="mBtnDownloadItemTemplate" style="background:#4B6584;"><i class="fa-solid fa-download"></i> Download Excel Template</button>
+          <!-- STEP 3: INVENTORY PARAMETERS & ALERT THRESHOLD -->
+          <div class="master-step-block">
+            <div class="master-step-title"><span class="step-num">3</span> Inventory & Stock Controls</div>
+            <div class="form-grid cols-2">
+              <div class="field">
+                <label>Unit of Measure (UOM) <span class="req">*</span></label>
+                <select id="mItemUomDropdown"></select>
+              </div>
+              <div class="field">
+                <label>Low Stock Alert Level</label>
+                <input type="number" min="0" id="mItemMinStockInput" value="0" placeholder="Minimum stock warning">
+              </div>
+            </div>
+          </div>
+
+          <div class="actions-row" style="margin-top:16px;">
+            <button class="btn btn-blue" id="mBtnSaveItem" style="flex:1;"><i class="fa-solid fa-floppy-disk"></i> Save Product Profile</button>
+            <button class="btn btn-red" id="mBtnCancelItemEdit" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel</button>
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL: REGISTERED CATALOG & QUICK SEARCH -->
+        <div class="panel">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+            <h3 style="margin:0;"><i class="fa-solid fa-table-list"></i> Registered Inventory Catalog</h3>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn btn-ghost" id="mBtnImportItems" style="background:#1F7A4D; padding:6px 12px; font-size:12px;"><i class="fa-solid fa-file-import"></i> Upload Excel</button>
+              <button class="btn btn-ghost" id="mBtnDownloadItemTemplate" style="background:#4B6584; padding:6px 12px; font-size:12px;"><i class="fa-solid fa-download"></i> Download Template</button>
               <input type="file" id="mItemImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
             </div>
-            <div class="table-wrap"><table>
-              <thead><tr><th>Category</th><th>Brand</th><th>Watt / Model</th><th>Subtype</th><th>Alert Stock</th><th>UOM</th><th>Actions</th></tr></thead>
-              <tbody id="mastersItemBody"></tbody>
-            </table></div>
           </div>
+
+          <!-- Stats Bar -->
+          <div class="masters-stats-row" id="mastersItemStatsRow">
+            <div class="masters-stat-item"><i class="fa-solid fa-cubes"></i> Total Products: <strong id="mStatTotalItems">0</strong></div>
+            <div class="masters-stat-item"><i class="fa-solid fa-bolt" style="color:#f39c12;"></i> Watt-Tracked: <strong id="mStatWattItems">0</strong></div>
+            <div class="masters-stat-item"><i class="fa-solid fa-barcode" style="color:#3b8ed0;"></i> Serial-Tracked: <strong id="mStatSerialItems">0</strong></div>
+          </div>
+
+          <!-- Search & Filter Bar -->
+          <div class="masters-filter-bar">
+            <div class="search-box">
+              <input type="text" id="mItemSearchInput" placeholder="Quick search by Brand, Category, Wattage, Model..." style="width:100%;">
+            </div>
+            <select id="mItemFilterCatDropdown" style="width:180px;">
+              <option value="">All Categories</option>
+            </select>
+          </div>
+
+          <div class="table-wrap"><table>
+            <thead><tr><th>Category</th><th>Brand</th><th>Watt / Model</th><th>Subtype</th><th>Alert Stock</th><th>UOM</th><th>Actions</th></tr></thead>
+            <tbody id="mastersItemBody"></tbody>
+          </table></div>
+        </div>
 
       </div>
     </div>
 
     <div class="subtab-panel" data-panel="category">
-  <div class="grid-2">
-    <div class="panel">
-      <h3><i class="fa-solid fa-plus"></i> Add New Category</h3>
-      <div class="form-grid">
-        <div class="field span-2"><label>Category Name *</label><input id="mInputCatName" placeholder="e.g. Structure"></div>
-        <div class="field span-2">
-          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px;">
-            <input type="checkbox" id="mInputCatWattMandatory"> <span>Wattage / Capacity is mandatory for this category</span>
-          </label>
+      <div class="grid-2">
+        <div class="panel">
+          <h3><i class="fa-solid fa-plus"></i> Add New Category</h3>
+          <div class="form-grid">
+            <div class="field span-2"><label>Category Name *</label><input id="mInputCatName" placeholder="e.g. Structure, Battery, Solar Panel..."></div>
+            <div class="field span-2">
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px;">
+                <input type="checkbox" id="mInputCatWattMandatory"> <span>Wattage / Capacity is mandatory for this category</span>
+              </label>
+            </div>
+            <div class="field span-2">
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px;">
+                <input type="checkbox" id="mInputCatSerialMandatory"> <span>Serial No. is mandatory for this category</span>
+              </label>
+            </div>
+          </div>
+          <div class="actions-row"><button class="btn btn-blue" id="mBtnSaveCat"><i class="fa-solid fa-save"></i> Save Category</button></div>
         </div>
-        <div class="field span-2">
-          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px;">
-            <input type="checkbox" id="mInputCatSerialMandatory"> <span>Serial No. is mandatory for this category</span>
-          </label>
+        <div class="panel">
+          <h3><i class="fa-solid fa-list"></i> Category List</h3>
+          <div class="table-wrap"><table><thead><tr><th>Category Name</th><th>Linked Products</th><th>Watt Rule</th><th>Serial Rule</th><th>Actions</th></tr></thead><tbody id="mastersCategoryBody"></tbody></table></div>
         </div>
       </div>
-      <div class="actions-row"><button class="btn btn-blue" id="mBtnSaveCat"><i class="fa-solid fa-save"></i> Save Category</button></div>
-    </div>
-    <div class="panel">
-      <h3><i class="fa-solid fa-list"></i> Category List</h3>
-      <div class="table-wrap"><table><thead><tr><th>Category Name</th><th>Linked Products</th><th>Watt Rule</th><th>Serial Rule</th><th>Actions</th></tr></thead><tbody id="mastersCategoryBody"></tbody></table></div>
-    </div>
-  </div>
 
-  <div class="panel" style="margin-top:20px;">
-    <h3><i class="fa-solid fa-tags"></i> Subtype / Type Management (per Category)</h3>
-    <div class="form-grid cols-2">
-      <div class="field"><label>Target Category *</label><select id="mSubTargetCat"></select></div>
-      <div class="field"><label>Subtype / Type Name *</label><input id="mInputSubName" placeholder="e.g. DCR, Hybrid, Mono PERC"></div>
+      <div class="panel" style="margin-top:20px;">
+        <h3><i class="fa-solid fa-tags"></i> Subtype / Variant Management (per Category)</h3>
+        <div class="form-grid cols-2">
+          <div class="field"><label>Target Category *</label><select id="mSubTargetCat"></select></div>
+          <div class="field"><label>Subtype / Type Name *</label><input id="mInputSubName" placeholder="e.g. DCR, Non-DCR, Hybrid, Mono PERC..."></div>
+        </div>
+        <div class="actions-row">
+          <button class="btn btn-green" id="mBtnSaveSub"><i class="fa-solid fa-save"></i> Add Subtype</button>
+          <button class="btn btn-red" id="mBtnCancelSubEdit" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel</button>
+        </div>
+        <div class="table-wrap" style="margin-top:12px;"><table><thead><tr><th>Subtype / Type</th><th>Actions</th></tr></thead><tbody id="mastersSubtypeBody"></tbody></table></div>
+      </div>
     </div>
-    <div class="actions-row">
-      <button class="btn btn-green" id="mBtnSaveSub"><i class="fa-solid fa-save"></i> Add Subtype</button>
-      <button class="btn btn-red" id="mBtnCancelSubEdit" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel</button>
-    </div>
-    <div class="table-wrap" style="margin-top:12px;"><table><thead><tr><th>Subtype / Type</th><th>Actions</th></tr></thead><tbody id="mastersSubtypeBody"></tbody></table></div>
-  </div>
-</div>
 
-     <div class="subtab-panel" data-panel="brand">
+    <div class="subtab-panel" data-panel="brand">
       <div class="panel">
-        <h3><i class="fa-solid fa-list"></i> Registered Brands
-          <button type="button" class="info-btn" data-info="Brands are not created separately here. Any Brand Name entered while saving an item in the Item Registration Panel is listed automatically, sourced live from the database."><i class="fa-solid fa-circle-info"></i></button>
+        <h3><i class="fa-solid fa-trademark"></i> Registered Brand Directory
+          <button type="button" class="info-btn" data-info="Brands are dynamically updated from Item Master and Purchase Inward records."><i class="fa-solid fa-circle-info"></i></button>
         </h3>
         <div class="table-wrap"><table><thead><tr><th>Brand Identifier</th><th>Items Registered</th></tr></thead><tbody id="mastersBrandBody"></tbody></table></div>
       </div>
     </div>
 
     <div class="subtab-panel" data-panel="warehouse">
-  <div class="grid-2">
-    <div class="panel">
-      <h3 id="mWhFormHeading"><i class="fa-solid fa-plus"></i> Add New Storage Warehouse</h3>
-      <div class="form-grid">
-        <div class="field span-2"><label>Warehouse Name *</label><input id="mInputWhName" placeholder="e.g. Main Hub"></div>
-        <div class="field span-2"><label>Location Address</label><input id="mInputWhLoc" placeholder="e.g. Industrial Area"></div>
-      </div>
-      <div class="actions-row">
-        <button class="btn btn-blue" id="mBtnSaveWh"><i class="fa-solid fa-save"></i> Save Warehouse</button>
-        <button class="btn btn-red" id="mBtnCancelWhEdit" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel</button>
-      </div>
-    </div>
-    <div class="panel">
-      <h3><i class="fa-solid fa-list"></i> Warehouses Configured</h3>
-      <div class="table-wrap"><table><thead><tr><th>Warehouse Name</th><th>Active Stock Sourced</th><th>Actions</th></tr></thead><tbody id="mastersWarehouseBody"></tbody></table></div>
-    </div>
-  </div>
-</div>
-
-<div class="subtab-panel" data-panel="uom">
-  <div class="grid-2">
-    <div class="panel">
-      <h3 id="mUomFormHeading"><i class="fa-solid fa-plus"></i> Add New Unit of Measure</h3>
-      <div class="form-grid"><div class="field span-2"><label>Unit Name *</label><input id="mInputUomName" placeholder="e.g. Nos, Meters, Kg"></div></div>
-      <div class="actions-row">
-        <button class="btn btn-blue" id="mBtnSaveUom"><i class="fa-solid fa-save"></i> Save Unit</button>
-        <button class="btn btn-red" id="mBtnCancelUomEdit" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel</button>
-      </div>
-    </div>
-    <div class="panel">
-      <h3><i class="fa-solid fa-list"></i> Units Configured</h3>
-      <div class="table-wrap"><table><thead><tr><th>Unit Name</th><th>Actions</th></tr></thead><tbody id="mastersUomBody"></tbody></table></div>
-    </div>
-  </div>
-</div>
-
-     <div class="subtab-panel" data-panel="users">
       <div class="grid-2">
-         <div class="panel">
+        <div class="panel">
+          <h3 id="mWhFormHeading"><i class="fa-solid fa-warehouse"></i> Add New Storage Warehouse</h3>
+          <div class="form-grid">
+            <div class="field span-2"><label>Warehouse Name *</label><input id="mInputWhName" placeholder="e.g. Main Hub - Surat"></div>
+            <div class="field span-2"><label>Location Address</label><input id="mInputWhLoc" placeholder="e.g. GIDC Industrial Area"></div>
+          </div>
+          <div class="actions-row">
+            <button class="btn btn-blue" id="mBtnSaveWh"><i class="fa-solid fa-save"></i> Save Warehouse</button>
+            <button class="btn btn-red" id="mBtnCancelWhEdit" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h3><i class="fa-solid fa-list"></i> Warehouses Configured</h3>
+          <div class="table-wrap"><table><thead><tr><th>Warehouse Name</th><th>Active Stock Sourced</th><th>Actions</th></tr></thead><tbody id="mastersWarehouseBody"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subtab-panel" data-panel="uom">
+      <div class="grid-2">
+        <div class="panel">
+          <h3 id="mUomFormHeading"><i class="fa-solid fa-ruler-combined"></i> Add Unit of Measure</h3>
+          <div class="form-grid"><div class="field span-2"><label>Unit Name *</label><input id="mInputUomName" placeholder="e.g. Nos, Meters, Kg, Box, Bori, Set"></div></div>
+          <div class="actions-row">
+            <button class="btn btn-blue" id="mBtnSaveUom"><i class="fa-solid fa-save"></i> Save Unit</button>
+            <button class="btn btn-red" id="mBtnCancelUomEdit" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h3><i class="fa-solid fa-list"></i> Units Configured</h3>
+          <div class="table-wrap"><table><thead><tr><th>Unit Name</th><th>Actions</th></tr></thead><tbody id="mastersUomBody"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subtab-panel" data-panel="users">
+      <div class="banner" style="background:rgba(59,142,208,0.12); border:1px solid rgba(59,142,208,0.3); border-radius:10px; padding:12px 18px; margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <i class="fa-solid fa-shield-halved" style="color:var(--blue); font-size:20px;"></i>
+          <div>
+            <strong style="color:#fff; font-size:13.5px;">User Accounts & Role Authorization Control</strong>
+            <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">User management and security can also be accessed anytime via <strong>Avatar Menu ➔ System Settings ➔ Security & 2FA</strong>.</div>
+          </div>
+        </div>
+        <button type="button" class="btn btn-ghost" id="mBtnOpenSettingsUsers" style="font-size:12px; padding:6px 14px;"><i class="fa-solid fa-gear"></i> Open System Settings</button>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
           <h3><i class="fa-solid fa-user-lock"></i> Create / Update Authorization Account
-            <button type="button" class="info-btn" data-info="To change a password: click the user's row in the Access Control Ledger to safely fill in their exact username (avoids typos), enter the new password, then click Update Password — you'll be asked to confirm the username before it's applied. The Role dropdown is only used when creating a new user."><i class="fa-solid fa-circle-info"></i></button>
+            <button type="button" class="info-btn" data-info="To change a password: click the user's row in the Access Control Ledger to safely fill in their exact username, enter the new password, then click Update Password."><i class="fa-solid fa-circle-info"></i></button>
           </h3>
           <div class="form-grid">
             <div class="field"><label>Username *</label><input id="mUserNameInput" placeholder="e.g. amit" list="mExistingUsers" autocomplete="off"><datalist id="mExistingUsers"></datalist></div>
@@ -189,10 +239,10 @@ window.PAGES.masters = {
             <div class="field"><label>System Privilege</label>
               <select id="mUserRoleDropdown"><option value="User">User</option><option value="Admin">Admin</option><option value="SuperAdmin">SuperAdmin</option></select></div>
           </div>
-          <div style="color:var(--txt-muted); font-size:12px; margin-top:6px;">Every user needs an email on file — login now sends a One-Time Password (OTP) to it as a second step after the password.</div>
+          <div style="color:var(--txt-muted); font-size:12px; margin-top:6px;">Every user needs an email on file for OTP verification during login.</div>
           <div class="actions-row" style="margin-top:10px;">
             <button class="btn btn-blue" id="mBtnAddUser"><i class="fa-solid fa-user-plus"></i> Add New User</button>
-            <button class="btn btn-gold" id="mBtnUpdatePass"><i class="fa-solid fa-key"></i> Update Existing Password</button>
+            <button class="btn btn-gold" id="mBtnUpdatePass"><i class="fa-solid fa-key"></i> Update Password</button>
             <button class="btn btn-ghost" id="mBtnUpdateEmail"><i class="fa-solid fa-envelope"></i> Update Email</button>
           </div>
         </div>
@@ -282,11 +332,14 @@ window.PAGES.masters = {
         cachedCategories = cats;
 
         $('mItemCatDropdown').innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+        if ($('mItemFilterCatDropdown')) {
+          $('mItemFilterCatDropdown').innerHTML = `<option value="">All Categories</option>` + cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+        }
         $('mSubTargetCat').innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
 
         $('mastersCategoryBody').innerHTML = cats.map(c => `
       <tr>
-        <td class="gold-txt">${c.name}</td>
+        <td class="gold-txt" style="font-weight:600;">${c.name}</td>
         <td>${c.item_count} items</td>
         <td>
           <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px;">
@@ -305,7 +358,7 @@ window.PAGES.masters = {
         $('mItemUomDropdown').innerHTML = units.map(u => `<option>${u}</option>`).join('');
         $('mastersUomBody').innerHTML = units.map(u => `
       <tr>
-        <td>${u}</td>
+        <td style="font-weight:600;">${u}</td>
         <td>
           <button class="btn btn-blue m-uom-edit" data-name="${u}" style="padding:6px 10px; font-size:11px;"><i class="fa-solid fa-pen"></i></button>
           <button class="btn btn-red m-uom-delete" data-name="${u}" style="padding:6px 10px; font-size:11px;"><i class="fa-solid fa-trash"></i></button>
@@ -315,7 +368,7 @@ window.PAGES.masters = {
 
         $('mastersWarehouseBody').innerHTML = whs.map(w => `
       <tr>
-        <td>${w.name}</td>
+        <td style="font-weight:600;">${w.name}</td>
         <td class="gold-txt">${w.items_stored}</td>
         <td>
           <button class="btn btn-blue m-wh-edit" data-name="${w.name}" style="padding:6px 10px; font-size:11px;"><i class="fa-solid fa-pen"></i></button>
@@ -324,59 +377,135 @@ window.PAGES.masters = {
       </tr>
     `).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--txt-muted);">No warehouses yet.</td></tr>`;
 
-        $('mastersUsersBody').innerHTML = users.map(u => `<tr class="m-user-row" data-username="${u.username}" style="cursor:pointer;" title="Click to select this username for password/email update"><td>${u.username}</td><td>${u.email || '<span style="color:var(--txt-muted); font-style:italic;">Not set</span>'}</td><td>${u.role}</td></tr>`).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--txt-muted);">No users yet.</td></tr>`;
+        $('mastersUsersBody').innerHTML = users.map(u => `<tr class="m-user-row" data-username="${u.username}" style="cursor:pointer;" title="Click to select this username for password/email update"><td><span class="badge" style="background:rgba(255,255,255,0.06); font-weight:600;">${u.username}</span></td><td>${u.email || '<span style="color:var(--txt-muted); font-style:italic;">Not set</span>'}</td><td><span class="badge" style="background:rgba(212,175,55,0.12); color:var(--gold); font-weight:700;">${u.role}</span></td></tr>`).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--txt-muted);">No users yet.</td></tr>`;
         const existingUsersList = $('mExistingUsers');
         if (existingUsersList) existingUsersList.innerHTML = users.map(u => `<option value="${u.username}">`).join('');
 
-        $('mastersBrandBody').innerHTML = brands.map(b => `<tr><td class="gold-txt">${b.brand_name}</td><td>${b.item_count}</td></tr>`).join('') || `<tr><td colspan="2" style="text-align:center;color:var(--txt-muted);">No brands registered yet.</td></tr>`;
+        $('mastersBrandBody').innerHTML = brands.map(b => `<tr><td class="gold-txt" style="font-weight:600;">${b.brand_name}</td><td>${b.item_count} items</td></tr>`).join('') || `<tr><td colspan="2" style="text-align:center;color:var(--txt-muted);">No brands registered yet.</td></tr>`;
+        const existingBrandsList = $('mExistingBrandsList');
+        if (existingBrandsList) existingBrandsList.innerHTML = brands.map(b => `<option value="${b.brand_name}">`).join('');
 
         cachedItems = items;
-        if (!items.length) {
-          $('mastersItemBody').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--txt-muted);">No recorded profiles found.</td></tr>`;
-        } else {
-          $('mastersItemBody').innerHTML = items.map(it => `
-        <tr class="m-item-row" data-id="${it.id}" style="cursor:pointer;">
-          <td>${it.category}</td>
-          <td class="gold-txt" style="font-weight:600;">${it.brand_name}</td>
-          <td>${Number(it.watt) > 0 ? mFormatWatt(it.watt) + (it.watt_unit || 'W') : (it.model ? it.model : '-')}</td>
-          <td>${it.solar_type || '-'}</td>
-          <td style="color:var(--orange); font-weight:600;">${it.minimum_stock || 0} ${it.uom || 'Nos'}</td>
-          <td>${it.uom || 'Nos'}</td>
-          <td><button class="btn btn-red m-item-delete" data-id="${it.id}" data-label="${it.brand_name}${Number(it.watt) > 0 ? ' ' + mFormatWatt(it.watt) + (it.watt_unit || 'W') : (it.model ? ' ' + it.model : '')}" style="padding:6px 10px; font-size:11px;" title="Delete item"><i class="fa-solid fa-trash"></i></button></td>
-        </tr>
-      `).join('');
-        }
+        renderItemsCatalog();
 
         syncWattMandatoryUI();
         loadSubtypesForCategory($('mSubTargetCat').value);
 
         // Excel-style column filters — Dashboard jaisa hi, ab har Masters
         // table pe (idempotent hai, dobara render pe duplicate nahi hoga).
-        ['mastersCategoryBody', 'mastersItemBody', 'mastersWarehouseBody', 'mastersUomBody', 'mastersBrandBody', 'mastersUsersBody'].forEach((id) => {
+        ['mastersCategoryBody', 'mastersWarehouseBody', 'mastersUomBody', 'mastersBrandBody', 'mastersUsersBody'].forEach((id) => {
           const body = $(id);
           const table = body && body.closest('table');
-          if (table) window.attachColumnFilters(table);
+          if (table && window.attachColumnFilters) window.attachColumnFilters(table);
         });
       } catch (err) {
         console.error('Error synchronizing core fields dataset:', err);
       }
     }
 
+    function renderItemsCatalog() {
+      const q = ($('mItemSearchInput') ? $('mItemSearchInput').value.trim().toLowerCase() : '');
+      const filterCat = ($('mItemFilterCatDropdown') ? $('mItemFilterCatDropdown').value : '');
+
+      const filtered = cachedItems.filter(it => {
+        if (filterCat && it.category !== filterCat) return false;
+        if (!q) return true;
+        const brand = (it.brand_name || '').toLowerCase();
+        const cat = (it.category || '').toLowerCase();
+        const watt = mFormatWatt(it.watt).toLowerCase();
+        const model = (it.model || '').toLowerCase();
+        const subtype = (it.solar_type || '').toLowerCase();
+        return brand.includes(q) || cat.includes(q) || watt.includes(q) || model.includes(q) || subtype.includes(q);
+      });
+
+      // Update quick stats counters
+      const totalCount = cachedItems.length;
+      const wattCount = cachedItems.filter(it => Number(it.watt) > 0).length;
+      const serialCount = cachedItems.filter(it => {
+        const catInfo = cachedCategories.find(c => c.name === it.category);
+        return catInfo && catInfo.serial_mandatory;
+      }).length;
+
+      if ($('mStatTotalItems')) $('mStatTotalItems').textContent = totalCount;
+      if ($('mStatWattItems')) $('mStatWattItems').textContent = wattCount;
+      if ($('mStatSerialItems')) $('mStatSerialItems').textContent = serialCount;
+
+      const body = $('mastersItemBody');
+      if (!body) return;
+
+      if (!filtered.length) {
+        body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--txt-muted); padding:16px;">${q || filterCat ? 'No matching products found.' : 'No recorded profiles found.'}</td></tr>`;
+      } else {
+        body.innerHTML = filtered.map(it => `
+          <tr class="m-item-row" data-id="${it.id}" style="cursor:pointer;" title="Double-click to edit this product profile">
+            <td><span class="badge" style="background:rgba(59,142,208,0.12); color:#66a6ff; font-weight:600; font-size:11.5px; padding:3px 8px; border-radius:6px;">${it.category}</span></td>
+            <td class="gold-txt" style="font-weight:700;">${it.brand_name}</td>
+            <td>${Number(it.watt) > 0 ? `<strong style="color:var(--txt);">${mFormatWatt(it.watt)} ${it.watt_unit || 'W'}</strong>` : (it.model ? it.model : '-')}</td>
+            <td>${it.solar_type && it.solar_type !== '-' ? `<span class="badge" style="background:rgba(212,175,55,0.14); color:var(--gold); font-size:11px; padding:2px 6px; border-radius:4px;">${it.solar_type}</span>` : '-'}</td>
+            <td style="color:var(--orange); font-weight:600;">${it.minimum_stock || 0} ${it.uom || 'Nos'}</td>
+            <td>${it.uom || 'Nos'}</td>
+            <td>
+              <button class="btn btn-red m-item-delete" data-id="${it.id}" data-label="${it.brand_name}${Number(it.watt) > 0 ? ' ' + mFormatWatt(it.watt) + (it.watt_unit || 'W') : (it.model ? ' ' + it.model : '')}" style="padding:5px 9px; font-size:11px;" title="Delete item"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      const table = body.closest('table');
+      if (table && window.attachColumnFilters) window.attachColumnFilters(table);
+    }
+
+    if ($('mItemSearchInput')) $('mItemSearchInput').addEventListener('input', renderItemsCatalog);
+    if ($('mItemFilterCatDropdown')) $('mItemFilterCatDropdown').addEventListener('change', renderItemsCatalog);
+
+    if ($('mBtnOpenSettingsUsers')) {
+      $('mBtnOpenSettingsUsers').addEventListener('click', () => {
+        if (window.openSystemSettingsModal) {
+          window.openSystemSettingsModal('security');
+        } else {
+          const profileBtn = document.getElementById('userProfileMenuBtn');
+          if (profileBtn) profileBtn.click();
+        }
+      });
+    }
+
     function syncWattMandatoryUI(clearIfHidden) {
       const cat = cachedCategories.find(c => c.name === $('mItemCatDropdown').value);
       const wattMandatory = !!(cat && cat.watt_mandatory);
-      $('cfgWattMandatory').checked = wattMandatory;
-      $('cfgWattMandatory').disabled = true;
       const serialMandatory = !!(cat && cat.serial_mandatory);
-      $('cfgSerialMandatory').checked = serialMandatory;
-      $('cfgSerialMandatory').disabled = true;
 
-      // Goal 1: actually hide the Wattage input (not just the info
-      // checkbox) when the selected category doesn't require it, and show
-      // the "required" asterisk when it does. clearIfHidden is only passed
-      // true from the dropdown's own "change" handler below — NOT when this
-      // runs while populating an existing item into the edit form, so we
-      // never silently wipe an already-saved wattage value.
+      if ($('cfgWattMandatory')) {
+        $('cfgWattMandatory').checked = wattMandatory;
+        $('cfgWattMandatory').disabled = true;
+      }
+      if ($('cfgSerialMandatory')) {
+        $('cfgSerialMandatory').checked = serialMandatory;
+        $('cfgSerialMandatory').disabled = true;
+      }
+
+      // Update Chip Badges
+      const chipWatt = $('chipWattStatus');
+      if (chipWatt) {
+        if (wattMandatory) {
+          chipWatt.className = 'chip chip-gold active';
+          chipWatt.innerHTML = '<i class="fa-solid fa-bolt"></i> Wattage Tracked';
+        } else {
+          chipWatt.className = 'chip inactive';
+          chipWatt.innerHTML = '<i class="fa-solid fa-bolt"></i> Wattage N/A';
+        }
+      }
+
+      const chipSerial = $('chipSerialStatus');
+      if (chipSerial) {
+        if (serialMandatory) {
+          chipSerial.className = 'chip chip-blue active';
+          chipSerial.innerHTML = '<i class="fa-solid fa-barcode"></i> Serial No. Required';
+        } else {
+          chipSerial.className = 'chip inactive';
+          chipSerial.innerHTML = '<i class="fa-solid fa-boxes-stacked"></i> Qty Tracked (No Serial)';
+        }
+      }
+
       const wattField = $('mItemWattField');
       const wattReq = $('mItemWattReq');
       if (wattField) wattField.style.display = wattMandatory ? '' : 'none';
@@ -386,9 +515,6 @@ window.PAGES.masters = {
         $('mItemWattUnitDropdown').value = 'W';
       }
 
-      // Goal: when NEITHER Wattage nor Serial No. applies to this category,
-      // Wattage is replaced by a mandatory free-text Model field (e.g. PVC
-      // Pipe "2 Inch") so the item can still be uniquely identified.
       const showModel = !wattMandatory && !serialMandatory;
       const modelField = $('mItemModelField');
       if (modelField) modelField.style.display = showModel ? '' : 'none';
@@ -398,26 +524,31 @@ window.PAGES.masters = {
     }
     $('mItemCatDropdown').addEventListener('change', () => syncWattMandatoryUI(true));
 
-    // Goal 1: read-only subtype info for the selected category — subtype is
-    // intentionally NOT set here (see info-btn note above); it's chosen per
-    // purchase invoice line in Purchase Inward. This just lets the user see
-    // what subtypes already exist for the category while registering an item.
     let subtypeInfoCache = {};
     async function renderSubtypeInfo(catName) {
-      const box = $('mItemSubtypeInfo');
-      if (!box) return;
-      if (!catName) { box.innerHTML = 'Select a category above to view its subtypes.'; return; }
+      const chip = $('chipSubtypesStatus');
+      if (!chip) return;
+      if (!catName) {
+        chip.className = 'chip inactive';
+        chip.innerHTML = '<i class="fa-solid fa-tags"></i> No Subtypes';
+        return;
+      }
       try {
         let subs = subtypeInfoCache[catName];
         if (!subs) {
           subs = await fetch(`${API_BASE}/masters/subtypes/${encodeURIComponent(catName)}`).then(r => r.json());
           subtypeInfoCache[catName] = subs;
         }
-        box.innerHTML = subs.length
-          ? subs.map(s => `<span style="display:inline-block; background:rgba(212,175,55,0.15); color:var(--gold); padding:2px 8px; border-radius:10px; margin:2px 4px 2px 0; font-size:11px;">${s}</span>`).join('')
-          : `<span style="font-style:italic;">No subtypes defined yet for '${catName}' — add them in Category Master &rarr; Subtype Management.</span>`;
+        if (subs && subs.length) {
+          chip.className = 'chip active';
+          chip.innerHTML = `<i class="fa-solid fa-tags"></i> Subtypes: ${subs.join(', ')}`;
+        } else {
+          chip.className = 'chip inactive';
+          chip.innerHTML = '<i class="fa-solid fa-tags"></i> Standard (No Subtypes)';
+        }
       } catch (e) {
-        box.innerHTML = '<span style="color:var(--red);">Could not load subtypes.</span>';
+        chip.className = 'chip inactive';
+        chip.innerHTML = '<i class="fa-solid fa-tags"></i> Subtypes N/A';
       }
     }
 
@@ -865,9 +996,9 @@ window.PAGES.masters = {
       $("mItemMinStockInput").value = match.minimum_stock || 0;
       syncWattMandatoryUI();
       $("mItemFormHeading").innerHTML =
-        '<i class="fa-solid fa-pen-to-square"></i> Update Item Profile';
+        '<i class="fa-solid fa-pen-to-square" style="color:var(--gold);"></i> Update Product Master';
       $("mBtnSaveItem").innerHTML =
-        '<i class="fa-solid fa-save"></i> Update Product Profile';
+        '<i class="fa-solid fa-floppy-disk"></i> Update Product Profile';
       $("mBtnCancelItemEdit").style.display = "inline-block";
     });
 
