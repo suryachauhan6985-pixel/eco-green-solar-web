@@ -447,9 +447,6 @@ td.bom-challan-gst-cell{font-size:10pt; font-weight:700; text-align:left;}
      (used for the BOM sheet) — bom.js overwrites it with a fresh @page
      rule right before every window.print() call (see bomSetPrintPageSize),
      so the Challan sheet's landscape page setup below always wins for its
-     own print job regardless of this default. */
-  @page{size:A4 portrait; margin:19.05mm 6.35mm;}
-
   /* ---------- Challan print root — same visibility/color-adjust
      treatment as #bomPrintRoot above, kept as its own separate rule set
      (never merged into the #bomPrintRoot selectors) so the BOM sheet's

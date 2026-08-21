@@ -979,7 +979,7 @@ function createBomDispatchModule(ctx) {
               const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
 
               const abortCtrl = new AbortController();
-              const timeoutTimer = setTimeout(() => abortCtrl.abort(), 6500);
+              const timeoutTimer = setTimeout(() => abortCtrl.abort(), 35000);
               let pdfRes;
               try {
                 pdfRes = await fetch(pdfUrl, { signal: abortCtrl.signal });
