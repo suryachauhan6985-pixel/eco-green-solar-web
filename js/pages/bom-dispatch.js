@@ -877,180 +877,21 @@ function createBomDispatchModule(ctx) {
           printBtn.addEventListener('click', async () => {
             // Open the tab SYNCHRONOUSLY, as the very first thing in this
             // handler, before any `await`. This is what stops browsers'
-            // popup blocker from kicking in — a window.open() call is only
-            // treated as "a direct result of the user's click" if it runs
-            // before the call stack yields to any async work. It starts as
-            // a small "Preparing..." page and gets redirected to the real
-            // PDF blob once the server finishes generating it below.
-            const pdfWindow = window.open('', '_blank');
-            if (pdfWindow) {
-              const loaderHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Preparing Challan…</title>
-  <style>
-    body {
-      margin: 0;
-      background: #0b0f17;
-      color: #e2e8f0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      overflow: hidden;
-    }
-    .card {
-      background: rgba(18, 24, 38, 0.88);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 36px 44px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(59, 142, 208, 0.15);
-      backdrop-filter: blur(12px);
-    }
-    .spinner-wrap {
-      position: relative;
-      width: 64px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .spinner-wrap::before, .spinner-wrap::after {
-      content: '';
-      position: absolute;
-      border-radius: 50%;
-    }
-    .spinner-wrap::before {
-      inset: 0;
-      border: 3px solid transparent;
-      border-top-color: #3b8ed0;
-      border-right-color: #3b8ed0;
-      animation: spin 0.9s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
-      box-shadow: 0 0 16px rgba(59, 142, 208, 0.45);
-    }
-    .spinner-wrap::after {
-      inset: 7px;
-      border: 3px solid transparent;
-      border-bottom-color: #ffb020;
-      border-left-color: #ffb020;
-      animation: spin-rev 1.2s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
-      box-shadow: 0 0 16px rgba(255, 176, 32, 0.45);
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes spin-rev { to { transform: rotate(-360deg); } }
-    .title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #ffb020;
-      letter-spacing: 0.5px;
-      text-shadow: 0 0 10px rgba(255, 176, 32, 0.3);
-    }
-    .subtitle {
-      font-size: 13px;
-      color: #94a3b8;
-      margin-top: -6px;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="spinner-wrap"></div>
-    <div class="title">Preparing your Challan...</div>
-    <div class="subtitle">Generating official Challan PDF...</div>
-  </div>
-</body>
-</html>`;
-              pdfWindow.document.write(loaderHtml);
-              pdfWindow.document.close();
-            }
-
             printBtn.disabled = true;
             const originalLabel = printBtn.innerHTML;
-            printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving & Preparing PDF...';
+            printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
             try {
               const payload = buildChallanSavePayload();
-              const saved = await window.Api.post('/challan', payload);
+              await window.Api.post('/challan', payload);
               syncSavedChallanBackToBom(payload);
-              const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
-
-              const abortCtrl = new AbortController();
-              const timeoutTimer = setTimeout(() => abortCtrl.abort(), 35000);
-              let pdfRes;
-              try {
-                pdfRes = await fetch(pdfUrl, { signal: abortCtrl.signal });
-              } finally {
-                clearTimeout(timeoutTimer);
-              }
-
-              if (!pdfRes.ok) {
-                let msg = 'Could not generate the Challan PDF.';
-                try { const j = await pdfRes.json(); if (j && j.error) msg = j.error; } catch (e) { /* ignore */ }
-                throw new Error(msg);
-              }
-              const pdfBlob = await pdfRes.blob();
-              const blobUrl = URL.createObjectURL(pdfBlob);
-
-              if (pdfWindow && !pdfWindow.closed) {
-                pdfWindow.location.href = blobUrl;
-                pdfWindow.addEventListener('load', () => {
-                  try { pdfWindow.print(); } catch (e) { /* let user use the PDF viewer's own print button */ }
-                });
-              } else {
-                const a = document.createElement('a');
-                a.href = blobUrl;
-                a.download = `challan-${saved.id}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                if (window.showToast) window.showToast('Popup blocked — PDF downloaded instead.');
-              }
-
-              setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-              if (window.showToast) {
-                window.showToast('Challan saved — opening PDF for print.');
+              if (window.showToast) window.showToast('Challan saved & opening print preview!', 'success');
+              if (typeof window.closeModal === 'function') window.closeModal();
+              if (typeof window.printChallanDirectly === 'function') {
+                window.printChallanDirectly(payload);
               }
             } catch (err) {
-              console.error('Challan PDF generation error:', err);
-              if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
-
-              // Instant browser print fallback so user is never blocked
-              try {
-                const printRoot = document.getElementById('bomChallanPrintRoot');
-                if (printRoot && typeof bomRenderChallanPrintSheetHtml === 'function') {
-                  const kwVal = modalCapacity ? modalCapacity.value : '';
-                  const templateValues = bomCollectChallanTemplateValues();
-                  templateValues.extra = bomCollectChallanExtraItems();
-                  printRoot.innerHTML = bomRenderChallanPrintSheetHtml(
-                    {
-                      challanNo: modalNo ? modalNo.value : '',
-                      challanDate: modalDate ? modalDate.value : '',
-                      orderNo: modalOrderNo ? modalOrderNo.value : '',
-                      customerName: modalName ? modalName.value : '',
-                      city: modalCity ? modalCity.value : '',
-                      vehicleNo: modalVehicleNo ? modalVehicleNo.value : '',
-                    },
-                    { kw: kwVal, sections: ctx.currentKitState },
-                    templateValues
-                  );
-                  if (typeof bomSetPrintPageSize === 'function') {
-                    bomSetPrintPageSize('size:A4 landscape; margin:0;');
-                  }
-                  window.print();
-                  if (window.showToast) window.showToast('Challan opened via direct print preview.', 'info');
-                  return;
-                }
-              } catch (fallbackErr) {
-                console.warn('Fallback print failed:', fallbackErr);
-              }
-
-              window.openModal('Print Notice', `<p>${(err && err.message) || 'Could not generate the Challan PDF.'}</p>`);
+              console.error('Challan print error:', err);
+              window.openModal('Print Notice', `<p>${(err && err.message) || 'Could not process the Challan.'}</p>`);
             } finally {
               printBtn.disabled = false;
               printBtn.innerHTML = originalLabel;

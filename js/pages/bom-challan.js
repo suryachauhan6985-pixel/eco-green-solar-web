@@ -830,10 +830,13 @@ function bomRenderChallanTableHeadRowHtml() {
 // directly beneath it on row 37 — same cell shape/column span on both rows
 // (C36:F36 / C37:F37) so the write-in line sits flush under the value.
 function bomRenderChallanFooterRowsHtml(header) {
+  const v1 = (header.vehicleNo || '').trim();
+  const v2 = (header.vehicleNo2 || '').trim();
+  const vText = [v1, v2].filter(Boolean).join(' / ') || '—';
   return `
     <tr class="bom-challan-footer-row1">
       <td class="bom-challan-issuedby-cell" colspan="2" rowspan="2">Issued by</td>
-      <td class="bom-challan-vehicle-cell" colspan="4">${bomEsc(header.vehicleNo)}</td>
+      <td class="bom-challan-vehicle-cell" colspan="4">${bomEsc(vText)}</td>
       <td class="bom-challan-receivedby-cell" rowspan="2">Received by</td>
     </tr>
     <tr class="bom-challan-footer-row2">
@@ -887,6 +890,129 @@ function bomRenderChallanPrintSheetHtml(header, kit, templateValues) {
     </div>
   `;
 }
+
+// Direct HTML generator for ANY saved Challan object or custom payload
+function bomRenderDirectChallanPrintSheetHtml(challanData) {
+  const header = {
+    challanNo: challanData.challanNo || challanData.challan_no || '',
+    challanDate: challanData.challanDate || challanData.challan_date || '',
+    customerName: challanData.customerName || challanData.customer_name || '',
+    orderNo: challanData.orderNo || challanData.order_no || '',
+    city: challanData.city || '',
+    vehicleNo: challanData.vehicleNo || challanData.vehicle_no || '',
+    vehicleNo2: challanData.vehicleNo2 || challanData.vehicle_no_2 || '',
+  };
+  const kit = {
+    kw: challanData.capacity || challanData.capacity_kw || challanData.kit_kw || challanData.kw || (challanData.header && (challanData.header.capacity || challanData.header.capacity_kw)) || ''
+  };
+
+  const rawItems = Array.isArray(challanData.items) ? challanData.items : [];
+  const rowsHtml = [];
+  let displaySr = 0;
+  let physicalRows = 0;
+
+  rawItems.forEach((it) => {
+    const qtyNum = Number(it.qty !== undefined ? it.qty : (it.quantity !== undefined ? it.quantity : 0));
+    const name = (it.item_name || it.name || '').trim();
+    if (qtyNum <= 0 && !name) return; // skip empty
+    displaySr += 1;
+    physicalRows += 1;
+    const model = (it.model || '').trim();
+    const unit = (it.unit || 'Nos').trim();
+    const desc = (it.description || it.desc || '').trim();
+
+    if (model) {
+      rowsHtml.push(`
+        <tr class="bom-challan-row">
+          <td class="bom-c-sr">${displaySr}</td>
+          <td class="bom-c-name">${bomEsc(name)}</td>
+          <td class="bom-c-model" colspan="2">${bomEsc(model)}</td>
+          <td class="bom-c-qtylabel">${qtyNum > 0 ? qtyNum : ''}</td>
+          <td class="bom-c-qtyunit">${bomEsc(unit)}</td>
+          <td class="bom-c-desc">${bomEsc(desc)}</td>
+        </tr>
+      `);
+    } else {
+      rowsHtml.push(`
+        <tr class="bom-challan-row">
+          <td class="bom-c-sr">${displaySr}</td>
+          <td class="bom-c-name" colspan="3">${bomEsc(name)}</td>
+          <td class="bom-c-qtylabel">${qtyNum > 0 ? qtyNum : ''}</td>
+          <td class="bom-c-qtyunit">${bomEsc(unit)}</td>
+          <td class="bom-c-desc">${bomEsc(desc)}</td>
+        </tr>
+      `);
+    }
+  });
+
+  while (physicalRows < CHALLAN_PRINT_TOTAL_BODY_ROWS) {
+    displaySr += 1;
+    physicalRows += 1;
+    rowsHtml.push(`
+      <tr class="bom-challan-row bom-challan-row-blank">
+        <td class="bom-c-sr">${displaySr}</td>
+        <td class="bom-c-name" colspan="3"></td>
+        <td class="bom-c-qtylabel"></td>
+        <td class="bom-c-qtyunit"></td>
+        <td class="bom-c-desc"></td>
+      </tr>
+    `);
+  }
+
+  const bodyRows = rowsHtml.join('');
+
+  const renderHalf = (copyLabel, isCompanyCopy) => `
+    <table class="bom-challan-table">
+      <colgroup>
+        <col class="bom-challan-col-sr">
+        <col class="bom-challan-col-name">
+        <col class="bom-challan-col-model">
+        <col class="bom-challan-col-modelcont">
+        <col class="bom-challan-col-qtylabel">
+        <col class="bom-challan-col-qtyunit">
+        <col class="bom-challan-col-desc">
+      </colgroup>
+      <tbody>
+        ${bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy)}
+        ${bomRenderChallanTableHeadRowHtml()}
+        ${bodyRows}
+        ${bomRenderChallanFooterRowsHtml(header)}
+      </tbody>
+    </table>
+  `;
+
+  return `
+    <div class="bom-challan-sheet" id="bomChallanSheet">
+      <div class="bom-challan-copy bom-challan-copy-customer">
+        ${renderHalf('Customer Copy', false)}
+      </div>
+      <div class="bom-challan-gutter"></div>
+      <div class="bom-challan-copy bom-challan-copy-company">
+        ${renderHalf('Company Copy', true)}
+      </div>
+    </div>
+  `;
+}
+
+// Global instant Challan print function (0.01s instant browser print preview)
+window.printChallanDirectly = function(challanData) {
+  let printRoot = document.getElementById('bomChallanPrintRoot');
+  if (!printRoot) {
+    printRoot = document.createElement('div');
+    printRoot.id = 'bomChallanPrintRoot';
+    printRoot.className = 'bom-print-only';
+    document.body.appendChild(printRoot);
+  }
+  // Clear any existing BOM sheet so only Challan sheet prints
+  const bomPrintRoot = document.getElementById('bomPrintRoot');
+  if (bomPrintRoot) bomPrintRoot.innerHTML = '';
+
+  printRoot.innerHTML = bomRenderDirectChallanPrintSheetHtml(challanData);
+  if (typeof bomSetPrintPageSize === 'function') {
+    bomSetPrintPageSize('size:A4 landscape; margin:0mm 5mm 0mm 5mm;');
+  }
+  window.print();
+};
 
 // Global helper to open and print Challan from Sales or any other page
 window.openChallanFromSalesData = async function(salesData) {
@@ -1051,42 +1177,16 @@ window.openChallanFromSalesData = async function(salesData) {
         window.openModal('Validation Error', '<p>Challan No. is required.</p>');
         return;
       }
-      const pdfWindow = window.open('', '_blank');
-      if (pdfWindow) {
-        pdfWindow.document.write(getChallanPdfLoadingHtml('Preparing Your Challan PDF', 'Compiling Landscape A4 Dual Copy…'));
-        pdfWindow.document.close();
-      }
       printBtn.disabled = true;
-      printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving & Preparing PDF...';
+      printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
       try {
-        const saved = await window.Api.post('/challan', payload);
+        await window.Api.post('/challan', payload);
         syncBackToSalesForm(payload);
-        const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
-        const abortCtrl = new AbortController();
-        const timeoutTimer = setTimeout(() => abortCtrl.abort(), 35000);
-        let pdfRes;
-        try {
-          pdfRes = await fetch(pdfUrl, { signal: abortCtrl.signal });
-        } finally {
-          clearTimeout(timeoutTimer);
-        }
-        if (!pdfRes.ok) throw new Error('Could not generate Challan PDF.');
-        const pdfBlob = await pdfRes.blob();
-        const blobUrl = URL.createObjectURL(pdfBlob);
-        if (pdfWindow && !pdfWindow.closed) {
-          pdfWindow.location.href = blobUrl;
-        } else {
-          const a = document.createElement('a');
-          a.href = blobUrl;
-          a.download = `challan-${saved.id}.pdf`;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-        }
-        if (window.showToast) window.showToast(`Challan #${payload.challanNo} saved & opened for print.`, 'success');
+        if (window.showToast) window.showToast(`Challan #${payload.challanNo} saved & opening print preview!`, 'success');
+        window.closeModal();
+        window.printChallanDirectly(payload);
       } catch (err) {
-        if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
-        window.openModal('Print Notice', `<p>${(err && err.message) || 'PDF generation failed.'}</p>`);
+        window.openModal('Print Notice', `<p>${(err && err.message) || 'Could not process Challan.'}</p>`);
       } finally {
         printBtn.disabled = false;
         printBtn.innerHTML = '<i class="fa-solid fa-print"></i> Print Challan';
@@ -1101,37 +1201,24 @@ window.printChallanByNo = async function(challanNo) {
     window.openModal('Notice', '<p>No Challan Number attached to this entry.</p>');
     return;
   }
-  const pdfWindow = window.open('', '_blank');
-  if (pdfWindow) {
-    pdfWindow.document.write(getChallanPdfLoadingHtml(`Loading Challan #${challanNo}`, 'Fetching Landscape A4 Dual Copy…'));
-    pdfWindow.document.close();
-  }
   try {
-    const pdfUrl = `${window.API_BASE}/challan/by-no/${encodeURIComponent(challanNo)}/pdf`;
-    const abortCtrl = new AbortController();
-    const timeoutTimer = setTimeout(() => abortCtrl.abort(), 35000);
-    let pdfRes;
-    try {
-      pdfRes = await fetch(pdfUrl, { signal: abortCtrl.signal });
-    } finally {
-      clearTimeout(timeoutTimer);
-    }
-    if (!pdfRes.ok) throw new Error(`Could not generate PDF for Challan #${challanNo}.`);
-    const pdfBlob = await pdfRes.blob();
-    const blobUrl = URL.createObjectURL(pdfBlob);
-    if (pdfWindow && !pdfWindow.closed) {
-      pdfWindow.location.href = blobUrl;
-    } else {
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `challan-${challanNo}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    }
+    const challanData = await window.Api.get(`/challan/by-no/${encodeURIComponent(challanNo)}`, { silent: true });
+    if (!challanData) throw new Error(`Could not find record for Challan #${challanNo}.`);
+    window.printChallanDirectly(challanData);
   } catch (err) {
-    if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
-    window.openModal('Print Failed', `<p>${(err && err.message) || 'Could not load Challan PDF.'}</p>`);
+    window.openModal('Print Failed', `<p>${(err && err.message) || 'Could not load Challan for printing.'}</p>`);
+  }
+};
+
+// Global helper to print Challan by DB ID
+window.printChallanById = async function(id) {
+  if (!id) return;
+  try {
+    const challanData = await window.Api.get(`/challan/${encodeURIComponent(id)}`, { silent: true });
+    if (!challanData) throw new Error('Could not find Challan record.');
+    window.printChallanDirectly(challanData);
+  } catch (err) {
+    window.openModal('Print Failed', `<p>${(err && err.message) || 'Could not load Challan for printing.'}</p>`);
   }
 };
 
@@ -1237,41 +1324,18 @@ window.openCustomChallanModal = async function(prefillData) {
         window.openModal('Validation Error', '<p>Challan No. is required.</p>');
         return;
       }
-      const pdfWindow = window.open('', '_blank');
-      if (pdfWindow) {
-        pdfWindow.document.write(getChallanPdfLoadingHtml('Preparing Your Custom Challan PDF', 'Compiling Landscape A4 Dual Copy…'));
-        pdfWindow.document.close();
-      }
       printBtn.disabled = true;
-      printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving & Preparing PDF...';
+      printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
       try {
-        const saved = await window.Api.post('/challan', payload);
-        const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
-        const abortCtrl = new AbortController();
-        const timeoutTimer = setTimeout(() => abortCtrl.abort(), 35000);
-        let pdfRes;
-        try {
-          pdfRes = await fetch(pdfUrl, { signal: abortCtrl.signal });
-        } finally {
-          clearTimeout(timeoutTimer);
+        await window.Api.post('/challan', payload);
+        if (window.showToast) window.showToast(`Custom Challan #${payload.challanNo} saved & opening print preview!`, 'success');
+        window.closeModal();
+        if (document.getElementById('challanRegisterModalBody')) {
+          window.openChallanRegisterModal();
         }
-        if (!pdfRes.ok) throw new Error('Could not generate Challan PDF.');
-        const pdfBlob = await pdfRes.blob();
-        const blobUrl = URL.createObjectURL(pdfBlob);
-        if (pdfWindow && !pdfWindow.closed) {
-          pdfWindow.location.href = blobUrl;
-        } else {
-          const a = document.createElement('a');
-          a.href = blobUrl;
-          a.download = `challan-${saved.id}.pdf`;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-        }
-        if (window.showToast) window.showToast(`Custom Challan #${payload.challanNo} saved & opened for print.`, 'success');
+        window.printChallanDirectly(payload);
       } catch (err) {
-        if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
-        window.openModal('Print Notice', `<p>${(err && err.message) || 'PDF generation failed.'}</p>`);
+        window.openModal('Print Notice', `<p>${(err && err.message) || 'Could not save Custom Challan.'}</p>`);
       } finally {
         printBtn.disabled = false;
         printBtn.innerHTML = '<i class="fa-solid fa-print"></i> Print Challan';
@@ -1547,41 +1611,18 @@ window.openChallanEditModal = async function(challanId) {
           window.openModal('Validation Error', '<p>Challan No. is required.</p>');
           return;
         }
-        const pdfWindow = window.open('', '_blank');
-        if (pdfWindow) {
-          pdfWindow.document.write(getChallanPdfLoadingHtml(`Updating & Printing Challan #${payload.challanNo}`, 'Compiling Landscape A4 Dual Copy…'));
-          pdfWindow.document.close();
-        }
         printBtn.disabled = true;
-        printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving & Preparing PDF...';
+        printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
         try {
           await window.Api.put(`/challan/${challanId}`, payload);
-          const pdfUrl = `${window.API_BASE}/challan/${challanId}/pdf`;
-          const abortCtrl = new AbortController();
-          const timeoutTimer = setTimeout(() => abortCtrl.abort(), 35000);
-          let pdfRes;
-          try {
-            pdfRes = await fetch(pdfUrl, { signal: abortCtrl.signal });
-          } finally {
-            clearTimeout(timeoutTimer);
+          if (window.showToast) window.showToast(`Challan #${payload.challanNo} updated & opening print preview!`, 'success');
+          window.closeModal();
+          if (document.getElementById('challanRegisterModalBody')) {
+            window.openChallanRegisterModal();
           }
-          if (!pdfRes.ok) throw new Error('Could not generate Challan PDF.');
-          const pdfBlob = await pdfRes.blob();
-          const blobUrl = URL.createObjectURL(pdfBlob);
-          if (pdfWindow && !pdfWindow.closed) {
-            pdfWindow.location.href = blobUrl;
-          } else {
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = `challan-${challanId}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-          }
-          if (window.showToast) window.showToast(`Challan #${payload.challanNo} updated & opened for print.`, 'success');
+          window.printChallanDirectly(payload);
         } catch (err) {
-          if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
-          window.openModal('Print Notice', `<p>${(err && err.message) || 'PDF generation failed.'}</p>`);
+          window.openModal('Print Notice', `<p>${(err && err.message) || 'Could not update Challan.'}</p>`);
         } finally {
           printBtn.disabled = false;
           printBtn.innerHTML = '<i class="fa-solid fa-print"></i> Print Challan';
