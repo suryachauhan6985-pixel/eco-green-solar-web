@@ -150,6 +150,28 @@ async function writePanelSerialsExcel({ orderNo, challanNo, serials }) {
 module.exports = function registerChallanRoutes(app, deps) {
   const { pool, route, requireRole } = deps;
 
+  const pdfCache = new Map();
+  function getCachedPdf(key) {
+    const it = pdfCache.get(key);
+    if (!it) return null;
+    if (Date.now() - it.time > 15 * 60 * 1000) {
+      pdfCache.delete(key);
+      return null;
+    }
+    return it.buffer;
+  }
+  function setCachedPdf(key, buffer) {
+    if (pdfCache.size > 150) {
+      const first = pdfCache.keys().next().value;
+      pdfCache.delete(first);
+    }
+    pdfCache.set(key, { buffer, time: Date.now() });
+  }
+  function invalidatePdfCache(id, challanNo) {
+    if (id) pdfCache.delete(`id_${id}`);
+    if (challanNo) pdfCache.delete(`no_${challanNo}`);
+  }
+
   app.post('/api/challan', route(async (req, res) => {
     const b = req.body || {};
     const challanNo = String(b.challanNo || '').trim();
@@ -168,6 +190,8 @@ module.exports = function registerChallanRoutes(app, deps) {
        b.capacityKw || '', b.city || '', vehicleCombined,
        JSON.stringify(b.items || {}), req.user ? req.user.username : null]
     );
+
+    invalidatePdfCache(result.insertId, challanNo);
 
     // Auto-generate Panel Serials Excel in detached background task
     const serials = Array.isArray(b.panelSerials) ? b.panelSerials : [];
@@ -206,6 +230,7 @@ module.exports = function registerChallanRoutes(app, deps) {
     if (!existing) return res.status(404).json({ error: 'Challan not found.' });
 
     await pool.query(`DELETE FROM bom_challans WHERE id=?`, [id]);
+    invalidatePdfCache(id, existing.challan_no);
     res.json({ success: true, message: `Challan #${existing.challan_no} deleted.` });
   }));
 
@@ -231,6 +256,9 @@ module.exports = function registerChallanRoutes(app, deps) {
        b.capacityKw || '', b.city || '', vehicleCombined,
        JSON.stringify(b.items || {}), id]
     );
+
+    invalidatePdfCache(id, challanNo);
+    if (existing.challan_no !== challanNo) invalidatePdfCache(id, existing.challan_no);
 
     res.json({
       success: true,
@@ -305,6 +333,15 @@ module.exports = function registerChallanRoutes(app, deps) {
   }));
 
   app.get('/api/challan/by-no/:challanNo/pdf', route(async (req, res) => {
+    const cKey = `no_${req.params.challanNo}`;
+    const cached = getCachedPdf(cKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="Challan_${req.params.challanNo}.pdf"`);
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      return res.send(cached);
+    }
+
     const [[row]] = await pool.query(
       `SELECT * FROM bom_challans WHERE challan_no = ? ORDER BY id DESC LIMIT 1`,
       [req.params.challanNo]
@@ -313,6 +350,8 @@ module.exports = function registerChallanRoutes(app, deps) {
     const record = { ...row, items: JSON.parse(row.items_json || '{}') };
     const { pdfBuffer, cleanup } = await fillTemplateAndConvertToPdf(record);
     try {
+      setCachedPdf(cKey, pdfBuffer);
+      if (row.id) setCachedPdf(`id_${row.id}`, pdfBuffer);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="Challan_${row.challan_no}.pdf"`);
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -331,17 +370,25 @@ module.exports = function registerChallanRoutes(app, deps) {
   }));
 
   app.get('/api/challan/:id/pdf', route(async (req, res) => {
+    const cKey = `id_${req.params.id}`;
+    const cached = getCachedPdf(cKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="Challan_${req.params.id}.pdf"`);
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      return res.send(cached);
+    }
+
     const [[row]] = await pool.query(`SELECT * FROM bom_challans WHERE id=?`, [req.params.id]);
     if (!row) return res.status(404).json({ error: 'Challan not found.' });
     const record = { ...row, items: JSON.parse(row.items_json || '{}') };
 
     const { pdfBuffer, cleanup } = await fillTemplateAndConvertToPdf(record);
     try {
+      setCachedPdf(cKey, pdfBuffer);
+      if (row.challan_no) setCachedPdf(`no_${row.challan_no}`, pdfBuffer);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `inline; filename="Challan_${row.challan_no}.pdf"`);
-      // Without this, browsers (esp. installed PWAs) may heuristically cache
-      // this GET response and keep re-serving an old/blank PDF for the same
-      // challan id even after the record's data changes.
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
       res.send(pdfBuffer);
     } finally {

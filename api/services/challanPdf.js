@@ -232,25 +232,27 @@ function buildChallanRowPlan(items) {
   return plan;
 }
 
+const WARM_PROFILE_DIR = path.join(os.tmpdir(), 'lo_challan_warm_profile');
+const WARM_PROFILE_URI = 'file:///' + WARM_PROFILE_DIR.replace(/\\/g, '/');
+
 function runSoffice(xlsxPath, outDir) {
   return new Promise((resolve, reject) => {
     const bin = process.env.SOFFICE_PATH || 'soffice';
-    const profileDir = path.join(os.tmpdir(), `lo_prof_${crypto.randomUUID()}`);
-    const profileUri = 'file:///' + profileDir.replace(/\\/g, '/');
     execFile(
       bin,
       [
-        `-env:UserInstallation=${profileUri}`,
+        `-env:UserInstallation=${WARM_PROFILE_URI}`,
         '--headless',
         '--norestore',
         '--nolockcheck',
+        '--nologo',
+        '--nodefault',
         '--convert-to', 'pdf',
         '--outdir', outDir,
         xlsxPath,
       ],
       { timeout: 25000 },
-      async (err, stdout, stderr) => {
-        try { await fsp.rm(profileDir, { recursive: true, force: true }); } catch (e) { /* ignore */ }
+      (err, stdout, stderr) => {
         if (err) return reject(new Error(`LibreOffice conversion failed: ${stderr || err.message}`));
         resolve();
       }
@@ -341,7 +343,7 @@ function runSoffice(xlsxPath, outDir) {
 //               overflowing into the next cell. Only shows extra lines if
 //               the row is tall enough — set that row's height above too.
 //   align:    horizontal text position: "left" | "center" | "right"
-//   valign:   vertical text position: "top" | "middle" | "bottom"
+//   valign:   vertical text position: "middle" | "middle" | "bottom"
 //   bg:       background fill color, 6-digit hex WITHOUT "#", e.g.
 //               "FFF2CC" (light yellow), "D9E1F2" (light blue). Omit for
 //               no fill / transparent.
@@ -403,24 +405,24 @@ const SHEET_CONFIG = {
 
   columns: {
     A: { width: 2 },
-    B: { width: 10 },
-    C: { width: 10 },
-    D: { width: 8 },
-    E: { width: 8 },
-    F: { width: 5 },
-    G: { width: 7 },
-    H: { width: 23 },
+    B: { width: 6 },  // Sr. No. (optimized: saves space for Item Name)
+    C: { width: 18 }, // Item Name (80% wider: fits product names easily)
+    D: { width: 10 }, // Model (25% wider: fits model codes)
+    E: { width: 6 },  // Size/Extra
+    F: { width: 5 },  // Qty
+    G: { width: 6 },  // Unit (e.g. SET, Nos, MTR)
+    H: { width: 20 }, // Description
 
     I: { width: 2 },
     J: { width: 2 },
 
-    K: { width: 10 },
-    L: { width: 10 },
-    M: { width: 8 },
-    N: { width: 8 },
-    O: { width: 5 },
-    P: { width: 7 },
-    Q: { width: 23 },
+    K: { width: 6 },  // Company Copy: Sr. No.
+    L: { width: 18 }, // Company Copy: Item Name
+    M: { width: 10 }, // Company Copy: Model
+    N: { width: 6 },  // Company Copy: Size/Extra
+    O: { width: 5 },  // Company Copy: Qty
+    P: { width: 6 },  // Company Copy: Unit
+    Q: { width: 20 }, // Company Copy: Description
     R: { width: 2 },
   },
 
