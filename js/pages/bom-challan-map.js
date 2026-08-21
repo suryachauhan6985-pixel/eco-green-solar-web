@@ -185,6 +185,89 @@ function createBomChallanMapModule(ctx) {
       }
     }
 
+    async function bomOpenQuickMapModal(si, ii) {
+      if (!ctx.currentKitState || !ctx.currentKitState[si] || !ctx.currentKitState[si].items[ii]) return;
+      const it = ctx.currentKitState[si].items[ii];
+      const sec = ctx.currentKitState[si];
+      const currentCat = (typeof bomGetItemChallanCategory === 'function') ? (bomGetItemChallanCategory(it, sec) || '') : '';
+      const brand = (typeof bomRowBrand === 'function' ? bomRowBrand(it) : '') || it.brand || it.name || '';
+      const resolvedName = (brand && it.model && typeof bomResolveItemName === 'function') ? bomResolveItemName(brand, it.model) : '';
+      const displayName = resolvedName || it.name || brand || 'Selected Item';
+
+      const categoriesList = (bomChallanCategoryList && bomChallanCategoryList.length) ? bomChallanCategoryList : [
+        'Solar Panel', 'GI Structure', 'GI Pipe', 'Bom Box', 'Inverter',
+        'Earthing & LA Kit', 'Earthing Bag', 'Wire Box', 'PVC Pipe',
+        'Reti Bag', 'Kapchi Bag', 'Cement Bag', 'Ferma'
+      ];
+
+      const categoryOptions = categoriesList.map((c) =>
+        `<option value="${bomEscAttr(c)}" ${c === currentCat ? 'selected' : ''}>${bomEsc(c)}</option>`
+      ).join('');
+
+      const modalHtml = `
+        <div style="min-width:320px; max-width:440px;">
+          <div class="field" style="margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:600; color:var(--txt-muted);">Item Name / Brand</label>
+            <input type="text" class="bom-field-input" value="${bomEscAttr(displayName)}" readonly style="background:rgba(255,255,255,0.05); font-weight:600;">
+          </div>
+          ${it.model ? `
+          <div class="field" style="margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:600; color:var(--txt-muted);">Model / Specification</label>
+            <input type="text" class="bom-field-input" value="${bomEscAttr(it.model)}" readonly style="background:rgba(255,255,255,0.05);">
+          </div>` : ''}
+          <div class="field" style="margin-bottom:16px;">
+            <label style="font-size:12px; font-weight:600;">Assign Challan Category <span class="req">*</span></label>
+            <select id="quickChallanCatSelect" class="bom-field-input" style="font-size:13.5px; font-weight:600; padding:8px 10px; width:100%;">
+              <option value="">-- Unmapped (Do Not Auto-Fill) --</option>
+              ${categoryOptions}
+            </select>
+            <p class="note" style="margin-top:6px; font-size:11.5px; opacity:0.8;">
+              <i class="fa-solid fa-circle-info"></i> Controls which line on the Challan this item's quantity folds into when converting to Challan.
+            </p>
+          </div>
+          <div class="actions-row" style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+            <button type="button" class="btn btn-ghost" id="quickChallanCancelBtn">Cancel</button>
+            <button type="button" class="btn btn-blue" id="quickChallanSaveBtn"><i class="fa-solid fa-floppy-disk"></i> Save Mapping</button>
+          </div>
+        </div>
+      `;
+
+      window.openModal('Map Item to Challan Category', modalHtml);
+
+      const cancelBtn = document.getElementById('quickChallanCancelBtn');
+      if (cancelBtn) cancelBtn.addEventListener('click', () => window.closeModal());
+
+      const saveBtn = document.getElementById('quickChallanSaveBtn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+          const selectEl = document.getElementById('quickChallanCatSelect');
+          const selectedCat = selectEl ? selectEl.value.trim() : '';
+          saveBtn.disabled = true;
+          saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+          const namesToMap = Array.from(new Set([displayName, it.name, brand, resolvedName].filter(Boolean)));
+          const mappings = namesToMap.map((name) => ({ itemName: name, category: selectedCat }));
+
+          try {
+            await window.Api.put('/challan/category-map', { mappings });
+            namesToMap.forEach((n) => {
+              if (selectedCat) bomChallanCategoryMap[n] = selectedCat;
+              else delete bomChallanCategoryMap[n];
+            });
+            await bomLoadChallanCategoryMap();
+            window.closeModal();
+            if (window.showToast) window.showToast(selectedCat ? `Mapped to ${selectedCat}` : 'Mapping cleared', 'success');
+            if (ctx.bomRerenderItemRow) ctx.bomRerenderItemRow(si, ii);
+          } catch (err) {
+            if (window.showError) window.showError('Save Failed', err.message || 'Could not save mapping');
+            else window.openModal('Save Failed', `<p>${err.message || 'Could not save mapping'}</p>`);
+          } finally {
+            saveBtn.disabled = false;
+          }
+        });
+      }
+    }
+
     // Step 4: Pending BOM Register modal — same open/close pattern as the
     // Challan modal above, kept as its own overlay/functions so neither
     // modal's state ever leaks into the other.
@@ -192,5 +275,5 @@ function createBomChallanMapModule(ctx) {
     ctx.registerModalBody = ctx.$('bomRegisterModalBody');
     ctx.registerCloseBtn = ctx.$('bomRegisterCloseBtn');
 
-  return { openChallanModal, closeChallanModal, bomCollectItemGroupsForMapping, bomRenderChallanMapModalHtml, bomOpenChallanMapModal };
+  return { openChallanModal, closeChallanModal, bomCollectItemGroupsForMapping, bomRenderChallanMapModalHtml, bomOpenChallanMapModal, bomOpenQuickMapModal };
 }

@@ -405,6 +405,16 @@ function createBomSerialModalModule(ctx) {
         ctx.openBomSerialModal(Number(serialBtn.dataset.sec), Number(serialBtn.dataset.idx));
         return;
       }
+      const mapBtn = e.target.closest('.bom-challan-map-badge');
+      if (mapBtn) {
+        if (!ctx.bomIsAdmin) return;
+        const si = Number(mapBtn.dataset.sec);
+        const idx = Number(mapBtn.dataset.idx);
+        if (typeof ctx.bomOpenQuickMapModal === 'function') {
+          ctx.bomOpenQuickMapModal(si, idx);
+        }
+        return;
+      }
       const insertBtn = e.target.closest('[data-insert-after-sec]');
       const removeItemBtn = e.target.closest('[data-remove-sec]');
       const addItemBtn = e.target.closest('[data-sec-add-item]');

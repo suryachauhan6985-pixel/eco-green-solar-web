@@ -692,6 +692,9 @@ function createBomDispatchModule(ctx) {
         const kit = { kw, sections: ctx.currentKitState };
         const header = ctx.getHeaderValues();
 
+        // Ensure latest category mappings are hydrated from the server
+        await bomLoadChallanCategoryMap();
+
         const challanModalTitleEl = document.getElementById('bomChallanModalTitle');
         if (challanModalTitleEl) challanModalTitleEl.innerHTML = '<i class="fa-solid fa-file-invoice"></i> Convert into Challan';
         ctx.openChallanModal(bomRenderChallanEntryModalHtml(header, kit));
@@ -699,7 +702,12 @@ function createBomDispatchModule(ctx) {
         // partial Dispatch Qty) via the item->category mapping — see
         // bomComputeChallanAutoQty above. Every field stays editable after
         // this; it only sets the starting value.
-        bomApplyChallanAutoQty(ctx.currentKitState);
+        const autoResult = bomApplyChallanAutoQty(ctx.currentKitState);
+        if (autoResult && autoResult.unmappedItems && autoResult.unmappedItems.length) {
+          if (window.showToast) window.showToast(`${autoResult.unmappedItems.length} unmapped item(s) skipped from auto-fill.`, 'warning');
+        } else if (window.showToast) {
+          window.showToast('BOM items auto-filled into Challan.', 'success');
+        }
 
         const modalNo = document.getElementById('bomChallanModalNo');
         const modalDate = document.getElementById('bomChallanModalDate');

@@ -59,6 +59,13 @@ BOM_CHALLAN_TEMPLATE.forEach((row) => {
   if (row.name !== 'GI Pipe') BOM_CHALLAN_CATEGORY_SR[row.name] = row.sr;
 });
 
+// Fallback default Challan Categories list (mirrors CHALLAN_CATEGORIES on server)
+const BOM_CHALLAN_CATEGORIES_DEFAULT = [
+  'Solar Panel', 'GI Structure', 'GI Pipe', 'Bom Box', 'Inverter',
+  'Earthing & LA Kit', 'Earthing Bag', 'Wire Box', 'PVC Pipe',
+  'Reti Bag', 'Kapchi Bag', 'Cement Bag', 'Ferma',
+];
+
 // ---------- "Convert into Challan" — item -> category mapping (Goal 5) ----------
 // Loaded once from GET /api/challan/category-map (see challan.routes.js).
 // bomChallanCategoryMap: { itemName: 'Bom Box' | 'Wire Box' | ... }.
@@ -77,12 +84,88 @@ async function bomLoadChallanCategoryMap() {
     // back empty for a reason none of the other calls would hit.
     const data = await window.Api.get('/challan/category-map');
     bomChallanCategoryMap = (data && data.map) || {};
-    bomChallanCategoryList = (data && data.categories) || [];
+    bomChallanCategoryList = (data && data.categories) || BOM_CHALLAN_CATEGORIES_DEFAULT;
   } catch (e) {
     // offline/first-load race — Convert into Challan still works, just
     // without auto-fill until the next successful load.
     console.warn('bom: could not load Challan category map', e);
+    if (!bomChallanCategoryList.length) bomChallanCategoryList = BOM_CHALLAN_CATEGORIES_DEFAULT;
   }
+}
+
+// Multi-tier Challan category resolver for any BOM kit item
+function bomGetItemChallanCategory(it, sec) {
+  if (!it) return null;
+  const name = String(it.name || '').trim();
+  const brand = String(it.brand || (typeof bomRowBrand === 'function' ? bomRowBrand(it) : '')).trim();
+  const model = String(it.model || '').trim();
+  const cat = String(it.category || '').trim();
+  const secTitle = sec ? String(sec.title || '').trim() : '';
+
+  // 1. Explicit direct mapping in in-memory category map
+  if (name && bomChallanCategoryMap[name]) return bomChallanCategoryMap[name];
+  if (brand && bomChallanCategoryMap[brand]) return bomChallanCategoryMap[brand];
+
+  // 2. Resolved master name match (brand + model -> masters.name)
+  if (brand && model && typeof bomResolveItemName === 'function') {
+    const resolved = bomResolveItemName(brand, model);
+    if (resolved && bomChallanCategoryMap[resolved]) return bomChallanCategoryMap[resolved];
+  }
+
+  // 3. Category match
+  if (cat && bomChallanCategoryMap[cat]) return bomChallanCategoryMap[cat];
+
+  // 4. Section category match
+  if (secTitle) {
+    if (bomChallanCategoryMap[secTitle]) return bomChallanCategoryMap[secTitle];
+    if (typeof bomResolveSectionCategory === 'function') {
+      const resolvedSec = bomResolveSectionCategory(secTitle);
+      if (resolvedSec && bomChallanCategoryMap[resolvedSec]) return bomChallanCategoryMap[resolvedSec];
+    }
+  }
+
+  // 5. Standard Challan Categories direct name match
+  const categoriesPool = (bomChallanCategoryList && bomChallanCategoryList.length) ? bomChallanCategoryList : BOM_CHALLAN_CATEGORIES_DEFAULT;
+  const matchStandard = (str) => {
+    if (!str) return null;
+    const sLower = str.toLowerCase();
+    const hit = categoriesPool.find((c) => c.toLowerCase() === sLower);
+    return hit || null;
+  };
+
+  if (matchStandard(name)) return matchStandard(name);
+  if (matchStandard(brand)) return matchStandard(brand);
+  if (matchStandard(cat)) return matchStandard(cat);
+  if (matchStandard(secTitle)) return matchStandard(secTitle);
+
+  // 6. Substring / Keyword heuristic
+  const textToSearch = `${name} ${brand} ${cat} ${secTitle}`.toLowerCase();
+  if (textToSearch.includes('solar panel') || textToSearch.includes('solar penal')) return 'Solar Panel';
+  if (textToSearch.includes('inverter')) return 'Inverter';
+  if (textToSearch.includes('gi pipe')) return 'GI Pipe';
+  if (textToSearch.includes('structure')) return 'GI Structure';
+  if (textToSearch.includes('wire') || textToSearch.includes('cable')) return 'Wire Box';
+  if (textToSearch.includes('earthing & la') || textToSearch.includes('earthing rod & la')) return 'Earthing & LA Kit';
+  if (textToSearch.includes('earthing bag')) return 'Earthing Bag';
+  if (textToSearch.includes('pvc pipe') || textToSearch.includes('cable tray')) return 'PVC Pipe';
+  if (textToSearch.includes('rati') || textToSearch.includes('sand')) return 'Reti Bag';
+  if (textToSearch.includes('kapchi') || textToSearch.includes('grit')) return 'Kapchi Bag';
+  if (textToSearch.includes('cement')) return 'Cement Bag';
+  if (textToSearch.includes('ferma') || textToSearch.includes('farma')) return 'Ferma';
+
+  // 7. Fuzzy search over all keys in bomChallanCategoryMap
+  for (const [key, mappedCat] of Object.entries(bomChallanCategoryMap)) {
+    if (!key || !mappedCat) continue;
+    const kLower = key.toLowerCase();
+    if (name && (kLower.includes(name.toLowerCase()) || name.toLowerCase().includes(kLower))) {
+      return mappedCat;
+    }
+    if (brand && (kLower.includes(brand.toLowerCase()) || brand.toLowerCase().includes(kLower))) {
+      return mappedCat;
+    }
+  }
+
+  return null;
 }
 
 // ---------- GI Pipe — hardcoded feet -> standard-length pieces ----------
@@ -113,16 +196,6 @@ function bomGiPipeFeetToPieces(totalFeet) {
 
 // Which template row (Sr 3 = "1.5 X 1.5", Sr 4 = "2.5 X 1.5", Sr 15 =
 // "1 X 1") a GI Pipe kit-item's Model text belongs under.
-//
-// FIXED a real bug here: the old version matched by `indexOf('1.5')`,
-// which also fires on "2.5 X 1.5" because that string itself CONTAINS the
-// substring "1.5" (its own second number) — so a 2.5 X 1.5 kit-item could
-// silently get filed under the 1.5 X 1.5 row. This version instead reads
-// the FIRST number in the model text and compares it exactly, so "2.5 X
-// 1.5" and "1.5 X 1.5" (and now "1 X 1") can never be confused with each
-// other regardless of what other numbers appear later in the string.
-// Anything that doesn't match one of the 3 known sizes returns null and is
-// skipped — same as before.
 function bomGiPipeModelSr(modelText) {
   const match = String(modelText || '').match(/\d+(\.\d+)?/);
   const first = match ? parseFloat(match[0]) : null;
@@ -145,22 +218,28 @@ function bomGiPipeModelSr(modelText) {
 //   - a category with zero present items -> left blank (untouched).
 // GI Pipe is handled entirely separately (bomGiPipeFeetToPieces) and never
 // goes through this count-based rule.
-// Returns { qtyBySr: { [sr]: number }, giPipe: { 3: {size:qty}, 4: {size:qty} } }.
+// Returns { qtyBySr: { [sr]: number }, giPipe: { 3: {size:qty}, 4: {size:qty} }, unmappedItems: [], mappedCount: number }.
 function bomComputeChallanAutoQty(sections) {
   const qtyBySr = {};
   const giPipe = { 3: {}, 4: {}, 15: {} };
-  const presentByCategory = {}; // category -> [{ qty }]
+  const presentByCategory = {}; // category -> [{ qty, it }]
+  const unmappedItems = [];
+  let mappedCount = 0;
 
   (sections || []).forEach((sec) => {
     (sec.items || []).forEach((it) => {
       const qty = bomEffectiveQty(it);
       if (!qty || qty <= 0) return; // '-' / blank / 0 -> not "present" on this trip
-      const category = bomChallanCategoryMap[it.name];
-      if (!category) return; // unmapped item — nothing to compress it into yet
+      const category = bomGetItemChallanCategory(it, sec);
+      if (!category) {
+        unmappedItems.push({ item: it, secTitle: sec.title, qty });
+        return;
+      }
+
+      mappedCount++;
 
       if (category === 'GI Pipe') {
-        const sr = bomGiPipeModelSr(it.model);
-        if (!sr) return;
+        const sr = bomGiPipeModelSr(it.model) || 3;
         // qty text for GI Pipe is feet (e.g. "60 Feet"), not a plain count —
         // bomEffectiveQty already returns just the leading number, feet or not.
         const pieces = bomGiPipeFeetToPieces(qty);
@@ -171,19 +250,19 @@ function bomComputeChallanAutoQty(sections) {
       }
 
       const sr = BOM_CHALLAN_CATEGORY_SR[category];
-      if (!sr) return; // category exists in the map but has no template row (shouldn't happen — defensive)
+      if (!sr) return; // category exists in the map but has no template row (defensive)
       if (!presentByCategory[category]) presentByCategory[category] = [];
-      presentByCategory[category].push(qty);
+      presentByCategory[category].push({ qty, it });
     });
   });
 
   Object.keys(presentByCategory).forEach((category) => {
     const list = presentByCategory[category];
     const sr = BOM_CHALLAN_CATEGORY_SR[category];
-    qtyBySr[sr] = list.length === 1 ? list[0] : 1;
+    qtyBySr[sr] = list.length === 1 ? list[0].qty : 1;
   });
 
-  return { qtyBySr, giPipe };
+  return { qtyBySr, giPipe, unmappedItems, mappedCount };
 }
 
 // Writes bomComputeChallanAutoQty()'s result straight into the entry
@@ -193,7 +272,8 @@ function bomComputeChallanAutoQty(sections) {
 // pre-filled field elsewhere in the app; the person can still overwrite any
 // of them by hand before Print Challan.
 function bomApplyChallanAutoQty(sections) {
-  const { qtyBySr, giPipe } = bomComputeChallanAutoQty(sections);
+  const result = bomComputeChallanAutoQty(sections);
+  const { qtyBySr, giPipe } = result;
   document.querySelectorAll('.bom-challan-qty-input').forEach((inp) => {
     const sr = Number(inp.getAttribute('data-challan-tpl-sr'));
     const size = inp.getAttribute('data-challan-tpl-size');
@@ -204,6 +284,7 @@ function bomApplyChallanAutoQty(sections) {
       inp.value = qtyBySr[sr];
     }
   });
+  return result;
 }
 
 // ---------- "Convert into Challan" — ENTRY MODAL (software-style, NOT the Excel look) ----------
@@ -291,6 +372,19 @@ function bomTodayLocalDateStr() {
 }
 
 function bomRenderChallanEntryModalHtml(header, kit) {
+  const { unmappedItems, mappedCount } = bomComputeChallanAutoQty(kit ? kit.sections : []);
+  const mappingNoticeHtml = (unmappedItems && unmappedItems.length)
+    ? `<div class="banner" style="background:rgba(231,76,60,0.12); border:1px solid var(--red); border-radius:8px; padding:10px 14px; margin:14px 0 16px; display:flex; align-items:center; gap:10px;">
+        <i class="fa-solid fa-triangle-exclamation" style="color:var(--red); font-size:18px;"></i>
+        <div>
+          <strong style="color:var(--red); font-size:13px;">${unmappedItems.length} Unmapped BOM Item(s) Detected:</strong>
+          <div style="font-size:12px; margin-top:2px; color:var(--txt);">${unmappedItems.map((u) => `<strong>${bomEsc(u.item.name || u.item.brand || 'Item')}</strong> (${bomEsc(u.secTitle || '')})`).join(', ')} are not mapped to any Challan category and were skipped during auto-fill.</div>
+        </div>
+      </div>`
+    : `<div style="display:flex; align-items:center; gap:8px; margin:12px 0 14px; color:var(--green, #2ECC71); font-size:12.5px; font-weight:700;">
+        <i class="fa-solid fa-circle-check"></i> All ${mappedCount || 'BOM'} line items mapped and quantities auto-filled successfully.
+      </div>`;
+
   return `
     <div id="bomChallanEntryModalRoot">
       <div class="form-grid cols-2">
@@ -313,6 +407,7 @@ function bomRenderChallanEntryModalHtml(header, kit) {
         <div class="field"><label>Vehicle No.</label><input type="text" id="bomChallanModalVehicleNo" placeholder="e.g. GJ-03-BZ-7562"></div>
       </div>
       <h4 style="margin:16px 0 8px;"><i class="fa-solid fa-list"></i> Items <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(fixed Challan template + any extra lines you add below)</span></h4>
+      ${mappingNoticeHtml}
       ${bomRenderChallanTemplateItemsHtml(BOM_CHALLAN_TEMPLATE)}
       <div id="bomChallanExtraItemsWrap" style="margin-top:10px;">
         <div class="table-wrap">

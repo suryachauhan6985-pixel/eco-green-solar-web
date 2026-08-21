@@ -627,6 +627,17 @@ function bomRenderScreenItemRowHtml(sec, si, it, ii, opts) {
          <span class="bom-qty-unit-suffix" title="Unit set in Item Master — not editable here" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); pointer-events:none; opacity:0.65; font-size:12px;">${bomEsc(itemUnit)}</span>
        </div>`
     : `<input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="qty" value="${bomEscAttr(it.qty)}" ${isAdmin ? '' : 'disabled title="Set by whoever created this BOM — not editable here."'}>`;
+  const mappedCat = (typeof bomGetItemChallanCategory === 'function') ? bomGetItemChallanCategory(it, sec) : null;
+  const mapBadge = mappedCat
+    ? `<button type="button" class="btn btn-ghost bom-mini-btn bom-challan-map-badge mapped" data-sec="${si}" data-idx="${ii}" ${isAdmin ? '' : 'disabled style="pointer-events:none; opacity:0.9;"'} title="${isAdmin ? 'Click to change Challan category' : 'Challan Category: ' + mappedCat}">
+         <i class="fa-solid fa-link" style="color:var(--green, #2ECC71); font-size:10px; margin-right:3px;"></i> <span style="font-weight:600; font-size:11px;">${bomEsc(mappedCat)}</span>
+         ${isAdmin ? '<i class="fa-solid fa-pen" style="font-size:8.5px; margin-left:4px; opacity:0.6;"></i>' : ''}
+       </button>`
+    : `<button type="button" class="btn btn-red bom-mini-btn bom-challan-map-badge unmapped" data-sec="${si}" data-idx="${ii}" ${isAdmin ? '' : 'disabled style="pointer-events:none; opacity:0.9;"'} title="${isAdmin ? 'Click to map this item to a Challan category' : 'Not mapped to any Challan category'}">
+         <i class="fa-solid fa-triangle-exclamation" style="font-size:10px; margin-right:3px;"></i> <span style="font-size:11px; font-weight:600;">Unmapped</span>
+         ${isAdmin ? '<i class="fa-solid fa-arrow-pointer" style="font-size:8.5px; margin-left:4px;"></i>' : ''}
+       </button>`;
+
   return `
       <tr data-row-sec="${si}" data-row-idx="${ii}">
         <td><input type="text" class="bom-field-input bom-field-sr" data-sec="${si}" data-idx="${ii}" data-field="sr" value="${bomEscAttr(it.sr)}"></td>
@@ -635,6 +646,7 @@ function bomRenderScreenItemRowHtml(sec, si, it, ii, opts) {
         <td>${qtyCell}</td>
         ${isAdmin ? '' : `<td><input type="number" min="0" class="bom-field-input bom-field-dispatchqty" data-sec="${si}" data-idx="${ii}" data-field="dispatchQty" value="${bomEscAttr(it.dispatchQty)}" title="How many of this item you are dispatching right now (can be less than Quantity for a partial dispatch)."></td>`}
         <td class="bom-serial-cell">${serialCell}</td>
+        <td class="bom-map-cell" style="text-align:center;">${mapBadge}</td>
         <td style="white-space:nowrap;">
           <input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="remarks" value="${bomEscAttr(it.remarks)}" style="width:calc(100% - ${isAdmin ? '60px' : '0px'}); display:inline-block;">
           ${isAdmin ? `
@@ -653,7 +665,7 @@ function bomRenderScreenItemsHtml(state, opts) {
   const rows = state.map((sec, si) => {
     const catRow = `
       <tr class="bom-screen-cat">
-        <td colspan="${isAdmin ? 7 : 8}">
+        <td colspan="${isAdmin ? 8 : 9}">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
             <input type="text" class="bom-field-input bom-section-title-input" data-sec="${si}" data-field="sectitle" value="${bomEscAttr(sec.title)}">
             ${isAdmin ? `
@@ -671,7 +683,7 @@ function bomRenderScreenItemsHtml(state, opts) {
   return `
     <div class="table-wrap">
       <table class="bom-items-form-table">
-        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th>${isAdmin ? '' : '<th>Dispatch Qty</th>'}<th>Serial No.</th><th>Remarks</th><th>Check</th></tr></thead>
+        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th>${isAdmin ? '' : '<th>Dispatch Qty</th>'}<th>Serial No.</th><th>Challan Mapping</th><th>Remarks</th><th>Check</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
