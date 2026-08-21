@@ -174,8 +174,8 @@
 }
 
 /* Column Ratios for 7-column layout */
-.bom-challan-col-sr{width:6.5%;}
-.bom-challan-col-name{width:24%;}
+.bom-challan-col-sr{width:7.5%;}
+.bom-challan-col-name{width:23%;}
 .bom-challan-col-model{width:14%;}
 .bom-challan-col-modelcont{width:12%;}
 .bom-challan-col-qtylabel{width:8.5%;}
@@ -200,7 +200,7 @@
 .bom-challan-row3{height:16pt;}
 .bom-challan-row4{height:18pt;}
 .bom-challan-row5{height:20pt;}
-.bom-challan-row6{height:19.5pt;}
+.bom-challan-row6{height:23pt;}
 
 /* Left 4-column header block (Logo, GST, Green Energy, Addr) - NO INTERNAL BORDERS */
 .bom-challan-table td.bom-challan-logo-cell,
@@ -283,26 +283,28 @@ td.bom-challan-title-cell{
   font-weight:700;
   text-align:center;
   border:1px solid #000000;
+  padding:0 1px !important;
+  white-space:nowrap !important;
 }
 
 .bom-challan-nameval-cell{
-  font-size:10pt;
+  font-size:9.5pt;
   font-weight:700;
   text-align:left;
-  padding-left:4px !important;
+  padding:0 4px !important;
   border:1px solid #000000;
-  white-space:nowrap;
+  line-height:1.15;
 }
 
 .bom-challan-citylabel-cell{
-  font-size:10pt;
+  font-size:9.5pt;
   font-weight:700;
   text-align:center;
   border:1px solid #000000;
 }
 
 .bom-challan-cityval-cell{
-  font-size:10pt;
+  font-size:9.5pt;
   font-weight:700;
   text-align:center;
   border:1px solid #000000;
@@ -310,9 +312,9 @@ td.bom-challan-title-cell{
 }
 
 /* ---------- Table header row (row 7) ---------- */
-.bom-challan-tablehead-row{height:17pt;}
+.bom-challan-tablehead-row{height:14pt;}
 .bom-challan-tablehead-row th{
-  font-size:10pt;
+  font-size:9.5pt;
   font-weight:700;
   text-align:center;
   vertical-align:middle;

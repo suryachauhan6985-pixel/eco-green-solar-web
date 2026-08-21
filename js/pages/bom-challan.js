@@ -760,6 +760,26 @@ function bomRenderChallanBodyRowsHtml(groups, values) {
   }).join('');
 }
 
+function bomFormatChallanDate(rawDate) {
+  if (!rawDate) return '';
+  const str = String(rawDate).trim();
+  const m = str.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+  if (m) {
+    const dd = m[3].padStart(2, '0');
+    const mm = m[2].padStart(2, '0');
+    const yyyy = m[1];
+    return `${dd}-${mm}-${yyyy}`;
+  }
+  const m2 = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+  if (m2) {
+    const dd = m2[1].padStart(2, '0');
+    const mm = m2[2].padStart(2, '0');
+    const yyyy = m2[3];
+    return `${dd}-${mm}-${yyyy}`;
+  }
+  return str;
+}
+
 // Renders rows 1–6 (§4/§5/§6): logo + copy title on row 1; Challan No. on
 // row 2; GST line + Challan Date on row 3; the 2-row company name/address
 // block + Order No./Capacity on rows 4–5; Name/City on row 6. Every row
@@ -772,6 +792,7 @@ function bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy) {
   const titleClass = isCompanyCopy ? 'bom-challan-title-inverse' : 'bom-challan-title-normal';
   const rawCap = (kit && kit.kw) ? kit.kw : (header.capacity || '');
   const capText = rawCap ? (String(rawCap).trim().toLowerCase().endsWith('kw') ? String(rawCap).trim() : `${rawCap} kW`) : '';
+  const formattedDate = bomFormatChallanDate(header.challanDate);
   return `
     <tr class="bom-challan-row1">
       <td class="bom-challan-logo-cell" colspan="4" rowspan="2">
@@ -784,7 +805,7 @@ function bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy) {
     </tr>
     <tr class="bom-challan-row3">
       <td class="bom-challan-gst-cell" colspan="4">GST NO. 24AAHFG9142N1Z1</td>
-      <td class="bom-challan-field-cell" colspan="3"><b>Challan Date:</b> ${bomEsc(header.challanDate)}</td>
+      <td class="bom-challan-field-cell" colspan="3"><b>Challan Date:</b> ${bomEsc(formattedDate)}</td>
     </tr>
     <tr class="bom-challan-row4">
       <td class="bom-challan-company-cell" colspan="4">Green Energy</td>
@@ -1081,8 +1102,8 @@ window.printChallanDirectly = function(challanData) {
       border: 2px solid #000000;
       box-sizing: border-box;
     }
-    .bom-challan-col-sr { width: 6.5%; }
-    .bom-challan-col-name { width: 24%; }
+    .bom-challan-col-sr { width: 7.5%; }
+    .bom-challan-col-name { width: 23%; }
     .bom-challan-col-model { width: 14%; }
     .bom-challan-col-modelcont { width: 12%; }
     .bom-challan-col-qtylabel { width: 8.5%; }
@@ -1105,7 +1126,7 @@ window.printChallanDirectly = function(challanData) {
     .bom-challan-row3 { height: 16pt; }
     .bom-challan-row4 { height: 18pt; }
     .bom-challan-row5 { height: 20pt; }
-    .bom-challan-row6 { height: 19.5pt; }
+    .bom-challan-row6 { height: 23pt; }
 
     .bom-challan-table td.bom-challan-logo-cell,
     .bom-challan-table td.bom-challan-gst-cell,
@@ -1178,35 +1199,37 @@ window.printChallanDirectly = function(challanData) {
       font-weight: 700;
       text-align: center;
       border: 1px solid #000000;
+      padding: 0 1px !important;
+      white-space: nowrap !important;
     }
 
     .bom-challan-nameval-cell {
-      font-size: 10pt;
+      font-size: 9.5pt;
       font-weight: 700;
       text-align: left;
-      padding-left: 4px !important;
+      padding: 0 4px !important;
       border: 1px solid #000000;
-      white-space: nowrap;
+      line-height: 1.15;
     }
 
     .bom-challan-citylabel-cell {
-      font-size: 10pt;
+      font-size: 9.5pt;
       font-weight: 700;
       text-align: center;
       border: 1px solid #000000;
     }
 
     .bom-challan-cityval-cell {
-      font-size: 10pt;
+      font-size: 9.5pt;
       font-weight: 700;
       text-align: center;
       border: 1px solid #000000;
       white-space: nowrap;
     }
 
-    .bom-challan-tablehead-row { height: 17pt; }
+    .bom-challan-tablehead-row { height: 14pt; }
     .bom-challan-tablehead-row th {
-      font-size: 10pt;
+      font-size: 9.5pt;
       font-weight: 700;
       text-align: center;
       vertical-align: middle;
