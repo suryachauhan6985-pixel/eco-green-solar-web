@@ -267,6 +267,39 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
     max-width:1250px;
   }
 }
+.modal-overlay.modal-fullscreen{
+  padding:0 !important;
+  align-items:stretch !important;
+  justify-content:stretch !important;
+}
+.modal-overlay.modal-fullscreen .modal-box{
+  width:100vw !important;
+  height:100vh !important;
+  max-width:100vw !important;
+  max-height:100vh !important;
+  border-radius:0 !important;
+  margin:0 !important;
+  border:none !important;
+  display:flex !important;
+  flex-direction:column !important;
+  box-shadow:none !important;
+}
+.modal-overlay.modal-fullscreen .modal-head{
+  flex:0 0 auto !important;
+  padding:14px 28px !important;
+}
+.modal-overlay.modal-fullscreen .modal-body{
+  flex:1 1 auto !important;
+  overflow-y:auto !important;
+  padding:20px 28px !important;
+}
+.modal-overlay.modal-fullscreen .form-grid{
+  max-width:none !important;
+}
+.modal-overlay.modal-fullscreen #bomChallanEntryModalRoot .form-grid.cols-2{
+  max-width:none !important;
+  grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)) !important;
+}
 @keyframes egsModalPop{
   from{ transform:scale(.92) translateY(14px); opacity:0; }
   to{ transform:scale(1) translateY(0); opacity:1; }

@@ -2281,7 +2281,13 @@ window.attachColumnFilters = function (table) {
     opts = opts || {};
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalBody').innerHTML = bodyHtml;
+    const overlay = document.getElementById('modalOverlay');
     const box = document.querySelector('#modalOverlay .modal-box');
+    if (opts.fullscreen) {
+      overlay.classList.add('modal-fullscreen');
+    } else {
+      overlay.classList.remove('modal-fullscreen');
+    }
     if (box) {
       box.classList.remove('modal-box-wide', 'modal-box-xl');
       if (opts.size === 'xl') {
@@ -2290,11 +2296,13 @@ window.attachColumnFilters = function (table) {
         box.classList.add('modal-box-wide');
       }
     }
-    document.getElementById('modalOverlay').classList.add('show');
+    overlay.classList.add('show');
   };
   window.closeModal = function (event) {
     if (event && event.target !== event.currentTarget) return;
-    document.getElementById('modalOverlay').classList.remove('show');
+    const overlay = document.getElementById('modalOverlay');
+    overlay.classList.remove('show');
+    overlay.classList.remove('modal-fullscreen');
   };
 
   // ---------- Confirm Dialog (drop-in replacement for window.confirm(),

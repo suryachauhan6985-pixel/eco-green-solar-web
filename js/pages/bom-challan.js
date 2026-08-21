@@ -364,18 +364,37 @@ function bomTodayLocalDateStr() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function bomRenderChallanEntryModalHtml(header, kit) {
-  const { unmappedItems, mappedCount } = bomComputeChallanAutoQty(kit ? kit.sections : []);
+function bomRenderChallanEntryModalHtml(header, kit, opts) {
+  opts = opts || {};
+  const autoResult = bomComputeChallanAutoQty(kit ? kit.sections : []);
+  const { qtyBySr, modelBySr, giPipe, unmappedItems, mappedCount } = autoResult;
+
+  let templateToRender = BOM_CHALLAN_TEMPLATE;
+  const isOnlyActive = !!(opts.onlyActive || opts.salesMode);
+
+  if (isOnlyActive) {
+    const activeTemplate = BOM_CHALLAN_TEMPLATE.filter((it) => {
+      if (it.sizes && it.sizes.length) {
+        const bucket = giPipe[it.sr];
+        return bucket && Object.values(bucket).some((v) => Number(v) > 0);
+      }
+      return qtyBySr[it.sr] != null && Number(qtyBySr[it.sr]) > 0;
+    });
+    if (activeTemplate.length) {
+      templateToRender = activeTemplate;
+    }
+  }
+
   const mappingNoticeHtml = (unmappedItems && unmappedItems.length)
     ? `<div class="banner" style="background:rgba(231,76,60,0.12); border:1px solid var(--red); border-radius:8px; padding:10px 14px; margin:14px 0 16px; display:flex; align-items:center; gap:10px;">
         <i class="fa-solid fa-triangle-exclamation" style="color:var(--red); font-size:18px;"></i>
         <div>
-          <strong style="color:var(--red); font-size:13px;">${unmappedItems.length} Unmapped BOM Item(s) Detected:</strong>
-          <div style="font-size:12px; margin-top:2px; color:var(--txt);">${unmappedItems.map((u) => `<strong>${bomEsc(u.item.name || u.item.brand || 'Item')}</strong> (${bomEsc(u.secTitle || '')})`).join(', ')} are not mapped to any Challan category and were skipped during auto-fill.</div>
+          <strong style="color:var(--red); font-size:13px;">${unmappedItems.length} Custom / Unmapped Item(s) in this Order:</strong>
+          <div style="font-size:12px; margin-top:2px; color:var(--txt);">${unmappedItems.map((u) => `<strong>${bomEsc(u.item.name || u.item.brand || 'Item')}</strong> (${u.qty || 1} Nos)`).join(', ')} added to Extra Items below.</div>
         </div>
       </div>`
     : `<div style="display:flex; align-items:center; gap:8px; margin:12px 0 14px; color:var(--green, #2ECC71); font-size:12.5px; font-weight:700;">
-        <i class="fa-solid fa-circle-check"></i> All ${mappedCount || 'BOM'} line items mapped and quantities auto-filled successfully.
+        <i class="fa-solid fa-circle-check"></i> All ${mappedCount || (kit && kit.sections && kit.sections.length ? kit.sections.length : 'order')} line items mapped and quantities auto-filled successfully.
       </div>`;
 
   return `
@@ -394,15 +413,25 @@ function bomRenderChallanEntryModalHtml(header, kit) {
           <input type="text" id="bomChallanModalOrderNo" value="${bomEscAttr(header.orderNo)}" placeholder="Order no. / Customer short code" list="bomChallanModalOrderNoList" autocomplete="off">
           <datalist id="bomChallanModalOrderNoList"></datalist>
         </div>
-        <div class="field"><label>Capacity (kW)</label><input type="text" id="bomChallanModalCapacity" value="${bomEscAttr(kit.kw)}"></div>
+        <div class="field"><label>Capacity (kW)</label><input type="text" id="bomChallanModalCapacity" value="${bomEscAttr(kit.kw || '')}"></div>
         <div class="field"><label>Name</label><input type="text" id="bomChallanModalName" value="${bomEscAttr(header.customerName)}" placeholder="Customer / Party"></div>
         <div class="field"><label>City</label><input type="text" id="bomChallanModalCity" placeholder="City"></div>
         <div class="field"><label>Vehicle No.</label><input type="text" id="bomChallanModalVehicleNo" placeholder="e.g. GJ-03-BZ-7562"></div>
       </div>
-      <h4 style="margin:16px 0 8px;"><i class="fa-solid fa-list"></i> Items <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(fixed Challan template + any extra lines you add below)</span></h4>
+
+      <div style="display:flex; align-items:center; justify-content:space-between; margin:18px 0 10px; flex-wrap:wrap; gap:8px;">
+        <h4 style="margin:0;"><i class="fa-solid fa-list"></i> Items <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(${isOnlyActive ? 'Items in this order only' : 'full 14-category Challan template'} + any extra lines)</span></h4>
+        <button type="button" class="btn btn-ghost" id="bomChallanToggleTemplateBtn" style="padding:4px 10px; font-size:11.5px;">
+          <i class="fa-solid fa-table-list"></i> ${templateToRender.length < BOM_CHALLAN_TEMPLATE.length ? 'Show All 14 Categories' : 'Show Only Active Items'}
+        </button>
+      </div>
+
       ${mappingNoticeHtml}
-      ${bomRenderChallanTemplateItemsHtml(BOM_CHALLAN_TEMPLATE)}
-      <div id="bomChallanExtraItemsWrap" style="margin-top:10px;">
+      <div id="bomChallanTemplateContainer">
+        ${bomRenderChallanTemplateItemsHtml(templateToRender)}
+      </div>
+
+      <div id="bomChallanExtraItemsWrap" style="margin-top:12px;">
         <div class="table-wrap">
           <table class="bom-items-form-table" id="bomChallanExtraItemsTable">
             <colgroup>
@@ -413,9 +442,10 @@ function bomRenderChallanEntryModalHtml(header, kit) {
             <tbody id="bomChallanExtraItemsBody"></tbody>
           </table>
         </div>
-        <button type="button" class="btn btn-ghost" id="bomChallanAddItemBtn" style="margin-top:8px;"><i class="fa-solid fa-plus"></i> Add Item</button>
+        <button type="button" class="btn btn-ghost" id="bomChallanAddItemBtn" style="margin-top:8px;"><i class="fa-solid fa-plus"></i> Add Extra Item</button>
       </div>
-      <div class="actions-row" style="margin-top:14px;">
+
+      <div class="actions-row" style="margin-top:18px;">
         <button type="button" class="btn btn-ghost" id="bomChallanSaveBtn"><i class="fa-solid fa-floppy-disk"></i> Save Challan</button>
         <button type="button" class="btn btn-blue" id="bomChallanPrintBtn"><i class="fa-solid fa-print"></i> Print Challan</button>
       </div>
@@ -786,11 +816,59 @@ window.openChallanFromSalesData = async function(salesData) {
   const kit = { kw: '', sections };
 
   if (typeof bomLoadChallanCategoryMap === 'function') await bomLoadChallanCategoryMap();
-  const modalHtml = bomRenderChallanEntryModalHtml(header, kit);
+  const modalHtml = bomRenderChallanEntryModalHtml(header, kit, { onlyActive: true, salesMode: true });
 
   window.openModal('Generate Challan', modalHtml, { fullscreen: true });
 
   if (typeof bomApplyChallanAutoQty === 'function') bomApplyChallanAutoQty(sections);
+
+  // Auto-populate any unmapped sales items into the extra items list
+  const { unmappedItems } = (typeof bomComputeChallanAutoQty === 'function') ? bomComputeChallanAutoQty(sections) : { unmappedItems: [] };
+  if (unmappedItems && unmappedItems.length) {
+    const extraTbody = document.getElementById('bomChallanExtraItemsBody');
+    if (extraTbody) {
+      unmappedItems.forEach((u) => {
+        const idx = bomChallanExtraItemSeq++;
+        const tr = document.createElement('tr');
+        tr.dataset.extraIdx = String(idx);
+        tr.innerHTML = `
+          <td class="bom-challan-extra-sr">&mdash;</td>
+          <td><input type="text" class="bom-field-input" data-extra-field="name" value="${bomEscAttr(u.item.name || u.item.brand || 'Item')}"></td>
+          <td><input type="text" class="bom-field-input" data-extra-field="model" value="${bomEscAttr(u.item.model || '')}"></td>
+          <td><input type="number" min="0" class="bom-field-input" data-extra-field="qty" value="${bomEscAttr(u.qty || 1)}"></td>
+          <td><input type="text" class="bom-field-input" data-extra-field="unit" value="Nos"></td>
+          <td><input type="text" class="bom-field-input" data-extra-field="desc" value=""></td>
+          <td style="text-align:center;"><button type="button" class="btn btn-ghost bom-mini-btn" onclick="this.closest('tr').remove()" style="color:var(--red);"><i class="fa-solid fa-trash"></i></button></td>
+        `;
+        extraTbody.appendChild(tr);
+      });
+    }
+  }
+
+  // Wire Toggle Full 14 Template vs Only Active Items
+  let isShowingAll = false;
+  const toggleBtn = document.getElementById('bomChallanToggleTemplateBtn');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      isShowingAll = !isShowingAll;
+      const tplContainer = document.getElementById('bomChallanTemplateContainer');
+      if (tplContainer) {
+        let activeTemplate = BOM_CHALLAN_TEMPLATE.filter((it) => {
+          const autoRes = bomComputeChallanAutoQty(sections);
+          if (it.sizes && it.sizes.length) {
+            const bucket = autoRes.giPipe[it.sr];
+            return bucket && Object.values(bucket).some((v) => Number(v) > 0);
+          }
+          return autoRes.qtyBySr[it.sr] != null && Number(autoRes.qtyBySr[it.sr]) > 0;
+        });
+        if (!activeTemplate.length) activeTemplate = BOM_CHALLAN_TEMPLATE.slice(0, 1);
+
+        tplContainer.innerHTML = bomRenderChallanTemplateItemsHtml(isShowingAll ? BOM_CHALLAN_TEMPLATE : activeTemplate);
+        bomApplyChallanAutoQty(sections);
+        toggleBtn.innerHTML = `<i class="fa-solid fa-table-list"></i> ${isShowingAll ? 'Show Only Active Items' : 'Show All 14 Categories'}`;
+      }
+    });
+  }
 
   const modalNo = document.getElementById('bomChallanModalNo');
   const modalDate = document.getElementById('bomChallanModalDate');
