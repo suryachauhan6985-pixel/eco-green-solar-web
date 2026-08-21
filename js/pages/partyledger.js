@@ -146,6 +146,19 @@ window.PAGES.partyledger = {
             <div class="hint" id="stmtHint">Click any row to open <i class="fa-solid fa-chevron-right" style="font-size:10px; margin-left:3px;"></i></div>
           </div>
 
+          <!-- Active Voucher Action Bar (Print Challan, Edit, Delete) -->
+          <div class="stmt-voucher-bar" id="stmtVoucherBar" style="display:none; align-items:center; justify-content:space-between; padding:8px 14px; background:rgba(255,255,255,0.03); border:1px solid var(--border-light); border-radius:10px; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-receipt" style="color:var(--gold);"></i>
+              <strong id="stmtVoucherLabel" style="font-size:13px; color:var(--txt);"></strong>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button type="button" class="btn btn-ghost" id="stmtVoucherPrintBtn" style="display:none; padding:5px 10px; font-size:11px; color:var(--blue);"><i class="fa-solid fa-print"></i> Print Challan</button>
+              <button type="button" class="btn btn-ghost" id="stmtVoucherEditBtn" style="padding:5px 10px; font-size:11px;"><i class="fa-solid fa-pen"></i> Edit Voucher</button>
+              <button type="button" class="btn btn-ghost" id="stmtVoucherDelBtn" style="padding:5px 10px; font-size:11px; color:var(--red);"><i class="fa-solid fa-trash"></i> Delete</button>
+            </div>
+          </div>
+
           <!-- Voucher Attachments — one shared panel per voucher (Ref/Invoice
                No), instead of repeating the same "Open" button on every
                serial-number row below. Only shown once a specific voucher is
@@ -745,14 +758,45 @@ window.PAGES.partyledger = {
     function updateVoucherBar() {
       const bar = document.getElementById('stmtVoucherBar');
       const label = document.getElementById('stmtVoucherLabel');
+      const printBtn = document.getElementById('stmtVoucherPrintBtn');
       if (!bar) return;
       if (stRef && stRef.key && stRef.key !== '-') {
         bar.style.display = 'flex';
-        const kind = stRef.movement === 'IN' ? 'Purchase' : 'Sale / Challan';
-        label.textContent = `${kind} · ${stRef.key}`;
+        const kind = stRef.movement === 'IN' ? 'Purchase Invoice' : 'Sale / Challan';
+        if (label) label.textContent = `${kind} · ${stRef.key}`;
+        if (printBtn) {
+          printBtn.style.display = stRef.movement === 'OUT' ? 'inline-flex' : 'none';
+        }
       } else {
         bar.style.display = 'none';
       }
+    }
+
+    const stmtVoucherPrintBtn = document.getElementById('stmtVoucherPrintBtn');
+    if (stmtVoucherPrintBtn) {
+      stmtVoucherPrintBtn.addEventListener('click', () => {
+        if (stRef && stRef.key && stRef.key !== '-') {
+          if (typeof window.printChallanByNo === 'function') {
+            window.printChallanByNo(stRef.key);
+          }
+        }
+      });
+    }
+    const stmtVoucherEditBtn = document.getElementById('stmtVoucherEditBtn');
+    if (stmtVoucherEditBtn) {
+      stmtVoucherEditBtn.addEventListener('click', () => {
+        if (stRef && stRef.key && stRef.key !== '-') {
+          editVoucher(stRef.movement, stRef.key);
+        }
+      });
+    }
+    const stmtVoucherDelBtn = document.getElementById('stmtVoucherDelBtn');
+    if (stmtVoucherDelBtn) {
+      stmtVoucherDelBtn.addEventListener('click', () => {
+        if (stRef && stRef.key && stRef.key !== '-') {
+          deleteVoucher(stRef.movement, stRef.key);
+        }
+      });
     }
 
     async function editVoucher(movement, refKey) {
@@ -1018,10 +1062,19 @@ window.PAGES.partyledger = {
           <td data-label="Category" style="text-align:center;">${catText}</td>
           <td data-label="Warehouse" style="text-align:center;">${whText}</td>
           <td data-label="Actions" class="stmt-row-actions" style="text-align:center; white-space:nowrap;">
+            ${g.movement === 'OUT' && canAct ? `<button type="button" class="btn btn-ghost stmt-act-print" title="Print Challan" style="padding:4px 8px;font-size:11px;color:var(--blue);"><i class="fa-solid fa-print"></i></button>` : ''}
             <button type="button" class="btn btn-ghost stmt-act-edit" title="Edit voucher" ${canAct ? '' : 'disabled'} style="padding:4px 8px;font-size:11px;"><i class="fa-solid fa-pen"></i></button>
             <button type="button" class="btn btn-ghost stmt-act-del" title="Delete voucher" ${canAct ? '' : 'disabled'} style="padding:4px 8px;font-size:11px;color:var(--red);"><i class="fa-solid fa-trash"></i></button>
           </td>`;
         tr.addEventListener('click', (e) => {
+          if (e.target.closest('.stmt-act-print')) {
+            e.stopPropagation();
+            const chNo = (g.first && g.first.chalan_no && g.first.chalan_no !== '-') ? g.first.chalan_no : g.ref;
+            if (typeof window.printChallanByNo === 'function') {
+              window.printChallanByNo(chNo);
+            }
+            return;
+          }
           if (e.target.closest('.stmt-act-edit')) {
             e.stopPropagation();
             editVoucher(g.movement, g.ref);

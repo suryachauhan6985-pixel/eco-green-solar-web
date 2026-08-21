@@ -137,7 +137,12 @@ window.PAGES.saleregister = {
       }
       tbody.innerHTML = visible.map((r) => `
         <tr class="sreg-row" data-challan="${r.challanNo}" style="cursor:pointer;" title="Double-click to edit this order">
-          <td data-label="Challan No" class="gold-txt">${r.challanNo}</td>
+          <td data-label="Challan No" class="gold-txt">
+            <div style="display:inline-flex; align-items:center; gap:6px;">
+              <span>${r.challanNo}</span>
+              <button type="button" class="btn btn-ghost sreg-print-btn" data-challan="${r.challanNo}" title="Print Challan" style="padding:2px 6px; font-size:11px; color:var(--blue);"><i class="fa-solid fa-print"></i></button>
+            </div>
+          </td>
           <td data-label="Date">${r.date}</td>
           <td data-label="Customer">${r.customer}</td>
           <td data-label="Order No">${r.orderNo}</td>
@@ -153,8 +158,20 @@ window.PAGES.saleregister = {
     searchEl.addEventListener('input', loadData);
     $('sregBtnRefresh').addEventListener('click', loadData);
 
-    // ---------- double-click a row -> Project Sales, edit panel, autofilled ----------
+    // ---------- click print button or double-click row -> Project Sales ----------
+    tbody.addEventListener('click', (e) => {
+      const printBtn = e.target.closest('.sreg-print-btn');
+      if (printBtn) {
+        e.stopPropagation();
+        const chNo = printBtn.dataset.challan;
+        if (typeof window.printChallanByNo === 'function') {
+          window.printChallanByNo(chNo);
+        }
+      }
+    });
+
     tbody.addEventListener('dblclick', (e) => {
+      if (e.target.closest('.sreg-print-btn')) return;
       const row = e.target.closest('.sreg-row');
       if (!row) return;
       const challanNo = row.dataset.challan;

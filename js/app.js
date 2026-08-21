@@ -1882,6 +1882,220 @@ window.attachColumnFilters = function (table) {
     }
   }
 
+  function openAppSettingsPanel() {
+    closeProfileMenu();
+    const activeTheme = (typeof window.getAppTheme === 'function') ? window.getAppTheme() : 'dark';
+    const settingsHtml = `
+      <div class="settings-layout">
+        <div class="settings-tabs">
+          <button type="button" class="settings-tab-btn active" data-tab="tab-theme"><i class="fa-solid fa-palette"></i> Appearance</button>
+          <button type="button" class="settings-tab-btn" data-tab="tab-company"><i class="fa-solid fa-building"></i> Company Profile</button>
+          <button type="button" class="settings-tab-btn" data-tab="tab-challan"><i class="fa-solid fa-file-invoice"></i> Challan & Print</button>
+          <button type="button" class="settings-tab-btn" data-tab="tab-inventory"><i class="fa-solid fa-boxes-stacked"></i> Alerts & Inventory</button>
+          <button type="button" class="settings-tab-btn" data-tab="tab-security"><i class="fa-solid fa-shield-halved"></i> Security & 2FA</button>
+          <button type="button" class="settings-tab-btn" data-tab="tab-roadmap"><i class="fa-solid fa-rocket"></i> Cloud Roadmap</button>
+        </div>
+
+        <!-- 1. Appearance Tab -->
+        <div class="settings-panel active" id="tab-theme">
+          <div class="settings-card">
+            <div class="settings-card-title">Theme & Color Mode</div>
+            <p class="note" style="margin:0 0 12px 0;">Select your preferred workspace color theme.</p>
+            <div class="profile-theme-row" style="max-width:320px;">
+              <button type="button" class="theme-btn${activeTheme === 'dark' ? ' active' : ''}" data-theme-set="dark" title="Dark"><i class="fa-solid fa-moon"></i> Dark</button>
+              <button type="button" class="theme-btn${activeTheme === 'gray' ? ' active' : ''}" data-theme-set="gray" title="Gray"><i class="fa-solid fa-circle-half-stroke"></i> Gray</button>
+              <button type="button" class="theme-btn${activeTheme === 'light' ? ' active' : ''}" data-theme-set="light" title="Light"><i class="fa-solid fa-sun"></i> Light</button>
+            </div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title">Display Density & Animation</div>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+              <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                <input type="checkbox" checked style="accent-color:var(--gold);">
+                <span>Smooth UI Animations & Transitions</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                <input type="checkbox" style="accent-color:var(--gold);">
+                <span>Compact Table Row Density (High Information Density)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Company Profile Tab -->
+        <div class="settings-panel" id="tab-company">
+          <div class="settings-card">
+            <div class="settings-card-title">Enterprise Identity</div>
+            <div class="form-grid cols-2" style="margin-top:10px;">
+              <div class="field">
+                <label>Company Name</label>
+                <input type="text" value="Eco Green Solar" readonly style="font-weight:700; color:var(--gold);">
+              </div>
+              <div class="field">
+                <label>Default Warehouse Hub</label>
+                <input type="text" value="Main Warehouse (Surat)" readonly>
+              </div>
+              <div class="field">
+                <label>Operating State & City</label>
+                <input type="text" value="Gujarat — Surat" readonly>
+              </div>
+              <div class="field">
+                <label>Default Currency</label>
+                <input type="text" value="INR (₹)" readonly>
+              </div>
+            </div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title">System Attribution</div>
+            <p style="margin:0; font-size:13px; color:var(--txt-muted);">
+              Eco Green Solar ERP Suite • Developed by <strong style="color:var(--gold);">Sumit Chauhan</strong>
+            </p>
+          </div>
+        </div>
+
+        <!-- 3. Challan & Print Config Tab -->
+        <div class="settings-panel" id="tab-challan">
+          <div class="settings-card">
+            <div class="settings-card-title">Challan PDF Generation</div>
+            <div class="form-grid cols-2" style="margin-top:10px;">
+              <div class="field">
+                <label>Default Layout</label>
+                <input type="text" value="Landscape A4 (Customer + Company Copy)" readonly>
+              </div>
+              <div class="field">
+                <label>Numbering System</label>
+                <input type="text" value="Automatic Sequential (Auto Next-No)" readonly style="color:#2ecc71; font-weight:700;">
+              </div>
+            </div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title">Sales Integration</div>
+            <p style="margin:0 0 10px 0; font-size:13px; color:var(--txt-muted);">
+              When a Challan is saved or generated, Challan No. and Date automatically sync back into the Project Sales entry.
+            </p>
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+              <input type="checkbox" checked disabled style="accent-color:var(--gold);">
+              <span>Auto-link Challan No. to Project Sales Form</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 4. Alerts & Inventory Tab -->
+        <div class="settings-panel" id="tab-inventory">
+          <div class="settings-card">
+            <div class="settings-card-title">Stock Thresholds & Scanner</div>
+            <div class="form-grid cols-2" style="margin-top:10px;">
+              <div class="field">
+                <label>Low Stock Warning Threshold</label>
+                <input type="text" value="5 Units" readonly>
+              </div>
+              <div class="field">
+                <label>Scan Sheet Audio Feedback</label>
+                <input type="text" value="Beep on Valid Serial" readonly style="color:#2ecc71;">
+              </div>
+            </div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title">
+              <span>Automated Dispatch Alerts</span>
+              <span class="settings-badge-soon">Coming Soon</span>
+            </div>
+            <p style="margin:0 0 10px 0; font-size:13px; color:var(--txt-muted);">
+              Instant SMS and WhatsApp notifications sent to customers upon stock dispatch.
+            </p>
+            <div style="display:flex; gap:16px; opacity:0.6;">
+              <label><input type="checkbox" disabled> WhatsApp Notification</label>
+              <label><input type="checkbox" disabled> Email Dispatch Summary</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Security & 2FA Tab -->
+        <div class="settings-panel" id="tab-security">
+          <div class="settings-card">
+            <div class="settings-card-title">Two-Factor Authentication (2FA)</div>
+            <p style="margin:0 0 12px 0; font-size:13px; color:var(--txt-muted);">
+              Secure OTP verification enabled on unrecognized devices and login sessions.
+            </p>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="pill" style="background:rgba(46,204,113,0.15); color:#2ecc71; border:1px solid rgba(46,204,113,0.3); padding:4px 10px; border-radius:6px; font-weight:700;">
+                <i class="fa-solid fa-lock"></i> OTP 2FA Active
+              </span>
+            </div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title">Active Devices & Sessions</div>
+            <p style="margin:0 0 12px 0; font-size:13px; color:var(--txt-muted);">
+              View all active browsers and revoke sessions across devices.
+            </p>
+            <button type="button" class="btn btn-ghost" id="setOpenLoginActivityBtn" style="font-size:12.5px;">
+              <i class="fa-solid fa-mobile-screen-button"></i> Open Login Activity Panel
+            </button>
+          </div>
+        </div>
+
+        <!-- 6. Roadmap Tab -->
+        <div class="settings-panel" id="tab-roadmap">
+          <div class="settings-card">
+            <div class="settings-card-title">
+              <span><i class="fa-solid fa-sun" style="color:var(--gold);"></i> PM Surya Ghar National Portal Sync</span>
+              <span class="settings-badge-planned">Planned Q4</span>
+            </div>
+            <p style="margin:0; font-size:13px; color:var(--txt-muted);">
+              Direct API integration with the National Portal for automated consumer subsidy verification and project milestone uploads.
+            </p>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title">
+              <span><i class="fa-solid fa-network-wired" style="color:var(--blue);"></i> Multi-Branch Live Cloud Sync</span>
+              <span class="settings-badge-soon">Coming Soon</span>
+            </div>
+            <p style="margin:0; font-size:13px; color:var(--txt-muted);">
+              Seamless inter-branch stock transfers with automatic GST delivery challan generation between warehouses.
+            </p>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title">
+              <span><i class="fa-solid fa-file-invoice-dollar" style="color:#2ecc71;"></i> Tally Prime / Busy Accounting Bridge</span>
+              <span class="settings-badge-soon">Coming Soon</span>
+            </div>
+            <p style="margin:0; font-size:13px; color:var(--txt-muted);">
+              1-click XML ledger sync directly into Tally Prime and Busy Accounting software.
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    window.openModal('System & ERP Settings', settingsHtml, { size: 'large' });
+
+    // Wire Settings Tabs
+    const tabBtns = document.querySelectorAll('.settings-tab-btn');
+    const panels = document.querySelectorAll('.settings-panel');
+    tabBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-tab');
+        tabBtns.forEach((b) => b.classList.remove('active'));
+        panels.forEach((p) => p.classList.remove('active'));
+        btn.classList.add('active');
+        const p = document.getElementById(targetId);
+        if (p) p.classList.add('active');
+      });
+    });
+
+    // Wire Theme buttons inside Settings
+    const modalBox = document.querySelector('#modalOverlay .modal-box');
+    if (modalBox && window.wireThemeButtons) window.wireThemeButtons(modalBox);
+
+    const loginActBtn = document.getElementById('setOpenLoginActivityBtn');
+    if (loginActBtn) {
+      loginActBtn.addEventListener('click', () => {
+        window.closeModal();
+        openLoginActivityPanel();
+      });
+    }
+  }
+
   function openProfileMenu() {
     closeProfileMenu();
     const roleEl = document.querySelector('.profile-box .role');
@@ -1921,6 +2135,7 @@ window.attachColumnFilters = function (table) {
         <button type="button" class="theme-btn" data-theme-set="light" title="Light"><i class="fa-solid fa-sun"></i> Light</button>
       </div>
       <div class="profile-menu-divider"></div>
+      <button type="button" class="profile-menu-item" id="profileSettings"><i class="fa-solid fa-gear"></i> System Settings</button>
       <button type="button" class="profile-menu-item" id="profileLoginActivity"><i class="fa-solid fa-mobile-screen-button"></i> Login activity</button>
       <button type="button" class="profile-menu-item danger" id="profileLogout"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>`;
     document.body.appendChild(menu);
@@ -1948,13 +2163,11 @@ window.attachColumnFilters = function (table) {
 
     menu.querySelector('#profileAddAccount').addEventListener('click', () => {
       closeProfileMenu();
-      // Do NOT revoke current device on server — user is only opening login
-      // to add another account (Instagram-style). Token stays in egs_accounts.
       clearSession();
       showLoginOverlay('Add another account — your previous account stays saved for switching.');
     });
 
-    const settingsBtn = menu.querySelector('#profileOpenSettings');
+    const settingsBtn = menu.querySelector('#profileSettings');
     if (settingsBtn) {
       settingsBtn.addEventListener('click', () => {
         closeProfileMenu();

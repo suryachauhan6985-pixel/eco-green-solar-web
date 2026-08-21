@@ -251,6 +251,34 @@ module.exports = function registerChallanRoutes(app, deps) {
     res.json({ success: true });
   }));
 
+  // Look up challan by challan_no
+  app.get('/api/challan/by-no/:challanNo', route(async (req, res) => {
+    const [[row]] = await pool.query(
+      `SELECT * FROM bom_challans WHERE challan_no = ? ORDER BY id DESC LIMIT 1`,
+      [req.params.challanNo]
+    );
+    if (!row) return res.status(404).json({ error: 'Challan not found.' });
+    res.json({ ...row, items: JSON.parse(row.items_json || '{}') });
+  }));
+
+  app.get('/api/challan/by-no/:challanNo/pdf', route(async (req, res) => {
+    const [[row]] = await pool.query(
+      `SELECT * FROM bom_challans WHERE challan_no = ? ORDER BY id DESC LIMIT 1`,
+      [req.params.challanNo]
+    );
+    if (!row) return res.status(404).json({ error: 'Challan not found.' });
+    const record = { ...row, items: JSON.parse(row.items_json || '{}') };
+    const { pdfBuffer, cleanup } = await fillTemplateAndConvertToPdf(record);
+    try {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="Challan_${row.challan_no}.pdf"`);
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.send(pdfBuffer);
+    } finally {
+      await cleanup();
+    }
+  }));
+
   // Single record (for reprint). Registered AFTER '/category-map' so the
   // static route above always wins that match.
   app.get('/api/challan/:id', route(async (req, res) => {
