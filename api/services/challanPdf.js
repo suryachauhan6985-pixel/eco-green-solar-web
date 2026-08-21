@@ -192,9 +192,9 @@ function buildChallanRowPlan(items) {
       kind: 'item',
       row,
       printSr,
-      name: cat.name,
+      name: String(itemData.name || cat.name).trim(),
       model: String(itemData.model || cat.model || '').trim(),
-      unit: cat.unit,
+      unit: String(itemData.unit || cat.unit || 'Nos').trim(),
       qty: qtyVal,
       desc: String(itemData.desc || '').trim(),
     });
@@ -815,7 +815,10 @@ async function fillTemplateAndConvertToPdf(record) {
       capacityKw: record.capacity_kw || '',
       customerName: record.customer_name || '',
       city: record.city || '',
-      vehicleNo: record.vehicle_no || '',
+      vehicleNo: [
+        record.vehicle_no || record.vehicleNo || '',
+        record.vehicle_no_2 || record.vehicleNo2 || ''
+      ].filter(Boolean).join(' / '),
     };
     for (const [field, cells] of Object.entries(HEADER_CELLS)) {
       const value = headerValues[field];

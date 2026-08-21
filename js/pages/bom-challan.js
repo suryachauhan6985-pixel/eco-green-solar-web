@@ -295,6 +295,94 @@ function bomApplyChallanAutoQty(sections) {
   return result;
 }
 
+// Helper for Animated Glowing Solar PDF Loading Window
+function getChallanPdfLoadingHtml(title, subtitle) {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${title || 'Preparing Challan…'}</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0b0f17;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .card {
+      background: rgba(18, 24, 38, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 36px 44px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(59, 142, 208, 0.15);
+      backdrop-filter: blur(12px);
+    }
+    .spinner-wrap {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .spinner-wrap::before, .spinner-wrap::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+    }
+    .spinner-wrap::before {
+      inset: 0;
+      border: 3.5px solid transparent;
+      border-top-color: #3b8ed0;
+      border-right-color: #3b8ed0;
+      animation: spin 0.9s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+      box-shadow: 0 0 16px rgba(59, 142, 208, 0.45);
+    }
+    .spinner-wrap::after {
+      inset: 7px;
+      border: 3.5px solid transparent;
+      border-bottom-color: #ffb020;
+      border-left-color: #ffb020;
+      animation: spin-rev 0.7s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+      box-shadow: 0 0 12px rgba(255, 176, 32, 0.45);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin-rev { to { transform: rotate(-360deg); } }
+    h3 { margin: 0; font-size: 18px; font-weight: 700; color: #f8fafc; letter-spacing: 0.5px; }
+    p { margin: 0; font-size: 13px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner-wrap"></div>
+    <h3>${title || 'Preparing Challan PDF...'}</h3>
+    <p>${subtitle || 'Compiling Landscape A4 Dual Copy…'}</p>
+  </div>
+</body>
+</html>`;
+}
+
+// Convert arbitrary Date string to ISO YYYY-MM-DD
+function toISODateStr(dStr) {
+  if (!dStr) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) return dStr;
+  const parts = dStr.split('-');
+  if (parts.length === 3 && parts[0].length <= 2 && parts[2].length === 4) {
+    return `${parts[2]}-${String(parts[1]).padStart(2, '0')}-${String(parts[0]).padStart(2, '0')}`;
+  }
+  return dStr;
+}
+
 // ---------- "Convert into Challan" — ENTRY MODAL (software-style, NOT the Excel look) ----------
 function bomRenderChallanTemplateItemsHtml(template) {
   const qtyInput = (sr, sizeLabel) => {
@@ -305,35 +393,48 @@ function bomRenderChallanTemplateItemsHtml(template) {
     `<input type="text" class="bom-field-input" data-challan-tpl-desc="${sr}" placeholder="Description">`;
   const modelInput = (sr, defaultModel) =>
     `<input type="text" class="bom-field-input bom-challan-model-input" data-challan-tpl-model="${sr}" value="${bomEscAttr(defaultModel || '')}" placeholder="Model / Specification">`;
+  const nameInput = (sr, defaultName) =>
+    `<input type="text" class="bom-field-input bom-challan-name-input" data-challan-tpl-name="${sr}" value="${bomEscAttr(defaultName || '')}" placeholder="Item Name">`;
+  const unitInput = (sr, defaultUnit) =>
+    `<input type="text" class="bom-field-input bom-challan-unit-input" data-challan-tpl-unit="${sr}" value="${bomEscAttr(defaultUnit || 'Nos')}" style="width:65px; text-align:center;">`;
 
   const rows = template.map((it) => {
     if (it.sizes && it.sizes.length) {
       return it.sizes.map((size, i) => {
         const leadCells = i === 0
           ? `<td rowspan="${it.sizes.length}">${it.sr}</td>
-             <td rowspan="${it.sizes.length}">${bomEsc(it.name)}</td>
-             <td rowspan="${it.sizes.length}">${bomEsc(it.model || '')}</td>`
+             <td rowspan="${it.sizes.length}">${nameInput(it.sr, it.name)}</td>
+             <td rowspan="${it.sizes.length}">${modelInput(it.sr, it.model)}</td>`
           : '';
         const descCell = i === 0 ? `<td rowspan="${it.sizes.length}">${descInput(it.sr)}</td>` : '';
+        const delCell = i === 0
+          ? `<td rowspan="${it.sizes.length}" style="text-align:center;">
+               <button type="button" class="btn btn-ghost bom-mini-btn" onclick="document.querySelectorAll('tr[data-gi-sr=\\'${it.sr}\\']').forEach(r=>r.remove())" style="color:var(--red); padding:4px 8px;" title="Remove GI Pipe group"><i class="fa-solid fa-trash"></i></button>
+             </td>`
+          : '';
         return `
-      <tr>
+      <tr data-gi-sr="${it.sr}">
         ${leadCells}
         <td class="bom-challan-size-cell">${bomEsc(size)}</td>
         <td>${qtyInput(it.sr, size)}</td>
         <td>${bomEsc(it.unit)}</td>
         ${descCell}
+        ${delCell}
       </tr>`;
       }).join('');
     }
     return `
       <tr>
         <td>${it.sr}</td>
-        <td>${bomEsc(it.name)}</td>
+        <td>${nameInput(it.sr, it.name)}</td>
         <td>${modelInput(it.sr, it.model)}</td>
         <td class="bom-challan-size-cell">&mdash;</td>
         <td>${qtyInput(it.sr)}</td>
-        <td>${bomEsc(it.unit)}</td>
+        <td>${unitInput(it.sr, it.unit)}</td>
         <td>${descInput(it.sr)}</td>
+        <td style="text-align:center;">
+          <button type="button" class="btn btn-ghost bom-mini-btn" onclick="this.closest('tr').remove()" style="color:var(--red); padding:4px 8px;" title="Remove this item"><i class="fa-solid fa-trash"></i></button>
+        </td>
       </tr>`;
   }).join('');
 
@@ -341,10 +442,10 @@ function bomRenderChallanTemplateItemsHtml(template) {
     <div class="table-wrap">
       <table class="bom-items-form-table">
         <colgroup>
-          <col style="width:6%;"><col style="width:18%;"><col style="width:18%;">
-          <col style="width:10%;"><col style="width:12%;"><col style="width:8%;"><col style="width:28%;">
+          <col style="width:5%;"><col style="width:20%;"><col style="width:18%;">
+          <col style="width:9%;"><col style="width:10%;"><col style="width:8%;"><col style="width:24%;"><col style="width:6%;">
         </colgroup>
-        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Size</th><th>Qty.</th><th>Unit</th><th>Description</th></tr></thead>
+        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Size</th><th>Qty.</th><th>Unit</th><th>Description</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
@@ -417,6 +518,7 @@ function bomRenderChallanEntryModalHtml(header, kit, opts) {
         <div class="field"><label>Name</label><input type="text" id="bomChallanModalName" value="${bomEscAttr(header.customerName)}" placeholder="Customer / Party"></div>
         <div class="field"><label>City</label><input type="text" id="bomChallanModalCity" placeholder="City"></div>
         <div class="field"><label>Vehicle No.</label><input type="text" id="bomChallanModalVehicleNo" placeholder="e.g. GJ-03-BZ-7562"></div>
+        <div class="field"><label>Vehicle No. 2 (Optional)</label><input type="text" id="bomChallanModalVehicleNo2" placeholder="e.g. GJ-01-AB-1234 (Second vehicle if multi-trip)"></div>
       </div>
 
       <div style="display:flex; align-items:center; justify-content:space-between; margin:18px 0 10px; flex-wrap:wrap; gap:8px;">
@@ -531,6 +633,14 @@ function bomCollectChallanTemplateValues() {
   document.querySelectorAll('.bom-challan-model-input').forEach((inp) => {
     const sr = inp.getAttribute('data-challan-tpl-model');
     setVal(`${sr}|`, { model: inp.value });
+  });
+  document.querySelectorAll('.bom-challan-name-input').forEach((inp) => {
+    const sr = inp.getAttribute('data-challan-tpl-name');
+    setVal(`${sr}|`, { name: inp.value });
+  });
+  document.querySelectorAll('.bom-challan-unit-input').forEach((inp) => {
+    const sr = inp.getAttribute('data-challan-tpl-unit');
+    setVal(`${sr}|`, { unit: inp.value });
   });
   document.querySelectorAll('[data-challan-tpl-desc]').forEach((inp) => {
     const sr = inp.getAttribute('data-challan-tpl-desc');
@@ -877,6 +987,7 @@ window.openChallanFromSalesData = async function(salesData) {
   const modalName = document.getElementById('bomChallanModalName');
   const modalCity = document.getElementById('bomChallanModalCity');
   const modalVehicleNo = document.getElementById('bomChallanModalVehicleNo');
+  const modalVehicleNo2 = document.getElementById('bomChallanModalVehicleNo2');
   const saveBtn = document.getElementById('bomChallanSaveBtn');
   const printBtn = document.getElementById('bomChallanPrintBtn');
   const addItemBtn = document.getElementById('bomChallanAddItemBtn');
@@ -894,6 +1005,7 @@ window.openChallanFromSalesData = async function(salesData) {
       customerName: modalName ? modalName.value : '',
       city: modalCity ? modalCity.value : '',
       vehicleNo: modalVehicleNo ? modalVehicleNo.value : '',
+      vehicleNo2: modalVehicleNo2 ? modalVehicleNo2.value : '',
       installerName: '',
       fabricatorName: '',
       dealerName: '',
@@ -906,7 +1018,7 @@ window.openChallanFromSalesData = async function(salesData) {
     const saleChalanNoEl = document.getElementById('saleChalanNo');
     const saleChalanDateEl = document.getElementById('saleChalanDate');
     if (saleChalanNoEl && payload.challanNo) saleChalanNoEl.value = payload.challanNo;
-    if (saleChalanDateEl && payload.challanDate) saleChalanDateEl.value = payload.challanDate;
+    if (saleChalanDateEl && payload.challanDate) saleChalanDateEl.value = toISODateStr(payload.challanDate);
   }
 
   if (saveBtn) {
@@ -941,7 +1053,7 @@ window.openChallanFromSalesData = async function(salesData) {
       }
       const pdfWindow = window.open('', '_blank');
       if (pdfWindow) {
-        pdfWindow.document.write(`<!DOCTYPE html><html><head><title>Preparing Challan…</title><style>body{background:#0b0f17;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;}</style></head><body><h3>Preparing Challan PDF...</h3></body></html>`);
+        pdfWindow.document.write(getChallanPdfLoadingHtml('Preparing Your Challan PDF', 'Compiling Landscape A4 Dual Copy…'));
         pdfWindow.document.close();
       }
       printBtn.disabled = true;
@@ -991,7 +1103,7 @@ window.printChallanByNo = async function(challanNo) {
   }
   const pdfWindow = window.open('', '_blank');
   if (pdfWindow) {
-    pdfWindow.document.write(`<!DOCTYPE html><html><head><title>Loading Challan #${challanNo}…</title><style>body{background:#0b0f17;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;}</style></head><body><h3>Loading Challan #${challanNo} PDF...</h3></body></html>`);
+    pdfWindow.document.write(getChallanPdfLoadingHtml(`Loading Challan #${challanNo}`, 'Fetching Landscape A4 Dual Copy…'));
     pdfWindow.document.close();
   }
   try {

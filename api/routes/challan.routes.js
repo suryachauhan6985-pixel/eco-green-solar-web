@@ -154,6 +154,9 @@ module.exports = function registerChallanRoutes(app, deps) {
     const b = req.body || {};
     const challanNo = String(b.challanNo || '').trim();
     const orderNo = String(b.orderNo || '').trim();
+    const v1 = String(b.vehicleNo || '').trim();
+    const v2 = String(b.vehicleNo2 || '').trim();
+    const vehicleCombined = [v1, v2].filter(Boolean).join(' / ');
 
     const [result] = await pool.query(
       `INSERT INTO bom_challans
@@ -162,7 +165,7 @@ module.exports = function registerChallanRoutes(app, deps) {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [challanNo, b.challanDate || '', orderNo, b.customerName || '',
        b.installerName || '', b.fabricatorName || '', b.dealerName || '',
-       b.capacityKw || '', b.city || '', b.vehicleNo || '',
+       b.capacityKw || '', b.city || '', vehicleCombined,
        JSON.stringify(b.items || {}), req.user ? req.user.username : null]
     );
 

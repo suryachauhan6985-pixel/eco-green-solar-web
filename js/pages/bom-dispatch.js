@@ -721,6 +721,7 @@ function createBomDispatchModule(ctx) {
         const modalName = document.getElementById('bomChallanModalName');
         const modalCity = document.getElementById('bomChallanModalCity');
         const modalVehicleNo = document.getElementById('bomChallanModalVehicleNo');
+        const modalVehicleNo2 = document.getElementById('bomChallanModalVehicleNo2');
         const printBtn = document.getElementById('bomChallanPrintBtn');
         const saveBtn = document.getElementById('bomChallanSaveBtn');
         const addItemBtn = document.getElementById('bomChallanAddItemBtn');
@@ -826,6 +827,7 @@ function createBomDispatchModule(ctx) {
             customerName: modalName ? modalName.value : '',
             city: modalCity ? modalCity.value : '',
             vehicleNo: modalVehicleNo ? modalVehicleNo.value : '',
+            vehicleNo2: modalVehicleNo2 ? modalVehicleNo2.value : '',
             installerName: header.installerName || '',
             fabricatorName: header.fabricatorName || '',
             dealerName: header.dealerName || '',
