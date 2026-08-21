@@ -31,8 +31,8 @@ window.PAGES.partyledger = {
 
         <button class="btn btn-green" id="btnCreateLedger"><i class="fa-solid fa-plus"></i>&nbsp; Create New Ledger</button>
         <button class="btn btn-ghost" id="btnRefreshParties"><i class="fa-solid fa-sync"></i> Refresh List</button>
-        <button class="btn btn-ghost" id="btnImportLedgers" style="background:#1F7A4D;"><i class="fa-solid fa-file-import"></i> Import Ledgers from Excel</button>
-        <button class="btn btn-ghost" id="btnDownloadTemplate" style="background:#4B6584;"><i class="fa-solid fa-download"></i> Download Excel Template</button>
+        <button class="btn btn-green" id="btnImportLedgers"><i class="fa-solid fa-file-import"></i> Import Ledgers from Excel</button>
+        <button class="btn btn-blue" id="btnDownloadTemplate"><i class="fa-solid fa-download"></i> Download Excel Template</button>
         <input type="file" id="plImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
       </div>
 

@@ -1,4 +1,4 @@
-﻿/* css/modules/dashboard.css - Modern, Aesthetic ERP Dashboard Styles */
+/* css/modules/dashboard.css - Modern, Aesthetic ERP Dashboard Styles */
 
 /* Entry Animations */
 @keyframes dashFadeInUp {
@@ -466,41 +466,88 @@
   align-items: center;
   justify-content: center;
   min-width: 32px;
-  padding: 3px 10px;
+  padding: 4px 10px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
 .dash-qty-pill.active {
-  background: rgba(59, 142, 208, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 142, 208, 0.3);
+  background: rgba(59, 142, 208, 0.18);
+  color: #3b8ed0;
+  border: 1px solid rgba(59, 142, 208, 0.4);
 }
 
 .dash-qty-pill.avail {
-  background: rgba(46, 204, 113, 0.15);
-  color: #2ecc71;
-  border: 1px solid rgba(46, 204, 113, 0.3);
+  background: rgba(46, 204, 113, 0.18);
+  color: #27ae60;
+  border: 1px solid rgba(46, 204, 113, 0.4);
 }
 
 .dash-qty-pill.sold {
-  background: rgba(142, 68, 173, 0.15);
-  color: #c084fc;
-  border: 1px solid rgba(142, 68, 173, 0.3);
+  background: rgba(142, 68, 173, 0.18);
+  color: #8e44ad;
+  border: 1px solid rgba(142, 68, 173, 0.4);
 }
 
 .dash-qty-pill.damaged {
-  background: rgba(243, 156, 18, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(243, 156, 18, 0.3);
+  background: rgba(243, 156, 18, 0.18);
+  color: #d97706;
+  border: 1px solid rgba(243, 156, 18, 0.4);
 }
 
 .dash-qty-pill.zero {
-  color: var(--txt-muted);
-  opacity: 0.32;
-  font-weight: 500;
+  color: var(--txt);
+  opacity: 0.85;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+html[data-theme="light"] .dash-qty-pill.avail {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+html[data-theme="light"] .dash-qty-pill.active {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+}
+
+html[data-theme="light"] .dash-qty-pill.sold {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #d8b4fe;
+}
+
+html[data-theme="light"] .dash-qty-pill.damaged {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+html[data-theme="light"] .dash-qty-pill.zero {
+  color: #334155;
+  opacity: 1;
+  font-weight: 700;
+}
+
+html[data-theme="light"] .dash-shell .stat-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+html[data-theme="light"] .dash-shell .stat-card .label {
+  color: #475569;
+  font-weight: 800;
+}
+
+html[data-theme="light"] .dash-shell .stat-card .value {
+  color: #0f172a;
+  font-weight: 900;
 }
 
 /* Responsive adjustments */

@@ -24,9 +24,13 @@
   white-space:nowrap; transition:all .2s cubic-bezier(0.16, 1, 0.3, 1);
   position:relative; overflow:hidden;
 }
-.nav-btn i{width:16px; text-align:center; color:var(--txt-muted); transition:color .2s ease;}
-.nav-btn:hover{background:var(--nav); border-color:var(--blue); color:#fff; transform:translateX(3px);}
-.nav-btn:hover i{color:var(--blue);}
+.nav-btn:hover:not(.active){
+  background:var(--panel-alt);
+  border-color:var(--blue);
+  color:var(--blue);
+  transform:translateX(3px);
+}
+.nav-btn:hover:not(.active) i{color:var(--blue);}
 .nav-btn.active{
   background:linear-gradient(135deg, var(--blue), var(--blue-hover));
   border-color:var(--blue); color:#fff;
