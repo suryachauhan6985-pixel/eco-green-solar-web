@@ -380,6 +380,39 @@ function createBomSerialModalModule(ctx) {
         window.closeModal();
         ctx.bomRerenderItemRow(si, ii);
         if (window.showToast) window.showToast('Serial numbers saved.');
+
+        // Auto-sync serials Excel to network path if Order No is entered
+        const orderNoEl = ctx.$('bomOrderNo');
+        const orderNo = orderNoEl ? String(orderNoEl.value || '').trim() : '';
+        const custName = ctx.$('bomCustomerName') ? String(ctx.$('bomCustomerName').value || '').trim() : '';
+        const headerDate = ctx.$('bomChallanDate') ? ctx.$('bomChallanDate').value : '';
+
+        const allSerials = [];
+        if (ctx.currentKitState && Array.isArray(ctx.currentKitState.sections)) {
+          for (const sec of ctx.currentKitState.sections) {
+            for (const it of (sec.items || [])) {
+              if (it && it.serials) {
+                const list = typeof bomSplitSerials === 'function'
+                  ? bomSplitSerials(it.serials)
+                  : String(it.serials).split(/[\r\n,;]+/);
+                list.forEach((s) => {
+                  const trimmed = String(s || '').trim();
+                  if (trimmed) allSerials.push(trimmed);
+                });
+              }
+            }
+          }
+        }
+
+        if (allSerials.length > 0 && orderNo) {
+          window.Api.post('/serials/save-excel', {
+            orderNo: orderNo,
+            customerName: custName,
+            shortName: custName || orderNo,
+            date: headerDate || new Date().toISOString(),
+            serials: allSerials
+          }, { silent: true }).catch(() => {});
+        }
       });
 
       cancelBtn.addEventListener('click', () => window.closeModal());

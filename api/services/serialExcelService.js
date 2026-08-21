@@ -31,6 +31,7 @@ function formatScanDate(rawDate) {
 /**
  * Generates an Excel workbook for scanned serial numbers.
  * Columns: A1 = 'Sr. No.', B1 = 'Serial No.'
+ * Clean standard Excel formatting without background colors.
  * @param {Array<string>} serials
  * @returns {Promise<ExcelJS.Workbook>}
  */
@@ -44,41 +45,49 @@ async function buildSerialWorkbook(serials) {
   });
 
   sheet.columns = [
-    { header: 'Sr. No.', key: 'sr', width: 12 },
-    { header: 'Serial No.', key: 'serial', width: 32 }
+    { key: 'sr', width: 12 },
+    { key: 'serial', width: 32 }
   ];
 
-  const headerRow = sheet.getRow(1);
-  headerRow.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
-  headerRow.fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FF2563EB' }
+  // Header row (Row 1): Clean, bold, NO background color
+  const cellA1 = sheet.getCell('A1');
+  const cellB1 = sheet.getCell('B1');
+  cellA1.value = 'Sr. No.';
+  cellB1.value = 'Serial No.';
+
+  const thinBorder = {
+    top: { style: 'thin', color: { argb: 'FF000000' } },
+    left: { style: 'thin', color: { argb: 'FF000000' } },
+    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+    right: { style: 'thin', color: { argb: 'FF000000' } }
   };
-  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-  headerRow.height = 24;
+
+  [cellA1, cellB1].forEach((cell) => {
+    cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF000000' } };
+    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    cell.border = thinBorder;
+  });
+  sheet.getRow(1).height = 22;
 
   const list = Array.isArray(serials) ? serials : [];
   list.forEach((sn, idx) => {
-    const row = sheet.addRow({
-      sr: idx + 1,
-      serial: String(sn || '').trim()
-    });
-    row.font = { name: 'Calibri', size: 11 };
-    row.alignment = { vertical: 'middle', horizontal: 'left' };
-    row.getCell('sr').alignment = { vertical: 'middle', horizontal: 'center' };
-    row.height = 20;
-  });
+    const rowNum = idx + 2;
+    const row = sheet.getRow(rowNum);
+    
+    const cA = sheet.getCell(`A${rowNum}`);
+    const cB = sheet.getCell(`B${rowNum}`);
+    
+    cA.value = idx + 1;
+    cA.font = { name: 'Calibri', size: 11 };
+    cA.alignment = { vertical: 'middle', horizontal: 'center' };
+    cA.border = thinBorder;
 
-  sheet.eachRow((row) => {
-    row.eachCell((cell) => {
-      cell.border = {
-        top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
-        right: { style: 'thin', color: { argb: 'FFD1D5DB' } }
-      };
-    });
+    cB.value = String(sn || '').trim();
+    cB.font = { name: 'Calibri', size: 11 };
+    cB.alignment = { vertical: 'middle', horizontal: 'left' };
+    cB.border = thinBorder;
+
+    row.height = 20;
   });
 
   return workbook;
@@ -140,7 +149,7 @@ async function saveSerialExcelToNetwork(params) {
         serialCount: serialList.length
       };
     } catch (fsErr) {
-      console.warn(`[SerialExcel] Network share write notice (${fsErr.code || fsErr.message}). Generating in-memory buffer.`);
+      console.warn(`[SerialExcel] Network write note (${fsErr.code || fsErr.message}). Generating in-memory buffer.`);
       const buffer = await workbook.xlsx.writeBuffer();
       return {
         success: false,

@@ -737,8 +737,11 @@ window.PAGES.bom = {
           if (ctx.currentKitState && Array.isArray(ctx.currentKitState.sections)) {
             for (const sec of ctx.currentKitState.sections) {
               for (const it of (sec.items || [])) {
-                if (Array.isArray(it.serials) && it.serials.length) {
-                  it.serials.forEach((s) => {
+                if (it && it.serials) {
+                  const list = typeof bomSplitSerials === 'function'
+                    ? bomSplitSerials(it.serials)
+                    : (Array.isArray(it.serials) ? it.serials : String(it.serials).split(/[\r\n,;]+/));
+                  list.forEach((s) => {
                     const trimmed = String(s || '').trim();
                     if (trimmed) allSerials.push(trimmed);
                   });
@@ -747,14 +750,14 @@ window.PAGES.bom = {
             }
           }
 
-          const custName = ctx.$('bomCustomerName') ? ctx.$('bomCustomerName').value : '';
+          const custName = ctx.$('bomCustomerName') ? String(ctx.$('bomCustomerName').value || '').trim() : '';
           const headerDate = ctx.$('bomChallanDate') ? ctx.$('bomChallanDate').value : '';
 
           if (allSerials.length > 0) {
             window.Api.post('/serials/save-excel', {
               orderNo: orderNo || 'BOM',
               customerName: custName,
-              shortName: orderNo,
+              shortName: custName || orderNo,
               date: headerDate || new Date().toISOString(),
               serials: allSerials
             }, { silent: true }).then((res) => {
