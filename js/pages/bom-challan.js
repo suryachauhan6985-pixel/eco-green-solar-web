@@ -906,7 +906,19 @@ function bomRenderDirectChallanPrintSheetHtml(challanData) {
     kw: challanData.capacity || challanData.capacity_kw || challanData.kit_kw || challanData.kw || (challanData.header && (challanData.header.capacity || challanData.header.capacity_kw)) || ''
   };
 
-  const rawItems = Array.isArray(challanData.items) ? challanData.items : [];
+  let rawItems = [];
+  if (Array.isArray(challanData.items) && challanData.items.length) {
+    rawItems = challanData.items;
+  } else if (Array.isArray(challanData.lines) && challanData.lines.length) {
+    rawItems = challanData.lines.map((l) => ({
+      item_name: [l.brand, l.watt ? l.watt + 'W' : '', l.model].filter(Boolean).join(' ') || l.cat || 'Item',
+      model: l.model || '',
+      qty: l.qty != null ? Number(l.qty) : (Array.isArray(l.serials) ? l.serials.length : 1),
+      unit: l.unit || 'Nos',
+      description: l.desc || l.description || ''
+    }));
+  }
+
   const rowsHtml = [];
   let displaySr = 0;
   let physicalRows = 0;
@@ -1009,9 +1021,15 @@ window.printChallanDirectly = function(challanData) {
 
   printRoot.innerHTML = bomRenderDirectChallanPrintSheetHtml(challanData);
   if (typeof bomSetPrintPageSize === 'function') {
-    bomSetPrintPageSize('size:A4 landscape; margin:0mm 5mm 0mm 5mm;');
+    bomSetPrintPageSize('size: A4 landscape; margin: 3mm 4mm;');
   }
-  window.print();
+
+  // Ensure DOM has repainted with landscape page size
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      window.print();
+    }, 40);
+  });
 };
 
 // Global helper to open and print Challan from Sales or any other page

@@ -51,7 +51,7 @@ function bomSetPrintPageSize(cssSizeAndMargin) {
     styleEl.id = 'bomDynamicPageStyle';
     document.head.appendChild(styleEl);
   }
-  styleEl.textContent = `@page { ${cssSizeAndMargin} }`;
+  styleEl.textContent = `@page { ${cssSizeAndMargin} } @media print { @page { ${cssSizeAndMargin} } }`;
 }
 
 // No built-in kits are shipped anymore — every kit (sections + items) is
