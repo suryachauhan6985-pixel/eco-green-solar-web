@@ -837,6 +837,16 @@ async function fillTemplateAndConvertToPdf(record) {
     // dynamic values above are already in place.
     applySheetFormatting(sheet, SHEET_CONFIG);
 
+    // Dynamic vehicle font size scaling so 2 vehicle numbers never get cut off
+    const vStr = headerValues.vehicleNo || '';
+    const vFontSize = vStr.length > 20 ? 7.5 : (vStr.length > 14 ? 8.5 : 10);
+    const vCellCust = sheet.getCell(HEADER_CELLS.vehicleNo.customer);
+    const vCellComp = sheet.getCell(HEADER_CELLS.vehicleNo.company);
+    vCellCust.font = { name: 'Calibri', size: vFontSize, bold: true };
+    vCellCust.alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
+    vCellComp.font = { name: 'Calibri', size: vFontSize, bold: true };
+    vCellComp.alignment = { horizontal: 'center', vertical: 'middle', wrapText: false };
+
     await workbook.xlsx.writeFile(tempXlsx);
 
     // 3) Convert to PDF via LibreOffice headless
