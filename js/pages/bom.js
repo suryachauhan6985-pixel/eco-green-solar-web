@@ -754,19 +754,16 @@ window.PAGES.bom = {
           const headerDate = ctx.$('bomChallanDate') ? ctx.$('bomChallanDate').value : '';
 
           if (allSerials.length > 0) {
-            window.Api.post('/serials/save-excel', {
-              orderNo: orderNo || 'BOM',
-              customerName: custName,
-              shortName: custName || orderNo,
-              date: headerDate || new Date().toISOString(),
-              serials: allSerials
-            }, { silent: true }).then((res) => {
-              if (res && res.success) {
-                if (window.showToast) window.showToast(`Scanned Serials Excel saved (${res.fileName})`, 'success');
-              }
-            }).catch((err) => {
-              console.warn('[SerialExcel] Auto-save note:', err);
-            });
+            if (typeof window.saveSerialExcelDirectly === 'function') {
+              window.saveSerialExcelDirectly({
+                orderNo: orderNo || 'BOM',
+                customerName: custName,
+                shortName: custName || orderNo,
+                date: headerDate || new Date().toISOString(),
+                serials: allSerials,
+                showPromptIfUnset: true
+              });
+            }
           }
 
           if (window.showToast) window.showToast('BOM verified — Create Dispatch is now unlocked.');

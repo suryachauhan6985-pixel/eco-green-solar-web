@@ -405,13 +405,16 @@ function createBomSerialModalModule(ctx) {
         }
 
         if (allSerials.length > 0 && orderNo) {
-          window.Api.post('/serials/save-excel', {
-            orderNo: orderNo,
-            customerName: custName,
-            shortName: custName || orderNo,
-            date: headerDate || new Date().toISOString(),
-            serials: allSerials
-          }, { silent: true }).catch(() => {});
+          if (typeof window.saveSerialExcelDirectly === 'function') {
+            window.saveSerialExcelDirectly({
+              orderNo: orderNo,
+              customerName: custName,
+              shortName: custName || orderNo,
+              date: headerDate || new Date().toISOString(),
+              serials: allSerials,
+              showPromptIfUnset: false
+            });
+          }
         }
       });
 
