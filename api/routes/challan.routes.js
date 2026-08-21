@@ -37,6 +37,7 @@
 // empty ("0 Challan categories available"). Keep the static route first.
 // -----------------------------------------------------------------------------
 const fs = require('fs');
+const fsp = fs.promises;
 const path = require('path');
 const ExcelJS = require('exceljs');
 const { fillTemplateAndConvertToPdf } = require('../services/challanPdf');
@@ -69,24 +70,27 @@ function safePathSegment(raw) {
     .slice(0, 120) || 'UNKNOWN';
 }
 
-// Pick a non-colliding .xlsx filename inside `dir`.
-// First try baseName.xlsx; if that exists, try baseName (1).xlsx, (2), ...
-function uniqueXlsxPath(dir, baseName) {
+// Pick a non-colliding .xlsx filename inside `dir` (async).
+async function uniqueXlsxPath(dir, baseName) {
   const clean = safePathSegment(baseName).replace(/\.xlsx$/i, '');
   let candidate = path.join(dir, `${clean}.xlsx`);
-  if (!fs.existsSync(candidate)) return candidate;
+  try {
+    await fsp.access(candidate);
+  } catch (e) {
+    return candidate; // file does not exist, safe to use
+  }
   for (let n = 1; n < 1000; n += 1) {
     candidate = path.join(dir, `${clean} (${n}).xlsx`);
-    if (!fs.existsSync(candidate)) return candidate;
+    try {
+      await fsp.access(candidate);
+    } catch (e) {
+      return candidate;
+    }
   }
-  // Extremely unlikely — fall back to timestamp suffix
   return path.join(dir, `${clean}_${Date.now()}.xlsx`);
 }
 
-// Build + write the Panel Serials Excel.
-// Format: A1="SR. NO."  B1="SERIAL NO."  then A2=1 B2=<serial> ...
-// Folder: NAS_ROOT / SERAIL NO. (ORD. & CHLN) / <OrderNo | ChallanNo> /
-// Returns { ok, filePath, fileName, onNas } or { ok:false, error }.
+// Build + write the Panel Serials Excel (completely async & non-blocking).
 async function writePanelSerialsExcel({ orderNo, challanNo, serials }) {
   const list = Array.isArray(serials)
     ? serials.map((s) => String(s || '').trim()).filter(Boolean)
@@ -98,22 +102,12 @@ async function writePanelSerialsExcel({ orderNo, challanNo, serials }) {
     ? `Panel_Serials_Challan_${safePathSegment(challanNo)}`
     : 'Panel_Serials';
 
-  // Prefer NAS; fall back to a local folder next to this server so a
-  // temporary network outage never blocks challan save itself.
-  let targetDir;
-  let onNas = true;
-  try {
-    const nasDir = path.join(NAS_ROOT, PANEL_SERIALS_FOLDER, folderKey);
-    fs.mkdirSync(nasDir, { recursive: true });
-    targetDir = nasDir;
-  } catch (e) {
-    onNas = false;
-    const localRoot = path.join(__dirname, '..', 'Panel_Serials_Local');
-    targetDir = path.join(localRoot, folderKey);
-    fs.mkdirSync(targetDir, { recursive: true });
-  }
+  // Default to local folder for instant reliability, attempt NAS in background
+  const localRoot = path.join(__dirname, '..', 'Panel_Serials_Local');
+  const localDir = path.join(localRoot, folderKey);
+  await fsp.mkdir(localDir, { recursive: true });
 
-  const filePath = uniqueXlsxPath(targetDir, baseName);
+  const filePath = await uniqueXlsxPath(localDir, baseName);
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Panel Serials');
   sheet.getCell('A1').value = 'SR. NO.';
@@ -127,12 +121,28 @@ async function writePanelSerialsExcel({ orderNo, challanNo, serials }) {
   sheet.getColumn(1).width = 12;
   sheet.getColumn(2).width = 36;
   await workbook.xlsx.writeFile(filePath);
+
+  // Optional background copy to NAS if configured
+  if (process.env.BACKUP_NAS_PATH) {
+    setImmediate(async () => {
+      try {
+        const nasDir = path.join(process.env.BACKUP_NAS_PATH, PANEL_SERIALS_FOLDER, folderKey);
+        await fsp.mkdir(nasDir, { recursive: true });
+        const nasFilePath = path.join(nasDir, path.basename(filePath));
+        await fsp.copyFile(filePath, nasFilePath);
+        console.log(`[Challan] Panel serials copied to NAS: ${nasFilePath}`);
+      } catch (err) {
+        // NAS copy warning (does not affect local save)
+      }
+    });
+  }
+
   return {
     ok: true,
     filePath,
     fileName: path.basename(filePath),
     folder: folderKey,
-    onNas,
+    onNas: false,
     count: list.length,
   };
 }
@@ -144,7 +154,6 @@ module.exports = function registerChallanRoutes(app, deps) {
     const b = req.body || {};
     const challanNo = String(b.challanNo || '').trim();
     const orderNo = String(b.orderNo || '').trim();
-    // if (!challanNo) return res.status(400).json({ error: 'Challan No. is required.' });
 
     const [result] = await pool.query(
       `INSERT INTO bom_challans
@@ -157,44 +166,25 @@ module.exports = function registerChallanRoutes(app, deps) {
        JSON.stringify(b.items || {}), req.user ? req.user.username : null]
     );
 
-    // Auto-generate Panel Serials Excel in parallel / background
-    let panelSerialsExcel = null;
+    // Auto-generate Panel Serials Excel in detached background task
     const serials = Array.isArray(b.panelSerials) ? b.panelSerials : [];
     if (serials.length) {
-      const excelTask = writePanelSerialsExcel({ orderNo, challanNo, serials })
-        .then((excelRes) => {
-          if (excelRes && excelRes.ok) {
-            console.log(
-              `[Challan] Panel serials Excel saved (${excelRes.count} serials):`,
-              excelRes.filePath,
-              excelRes.onNas ? '(NAS)' : '(local fallback)'
-            );
-          }
-          return excelRes;
-        })
-        .catch((e) => {
-          console.warn('[Challan] Panel serials Excel background write warning:', e.message);
-          return null;
-        });
-
-      // Quick timeout race: if local/NAS is fast (<250ms), return metadata immediately; otherwise continue in background
-      panelSerialsExcel = await Promise.race([
-        excelTask,
-        new Promise((r) => setTimeout(() => r(null), 250)),
-      ]);
+      setImmediate(() => {
+        writePanelSerialsExcel({ orderNo, challanNo, serials })
+          .then((resInfo) => {
+            if (resInfo && resInfo.ok) {
+              console.log(`[Challan] Panel serials saved (${resInfo.count}): ${resInfo.filePath}`);
+            }
+          })
+          .catch((err) => {
+            console.warn('[Challan] Panel serials background write error:', err.message);
+          });
+      });
     }
 
     res.json({
       success: true,
       id: result.insertId,
-      panelSerialsExcel: panelSerialsExcel && panelSerialsExcel.ok
-        ? {
-            fileName: panelSerialsExcel.fileName,
-            folder: panelSerialsExcel.folder,
-            count: panelSerialsExcel.count,
-            onNas: panelSerialsExcel.onNas,
-          }
-        : null,
     });
   }));
 
