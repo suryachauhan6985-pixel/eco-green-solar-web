@@ -774,25 +774,27 @@ function bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy) {
   const capText = rawCap ? (String(rawCap).trim().toLowerCase().endsWith('kw') ? String(rawCap).trim() : `${rawCap} kW`) : '';
   return `
     <tr class="bom-challan-row1">
-      <td class="bom-challan-logo-cell" colspan="4">
-        <img class="bom-challan-logo" src="assets/logo.png" alt="Eco Green Solar">
+      <td class="bom-challan-logo-cell" colspan="4" rowspan="2">
+        <img class="bom-challan-logo" src="assets/challan_logo.png" alt="Eco Green Solar">
       </td>
       <td class="bom-challan-title-cell ${titleClass}" colspan="3">${bomEsc(copyLabel)}</td>
     </tr>
     <tr class="bom-challan-row2">
-      <td class="bom-challan-gst-cell" colspan="4">GST NO. 24AAHFG9142N1Z1</td>
       <td class="bom-challan-field-cell" colspan="3"><b>Challan No.:</b> ${bomEsc(header.challanNo)}</td>
     </tr>
     <tr class="bom-challan-row3">
-      <td class="bom-challan-company-cell" colspan="4">Green Energy</td>
+      <td class="bom-challan-gst-cell" colspan="4">GST NO. 24AAHFG9142N1Z1</td>
       <td class="bom-challan-field-cell" colspan="3"><b>Challan Date:</b> ${bomEsc(header.challanDate)}</td>
     </tr>
     <tr class="bom-challan-row4">
-      <td class="bom-challan-addr1-cell" colspan="4">Plot No &ndash; 4,5,6, Gajanand Ind. Area, Rev. S. No.: 183</td>
+      <td class="bom-challan-company-cell" colspan="4">Green Energy</td>
       <td class="bom-challan-field-cell" colspan="3"><b>Order No.:</b> ${bomEsc(header.orderNo)}</td>
     </tr>
     <tr class="bom-challan-row5">
-      <td class="bom-challan-addr2-cell" colspan="4">Nr R K Exotica,To.: Chhapra&ndash;360021 Ta. Metoda(Rajkot)</td>
+      <td class="bom-challan-addr-cell" colspan="4">
+        Plot No &ndash; 4,5,6, Gajanand Ind. Area, Rev. S. No.: 183<br>
+        Nr R K Exotica,To.: Chhapra&ndash;360021 Ta. Metoda(Rajkot)
+      </td>
       <td class="bom-challan-field-cell" colspan="3"><b>Capacity :</b> ${bomEsc(capText)}</td>
     </tr>
     <tr class="bom-challan-row6">
@@ -1096,53 +1098,53 @@ window.printChallanDirectly = function(challanData) {
       box-sizing: border-box;
     }
 
-    .bom-challan-row1 { height: 32pt; }
-    .bom-challan-row2 { height: 16pt; }
-    .bom-challan-row3 { height: 17pt; }
-    .bom-challan-row4 { height: 14pt; }
-    .bom-challan-row5 { height: 14pt; }
+    .bom-challan-row1 { height: 18pt; }
+    .bom-challan-row2 { height: 18pt; }
+    .bom-challan-row3 { height: 16pt; }
+    .bom-challan-row4 { height: 18pt; }
+    .bom-challan-row5 { height: 20pt; }
     .bom-challan-row6 { height: 17pt; }
 
     .bom-challan-table td.bom-challan-logo-cell,
     .bom-challan-table td.bom-challan-gst-cell,
     .bom-challan-table td.bom-challan-company-cell,
-    .bom-challan-table td.bom-challan-addr1-cell,
-    .bom-challan-table td.bom-challan-addr2-cell {
+    .bom-challan-table td.bom-challan-addr-cell {
       border: none !important;
-      text-align: left;
+      text-align: center;
     }
     .bom-challan-logo-cell {
-      padding: 0 4px !important;
-      text-align: left !important;
+      padding: 2px 4px !important;
+      text-align: center !important;
       vertical-align: middle !important;
     }
     .bom-challan-logo {
       display: block !important;
-      width: auto !important;
-      max-width: 100% !important;
-      height: 30pt !important;
-      max-height: 30pt !important;
+      width: 92% !important;
+      max-width: 92% !important;
+      height: 32pt !important;
+      max-height: 32pt !important;
       object-fit: contain !important;
-      object-position: left center !important;
-      margin: 0 !important;
+      object-position: center !important;
+      margin: 0 auto !important;
     }
     .bom-challan-gst-cell {
       font-size: 9.5pt;
       font-weight: 700;
-      padding: 0 4px !important;
+      text-align: center !important;
+      padding: 0 2px !important;
     }
     .bom-challan-company-cell {
-      font-size: 11pt;
+      font-size: 15pt;
       font-weight: 700;
-      padding: 0 4px !important;
+      text-align: center !important;
+      padding: 0 2px !important;
     }
-    .bom-challan-addr1-cell,
-    .bom-challan-addr2-cell {
-      font-size: 7.5pt;
+    .bom-challan-addr-cell {
+      font-size: 7pt;
       font-weight: 400;
       line-height: 1.15;
-      white-space: nowrap;
-      padding: 0 4px !important;
+      text-align: center !important;
+      padding: 0 2px !important;
     }
 
     td.bom-challan-title-cell {

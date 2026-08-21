@@ -194,61 +194,61 @@
   box-sizing:border-box;
 }
 
-/* ---------- Header block (rows 1–6) ---------- */
-.bom-challan-row1{height:32pt;}
-.bom-challan-row2{height:16pt;}
-.bom-challan-row3{height:17pt;}
-.bom-challan-row4{height:14pt;}
-.bom-challan-row5{height:14pt;}
+/* ---------- Header block (rows 1–6) Exact Match to Excel Template ---------- */
+.bom-challan-row1{height:18pt;}
+.bom-challan-row2{height:18pt;}
+.bom-challan-row3{height:16pt;}
+.bom-challan-row4{height:18pt;}
+.bom-challan-row5{height:20pt;}
 .bom-challan-row6{height:17pt;}
 
-/* Left 4-column header block (Logo, GST, Green Energy, Addr1, Addr2) - NO INTERNAL BORDERS */
+/* Left 4-column header block (Logo, GST, Green Energy, Addr) - NO INTERNAL BORDERS */
 .bom-challan-table td.bom-challan-logo-cell,
 .bom-challan-table td.bom-challan-gst-cell,
 .bom-challan-table td.bom-challan-company-cell,
-.bom-challan-table td.bom-challan-addr1-cell,
-.bom-challan-table td.bom-challan-addr2-cell{
+.bom-challan-table td.bom-challan-addr-cell{
   border:none !important;
-  text-align:left;
+  text-align:center;
 }
 
 .bom-challan-logo-cell{
-  padding:0 4px !important;
-  text-align:left !important;
+  padding:2px 4px !important;
+  text-align:center !important;
   vertical-align:middle !important;
 }
 
 .bom-challan-logo{
   display:block !important;
-  width:auto !important;
-  max-width:100% !important;
-  height:30pt !important;
-  max-height:30pt !important;
+  width:92% !important;
+  max-width:92% !important;
+  height:32pt !important;
+  max-height:32pt !important;
   object-fit:contain !important;
-  object-position:left center !important;
-  margin:0 !important;
+  object-position:center !important;
+  margin:0 auto !important;
   visibility:visible !important;
 }
 
 .bom-challan-gst-cell{
   font-size:9.5pt;
   font-weight:700;
-  padding:0 4px !important;
+  text-align:center !important;
+  padding:0 2px !important;
 }
 
 .bom-challan-company-cell{
-  font-size:11pt;
+  font-size:15pt;
   font-weight:700;
-  padding:0 4px !important;
+  text-align:center !important;
+  padding:0 2px !important;
 }
 
-.bom-challan-addr1-cell,
-.bom-challan-addr2-cell{
-  font-size:7.5pt;
+.bom-challan-addr-cell{
+  font-size:7pt;
   font-weight:400;
   line-height:1.15;
-  white-space:nowrap;
-  padding:0 4px !important;
+  text-align:center !important;
+  padding:0 2px !important;
 }
 
 /* Right 3-column header block (Copy Title, Challan No, Date, Order No, Capacity, City) */
