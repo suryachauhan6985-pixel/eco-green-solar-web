@@ -982,58 +982,309 @@ function bomRenderDirectChallanPrintSheetHtml(challanData) {
   `;
 }
 
-// Global instant Challan print function (0.01s instant browser print preview)
+// Global instant Challan print function using an isolated iframe for pure Landscape rendering
 window.printChallanDirectly = function(challanData) {
-  let printRoot = document.getElementById('bomChallanPrintRoot');
-  if (!printRoot) {
-    printRoot = document.createElement('div');
-    printRoot.id = 'bomChallanPrintRoot';
-    printRoot.className = 'bom-print-only';
-    document.body.appendChild(printRoot);
+  let iframe = document.getElementById('bomChallanPrintFrame');
+  if (iframe) {
+    iframe.remove();
   }
-  // Clear any existing BOM sheet so only Challan sheet prints
-  const bomPrintRoot = document.getElementById('bomPrintRoot');
-  if (bomPrintRoot) bomPrintRoot.innerHTML = '';
+  iframe = document.createElement('iframe');
+  iframe.id = 'bomChallanPrintFrame';
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  iframe.style.opacity = '0';
+  iframe.style.pointerEvents = 'none';
+  document.body.appendChild(iframe);
 
-  printRoot.innerHTML = bomRenderDirectChallanPrintSheetHtml(challanData);
-  if (typeof bomSetPrintPageSize === 'function') {
-    bomSetPrintPageSize('size: landscape; margin: 4mm 5mm;');
-  }
+  const sheetHtml = bomRenderDirectChallanPrintSheetHtml(challanData);
 
-  // Pre-load logo images so they are 100% rendered before print preview
-  const logoImgs = printRoot.querySelectorAll('img');
-  const doPrint = () => {
-    // Hide open modals so Chrome layout engine doesn't calculate print area based on modal box
-    const openModals = document.querySelectorAll('.modal, .modal-backdrop, .overlay');
-    openModals.forEach((m) => { m.setAttribute('data-print-hidden', '1'); m.style.display = 'none'; });
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Challan #${bomEsc(challanData.challanNo || challanData.challan_no || '')}</title>
+  <style>
+    @page {
+      size: 297mm 210mm;
+      margin: 4mm 5mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      width: 100%;
+      height: 100%;
+      font-family: Calibri, Carlito, 'Segoe UI', Arial, sans-serif;
+      color: #000000;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .bom-challan-sheet {
+      width: 282mm;
+      margin: 0 auto;
+      background: #ffffff;
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      box-sizing: border-box;
+      font-family: Calibri, Carlito, 'Segoe UI', Arial, sans-serif;
+      color: #000000;
+      padding: 0;
+    }
+    .bom-challan-copy {
+      flex: 0 0 137mm;
+      width: 137mm;
+      max-width: 137mm;
+      box-sizing: border-box;
+    }
+    .bom-challan-gutter {
+      flex: 0 0 8mm;
+      width: 8mm;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-self: stretch;
+      box-sizing: border-box;
+    }
+    .bom-challan-cutline {
+      width: 0;
+      height: 100%;
+      border-left: 1px dashed #000000;
+      margin: 0 auto;
+    }
+    .bom-challan-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: #ffffff;
+      font-family: Calibri, Carlito, 'Segoe UI', Arial, sans-serif;
+      color: #000000;
+      border: 2px solid #000000;
+      box-sizing: border-box;
+    }
+    .bom-challan-col-sr { width: 6.5%; }
+    .bom-challan-col-name { width: 24%; }
+    .bom-challan-col-model { width: 14%; }
+    .bom-challan-col-modelcont { width: 12%; }
+    .bom-challan-col-qtylabel { width: 8.5%; }
+    .bom-challan-col-qtyunit { width: 9%; }
+    .bom-challan-col-desc { width: 26%; }
 
+    .bom-challan-table th,
+    .bom-challan-table td {
+      border: 1px solid #000000;
+      vertical-align: middle;
+      background: #ffffff;
+      color: #000000;
+      padding: 0 3px;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .bom-challan-row1 { height: 24pt; }
+    .bom-challan-row2 { height: 16pt; }
+    .bom-challan-row3 { height: 17pt; }
+    .bom-challan-row4 { height: 14pt; }
+    .bom-challan-row5 { height: 14pt; }
+    .bom-challan-row6 { height: 17pt; }
+
+    .bom-challan-table td.bom-challan-logo-cell,
+    .bom-challan-table td.bom-challan-gst-cell,
+    .bom-challan-table td.bom-challan-company-cell,
+    .bom-challan-table td.bom-challan-addr1-cell,
+    .bom-challan-table td.bom-challan-addr2-cell {
+      border: none !important;
+      text-align: left;
+    }
+    .bom-challan-logo-cell {
+      padding: 1px 4px !important;
+      text-align: left !important;
+      vertical-align: middle !important;
+    }
+    .bom-challan-logo {
+      display: block !important;
+      width: auto !important;
+      max-width: 100% !important;
+      height: 24pt !important;
+      max-height: 24pt !important;
+      object-fit: contain !important;
+      margin: 0 !important;
+    }
+    .bom-challan-gst-cell {
+      font-size: 9.5pt;
+      font-weight: 700;
+      padding: 0 4px !important;
+    }
+    .bom-challan-company-cell {
+      font-size: 11pt;
+      font-weight: 700;
+      padding: 0 4px !important;
+    }
+    .bom-challan-addr1-cell,
+    .bom-challan-addr2-cell {
+      font-size: 7.5pt;
+      font-weight: 400;
+      line-height: 1.15;
+      white-space: nowrap;
+      padding: 0 4px !important;
+    }
+
+    td.bom-challan-title-cell {
+      font-size: 13pt;
+      font-weight: 700;
+      text-align: center;
+      vertical-align: middle;
+      border: 1px solid #000000;
+    }
+    .bom-challan-title-normal { background: #ffffff; color: #000000; }
+    .bom-challan-title-inverse {
+      background: #000000 !important;
+      color: #ffffff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .bom-challan-field-cell {
+      font-size: 9.5pt;
+      font-weight: 400;
+      text-align: left;
+      padding: 0 4px !important;
+      border: 1px solid #000000;
+    }
+    .bom-challan-field-cell b { font-weight: 700; }
+
+    .bom-challan-name-cell {
+      font-size: 10pt;
+      font-weight: 400;
+      text-align: left;
+      padding: 0 4px !important;
+      border: 1px solid #000000;
+    }
+    .bom-challan-name-cell b { font-weight: 700; }
+
+    .bom-challan-tablehead-row { height: 17pt; }
+    .bom-challan-tablehead-row th {
+      font-size: 10pt;
+      font-weight: 700;
+      text-align: center;
+      vertical-align: middle;
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #000000;
+    }
+
+    .bom-challan-row { height: 12.2pt; }
+    .bom-challan-row td {
+      font-size: 9.5pt;
+      font-weight: 400;
+      padding: 0 3px;
+    }
+    .bom-c-sr { text-align: center; border: 1px solid #000000; }
+    .bom-c-name { text-align: left; padding-left: 4px !important; border: 1px solid #000000; white-space: nowrap; }
+    .bom-c-model { text-align: center; border: 1px solid #000000; }
+    .bom-c-modelcont { text-align: center; border: 1px solid #000000; }
+
+    td.bom-c-qtylabel {
+      border-top: 1px solid #000000 !important;
+      border-bottom: 1px solid #000000 !important;
+      border-left: 1px solid #000000 !important;
+      border-right: none !important;
+      text-align: right !important;
+      padding-right: 2px !important;
+    }
+    td.bom-c-qtyunit {
+      border-top: 1px solid #000000 !important;
+      border-bottom: 1px solid #000000 !important;
+      border-right: 1px solid #000000 !important;
+      border-left: none !important;
+      text-align: left !important;
+      padding-left: 2px !important;
+    }
+
+    .bom-c-desc {
+      text-align: left;
+      padding-left: 4px !important;
+      border: 1px solid #000000;
+      white-space: nowrap;
+    }
+    .bom-challan-row-blank td { background: #ffffff; }
+
+    .bom-challan-footer-row1 { height: 18pt; }
+    .bom-challan-footer-row2 { height: 15pt; }
+
+    td.bom-challan-footer-blank-left,
+    td.bom-challan-footer-blank-right,
+    td.bom-challan-footer-vehicle {
+      border: none !important;
+    }
+    td.bom-challan-footer-vehicle {
+      font-size: 13pt;
+      font-weight: 700;
+      text-align: center;
+      vertical-align: middle;
+    }
+    td.bom-challan-footer-issuedby,
+    td.bom-challan-footer-receivedby {
+      border: none !important;
+      font-size: 10pt;
+      font-weight: 700;
+      text-align: center;
+      vertical-align: middle;
+    }
+    td.bom-challan-footer-caption {
+      border-top: 1px solid #000000 !important;
+      border-left: none !important;
+      border-right: none !important;
+      border-bottom: none !important;
+      font-size: 10pt;
+      font-weight: 700;
+      text-align: center;
+      vertical-align: top;
+    }
+  </style>
+</head>
+<body>
+  ${sheetHtml}
+</body>
+</html>`);
+  doc.close();
+
+  const imgs = doc.querySelectorAll('img');
+  const firePrint = () => {
     setTimeout(() => {
-      window.print();
-      // Restore modal after print dialog closes
-      setTimeout(() => {
-        openModals.forEach((m) => {
-          if (m.getAttribute('data-print-hidden')) {
-            m.removeAttribute('data-print-hidden');
-            m.style.display = '';
-          }
-        });
-      }, 500);
-    }, 80);
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch (e) {
+        window.print();
+      }
+    }, 100);
   };
 
-  let pending = logoImgs.length;
+  let pending = imgs.length;
   if (!pending) {
-    doPrint();
+    firePrint();
   } else {
     let fired = false;
     const check = () => {
       pending--;
       if (pending <= 0 && !fired) {
         fired = true;
-        doPrint();
+        firePrint();
       }
     };
-    logoImgs.forEach((img) => {
+    imgs.forEach((img) => {
       if (img.complete) {
         check();
       } else {
@@ -1044,9 +1295,9 @@ window.printChallanDirectly = function(challanData) {
     setTimeout(() => {
       if (!fired) {
         fired = true;
-        doPrint();
+        firePrint();
       }
-    }, 250);
+    }, 300);
   }
 };
 
