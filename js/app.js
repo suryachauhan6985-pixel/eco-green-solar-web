@@ -197,7 +197,9 @@ window.focusInvalidField = function focusInvalidField(el) {
   }
   window.topbarExtra = topbarExtra;
 
-  // ---------- Toast (lightweight "UI preview" confirmation, used by pages) ----------
+  // =====================================================================
+  // ADVANCED TOAST NOTIFICATION ENGINE (Multi-type, animated, auto-dismiss)
+  // =====================================================================
   let toastWrap = document.getElementById('toastWrap');
   if (!toastWrap) {
     toastWrap = document.createElement('div');
@@ -205,29 +207,227 @@ window.focusInvalidField = function focusInvalidField(el) {
     toastWrap.className = 'toast-wrap';
     document.body.appendChild(toastWrap);
   }
-  window.showToast = function (msg, ms = 2200) {
-    const el = document.createElement('div');
-    el.className = 'toast';
-    el.textContent = msg;
-    toastWrap.appendChild(el);
-    requestAnimationFrame(() => el.classList.add('show'));
-    setTimeout(() => {
-      el.classList.remove('show');
-      setTimeout(() => el.remove(), 250);
-    }, ms);
+
+  const TOAST_ICONS = {
+    success: 'fa-solid fa-circle-check',
+    error: 'fa-solid fa-circle-xmark',
+    warning: 'fa-solid fa-triangle-exclamation',
+    info: 'fa-solid fa-circle-info'
+  };
+
+  /**
+   * window.showToast(msg, typeOrDuration?, maybeDuration?)
+   * Examples:
+   *   window.showToast('Item saved successfully!', 'success');
+   *   window.showToast('Failed to connect to server', 'error', 4000);
+   *   window.showToast('Quantity is required', 'warning');
+   *   window.showToast('Loading data...', 2000);
+   */
+  window.showToast = function (msg, typeOrDuration = 'info', maybeDuration = null) {
+    if (!msg) return;
+    let type = 'info';
+    let duration = 2800;
+
+    if (typeof typeOrDuration === 'number') {
+      duration = typeOrDuration;
+    } else if (typeof typeOrDuration === 'string') {
+      const lower = typeOrDuration.toLowerCase();
+      if (TOAST_ICONS[lower]) type = lower;
+      if (typeof maybeDuration === 'number') duration = maybeDuration;
+      else if (type === 'error') duration = 4000;
+      else if (type === 'warning') duration = 3200;
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+
+    const iconHtml = `<div class="toast-icon"><i class="${TOAST_ICONS[type] || TOAST_ICONS.info}"></i></div>`;
+    const msgHtml = `<div class="toast-msg">${msg}</div>`;
+    const closeBtnHtml = `<button type="button" class="toast-close" title="Dismiss"><i class="fa-solid fa-xmark"></i></button>`;
+    const progressHtml = `<div class="toast-progress" style="transition: transform ${duration}ms linear; transform: scaleX(1);"></div>`;
+
+    toast.innerHTML = `${iconHtml}${msgHtml}${closeBtnHtml}${progressHtml}`;
+    toastWrap.appendChild(toast);
+
+    // Entrance animation
+    requestAnimationFrame(() => {
+      toast.classList.add('show');
+      const progressBar = toast.querySelector('.toast-progress');
+      if (progressBar) {
+        requestAnimationFrame(() => {
+          progressBar.style.transform = 'scaleX(0)';
+        });
+      }
+    });
+
+    let dismissTimer = null;
+    let isDismissed = false;
+
+    const dismissToast = () => {
+      if (isDismissed) return;
+      isDismissed = true;
+      if (dismissTimer) clearTimeout(dismissTimer);
+      toast.classList.remove('show');
+      setTimeout(() => {
+        if (toast.parentNode) toast.remove();
+      }, 320);
+    };
+
+    dismissTimer = setTimeout(dismissToast, duration);
+
+    const closeBtn = toast.querySelector('.toast-close');
+    if (closeBtn) closeBtn.onclick = dismissToast;
+
+    // Swipe / Click to dismiss
+    toast.addEventListener('click', (e) => {
+      if (e.target.closest('a') || e.target.closest('button')) return;
+      dismissToast();
+    });
+  };
+
+  // =====================================================================
+  // SWEETALERT-GRADE RICH POPUP DIALOGS (Success, Error, Warning, Info)
+  // =====================================================================
+  let popupOverlay = null;
+
+  function ensurePopupDom() {
+    if (popupOverlay) return popupOverlay;
+    popupOverlay = document.createElement('div');
+    popupOverlay.id = 'egsPopupOverlay';
+    popupOverlay.className = 'egs-popup-overlay';
+    popupOverlay.innerHTML = `
+      <div class="egs-popup-card" id="egsPopupCard">
+        <div class="egs-popup-icon-wrap" id="egsPopupIcon"></div>
+        <h3 class="egs-popup-title" id="egsPopupTitle"></h3>
+        <div class="egs-popup-body" id="egsPopupBody"></div>
+        <div class="egs-popup-actions" id="egsPopupActions"></div>
+        <div class="egs-popup-progress-track" id="egsPopupProgressTrack" style="display:none;">
+          <div class="egs-popup-progress-bar" id="egsPopupProgressBar"></div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(popupOverlay);
+    return popupOverlay;
+  }
+
+  const POPUP_SVGS = {
+    success: `
+      <svg class="egs-svg-icon" viewBox="0 0 52 52">
+        <circle class="egs-svg-circle" cx="26" cy="26" r="24"/>
+        <path class="egs-svg-check" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+      </svg>`,
+    error: `
+      <svg class="egs-svg-icon" viewBox="0 0 52 52">
+        <circle class="egs-svg-circle" cx="26" cy="26" r="24"/>
+        <path class="egs-svg-cross1" d="M16 16 36 36"/>
+        <path class="egs-svg-cross2" d="M36 16 16 36"/>
+      </svg>`,
+    warning: `<i class="fa-solid fa-triangle-exclamation" style="font-size:36px;"></i>`,
+    info: `<i class="fa-solid fa-circle-info" style="font-size:36px;"></i>`
+  };
+
+  /**
+   * window.showPopup(opts) -> Promise<boolean>
+   * opts: { type: 'success'|'error'|'warning'|'info', title, message, html, confirmText, showCancel, cancelText, timer }
+   */
+  window.showPopup = function (opts = {}) {
+    ensurePopupDom();
+    const type = (opts.type || 'info').toLowerCase();
+    const title = opts.title || (type === 'success' ? 'Success!' : (type === 'error' ? 'Error' : 'Notice'));
+    const body = opts.html || opts.message || opts.text || '';
+    const confirmText = opts.confirmText || opts.confirmBtnText || 'OK';
+    const showCancel = !!opts.showCancel;
+    const cancelText = opts.cancelText || opts.cancelBtnText || 'Cancel';
+    const timer = typeof opts.timer === 'number' ? opts.timer : null;
+
+    const card = document.getElementById('egsPopupCard');
+    card.className = `egs-popup-card egs-popup-${type}`;
+
+    document.getElementById('egsPopupIcon').innerHTML = POPUP_SVGS[type] || POPUP_SVGS.info;
+    document.getElementById('egsPopupTitle').textContent = title;
+    document.getElementById('egsPopupBody').innerHTML = body;
+
+    const actionsEl = document.getElementById('egsPopupActions');
+    const primaryBtnClass = type === 'success' ? 'success' : (type === 'error' ? 'error' : 'primary');
+
+    actionsEl.innerHTML = `
+      ${showCancel ? `<button type="button" class="egs-popup-btn cancel" id="egsPopupBtnCancel">${cancelText}</button>` : ''}
+      <button type="button" class="egs-popup-btn ${primaryBtnClass}" id="egsPopupBtnOk">${confirmText}</button>
+    `;
+
+    const progressTrack = document.getElementById('egsPopupProgressTrack');
+    const progressBar = document.getElementById('egsPopupProgressBar');
+    if (timer && timer > 0) {
+      progressTrack.style.display = 'block';
+      progressBar.style.transition = 'none';
+      progressBar.style.transform = 'scaleX(1)';
+      requestAnimationFrame(() => {
+        progressBar.style.transition = `transform ${timer}ms linear`;
+        progressBar.style.transform = 'scaleX(0)';
+      });
+    } else {
+      progressTrack.style.display = 'none';
+    }
+
+    popupOverlay.classList.add('active');
+
+    return new Promise((resolve) => {
+      let timerId = null;
+      let resolved = false;
+
+      const finish = (result) => {
+        if (resolved) return;
+        resolved = true;
+        if (timerId) clearTimeout(timerId);
+        popupOverlay.classList.remove('active');
+        document.removeEventListener('keydown', keyHandler);
+        resolve(result);
+      };
+
+      const okBtn = document.getElementById('egsPopupBtnOk');
+      const cancelBtn = document.getElementById('egsPopupBtnCancel');
+      if (okBtn) {
+        okBtn.onclick = () => finish(true);
+        setTimeout(() => okBtn.focus(), 60);
+      }
+      if (cancelBtn) cancelBtn.onclick = () => finish(false);
+
+      if (timer && timer > 0) {
+        timerId = setTimeout(() => finish(true), timer);
+      }
+
+      const keyHandler = (e) => {
+        if (e.key === 'Escape') finish(false);
+        else if (e.key === 'Enter') finish(true);
+      };
+      document.addEventListener('keydown', keyHandler);
+
+      popupOverlay.onclick = (e) => {
+        if (e.target === popupOverlay) finish(false);
+      };
+    });
+  };
+
+  window.showSuccess = function (title, message, timer = 2400) {
+    return window.showPopup({ type: 'success', title: title || 'Completed Successfully', message: message || '', timer: timer });
+  };
+  window.showError = function (title, message) {
+    return window.showPopup({ type: 'error', title: title || 'Something Went Wrong', message: message || '' });
+  };
+  window.showWarning = function (title, message) {
+    return window.showPopup({ type: 'warning', title: title || 'Attention Required', message: message || '' });
+  };
+  window.showInfo = function (title, message, timer = null) {
+    return window.showPopup({ type: 'info', title: title || 'Information', message: message || '', timer: timer });
   };
 
   // ---------- Info buttons (project-wide) ----------
-  // Any element with class="info-btn" and a data-info="..." attribute shows
-  // its explanation as a toast on click, instead of the page permanently
-  // displaying a paragraph of instructional text. One delegated listener
-  // covers every info button on every page, including ones added later.
   document.addEventListener('click', (e) => {
     const infoBtn = e.target.closest('.info-btn');
     if (!infoBtn) return;
     e.stopPropagation();
     const msg = infoBtn.dataset.info;
-    if (msg && window.showToast) window.showToast(msg, 5000);
+    if (msg && window.showToast) window.showToast(msg, 'info', 5000);
   });
 
   // ---------- Global "Quick Search" (topbar) ----------
@@ -1786,7 +1986,12 @@ window.attachColumnFilters = function (table) {
     const page = window.PAGES[id];
     if (!page) return;
 
+    // Trigger smooth page transition animation
+    content.classList.remove('page-entering');
+    void content.offsetWidth; // force reflow
     content.innerHTML = page.html;
+    content.classList.add('page-entering');
+
     pageTitle.textContent = page.name;
     pageSub.textContent = page.sub || '';
     if (topbarExtra) topbarExtra.innerHTML = ''; // reset header widget before each page's init()
@@ -1803,6 +2008,11 @@ window.attachColumnFilters = function (table) {
 
     closeSidebar();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Auto-remove page-entering class after animation completes
+    setTimeout(() => {
+      content.classList.remove('page-entering');
+    }, 400);
 
     // Remember which page is open by writing it into the URL hash (e.g.
     // "#sales"). On a refresh/reopen, the startup code below reads this

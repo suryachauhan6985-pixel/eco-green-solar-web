@@ -143,7 +143,7 @@ window.PAGES.partyledger = {
           <div class="stmt-nav">
             <button class="btn btn-ghost" id="stmtBack" style="display:none; padding:6px 12px; font-size:12px;"><i class="fa-solid fa-arrow-left"></i> Back</button>
             <div class="breadcrumb" id="stmtBreadcrumb">📅 All Months</div>
-            <div class="hint" id="stmtHint">Click a row to open ▸</div>
+            <div class="hint" id="stmtHint">Click any row to open <i class="fa-solid fa-chevron-right" style="font-size:10px; margin-left:3px;"></i></div>
           </div>
 
           <!-- Voucher Attachments — one shared panel per voucher (Ref/Invoice
@@ -443,7 +443,11 @@ window.PAGES.partyledger = {
 
     document.getElementById('lfSave').addEventListener('click', async () => {
       const name = document.getElementById('lfName').value.trim();
-      if (!name) { window.openModal('Missing Info', '<p>Ledger Name is required.</p>'); return; }
+      if (!name) {
+        if (window.showWarning) window.showWarning('Missing Info', 'Ledger Name is required.');
+        else window.openModal('Missing Info', '<p>Ledger Name is required.</p>');
+        return;
+      }
       const payload = {
         name,
         short: lfShortInput.value.trim(),
@@ -463,10 +467,11 @@ window.PAGES.partyledger = {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Could not save this ledger.');
         closeLedgerForm();
-        if (window.showToast) window.showToast(editingLedgerId ? 'Ledger updated successfully!' : 'Ledger created successfully!');
+        if (window.showToast) window.showToast(editingLedgerId ? 'Ledger updated successfully!' : 'Ledger created successfully!', 'success');
         await loadDirectory();
       } catch (err) {
-        window.openModal('Could Not Save', `<p style="color:var(--red);">${err.message}</p>`);
+        if (window.showError) window.showError('Could Not Save', err.message);
+        else window.openModal('Could Not Save', `<p style="color:var(--red);">${err.message}</p>`);
       }
     });
 

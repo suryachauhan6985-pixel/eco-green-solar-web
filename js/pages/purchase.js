@@ -1285,14 +1285,22 @@ window.PAGES.purchase = {
         // Upload the actual proof file(s) — separate call so a slow/failed
         // upload never blocks the invoice itself from being marked saved.
         const uploadResult = await window.uploadAttachments('purchase', invoiceNo, purProof.files);
-        if (window.showToast) window.showToast('Purchase invoice saved to the database.');
+        if (window.showToast) window.showToast('Purchase invoice saved to the database.', 'success');
         const uploadWarning = !uploadResult.ok
           ? `<p style="color:var(--red); margin-top:8px;">Note: the invoice was saved, but the proof file(s) could not be uploaded (${uploadResult.error}). You can re-attach them from Purchase Register &gt; Edit.</p>`
           : '';
-        window.openModal('Success', `<p>Purchase invoice <strong>${invoiceNo}</strong> saved with ${purLines.length} product line(s) and ${allSerials.length} serial(s). It now appears in the Purchase Register.</p>${uploadWarning}`);
+        if (window.showSuccess) {
+          window.showSuccess('Purchase Invoice Saved!', `<p>Purchase invoice <strong>${invoiceNo}</strong> saved with ${purLines.length} product line(s) and ${allSerials.length} serial(s). It now appears in the Purchase Register.</p>${uploadWarning}`);
+        } else {
+          window.openModal('Success', `<p>Purchase invoice <strong>${invoiceNo}</strong> saved with ${purLines.length} product line(s) and ${allSerials.length} serial(s). It now appears in the Purchase Register.</p>${uploadWarning}`);
+        }
         clearPurchaseForm();
       } catch (err) {
-        window.openModal('Save Failed', `<p>${err.message || 'Could not save this purchase invoice. Please try again.'}</p>`);
+        if (window.showError) {
+          window.showError('Save Failed', err.message || 'Could not save this purchase invoice. Please try again.');
+        } else {
+          window.openModal('Save Failed', `<p>${err.message || 'Could not save this purchase invoice. Please try again.'}</p>`);
+        }
       } finally {
         saveBtn.disabled = false;
       }
@@ -1580,13 +1588,21 @@ window.PAGES.purchase = {
           // an in-memory baseline; a re-Find always gets the exact truth.
           loadedOriginalQtyRowIds = lines.filter((l) => !l.serials.length).flatMap((l) => l.qtyRowIds || []);
           const uploadResult = await window.uploadAttachments('purchase', loadedInvoiceNo, purEditProof.files);
-          if (window.showToast) window.showToast('Purchase invoice updated.');
+          if (window.showToast) window.showToast('Purchase invoice updated.', 'success');
           const uploadWarning = !uploadResult.ok
             ? `<p style="color:var(--red); margin-top:8px;">Note: the invoice was updated, but the new proof file(s) could not be uploaded (${uploadResult.error}). Please try attaching them again.</p>`
             : '';
-          window.openModal('Saved', `<p>Purchase invoice <strong>${loadedInvoiceNo}</strong> updated. It's now flagged <strong>Edited: Yes</strong> in the Purchase Register.</p>${uploadWarning}`);
+          if (window.showSuccess) {
+            window.showSuccess('Invoice Updated', `<p>Purchase invoice <strong>${loadedInvoiceNo}</strong> updated. It is now flagged <strong>Edited: Yes</strong> in the Purchase Register.</p>${uploadWarning}`);
+          } else {
+            window.openModal('Saved', `<p>Purchase invoice <strong>${loadedInvoiceNo}</strong> updated. It's now flagged <strong>Edited: Yes</strong> in the Purchase Register.</p>${uploadWarning}`);
+          }
         } catch (err) {
-          window.openModal('Update Failed', `<p>${err.message || 'Could not apply modifications. Please try again.'}</p>`);
+          if (window.showError) {
+            window.showError('Update Failed', err.message || 'Could not apply modifications. Please try again.');
+          } else {
+            window.openModal('Update Failed', `<p>${err.message || 'Could not apply modifications. Please try again.'}</p>`);
+          }
         } finally {
           applyBtn.disabled = false;
         }
@@ -1594,18 +1610,27 @@ window.PAGES.purchase = {
 
       $('purBtnDelete').addEventListener('click', async () => {
         if (!loadedInvoiceNo) {
-          window.openModal('Not Found', '<p>Find an invoice first before trying to delete it.</p>');
+          if (window.showWarning) window.showWarning('Not Found', 'Find an invoice first before trying to delete it.');
+          else window.openModal('Not Found', '<p>Find an invoice first before trying to delete it.</p>');
           return;
         }
         const invNo = loadedInvoiceNo;
         if (!(await window.confirmDanger('Delete Purchase Invoice', `Are you sure you want to permanently delete purchase invoice ${invNo}? This removes it from the Purchase Register too.`))) return;
         try {
           await window.Api.delete(`/purchase/${encodeURIComponent(invNo)}`);
-          if (window.showToast) window.showToast(`Purchase invoice ${invNo} deleted.`);
+          if (window.showToast) window.showToast(`Purchase invoice ${invNo} deleted.`, 'success');
           clearEditPanel();
-          window.openModal('Deleted', `<p>Purchase invoice <strong>${invNo}</strong> deleted successfully.</p>`);
+          if (window.showSuccess) {
+            window.showSuccess('Invoice Deleted', `<p>Purchase invoice <strong>${invNo}</strong> deleted successfully.</p>`);
+          } else {
+            window.openModal('Deleted', `<p>Purchase invoice <strong>${invNo}</strong> deleted successfully.</p>`);
+          }
         } catch (err) {
-          window.openModal('Delete Failed', `<p>${err.message || 'Could not delete this purchase invoice. Please try again.'}</p>`);
+          if (window.showError) {
+            window.showError('Delete Failed', err.message || 'Could not delete this purchase invoice. Please try again.');
+          } else {
+            window.openModal('Delete Failed', `<p>${err.message || 'Could not delete this purchase invoice. Please try again.'}</p>`);
+          }
         }
       });
     } else {

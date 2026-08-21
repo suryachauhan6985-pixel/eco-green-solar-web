@@ -534,12 +534,20 @@ window.PAGES.stockassign = {
           reference, date, remarks, proofName,
           lines: assignLines.map((l) => ({ cat: l.cat, brand: l.brand, watt: l.watt, type: l.type, qty: Number(l.qty) })),
         });
-        if (window.showToast) window.showToast('Stock reserved successfully!');
-        window.openModal('Success', `<p>Stock reserved for <strong>${person}</strong> with ${result.lineCount} product line(s) and ${result.serialCount} serial(s).</p>`);
+        if (window.showToast) window.showToast('Stock reserved successfully!', 'success');
+        if (window.showSuccess) {
+          window.showSuccess('Stock Reserved', `<p>Stock reserved for <strong>${person}</strong> with ${result.lineCount} product line(s) and ${result.serialCount} serial(s).</p>`);
+        } else {
+          window.openModal('Success', `<p>Stock reserved for <strong>${person}</strong> with ${result.lineCount} product line(s) and ${result.serialCount} serial(s).</p>`);
+        }
         clearAssignForm();
         loadAssignedRegister();
       } catch (err) {
-        window.openModal('Reservation Error', `<p style="color:var(--red); white-space:pre-line;">${err.message}</p>`);
+        if (window.showError) {
+          window.showError('Reservation Error', err.message);
+        } else {
+          window.openModal('Reservation Error', `<p style="color:var(--red); white-space:pre-line;">${err.message}</p>`);
+        }
       } finally {
         saveBtn.disabled = false;
       }
@@ -624,35 +632,42 @@ window.PAGES.stockassign = {
       if (!ok) return;
       try {
         const result = await window.Api.post('/stockassign/release-firm', { reference: loadedRef });
-        if (window.showToast) window.showToast('Assignment released to Available stock.');
-        window.openModal('Released', `<p>Assignment cancelled and ${result.serialCount} serial(s) returned to the Available pool.</p>`);
+        if (window.showToast) window.showToast('Assignment released to Available stock.', 'success');
+        if (window.showSuccess) {
+          window.showSuccess('Assignment Released', `<p>Assignment cancelled and ${result.serialCount} serial(s) returned to the Available pool.</p>`);
+        } else {
+          window.openModal('Released', `<p>Assignment cancelled and ${result.serialCount} serial(s) returned to the Available pool.</p>`);
+        }
         clearReleasePanel();
         loadAssignedRegister();
       } catch (err) {
-        window.openModal('Release Error', `<p>${err.message || 'Failed to release this assignment.'}</p>`);
+        if (window.showError) {
+          window.showError('Release Error', err.message || 'Failed to release this assignment.');
+        } else {
+          window.openModal('Release Error', `<p>${err.message || 'Failed to release this assignment.'}</p>`);
+        }
       }
     });
 
     $('assignBtnReleaseCustomer').addEventListener('click', async () => {
       if (!loadedRef) {
-        window.openModal('Nothing Loaded', '<p>Click an assignment row above first to load it for release.</p>');
+        if (window.showWarning) window.showWarning('Nothing Loaded', 'Click an assignment row above first to load it for release.');
+        else window.openModal('Nothing Loaded', '<p>Click an assignment row above first to load it for release.</p>');
         return;
       }
       const customer = $('assignRelCustomer').value.trim();
       const orderNo = $('assignRelOrder').value.trim();
       if (!customer || !orderNo) {
-        window.openModal('Validation Error', '<p>Release Customer and Release Order No are required.</p>');
+        if (window.showWarning) window.showWarning('Validation Error', 'Release Customer and Release Order No are required.');
+        else window.openModal('Validation Error', '<p>Release Customer and Release Order No are required.</p>');
         return;
       }
-      // Mirrors release_to_customer(): mobile/address handed to Sales come
-      // from THIS form's own Mobile/Address fields (whichever person is
-      // currently loaded up top), same coupling as the desktop app.
       const mobile = $('assignPersonMobile').value.trim();
       const address = $('assignPersonAddress').value.trim();
       const reference = loadedRef;
       try {
         const result = await window.Api.post('/stockassign/release-customer', { reference, customer, orderNo });
-        if (window.showToast) window.showToast('Stock released — loaded into Project Sales.');
+        if (window.showToast) window.showToast('Stock released — loaded into Project Sales.', 'success');
         clearReleasePanel();
         loadAssignedRegister();
         window.go('sales');
@@ -660,7 +675,11 @@ window.PAGES.stockassign = {
           window.SalesPageAPI.prefillFromAssign(customer, orderNo, mobile, address, result.lines || []);
         }
       } catch (err) {
-        window.openModal('Release Error', `<p>${err.message || 'Failed to release this assignment.'}</p>`);
+        if (window.showError) {
+          window.showError('Release Error', err.message || 'Failed to release this assignment.');
+        } else {
+          window.openModal('Release Error', `<p>${err.message || 'Failed to release this assignment.'}</p>`);
+        }
       }
     });
   },

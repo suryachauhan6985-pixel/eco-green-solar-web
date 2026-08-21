@@ -322,7 +322,8 @@ window.PAGES.returns = {
       const actionDate = dateEl.value;
 
       if (!remarks || !actionDate || !queuedLines.length) {
-        window.openModal('Validation Error', '<p>Remarks, Date, and at least one queued Line are mandatory.</p>');
+        if (window.showWarning) window.showWarning('Validation Error', 'Remarks, Date, and at least one queued Line are mandatory.');
+        else window.openModal('Validation Error', '<p>Remarks, Date, and at least one queued Line are mandatory.</p>');
         return;
       }
 
@@ -337,11 +338,19 @@ window.PAGES.returns = {
             serials: l.serials || [], qty: l.qty || 0,
           })),
         });
-        if (window.showToast) window.showToast(`Stock successfully adjusted as ${actionType}!`);
-        window.openModal('Success', `<p>${result.serialCount || 0} serial(s) and ${result.qtyAdjusted || 0} unit(s) successfully adjusted as <strong>${actionType}</strong>!</p>`);
+        if (window.showToast) window.showToast(`Stock successfully adjusted as ${actionType}!`, 'success');
+        if (window.showSuccess) {
+          window.showSuccess('Adjustment Complete', `<p>${result.serialCount || 0} serial(s) and ${result.qtyAdjusted || 0} unit(s) successfully adjusted as <strong>${actionType}</strong>!</p>`);
+        } else {
+          window.openModal('Success', `<p>${result.serialCount || 0} serial(s) and ${result.qtyAdjusted || 0} unit(s) successfully adjusted as <strong>${actionType}</strong>!</p>`);
+        }
         resetForm();
       } catch (err) {
-        window.openModal('Constraint Mismatch', `<p style="color:var(--red); white-space:pre-line;">${err.message}</p>`);
+        if (window.showError) {
+          window.showError('Constraint Mismatch', err.message);
+        } else {
+          window.openModal('Constraint Mismatch', `<p style="color:var(--red); white-space:pre-line;">${err.message}</p>`);
+        }
       } finally {
         btnProcess.disabled = false;
         btnProcess.innerHTML = originalLabel;

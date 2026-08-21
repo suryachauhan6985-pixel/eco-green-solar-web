@@ -132,11 +132,6 @@ window.PAGES.bom = {
       <div id="bomItemsPreview">${bomRenderScreenItemsHtml(null)}</div>
     </div>
 
-    <p class="note" style="margin-top:10px;">
-      Yeh abhi front-end preview hai — direct BOM-kit dispatch aur ek dispatch mein saare items ek saath stock se
-      deduct karne wala workflow, tumhara pura process samjhaane ke baad wire kiya jayega.
-    </p>
-
     <!-- "Convert into Challan" — its OWN fullscreen modal (NOT the shared
          window.openModal/#modalOverlay small dialog, which is capped at
          max-width:480px in css/modules/components.css — far too narrow
@@ -351,7 +346,7 @@ window.PAGES.bom = {
       const panelH3 = ctx.newEntryPanel && ctx.newEntryPanel.querySelector('h3');
       if (panelH3) panelH3.innerHTML = '<i class="fa-solid fa-box-open"></i> New BOM Entry';
       if (ctx.verifyStatus) {
-        ctx.verifyStatus.innerHTML = '<i class="fa-solid fa-circle-info"></i> Pehle <b>Generate BOM</b> karein, phir items tick karke <b>Verify BOM</b>. "Create Dispatch" Verify ke baad unlock hoga.';
+        ctx.verifyStatus.innerHTML = '<i class="fa-solid fa-circle-info"></i> First <b>Generate BOM</b>, then verify line items to enable <b>Create Dispatch</b>.';
       }
 
       // Refresh kit items from currently selected kit (fresh state)
@@ -674,7 +669,8 @@ window.PAGES.bom = {
         const alreadyGenerated = !!(ctx.bomInlineContinueOrderId || ctx.bomGeneratedForCurrentOrder);
         if (!alreadyGenerated) {
           if (!orderNo) {
-            window.openModal('Generate BOM First', '<p>Pehle <b>Order No.</b> bharein aur <b>Generate BOM</b> click karein. Uske baad hi Verify BOM possible hai.</p>');
+            if (window.showWarning) window.showWarning('Generate BOM First', 'Please enter an <b>Order No.</b> and click <b>Generate BOM</b> before verifying.');
+            else window.openModal('Generate BOM First', '<p>Please enter an <b>Order No.</b> and click <b>Generate BOM</b> before verifying.</p>');
             return;
           }
           // Soft check against server — if this Order No. already exists as
@@ -684,11 +680,13 @@ window.PAGES.bom = {
             if (existing && existing.id) {
               ctx.bomGeneratedForCurrentOrder = true;
             } else {
-              window.openModal('Generate BOM First', '<p>Is Order No. ke liye abhi BOM generate nahi hua. Pehle <b>Generate BOM</b> click karein, phir Verify BOM karein.</p>');
+              if (window.showWarning) window.showWarning('Generate BOM First', 'A BOM has not been generated for this Order No. yet. Click <b>Generate BOM</b> first.');
+              else window.openModal('Generate BOM First', '<p>A BOM has not been generated for this Order No. yet. Click <b>Generate BOM</b> first.</p>');
               return;
             }
           } catch (e) {
-            window.openModal('Generate BOM First', '<p>Is Order No. ke liye abhi BOM generate nahi hua. Pehle <b>Generate BOM</b> click karein, phir Verify BOM karein.</p>');
+            if (window.showWarning) window.showWarning('Generate BOM First', 'A BOM has not been generated for this Order No. yet. Click <b>Generate BOM</b> first.');
+            else window.openModal('Generate BOM First', '<p>A BOM has not been generated for this Order No. yet. Click <b>Generate BOM</b> first.</p>');
             return;
           }
         }

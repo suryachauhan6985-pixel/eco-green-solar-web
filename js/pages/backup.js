@@ -104,7 +104,11 @@ window.PAGES.backup = {
     }
 
     btnDownloadLatest.addEventListener('click', () => {
-      if (!latestSuccessFile) { window.openModal('No Backup Yet', '<p>No successful backup has been taken yet.</p>'); return; }
+      if (!latestSuccessFile) {
+        if (window.showWarning) window.showWarning('No Backup Yet', 'No successful backup has been taken yet.');
+        else window.openModal('No Backup Yet', '<p>No successful backup has been taken yet.</p>');
+        return;
+      }
       downloadBackup(latestSuccessFile);
     });
 
@@ -114,11 +118,19 @@ window.PAGES.backup = {
       btnForce.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Backing up...';
       try {
         const result = await window.Api.post('/backup/run');
-        const note = result.onNas ? '' : '<br><br>⚠️ NAS abhi reachable nahi tha, isliye ye backup local server folder mein save hua hai.';
-        window.openModal('Backup Complete', `<p>Data safely backed up as Excel file:<br><strong>${result.fileName}</strong>${note}</p>`);
-        if (window.showToast) window.showToast('Backup created successfully.');
+        const note = result.onNas ? '' : '<br><br><i class="fa-solid fa-circle-info"></i> Note: Network storage is currently unreachable; backup safely saved to the local server storage.';
+        if (window.showSuccess) {
+          window.showSuccess('Backup Complete', `Data safely backed up as Excel file:<br><strong>${result.fileName}</strong>${note}`);
+        } else {
+          window.openModal('Backup Complete', `<p>Data safely backed up as Excel file:<br><strong>${result.fileName}</strong>${note}</p>`);
+        }
+        if (window.showToast) window.showToast('Backup created successfully.', 'success');
       } catch (err) {
-        window.openModal('Backup Failed', `<p style="color:var(--red);">Backup nahi ban paya:<br>${err.message}</p>`);
+        if (window.showError) {
+          window.showError('Backup Failed', `Could not generate database backup:<br>${err.message}`);
+        } else {
+          window.openModal('Backup Failed', `<p style="color:var(--red);">Could not generate backup:<br>${err.message}</p>`);
+        }
       } finally {
         btnForce.disabled = false;
         btnForce.innerHTML = originalLabel;

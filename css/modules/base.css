@@ -107,7 +107,7 @@ input::placeholder,textarea::placeholder{color:var(--txt-muted); opacity:1;}
 ::-webkit-scrollbar-thumb{background:var(--input-bg);border-radius:5px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--blue);}
 
-/* Global full-screen loading overlay */
+/* Global full-screen loading overlay — High-tech Solar Orbital Pulse */
 .loader-overlay{
   position:fixed;
   inset:0;
@@ -116,19 +116,77 @@ input::placeholder,textarea::placeholder{color:var(--txt-muted); opacity:1;}
   align-items:center;
   justify-content:center;
   background:var(--overlay-bg);
-  backdrop-filter:blur(2px);
-  -webkit-backdrop-filter:blur(2px);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.loader-overlay.active{ display:flex; }
+.loader-overlay.active{ display:flex; animation: egsFadeIn 0.2s ease-out; }
 .loader-spinner{
-  width:54px;
-  height:54px;
-  border:4px solid var(--border-light);
-  border-top:4px solid var(--gold);
-  border-radius:50%;
-  animation:loader-spin 0.75s linear infinite;
+  position: relative;
+  width: 68px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.loader-spinner::before,
+.loader-spinner::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+}
+.loader-spinner::before {
+  inset: 0;
+  border: 3px solid transparent;
+  border-top-color: var(--blue);
+  border-right-color: var(--blue);
+  animation: loader-spin 0.9s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+  box-shadow: 0 0 14px rgba(59, 142, 208, 0.35);
+}
+.loader-spinner::after {
+  inset: 7px;
+  border: 3px solid transparent;
+  border-bottom-color: var(--gold);
+  border-left-color: var(--gold);
+  animation: loader-spin-reverse 1.2s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+  box-shadow: 0 0 14px rgba(212, 175, 55, 0.35);
 }
 @keyframes loader-spin{ to{ transform:rotate(360deg); } }
+@keyframes loader-spin-reverse{ to{ transform:rotate(-360deg); } }
+
+/* Global Animations & Transitions */
+@keyframes egsFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes egsPageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes egsScaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes egsPulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 142, 208, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(59, 142, 208, 0); }
+}
+
+.content.page-entering {
+  animation: egsPageEnter 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
 
 /* Theme switcher */
 .theme-switcher{
@@ -147,11 +205,13 @@ input::placeholder,textarea::placeholder{color:var(--txt-muted); opacity:1;}
   border:1px solid var(--border-light);
   background:var(--nav-btn-bg); color:var(--txt);
   font-size:11px; font-weight:700;
+  transition: all 0.2s ease;
 }
 .theme-btn i{font-size:11px;}
-.theme-btn:hover{border-color:var(--blue); color:var(--blue);}
+.theme-btn:hover{border-color:var(--blue); color:var(--blue); transform: translateY(-1px);}
 .theme-btn.active{
   background:var(--blue); border-color:var(--blue); color:#fff;
+  box-shadow: 0 2px 8px rgba(59, 142, 208, 0.35);
 }
 .theme-btn.active i{color:#fff;}
 

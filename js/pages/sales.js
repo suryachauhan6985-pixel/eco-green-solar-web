@@ -1275,7 +1275,7 @@ window.PAGES.sales = {
           proofName: saleProof.files.length ? (saleProof.files.length === 1 ? saleProof.files[0].name : `${saleProof.files.length} files`) : '-',
           lines: saleLines.map((l) => ({ cat: l.cat, brand: l.brand, watt: l.watt, model: l.model, type: l.type, serials: l.serials, qty: l.qty })),
         });
-        if (window.showToast) window.showToast('Sales Dispatch Executed successfully!');
+        if (window.showToast) window.showToast('Sales Dispatch executed successfully!', 'success');
         // Uploaded against chalanNo — Party Ledger groups OUT vouchers by
         // chalan_no first (falling back to order_no only if no chalan), so
         // this is the key that will actually be looked up later.
@@ -1283,10 +1283,18 @@ window.PAGES.sales = {
         const uploadWarning = !uploadResult.ok
           ? `<p style="color:var(--red); margin-top:8px;">Note: the dispatch was saved, but the proof file(s) could not be uploaded (${uploadResult.error}). You can re-attach them from Sale Register &gt; Edit.</p>`
           : '';
-        window.openModal('Success', `<p>Project dispatch saved with ${result.lineCount} product line(s) and ${result.serialCount} serial(s).</p>${uploadWarning}`);
+        if (window.showSuccess) {
+          window.showSuccess('Dispatch Completed!', `<p>Project dispatch saved with ${result.lineCount} product line(s) and ${result.serialCount} serial(s).</p>${uploadWarning}`);
+        } else {
+          window.openModal('Success', `<p>Project dispatch saved with ${result.lineCount} product line(s) and ${result.serialCount} serial(s).</p>${uploadWarning}`);
+        }
         clearSalesForm();
       } catch (err) {
-        window.openModal('Execution Error', `<p style="color:var(--red); white-space:pre-line;">${err.message}</p>`);
+        if (window.showError) {
+          window.showError('Execution Error', err.message);
+        } else {
+          window.openModal('Execution Error', `<p style="color:var(--red); white-space:pre-line;">${err.message}</p>`);
+        }
       } finally {
         saveBtn.disabled = false;
       }
@@ -1588,13 +1596,21 @@ window.PAGES.sales = {
           // session diffs against what actually exists post-Apply.
           loadedQtyLines = qtyLinesIn.map((ln) => ({ cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type }));
           const uploadResult = await window.uploadAttachments('sales', newChalan, saleEditProof.files);
-          if (window.showToast) window.showToast('Sales Modifications Saved.');
+          if (window.showToast) window.showToast('Sales modifications saved.', 'success');
           const uploadWarning = !uploadResult.ok
             ? `<p style="color:var(--red); margin-top:8px;">Note: the order was updated, but the new proof file(s) could not be uploaded (${uploadResult.error}). Please try attaching them again.</p>`
             : '';
-          window.openModal('Saved', `<p>Sales order <strong>${loadedOrderNo}</strong> updated successfully.</p>${uploadWarning}`);
+          if (window.showSuccess) {
+            window.showSuccess('Modifications Saved', `<p>Sales order <strong>${loadedOrderNo}</strong> updated successfully.</p>${uploadWarning}`);
+          } else {
+            window.openModal('Saved', `<p>Sales order <strong>${loadedOrderNo}</strong> updated successfully.</p>${uploadWarning}`);
+          }
         } catch (err) {
-          window.openModal('Error', `<p style="white-space:pre-line;">${err.message || 'Failed to modify tracking register'}</p>`);
+          if (window.showError) {
+            window.showError('Modification Failed', err.message || 'Failed to modify tracking register');
+          } else {
+            window.openModal('Error', `<p style="white-space:pre-line;">${err.message || 'Failed to modify tracking register'}</p>`);
+          }
         } finally {
           applyBtn.disabled = false;
         }
@@ -1602,18 +1618,27 @@ window.PAGES.sales = {
 
       $('saleBtnDelete').addEventListener('click', async () => {
         if (!loadedOrderNo) {
-          window.openModal('Not Found', '<p>Find an order first before trying to delete it.</p>');
+          if (window.showWarning) window.showWarning('Not Found', 'Find an order first before trying to delete it.');
+          else window.openModal('Not Found', '<p>Find an order first before trying to delete it.</p>');
           return;
         }
         const orderNo = loadedOrderNo;
         if (!(await window.confirmDanger('Delete Sale Transaction', `Permanently delete this sale transaction (Order '${orderNo}')? All its serials will revert back to Available stock. This cannot be undone.`))) return;
         try {
           const result = await window.Api.delete(`/sales/delete/${encodeURIComponent(orderNo)}`);
-          if (window.showToast) window.showToast('Transaction completely rolled back.');
-          window.openModal('Deleted', `<p>Sale transaction for order <strong>${orderNo}</strong> deleted successfully. ${result.revertedCount} serial(s) reverted to Available.</p>`);
+          if (window.showToast) window.showToast('Transaction completely rolled back.', 'success');
+          if (window.showSuccess) {
+            window.showSuccess('Order Deleted', `<p>Sale transaction for order <strong>${orderNo}</strong> deleted successfully. ${result.revertedCount} serial(s) reverted to Available.</p>`);
+          } else {
+            window.openModal('Deleted', `<p>Sale transaction for order <strong>${orderNo}</strong> deleted successfully. ${result.revertedCount} serial(s) reverted to Available.</p>`);
+          }
           clearEditPanel();
         } catch (err) {
-          window.openModal('Error', `<p>${err.message || 'Deletion failed.'}</p>`);
+          if (window.showError) {
+            window.showError('Deletion Failed', err.message || 'Deletion failed.');
+          } else {
+            window.openModal('Error', `<p>${err.message || 'Deletion failed.'}</p>`);
+          }
         }
       });
 
