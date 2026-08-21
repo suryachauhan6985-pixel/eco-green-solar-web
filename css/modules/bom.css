@@ -120,8 +120,13 @@
 /* =============================================================================
    CHALLAN PRINT SHEET STYLES (A4 Landscape, Exact 1-to-1 Match with Reference)
    ============================================================================= */
+@page {
+  size: landscape;
+  margin: 4mm 6mm;
+}
+
 #bomChallanPrintRoot .bom-challan-sheet{
-  width:284mm;
+  width:280mm;
   margin:0 auto;
   background:#ffffff;
   display:flex;
@@ -134,15 +139,15 @@
 }
 
 .bom-challan-copy{
-  flex:0 0 137.5mm;
-  width:137.5mm;
-  max-width:137.5mm;
+  flex:0 0 136mm;
+  width:136mm;
+  max-width:136mm;
   box-sizing:border-box;
 }
 
 .bom-challan-gutter{
-  flex:0 0 7mm;
-  width:7mm;
+  flex:0 0 8mm;
+  width:8mm;
   position:relative;
   display:flex;
   justify-content:center;
@@ -210,16 +215,18 @@
 .bom-challan-logo-cell{
   padding:1px 4px !important;
   text-align:left !important;
+  vertical-align:middle !important;
 }
 
 .bom-challan-logo{
-  display:block;
-  width:auto;
-  max-width:100%;
-  height:auto;
-  max-height:22pt;
-  object-fit:contain;
-  margin:0;
+  display:block !important;
+  width:auto !important;
+  max-width:100% !important;
+  height:26px !important;
+  max-height:26px !important;
+  object-fit:contain !important;
+  margin:0 !important;
+  visibility:visible !important;
 }
 
 .bom-challan-gst-cell{
@@ -674,51 +681,46 @@ td.bom-challan-footer-caption{
 }
 
 @media print{
-  /* The `body *{visibility:hidden}` rule below only hides body's
-     DESCENDANTS — it never touches `body` itself, so body's own dark
-     theme background-color (--bg, near-black) stayed visible and kept
-     painting behind everything. Worse, `visibility:hidden` (unlike
-     `display:none`) does NOT remove an element from layout — the whole
-     app shell (.shell: sidebar + content area, which can be quite tall
-     in this SPA) still occupied its full normal-flow height on the
-     printed page even though invisible. That invisible-but-still-tall
-     leftover space, combined with body's own dark background showing
-     through, is exactly what was spilling onto a 2nd page — blank when
-     "Background graphics" was off, solid black when it was on. Hiding
-     the shell with `display:none` (removes it from layout entirely) and
-     forcing body's background to white fixes both at once.
-  */
-  /* NOTE: #bomPrintRoot is a descendant of .shell (nested inside
-     .content, where bom.js's page HTML — including #bomPrintRoot — gets
-     injected). display:none on .shell was removing #bomPrintRoot along
-     with it, which is why the print preview went blank. #bomPrintRoot is
-     position:absolute with no positioned ancestor anywhere above it, so
-     its containing block is the viewport, not .shell — collapsing
-     .shell's box to zero height (instead of display:none-ing it) drops
-     its contribution to the printed page's total height without
-     affecting #bomPrintRoot's own rendering at all. */
-  body{background:#ffffff !important;}
-  .shell{height:0 !important; min-height:0 !important; overflow:hidden !important;}
+  html, body {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .shell, .loader-overlay, .modal-backdrop, .modal, .overlay, #toastContainer {
+    display: none !important;
+    visibility: hidden !important;
+  }
 
   body *{visibility:hidden;}
   .bom-print-only{display:block !important;}
   
-  #bomPrintRoot, #bomPrintRoot *{visibility:visible;}
+  #bomPrintRoot, #bomPrintRoot *{
+    visibility:visible !important;
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+  }
   #bomPrintRoot{
-    display:block;
-    position:absolute; left:0; top:0; width:100%;
-    -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;
+    display:block !important;
+    position:absolute !important; left:0 !important; top:0 !important; width:100% !important;
   }
 
-  #bomChallanPrintRoot, #bomChallanPrintRoot *{visibility:visible;}
+  #bomChallanPrintRoot, #bomChallanPrintRoot *{
+    visibility:visible !important;
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+  }
   #bomChallanPrintRoot{
-    display:block;
-    position:absolute; left:0; top:0; width:100%;
-    -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact;
+    display:block !important;
+    position:absolute !important; left:0 !important; top:0 !important; width:100% !important;
   }
 
   #bomChallanPrintRoot .bom-challan-sheet{
-    page-break-inside:avoid;
-    break-inside:avoid;
+    page-break-inside:avoid !important;
+    break-inside:avoid !important;
   }
 }

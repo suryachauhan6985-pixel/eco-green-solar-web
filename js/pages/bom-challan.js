@@ -997,15 +997,57 @@ window.printChallanDirectly = function(challanData) {
 
   printRoot.innerHTML = bomRenderDirectChallanPrintSheetHtml(challanData);
   if (typeof bomSetPrintPageSize === 'function') {
-    bomSetPrintPageSize('size: A4 landscape; margin: 4mm 5mm;');
+    bomSetPrintPageSize('size: landscape; margin: 4mm 5mm;');
   }
 
-  // Ensure DOM has repainted with landscape page size
-  requestAnimationFrame(() => {
+  // Pre-load logo images so they are 100% rendered before print preview
+  const logoImgs = printRoot.querySelectorAll('img');
+  const doPrint = () => {
+    // Hide open modals so Chrome layout engine doesn't calculate print area based on modal box
+    const openModals = document.querySelectorAll('.modal, .modal-backdrop, .overlay');
+    openModals.forEach((m) => { m.setAttribute('data-print-hidden', '1'); m.style.display = 'none'; });
+
     setTimeout(() => {
       window.print();
-    }, 40);
-  });
+      // Restore modal after print dialog closes
+      setTimeout(() => {
+        openModals.forEach((m) => {
+          if (m.getAttribute('data-print-hidden')) {
+            m.removeAttribute('data-print-hidden');
+            m.style.display = '';
+          }
+        });
+      }, 500);
+    }, 80);
+  };
+
+  let pending = logoImgs.length;
+  if (!pending) {
+    doPrint();
+  } else {
+    let fired = false;
+    const check = () => {
+      pending--;
+      if (pending <= 0 && !fired) {
+        fired = true;
+        doPrint();
+      }
+    };
+    logoImgs.forEach((img) => {
+      if (img.complete) {
+        check();
+      } else {
+        img.onload = check;
+        img.onerror = check;
+      }
+    });
+    setTimeout(() => {
+      if (!fired) {
+        fired = true;
+        doPrint();
+      }
+    }, 250);
+  }
 };
 
 // Global helper to open and print Challan from Sales or any other page
