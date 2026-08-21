@@ -27,7 +27,7 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=46">
+<link rel="stylesheet" href="css/style.css?v=47">
 <!-- Barcode/QR camera scanning (Sheets feature) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <!-- XLSX parsing for Sheets "Import CSV/XLSX" (CSV import needs no library) -->
@@ -49,7 +49,15 @@
 
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
-    <div class="brand"><i class="fa-solid fa-bolt bolt"></i><span>ECO GREEN SOLAR</span></div>
+    <div class="brand">
+      <div class="brand-inner">
+        <img src="assets/logo.png" alt="Eco Green Solar" class="brand-logo-img">
+        <div class="brand-badge-pill">
+          <span class="brand-live-pulse"></span>
+          <span class="brand-badge-text">Enterprise ERP</span>
+        </div>
+      </div>
+    </div>
     <div class="nav-scroll" id="navScroll"></div>
     <div class="profile-box">
       <div class="avatar">S</div>
@@ -65,7 +73,15 @@
    <div class="mobile-topbar">
   <div class="mobile-topbar-row">
     <button class="hamburger" onclick="openSidebar()"><i class="fa-solid fa-bars"></i></button>
-    <div class="brand"><i class="fa-solid fa-bolt bolt"></i><span>ECO GREEN SOLAR</span></div>
+    <div class="brand">
+      <div class="brand-inner">
+        <img src="assets/logo.png" alt="Eco Green Solar" class="brand-logo-img">
+        <div class="brand-badge-pill">
+          <span class="brand-live-pulse"></span>
+          <span class="brand-badge-text">ERP</span>
+        </div>
+      </div>
+    </div>
     <button type="button" class="avatar mobile-profile-avatar" id="mobileProfileAvatar" style="width:34px;height:34px;font-size:13px;border:none;padding:0;" title="Profile">S</button>
   </div>
   <div class="search-mini mobile-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="egs-quick-search-mobile" id="egsQuickSearchMobile" placeholder="Quick search anything..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" onblur="if(!this.value) this.setAttribute('readonly','readonly');"></div>
