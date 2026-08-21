@@ -237,17 +237,7 @@ function runSoffice(xlsxPath, outDir) {
     const bin = process.env.SOFFICE_PATH || 'soffice';
     execFile(
       bin,
-      [
-        '--headless',
-        '--invisible',
-        '--nologo',
-        '--nodefault',
-        '--norestore',
-        '--nolockcheck',
-        '--convert-to', 'pdf',
-        '--outdir', outDir,
-        xlsxPath,
-      ],
+      ['--headless', '--norestore', '--convert-to', 'pdf', '--outdir', outDir, xlsxPath],
       { timeout: 45000 },
       (err, stdout, stderr) => {
         if (err) return reject(new Error(`LibreOffice conversion failed: ${stderr || err.message}`));

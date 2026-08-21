@@ -966,18 +966,8 @@ function createBomDispatchModule(ctx) {
 </body>
 </html>`;
               pdfWindow.document.write(loaderHtml);
+              pdfWindow.document.close();
             }
-            // NEW FLOW: Save Data -> backend fills the REAL Excel template ->
-            // converts to PDF via LibreOffice -> browser opens/prints the
-            // PDF. Replaces the old HTML-replica sheet (bomRenderChallanPrintSheetHtml)
-            // entirely — that function + #bomChallanPrintRoot HTML sheet are
-            // no longer used by this button (left in place, unused, in case
-            // of rollback; safe to delete once this is verified in production).
-            // TEMP: mandatory check disabled for testing — re-enable before going live
-            // if (!(modalNo && modalNo.value.trim())) {
-            //   window.openModal('Challan No. Required', '<p>Please enter a Challan No. before printing.</p>');
-            //   return;
-            // }
 
             const payload = buildChallanSavePayload();
 
@@ -985,22 +975,10 @@ function createBomDispatchModule(ctx) {
             const originalLabel = printBtn.innerHTML;
             printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving & Preparing PDF...';
             try {
-              // pdfWindow (opened synchronously above) shows "Preparing..."
-              // while this runs; the global loading overlay (js/app.js)
-              // also covers the whole "Saving -> generating PDF on the
-              // server" wait on this page itself.
               const saved = await window.Api.post('/challan', payload);
               syncSavedChallanBackToBom(payload);
               const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
-              // NOTE: window.open(pdfUrl, '_blank') directly on the URL was
-              // used previously, but that's a plain browser navigation — it
-              // never goes through the window.fetch wrapper in js/app.js that
-              // auto-attaches the "Authorization: Bearer <token>" header, so
-              // the server always rejected it with "Please log in to
-              // continue" even for a logged-in user. Fetching the PDF as a
-              // blob (via fetch(), which IS wrapped and gets the header) and
-              // pointing the already-open tab at an object URL for that blob
-              // keeps the request authenticated.
+
               const pdfRes = await fetch(pdfUrl);
               if (!pdfRes.ok) {
                 let msg = 'Could not generate the Challan PDF.';
@@ -1009,29 +987,22 @@ function createBomDispatchModule(ctx) {
               }
               const pdfBlob = await pdfRes.blob();
               const blobUrl = URL.createObjectURL(pdfBlob);
-              // Redirect the tab we already opened synchronously on click —
-              // this is what actually avoids the popup blocker. Only if that
-              // tab somehow never opened (or the person closed it while
-              // waiting) do we fall back to a same-tab forced download.
+
               if (pdfWindow && !pdfWindow.closed) {
-                pdfWindow.location = blobUrl;
+                pdfWindow.location.href = blobUrl;
                 pdfWindow.addEventListener('load', () => {
                   try { pdfWindow.print(); } catch (e) { /* let user use the PDF viewer's own print button */ }
                 });
               } else {
-                // Popup was blocked (or closed early) — fall back to a
-                // same-tab download link so the person can still get the PDF.
                 const a = document.createElement('a');
                 a.href = blobUrl;
                 a.download = `challan-${saved.id}.pdf`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
-                if (window.showToast) window.showToast('Popup blocked — PDF downloaded instead. Allow popups for this site to open it directly next time.');
+                if (window.showToast) window.showToast('Popup blocked — PDF downloaded instead.');
               }
-              // Object URLs are per-tab memory references — revoke it after a
-              // delay so the new tab has time to actually load/render the PDF
-              // before the underlying blob is freed.
+
               setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
               if (window.showToast) {
                 const excelInfo = saved && saved.panelSerialsExcel;
@@ -1042,8 +1013,40 @@ function createBomDispatchModule(ctx) {
                 }
               }
             } catch (err) {
+              console.error('Challan PDF generation error:', err);
               if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
-              window.openModal('Print Failed', `<p>${(err && err.message) || 'Could not generate the Challan PDF.'}</p>`);
+
+              // Instant browser print fallback so user is never blocked
+              try {
+                const printRoot = document.getElementById('bomChallanPrintRoot');
+                if (printRoot && typeof bomRenderChallanPrintSheetHtml === 'function') {
+                  const kwVal = modalCapacity ? modalCapacity.value : '';
+                  const templateValues = bomCollectChallanTemplateValues();
+                  templateValues.extra = bomCollectChallanExtraItems();
+                  printRoot.innerHTML = bomRenderChallanPrintSheetHtml(
+                    {
+                      challanNo: modalNo ? modalNo.value : '',
+                      challanDate: modalDate ? modalDate.value : '',
+                      orderNo: modalOrderNo ? modalOrderNo.value : '',
+                      customerName: modalName ? modalName.value : '',
+                      city: modalCity ? modalCity.value : '',
+                      vehicleNo: modalVehicleNo ? modalVehicleNo.value : '',
+                    },
+                    { kw: kwVal, sections: ctx.currentKitState },
+                    templateValues
+                  );
+                  if (typeof bomSetPrintPageSize === 'function') {
+                    bomSetPrintPageSize('size:A4 landscape; margin:0;');
+                  }
+                  window.print();
+                  if (window.showToast) window.showToast('Challan opened via direct print preview.', 'info');
+                  return;
+                }
+              } catch (fallbackErr) {
+                console.warn('Fallback print failed:', fallbackErr);
+              }
+
+              window.openModal('Print Notice', `<p>${(err && err.message) || 'Could not generate the Challan PDF.'}</p>`);
             } finally {
               printBtn.disabled = false;
               printBtn.innerHTML = originalLabel;
