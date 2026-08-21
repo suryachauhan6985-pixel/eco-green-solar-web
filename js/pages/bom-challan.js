@@ -1134,3 +1134,480 @@ window.printChallanByNo = async function(challanNo) {
     window.openModal('Print Failed', `<p>${(err && err.message) || 'Could not load Challan PDF.'}</p>`);
   }
 };
+
+// =============================================================================
+// SAVED CHALLAN REGISTER & CUSTOM CHALLAN CREATOR
+// =============================================================================
+
+// 1) Open Custom / Direct Challan Modal (Unified Sequential Counter)
+window.openCustomChallanModal = async function(prefillData) {
+  let challanNo = (prefillData && prefillData.challanNo) || '';
+  if (!challanNo) {
+    try {
+      const nextData = await window.Api.get('/challan/next-no', { silent: true });
+      if (nextData && nextData.nextNo) challanNo = nextData.nextNo;
+    } catch (e) { /* ignore */ }
+  }
+
+  const todayIso = new Date().toISOString().split('T')[0];
+  const header = {
+    customerName: (prefillData && prefillData.customerName) || '',
+    orderNo: (prefillData && prefillData.orderNo) || '',
+    challanNo: challanNo,
+    challanDate: (prefillData && prefillData.challanDate) || todayIso,
+    city: (prefillData && prefillData.city) || '',
+    vehicleNo: (prefillData && prefillData.vehicleNo) || '',
+    vehicleNo2: (prefillData && prefillData.vehicleNo2) || '',
+    installerName: (prefillData && prefillData.installerName) || '',
+    fabricatorName: (prefillData && prefillData.fabricatorName) || '',
+    dealerName: (prefillData && prefillData.dealerName) || '',
+  };
+
+  const kit = { kw: (prefillData && prefillData.capacityKw) || '', sections: [] };
+
+  if (typeof bomLoadChallanCategoryMap === 'function') await bomLoadChallanCategoryMap();
+  const modalHtml = bomRenderChallanEntryModalHtml(header, kit, { onlyActive: false, customMode: true });
+
+  window.openModal('Custom Challan Entry', modalHtml, { fullscreen: true });
+
+  const modalNo = document.getElementById('bomChallanModalNo');
+  const modalDate = document.getElementById('bomChallanModalDate');
+  const modalOrderNo = document.getElementById('bomChallanModalOrderNo');
+  const modalCapacity = document.getElementById('bomChallanModalCapacity');
+  const modalName = document.getElementById('bomChallanModalName');
+  const modalCity = document.getElementById('bomChallanModalCity');
+  const modalVehicleNo = document.getElementById('bomChallanModalVehicleNo');
+  const modalVehicleNo2 = document.getElementById('bomChallanModalVehicleNo2');
+  const saveBtn = document.getElementById('bomChallanSaveBtn');
+  const printBtn = document.getElementById('bomChallanPrintBtn');
+  const addItemBtn = document.getElementById('bomChallanAddItemBtn');
+
+  if (modalNo && !modalNo.value.trim() && challanNo) modalNo.value = challanNo;
+  if (modalDate && !modalDate.value) modalDate.value = todayIso;
+
+  if (addItemBtn) addItemBtn.addEventListener('click', bomChallanAddExtraItemRow);
+
+  function buildPayload() {
+    return {
+      challanNo: modalNo ? modalNo.value.trim() : '',
+      challanDate: modalDate ? modalDate.value : '',
+      orderNo: modalOrderNo ? modalOrderNo.value.trim() : '',
+      capacityKw: modalCapacity ? modalCapacity.value.trim() : '',
+      customerName: modalName ? modalName.value.trim() : '',
+      city: modalCity ? modalCity.value.trim() : '',
+      vehicleNo: modalVehicleNo ? modalVehicleNo.value.trim() : '',
+      vehicleNo2: modalVehicleNo2 ? modalVehicleNo2.value.trim() : '',
+      installerName: '',
+      fabricatorName: '',
+      dealerName: '',
+      items: Object.assign({}, bomCollectChallanTemplateValues(), { extra: bomCollectChallanExtraItems() }),
+      panelSerials: [],
+    };
+  }
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async () => {
+      const payload = buildPayload();
+      if (!payload.challanNo) {
+        window.openModal('Validation Error', '<p>Challan No. is required.</p>');
+        return;
+      }
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+      try {
+        await window.Api.post('/challan', payload);
+        if (window.showToast) window.showToast(`Custom Challan #${payload.challanNo} saved successfully!`, 'success');
+        window.closeModal();
+        if (document.getElementById('challanRegisterModalBody')) {
+          window.openChallanRegisterModal();
+        }
+      } catch (err) {
+        window.openModal('Save Failed', `<p>${(err && err.message) || 'Could not save the Challan.'}</p>`);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Challan';
+      }
+    });
+  }
+
+  if (printBtn) {
+    printBtn.addEventListener('click', async () => {
+      const payload = buildPayload();
+      if (!payload.challanNo) {
+        window.openModal('Validation Error', '<p>Challan No. is required.</p>');
+        return;
+      }
+      const pdfWindow = window.open('', '_blank');
+      if (pdfWindow) {
+        pdfWindow.document.write(getChallanPdfLoadingHtml('Preparing Your Custom Challan PDF', 'Compiling Landscape A4 Dual Copy…'));
+        pdfWindow.document.close();
+      }
+      printBtn.disabled = true;
+      printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving & Preparing PDF...';
+      try {
+        const saved = await window.Api.post('/challan', payload);
+        const pdfUrl = `${window.API_BASE}/challan/${saved.id}/pdf`;
+        const abortCtrl = new AbortController();
+        const timeoutTimer = setTimeout(() => abortCtrl.abort(), 35000);
+        let pdfRes;
+        try {
+          pdfRes = await fetch(pdfUrl, { signal: abortCtrl.signal });
+        } finally {
+          clearTimeout(timeoutTimer);
+        }
+        if (!pdfRes.ok) throw new Error('Could not generate Challan PDF.');
+        const pdfBlob = await pdfRes.blob();
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        if (pdfWindow && !pdfWindow.closed) {
+          pdfWindow.location.href = blobUrl;
+        } else {
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = `challan-${saved.id}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        }
+        if (window.showToast) window.showToast(`Custom Challan #${payload.challanNo} saved & opened for print.`, 'success');
+      } catch (err) {
+        if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
+        window.openModal('Print Notice', `<p>${(err && err.message) || 'PDF generation failed.'}</p>`);
+      } finally {
+        printBtn.disabled = false;
+        printBtn.innerHTML = '<i class="fa-solid fa-print"></i> Print Challan';
+      }
+    });
+  }
+};
+
+// 2) Open Challan Register (View, Search, Re-print, Manage all saved Challans)
+window.openChallanRegisterModal = async function() {
+  const loadingHtml = `
+    <div style="padding:30px; text-align:center; color:var(--txt-muted);">
+      <i class="fa-solid fa-spinner fa-spin" style="font-size:24px; color:var(--gold); margin-bottom:10px;"></i>
+      <p>Loading Saved Challan Register...</p>
+    </div>
+  `;
+  window.openModal('Saved Challan Register', loadingHtml, { fullscreen: true });
+
+  try {
+    const list = await window.Api.get('/challan');
+    let allChallans = Array.isArray(list) ? list : [];
+
+    const isCurrentAdmin = (window.currentUserRole === 'SuperAdmin' || window.currentUserRole === 'Admin');
+
+    const html = `
+      <div id="challanRegisterModalBody" style="padding:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+          <div>
+            <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-clipboard-list" style="color:var(--gold);"></i> Saved Challan Register
+            </h3>
+            <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">All Challans generated via BOM, Sales, or Custom Direct Entry.</div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="btn btn-green" id="challanRegBtnNewCustom"><i class="fa-solid fa-plus-circle"></i> Create Custom Challan</button>
+            <button type="button" class="btn btn-ghost" id="challanRegBtnRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          </div>
+        </div>
+
+        <div class="masters-filter-bar" style="margin-bottom:14px;">
+          <div class="search-box" style="flex:1;">
+            <input type="text" id="challanRegSearchInput" placeholder="Search by Challan No, Customer, Order No, City, Vehicle..." style="width:100%;">
+          </div>
+          <div style="font-size:12.5px; color:var(--txt-muted); font-weight:600; padding:6px 12px; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid var(--border);">
+            Total Saved: <strong style="color:var(--gold);" id="challanRegCount">${allChallans.length}</strong>
+          </div>
+        </div>
+
+        <div class="table-wrap" style="max-height:calc(100vh - 230px); overflow-y:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:100px;">Challan No</th>
+                <th style="width:110px;">Date</th>
+                <th>Customer Name</th>
+                <th>City</th>
+                <th style="width:110px;">Order No</th>
+                <th style="width:90px;">Cap (kW)</th>
+                <th>Vehicle No</th>
+                <th style="width:110px;">Created By</th>
+                <th style="width:130px; text-align:center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="challanRegTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    const modalBoxBody = document.querySelector('#modalOverlay .modal-body');
+    if (modalBoxBody) {
+      modalBoxBody.innerHTML = html;
+    }
+
+    function renderChallanRows() {
+      const q = (document.getElementById('challanRegSearchInput') ? document.getElementById('challanRegSearchInput').value.trim().toLowerCase() : '');
+      const filtered = allChallans.filter((c) => {
+        if (!q) return true;
+        const cNo = String(c.challan_no || '').toLowerCase();
+        const cDate = String(c.challan_date || '').toLowerCase();
+        const cName = String(c.customer_name || '').toLowerCase();
+        const cCity = String(c.city || '').toLowerCase();
+        const cOrd = String(c.order_no || '').toLowerCase();
+        const cVeh = String(c.vehicle_no || '').toLowerCase();
+        const cUser = String(c.created_by || '').toLowerCase();
+        return cNo.includes(q) || cDate.includes(q) || cName.includes(q) || cCity.includes(q) || cOrd.includes(q) || cVeh.includes(q) || cUser.includes(q);
+      });
+
+      const countEl = document.getElementById('challanRegCount');
+      if (countEl) countEl.textContent = filtered.length;
+
+      const tbody = document.getElementById('challanRegTableBody');
+      if (!tbody) return;
+
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--txt-muted); padding:24px;">${q ? 'No matching Challans found.' : 'No saved Challans recorded yet.'}</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((c) => `
+        <tr>
+          <td><strong style="color:var(--gold); font-size:13.5px;">#${c.challan_no || '-'}</strong></td>
+          <td>${c.challan_date || '-'}</td>
+          <td style="font-weight:600;">${c.customer_name || '-'}</td>
+          <td>${c.city || '-'}</td>
+          <td><span class="badge" style="background:rgba(59,142,208,0.12); color:#66a6ff;">${c.order_no || '-'}</span></td>
+          <td>${c.capacity_kw ? c.capacity_kw + ' kW' : '-'}</td>
+          <td>${c.vehicle_no || '-'}</td>
+          <td style="font-size:11.5px; color:var(--txt-muted);">${c.created_by || '-'}</td>
+          <td style="text-align:center; white-space:nowrap;">
+            <button type="button" class="btn btn-gold bom-mini-btn" title="Edit Challan Details & Items" onclick="window.openChallanEditModal('${c.id}')" style="margin-right:4px;"><i class="fa-solid fa-pen-to-square"></i></button>
+            <button type="button" class="btn btn-blue bom-mini-btn" title="Print Landscape A4 Dual Copy PDF" onclick="window.printChallanByNo('${c.challan_no}')" style="margin-right:4px;"><i class="fa-solid fa-print"></i></button>
+            ${isCurrentAdmin ? `<button type="button" class="btn btn-red bom-mini-btn" title="Delete Challan" onclick="window.deleteChallanById('${c.id}', '${c.challan_no}')"><i class="fa-solid fa-trash"></i></button>` : ''}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    renderChallanRows();
+
+    const searchInput = document.getElementById('challanRegSearchInput');
+    if (searchInput) searchInput.addEventListener('input', renderChallanRows);
+
+    const newBtn = document.getElementById('challanRegBtnNewCustom');
+    if (newBtn) newBtn.addEventListener('click', () => window.openCustomChallanModal());
+
+    const refreshBtn = document.getElementById('challanRegBtnRefresh');
+    if (refreshBtn) refreshBtn.addEventListener('click', () => window.openChallanRegisterModal());
+
+  } catch (err) {
+    window.openModal('Register Error', `<p>${(err && err.message) || 'Failed to load Challan Register.'}</p>`);
+  }
+};
+
+// 3) Open Existing Saved Challan for Editing & Re-saving (PUT /api/challan/:id)
+window.openChallanEditModal = async function(challanId) {
+  if (!challanId) return;
+
+  try {
+    const record = await window.Api.get(`/challan/${challanId}`);
+    if (!record) throw new Error('Challan record could not be loaded.');
+
+    const vehParts = (record.vehicle_no || '').split(' / ');
+    const v1 = vehParts[0] || '';
+    const v2 = vehParts[1] || '';
+
+    const header = {
+      customerName: record.customer_name || '',
+      orderNo: record.order_no || '',
+      challanNo: record.challan_no || '',
+      challanDate: record.challan_date || '',
+      city: record.city || '',
+      vehicleNo: v1,
+      vehicleNo2: v2,
+      installerName: record.installer_name || '',
+      fabricatorName: record.fabricator_name || '',
+      dealerName: record.dealer_name || '',
+    };
+
+    const kit = { kw: record.capacity_kw || '', sections: [] };
+
+    if (typeof bomLoadChallanCategoryMap === 'function') await bomLoadChallanCategoryMap();
+    const modalHtml = bomRenderChallanEntryModalHtml(header, kit, { onlyActive: false, editMode: true });
+
+    window.openModal(`Edit Challan #${record.challan_no}`, modalHtml, { fullscreen: true });
+
+    const modalNo = document.getElementById('bomChallanModalNo');
+    const modalDate = document.getElementById('bomChallanModalDate');
+    const modalOrderNo = document.getElementById('bomChallanModalOrderNo');
+    const modalCapacity = document.getElementById('bomChallanModalCapacity');
+    const modalName = document.getElementById('bomChallanModalName');
+    const modalCity = document.getElementById('bomChallanModalCity');
+    const modalVehicleNo = document.getElementById('bomChallanModalVehicleNo');
+    const modalVehicleNo2 = document.getElementById('bomChallanModalVehicleNo2');
+    const saveBtn = document.getElementById('bomChallanSaveBtn');
+    const printBtn = document.getElementById('bomChallanPrintBtn');
+    const addItemBtn = document.getElementById('bomChallanAddItemBtn');
+
+    if (saveBtn) saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Update Challan';
+
+    // Populate existing item values into the form
+    const items = record.items || {};
+    Object.keys(items).forEach((key) => {
+      if (key === 'extra') return;
+      const it = items[key];
+      if (!it) return;
+
+      const qtyInput = document.querySelector(`[data-challan-tpl-key="${key}"]`);
+      if (qtyInput && it.qty != null) qtyInput.value = it.qty;
+
+      const descInput = document.querySelector(`[data-challan-tpl-desc="${key}"]`);
+      if (descInput && it.desc != null) descInput.value = it.desc;
+
+      const nameInput = document.querySelector(`[data-challan-tpl-name="${key}"]`);
+      if (nameInput && it.name) nameInput.value = it.name;
+
+      const modelInput = document.querySelector(`[data-challan-tpl-model="${key}"]`);
+      if (modelInput && it.model) modelInput.value = it.model;
+
+      const unitInput = document.querySelector(`[data-challan-tpl-unit="${key}"]`);
+      if (unitInput && it.unit) unitInput.value = it.unit;
+    });
+
+    // Populate extra items if any
+    if (Array.isArray(items.extra) && items.extra.length) {
+      const extraTbody = document.getElementById('bomChallanExtraItemsBody');
+      if (extraTbody) {
+        items.extra.forEach((u) => {
+          const idx = bomChallanExtraItemSeq++;
+          const tr = document.createElement('tr');
+          tr.dataset.extraIdx = String(idx);
+          tr.innerHTML = `
+            <td class="bom-challan-extra-sr">&mdash;</td>
+            <td><input type="text" class="bom-field-input" data-extra-field="name" value="${bomEscAttr(u.name || '')}"></td>
+            <td><input type="text" class="bom-field-input" data-extra-field="model" value="${bomEscAttr(u.model || '')}"></td>
+            <td><input type="number" min="0" class="bom-field-input" data-extra-field="qty" value="${bomEscAttr(u.qty || '')}"></td>
+            <td><input type="text" class="bom-field-input" data-extra-field="unit" value="${bomEscAttr(u.unit || 'Nos')}"></td>
+            <td><input type="text" class="bom-field-input" data-extra-field="desc" value="${bomEscAttr(u.desc || '')}"></td>
+            <td style="text-align:center;"><button type="button" class="btn btn-ghost bom-mini-btn" onclick="this.closest('tr').remove()" style="color:var(--red);"><i class="fa-solid fa-trash"></i></button></td>
+          `;
+          extraTbody.appendChild(tr);
+        });
+      }
+    }
+
+    if (addItemBtn) addItemBtn.addEventListener('click', bomChallanAddExtraItemRow);
+
+    function buildPayload() {
+      return {
+        challanNo: modalNo ? modalNo.value.trim() : '',
+        challanDate: modalDate ? modalDate.value : '',
+        orderNo: modalOrderNo ? modalOrderNo.value.trim() : '',
+        capacityKw: modalCapacity ? modalCapacity.value.trim() : '',
+        customerName: modalName ? modalName.value.trim() : '',
+        city: modalCity ? modalCity.value.trim() : '',
+        vehicleNo: modalVehicleNo ? modalVehicleNo.value.trim() : '',
+        vehicleNo2: modalVehicleNo2 ? modalVehicleNo2.value.trim() : '',
+        installerName: record.installer_name || '',
+        fabricatorName: record.fabricator_name || '',
+        dealerName: record.dealer_name || '',
+        items: Object.assign({}, bomCollectChallanTemplateValues(), { extra: bomCollectChallanExtraItems() }),
+        panelSerials: [],
+      };
+    }
+
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async () => {
+        const payload = buildPayload();
+        if (!payload.challanNo) {
+          window.openModal('Validation Error', '<p>Challan No. is required.</p>');
+          return;
+        }
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
+        try {
+          await window.Api.put(`/challan/${challanId}`, payload);
+          if (window.showToast) window.showToast(`Challan #${payload.challanNo} updated successfully!`, 'success');
+          window.closeModal();
+          window.openChallanRegisterModal();
+        } catch (err) {
+          window.openModal('Update Failed', `<p>${(err && err.message) || 'Could not update the Challan.'}</p>`);
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Update Challan';
+        }
+      });
+    }
+
+    if (printBtn) {
+      printBtn.addEventListener('click', async () => {
+        const payload = buildPayload();
+        if (!payload.challanNo) {
+          window.openModal('Validation Error', '<p>Challan No. is required.</p>');
+          return;
+        }
+        const pdfWindow = window.open('', '_blank');
+        if (pdfWindow) {
+          pdfWindow.document.write(getChallanPdfLoadingHtml(`Updating & Printing Challan #${payload.challanNo}`, 'Compiling Landscape A4 Dual Copy…'));
+          pdfWindow.document.close();
+        }
+        printBtn.disabled = true;
+        printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving & Preparing PDF...';
+        try {
+          await window.Api.put(`/challan/${challanId}`, payload);
+          const pdfUrl = `${window.API_BASE}/challan/${challanId}/pdf`;
+          const abortCtrl = new AbortController();
+          const timeoutTimer = setTimeout(() => abortCtrl.abort(), 35000);
+          let pdfRes;
+          try {
+            pdfRes = await fetch(pdfUrl, { signal: abortCtrl.signal });
+          } finally {
+            clearTimeout(timeoutTimer);
+          }
+          if (!pdfRes.ok) throw new Error('Could not generate Challan PDF.');
+          const pdfBlob = await pdfRes.blob();
+          const blobUrl = URL.createObjectURL(pdfBlob);
+          if (pdfWindow && !pdfWindow.closed) {
+            pdfWindow.location.href = blobUrl;
+          } else {
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = `challan-${challanId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          }
+          if (window.showToast) window.showToast(`Challan #${payload.challanNo} updated & opened for print.`, 'success');
+        } catch (err) {
+          if (pdfWindow && !pdfWindow.closed) pdfWindow.close();
+          window.openModal('Print Notice', `<p>${(err && err.message) || 'PDF generation failed.'}</p>`);
+        } finally {
+          printBtn.disabled = false;
+          printBtn.innerHTML = '<i class="fa-solid fa-print"></i> Print Challan';
+        }
+      });
+    }
+
+  } catch (err) {
+    window.openModal('Edit Error', `<p>${(err && err.message) || 'Could not open Challan for editing.'}</p>`);
+  }
+};
+
+// 4) Delete Challan
+window.deleteChallanById = async function(id, challanNo) {
+  if (!id) return;
+  const ok = await window.confirmDanger(
+    'Delete Challan',
+    `Permanently delete Challan #${challanNo || id}? This will remove it from the Register.`
+  );
+  if (!ok) return;
+
+  try {
+    await window.Api.delete(`/challan/${id}`);
+    if (window.showToast) window.showToast(`Challan #${challanNo} deleted successfully.`, 'success');
+    window.openChallanRegisterModal();
+  } catch (err) {
+    window.openModal('Delete Failed', `<p>${(err && err.message) || 'Could not delete Challan.'}</p>`);
+  }
+};

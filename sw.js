@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eco-green-solar-erp-v42';
+const CACHE_NAME = 'eco-green-solar-erp-v44';
 
 const APP_SHELL = [
   '/',
@@ -26,7 +26,7 @@ const APP_SHELL = [
   '/js/pages/scansheet.js?v=22',
   '/js/pages/masters.js?v=6',
   '/js/pages/purchase.js?v=5',
-  '/js/pages/sales.js?v=7',
+  '/js/pages/sales.js?v=8',
   '/js/pages/stockassign.js?v=3',
   '/js/pages/purchaseregister.js?v=3',
   '/js/pages/saleregister.js?v=4',
@@ -36,7 +36,7 @@ const APP_SHELL = [
   '/js/pages/lowstock.js?v=4',
   '/js/pages/backup.js?v=3',
   '/js/pages/bom-kit-helpers.js?v=6',
-  '/js/pages/bom-challan.js?v=9',
+  '/js/pages/bom-challan.js?v=11',
   '/js/pages/bom-challan-map.js?v=3',
   '/js/pages/bom-party-autocomplete.js?v=2',
   '/js/pages/bom-track-register.js?v=4',
@@ -44,7 +44,7 @@ const APP_SHELL = [
   '/js/pages/bom-serial-scan.js?v=1',
   '/js/pages/bom-serial-modal.js?v=1',
   '/js/pages/bom-dispatch.js?v=10',
-  '/js/pages/bom.js?v=21',
+  '/js/pages/bom.js?v=22',
   '/js/app.js?v=20',
   '/js/theme.js?v=2'
 ];

@@ -95,6 +95,7 @@ window.PAGES.sales = {
           <div class="actions-row">
             <button class="btn btn-red" type="button" id="saleBtnSave"><i class="fa-solid fa-truck"></i> Confirm Dispatch</button>
             <button class="btn btn-blue" type="button" id="saleBtnChallan"><i class="fa-solid fa-file-invoice"></i> Create Challan</button>
+            <button class="btn btn-ghost" type="button" id="saleBtnOpenChallanReg"><i class="fa-solid fa-clipboard-list" style="color:var(--gold);"></i> Challan Register</button>
             <button class="btn btn-ghost" type="button" id="saleBtnClearForm"><i class="fa-solid fa-eraser"></i> Clear Form</button>
           </div>
         </div>
@@ -1260,6 +1261,14 @@ window.PAGES.sales = {
         window.openChallanFromSalesData({ customer, orderNo, chalanNo, chalanDate, lines: saleLines });
       }
     });
+
+    if ($('saleBtnOpenChallanReg')) {
+      $('saleBtnOpenChallanReg').addEventListener('click', () => {
+        if (typeof window.openChallanRegisterModal === 'function') {
+          window.openChallanRegisterModal();
+        }
+      });
+    }
 
     $('saleBtnSave').addEventListener('click', async () => {
       const customer = $('saleCust').value.trim();

@@ -193,10 +193,50 @@ module.exports = function registerChallanRoutes(app, deps) {
 
   app.get('/api/challan', route(async (req, res) => {
     const [rows] = await pool.query(
-      `SELECT id, challan_no, challan_date, order_no, customer_name, created_by, created_at
-       FROM bom_challans ORDER BY id DESC LIMIT 200`
+      `SELECT id, challan_no, challan_date, order_no, customer_name, vehicle_no, capacity_kw, city,
+              installer_name, fabricator_name, dealer_name, created_by, created_at
+       FROM bom_challans ORDER BY id DESC LIMIT 500`
     );
     res.json(rows);
+  }));
+
+  app.delete('/api/challan/:id', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
+    const id = req.params.id;
+    const [[existing]] = await pool.query(`SELECT challan_no, customer_name FROM bom_challans WHERE id=?`, [id]);
+    if (!existing) return res.status(404).json({ error: 'Challan not found.' });
+
+    await pool.query(`DELETE FROM bom_challans WHERE id=?`, [id]);
+    res.json({ success: true, message: `Challan #${existing.challan_no} deleted.` });
+  }));
+
+  app.put('/api/challan/:id', route(async (req, res) => {
+    const id = req.params.id;
+    const b = req.body || {};
+    const challanNo = String(b.challanNo || '').trim();
+    const orderNo = String(b.orderNo || '').trim();
+    const v1 = String(b.vehicleNo || '').trim();
+    const v2 = String(b.vehicleNo2 || '').trim();
+    const vehicleCombined = [v1, v2].filter(Boolean).join(' / ');
+
+    const [[existing]] = await pool.query(`SELECT id, challan_no FROM bom_challans WHERE id=?`, [id]);
+    if (!existing) return res.status(404).json({ error: 'Challan record not found.' });
+
+    await pool.query(
+      `UPDATE bom_challans
+       SET challan_no=?, challan_date=?, order_no=?, customer_name=?, installer_name=?,
+           fabricator_name=?, dealer_name=?, capacity_kw=?, city=?, vehicle_no=?, items_json=?
+       WHERE id=?`,
+      [challanNo, b.challanDate || '', orderNo, b.customerName || '',
+       b.installerName || '', b.fabricatorName || '', b.dealerName || '',
+       b.capacityKw || '', b.city || '', vehicleCombined,
+       JSON.stringify(b.items || {}), id]
+    );
+
+    res.json({
+      success: true,
+      id: Number(id),
+      message: `Challan #${challanNo} updated successfully.`
+    });
   }));
 
   // Auto-generate the next Challan No. — MAX(challan_no)+1 over every

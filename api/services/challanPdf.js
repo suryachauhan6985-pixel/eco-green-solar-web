@@ -730,18 +730,32 @@ function applyChallanRowPlan(sheet, plan, items) {
 
       if (entry.kind === 'item') {
         sheet.getCell(`${cols.sr}${r}`).value = entry.printSr;
-        sheet.getCell(`${cols.name}${r}`).value = entry.name;
         sheet.getCell(`${cols.sr}${r}`).alignment = CENTER_ALIGN;
-        sheet.getCell(`${cols.name}${r}`).alignment = CENTER_ALIGN;
+
+        const nameCell = sheet.getCell(`${cols.name}${r}`);
+        nameCell.value = entry.name;
+        nameCell.alignment = CENTER_ALIGN;
+        const nameLen = String(entry.name || '').length;
 
         if (entry.model) {
           sheet.mergeCells(`${cols.model}${r}:${cols.size}${r}`);
-          sheet.getCell(`${cols.model}${r}`).value = entry.model;
-          sheet.getCell(`${cols.model}${r}`).alignment = CENTER_ALIGN;
+          const modelCell = sheet.getCell(`${cols.model}${r}`);
+          modelCell.value = entry.model;
+          modelCell.alignment = CENTER_ALIGN;
+          const modelLen = String(entry.model || '').length;
+
+          // Dynamic font auto-scaling to prevent overflowing column bounds
+          const nameFontSize = nameLen > 24 ? 7.5 : (nameLen > 16 ? 8.5 : 9.5);
+          const modelFontSize = modelLen > 20 ? 7.5 : (modelLen > 14 ? 8.5 : 9.5);
+          nameCell.font = { name: 'Calibri', size: nameFontSize, bold: false };
+          modelCell.font = { name: 'Calibri', size: modelFontSize, bold: false };
+
           setBorder(sheet.getCell(`${cols.name}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin' });
           setBorder(sheet.getCell(`${cols.model}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin' });
         } else {
           sheet.mergeCells(`${cols.name}${r}:${cols.size}${r}`);
+          const mergedFontSize = nameLen > 34 ? 7.5 : (nameLen > 22 ? 8.5 : 9.5);
+          nameCell.font = { name: 'Calibri', size: mergedFontSize, bold: false };
           setBorder(sheet.getCell(`${cols.name}${r}`), { top: 'thin', bottom: 'thin', left: 'thin', right: 'thin' });
         }
 

@@ -32,6 +32,8 @@ function bomRenderHomeViewHtml() {
           <button type="button" class="btn btn-green" id="bomHomeBtnCreate"><i class="fa-solid fa-plus-circle"></i> Create BOM</button>
           <button type="button" class="btn btn-ghost" id="bomHomeBtnTrack"><i class="fa-solid fa-route"></i> Track BOM</button>
           <button type="button" class="btn btn-ghost" id="bomHomeBtnRegister"><i class="fa-solid fa-clipboard-list"></i> BOM Register</button>
+          <button type="button" class="btn btn-ghost" id="bomHomeBtnChallanReg"><i class="fa-solid fa-file-invoice" style="color:var(--gold);"></i> Challan Register</button>
+          <button type="button" class="btn btn-ghost" id="bomHomeBtnCustomChallan"><i class="fa-solid fa-pen-nib"></i> Custom Challan</button>
           <button type="button" class="btn btn-ghost" id="bomHomeBtnChallanMap" style="display:none;" title="Decide which BOM item folds into which Challan line"><i class="fa-solid fa-sitemap"></i> Challan Category Mapping</button>
         </div>
       </div>
@@ -435,6 +437,25 @@ window.PAGES.bom = {
       });
     }
     if (ctx.homeBtnRefresh) ctx.homeBtnRefresh.addEventListener('click', ctx.bomLoadHomePendingTable);
+
+    const homeBtnChallanReg = ctx.$('bomHomeBtnChallanReg');
+    if (homeBtnChallanReg) {
+      homeBtnChallanReg.addEventListener('click', () => {
+        if (typeof window.openChallanRegisterModal === 'function') {
+          window.openChallanRegisterModal();
+        }
+      });
+    }
+
+    const homeBtnCustomChallan = ctx.$('bomHomeBtnCustomChallan');
+    if (homeBtnCustomChallan) {
+      homeBtnCustomChallan.addEventListener('click', () => {
+        if (typeof window.openCustomChallanModal === 'function') {
+          window.openCustomChallanModal();
+        }
+      });
+    }
+
     ctx.bomLoadHomePendingTable(); // initial load — BOM tab lands on the Home view
 
     function bomCollectItemsForCreate() {
