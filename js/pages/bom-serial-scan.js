@@ -53,14 +53,23 @@ function createBomSerialScanModule(ctx) {
       ctx.bomScanState.pendingText = null;
       ctx.bomScanState.pendingIsDup = false;
       ctx.bomScanState.pendingIsOverCap = false;
-      ctx.bomScanState.addedCount = 0;
+
+      const existingSerials = bomSplitSerials(box.value);
+      ctx.bomScanState.addedCount = existingSerials.length;
+
+      const maxAttr = box.getAttribute('data-max-serials');
+      const max = maxAttr !== null && maxAttr !== '' ? Number(maxAttr) : null;
+      const countLabel = max != null ? `${existingSerials.length} / ${max}` : `${existingSerials.length}`;
 
       const overlay = document.createElement('div');
       overlay.className = 'ss-scanner-overlay';
       overlay.innerHTML = `
         <div class="ss-scanner-topbar">
-          <button type="button" class="ss-icon-btn light" id="bomScanBack" title="Close"><i class="fa-solid fa-arrow-left"></i></button>
-          <div class="ss-scanner-title">Scan Serial Numbers</div>
+          <button type="button" class="ss-icon-btn light" id="bomScanBack" title="Close Scanner"><i class="fa-solid fa-arrow-left"></i></button>
+          <div class="ss-scanner-title">
+            <span><i class="fa-solid fa-camera"></i> Scan Serials</span>
+            <span class="badge" id="bomScanTitleBadge">${countLabel}</span>
+          </div>
           <div class="ss-scanner-topbtns">
             <button type="button" class="ss-icon-btn light" id="bomScanTorch" title="Flashlight"><i class="fa-solid fa-bolt"></i></button>
             <button type="button" class="ss-icon-btn light" id="bomScanFlip" title="Flip camera"><i class="fa-solid fa-camera-rotate"></i></button>
@@ -68,23 +77,34 @@ function createBomSerialScanModule(ctx) {
         </div>
         <div class="ss-scanner-camwrap">
           <div id="bomScanRegion" class="ss-scanner-camfeed"></div>
-          <div class="ss-scanner-target" id="bomScanTargetBox"></div>
-          <div class="ss-scanner-instruction" id="bomScanStatus">Requesting camera permission&hellip;</div>
+          <div class="ss-scanner-target" id="bomScanTargetBox">
+            <div class="ss-scanner-target-corners">
+              <div class="ss-scanner-target-corners-topright"></div>
+              <div class="ss-scanner-target-corners-bottomleft"></div>
+            </div>
+            <div class="ss-scanner-laser"></div>
+          </div>
+          <div class="ss-scanner-instruction" id="bomScanStatus"><i class="fa-solid fa-spinner fa-spin"></i> Initializing camera&hellip;</div>
           <div class="ss-scanner-result" id="bomScanResult" style="display:none;">
             <div class="ss-scanner-result-card" id="bomScanResultCard">
-              <div class="ss-scanner-result-label">Scanned value</div>
+              <div class="ss-scanner-result-label">Scanned Barcode / QR</div>
               <div class="ss-scanner-result-value" id="bomScanResultValue"></div>
               <div class="ss-scanner-result-msg" id="bomScanResultMsg"></div>
             </div>
             <div class="ss-scanner-result-actions">
               <button type="button" class="btn btn-ghost" id="bomScanRetry"><i class="fa-solid fa-rotate-left"></i> Retry</button>
-              <button type="button" class="btn btn-green" id="bomScanDone2"><i class="fa-solid fa-check"></i> Done</button>
+              <button type="button" class="btn btn-green" id="bomScanDone2"><i class="fa-solid fa-check"></i> Add & Next</button>
             </div>
           </div>
         </div>
         <div class="ss-scanner-bottom">
-          <span class="proof-name" id="bomScanCount" style="color:#fff;">0 serial(s) added</span>
-          <button type="button" class="btn btn-red ss-scanner-cancel" id="bomScanCancel"><i class="fa-solid fa-xmark"></i> Close</button>
+          <div class="ss-scanner-count-badge" id="bomScanCount">
+            <i class="fa-solid fa-list-check"></i> <span>${existingSerials.length} serial(s) entered</span>
+          </div>
+          <div class="ss-scanner-bottom-actions">
+            <button type="button" class="btn btn-ghost ss-scanner-cancel" id="bomScanCancel"><i class="fa-solid fa-xmark"></i> Cancel</button>
+            <button type="button" class="btn btn-green ss-scanner-finish" id="bomScanDone"><i class="fa-solid fa-check"></i> Done & Return</button>
+          </div>
         </div>
       `;
       document.body.appendChild(overlay);
@@ -93,6 +113,7 @@ function createBomSerialScanModule(ctx) {
 
       overlay.querySelector('#bomScanBack').onclick = ctx.closeBomScanner;
       overlay.querySelector('#bomScanCancel').onclick = ctx.closeBomScanner;
+      overlay.querySelector('#bomScanDone').onclick = ctx.closeBomScanner;
       overlay.querySelector('#bomScanTorch').onclick = ctx.toggleBomScanTorch;
       overlay.querySelector('#bomScanFlip').onclick = ctx.flipBomScanCamera;
       overlay.querySelector('#bomScanRetry').onclick = ctx.retryBomScan;
@@ -232,7 +253,13 @@ function createBomSerialScanModule(ctx) {
         box.dispatchEvent(new Event('input', { bubbles: true }));
         ctx.bomScanState.addedCount = existing.length;
         const countEl = document.getElementById('bomScanCount');
-        if (countEl) countEl.textContent = `${existing.length} serial(s) added`;
+        if (countEl) countEl.innerHTML = `<i class="fa-solid fa-list-check"></i> <span>${existing.length} serial(s) entered</span>`;
+        const badgeEl = document.getElementById('bomScanTitleBadge');
+        if (badgeEl) {
+          const maxAttr = box.getAttribute('data-max-serials');
+          const max = maxAttr !== null && maxAttr !== '' ? Number(maxAttr) : null;
+          badgeEl.textContent = max != null ? `${existing.length} / ${max}` : `${existing.length}`;
+        }
       }
 
       ctx.hideBomScanResult();

@@ -23,10 +23,10 @@ function createBomSerialModalModule(ctx) {
             <i class="fa-solid fa-box"></i> <b>${bomEsc(item.name || 'Item')}</b>
             &nbsp;—&nbsp; Quantity required: <b>${required != null ? required : '—'}</b> serial number(s)
           </p>
-          <div class="actions-row bom-serial-mode-row" style="margin-bottom:10px;">
-            <button type="button" class="btn btn-ghost bom-serial-mode-btn" id="bomSerialModeUpload"><i class="fa-solid fa-file-arrow-up"></i> Upload Serial No. (File)</button>
-            <button type="button" class="btn btn-blue" id="bomSerialCameraBtn" ${ctx.bomSerialBtMode ? 'disabled aria-disabled="true"' : ''} title="${ctx.bomSerialBtMode ? 'Camera disabled in Bluetooth scanner mode' : 'Scan barcode / QR'}"><i class="fa-solid fa-barcode"></i> Scan Serial No.</button>
-            <button type="button" class="btn ${ctx.bomSerialBtMode ? 'btn-blue active' : 'btn-ghost'} bom-serial-bt-btn" id="bomSerialBtBtn" title="Bluetooth scanner mode — disables the camera and keeps this box ready for a BT scanner"><i class="fa-brands fa-bluetooth-b"></i> ${ctx.bomSerialBtMode ? 'BT Scan: ON' : 'BT Scan'}</button>
+          <div class="actions-row bom-serial-mode-row" style="margin-bottom:12px; gap:8px;">
+            <button type="button" class="btn btn-ghost bom-serial-mode-btn" id="bomSerialModeUpload" title="Upload serial numbers from .txt or .csv file"><i class="fa-solid fa-file-arrow-up"></i> Upload File</button>
+            <button type="button" class="btn btn-ghost bom-serial-mode-btn" id="bomSerialCameraBtn" ${ctx.bomSerialBtMode ? 'disabled aria-disabled="true"' : ''} title="${ctx.bomSerialBtMode ? 'Camera disabled in Bluetooth scanner mode' : 'Scan barcode / QR with camera'}"><i class="fa-solid fa-camera"></i> Scan with Camera</button>
+            <button type="button" class="btn ${ctx.bomSerialBtMode ? 'btn-blue active' : 'btn-ghost'} bom-serial-bt-btn" id="bomSerialBtBtn" title="Bluetooth scanner mode — disables the camera and prepares the box for physical scanner"><i class="fa-brands fa-bluetooth-b"></i> ${ctx.bomSerialBtMode ? 'BT Scanner: ON' : 'BT Scanner'}</button>
           </div>
           <div id="bomSerialUploadPane" style="display:none; margin-bottom:10px;">
             <input type="file" id="bomSerialFileInput" accept=".txt,.csv">
@@ -111,12 +111,12 @@ function createBomSerialModalModule(ctx) {
           btBtn.classList.toggle('active', ctx.bomSerialBtMode);
           btBtn.classList.toggle('btn-blue', ctx.bomSerialBtMode);
           btBtn.classList.toggle('btn-ghost', !ctx.bomSerialBtMode);
-          btBtn.innerHTML = `<i class="fa-brands fa-bluetooth-b"></i> ${ctx.bomSerialBtMode ? 'BT Scan: ON' : 'BT Scan'}`;
+          btBtn.innerHTML = `<i class="fa-brands fa-bluetooth-b"></i> ${ctx.bomSerialBtMode ? 'BT Scanner: ON' : 'BT Scanner'}`;
         }
         if (cameraBtn) {
           cameraBtn.disabled = ctx.bomSerialBtMode;
           cameraBtn.classList.toggle('ss-disabled', ctx.bomSerialBtMode);
-          cameraBtn.title = ctx.bomSerialBtMode ? 'Camera disabled in Bluetooth scanner mode' : 'Scan barcode / QR';
+          cameraBtn.title = ctx.bomSerialBtMode ? 'Camera disabled in Bluetooth scanner mode' : 'Scan barcode / QR with camera';
         }
         box.setAttribute('inputmode', ctx.bomSerialBtMode ? 'none' : 'text');
       }
