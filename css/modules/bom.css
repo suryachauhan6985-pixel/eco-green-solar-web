@@ -195,7 +195,7 @@
 }
 
 /* ---------- Header block (rows 1–6) ---------- */
-.bom-challan-row1{height:23pt;}
+.bom-challan-row1{height:32pt;}
 .bom-challan-row2{height:16pt;}
 .bom-challan-row3{height:17pt;}
 .bom-challan-row4{height:14pt;}
@@ -213,7 +213,7 @@
 }
 
 .bom-challan-logo-cell{
-  padding:1px 4px !important;
+  padding:0 4px !important;
   text-align:left !important;
   vertical-align:middle !important;
 }
@@ -222,9 +222,10 @@
   display:block !important;
   width:auto !important;
   max-width:100% !important;
-  height:26px !important;
-  max-height:26px !important;
+  height:30pt !important;
+  max-height:30pt !important;
   object-fit:contain !important;
+  object-position:left center !important;
   margin:0 !important;
   visibility:visible !important;
 }
@@ -348,10 +349,12 @@ td.bom-challan-footer-vehicle{
   border:none !important;
 }
 td.bom-challan-footer-vehicle{
-  font-size:13pt;
+  font-size:12.5pt;
   font-weight:700;
   text-align:center;
   vertical-align:middle;
+  white-space:nowrap !important;
+  overflow:hidden !important;
 }
 
 td.bom-challan-footer-issuedby,

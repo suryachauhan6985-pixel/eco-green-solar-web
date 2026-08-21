@@ -770,7 +770,8 @@ function bomRenderChallanBodyRowsHtml(groups, values) {
 // white-on-black) — nothing else differs between the two copies.
 function bomRenderChallanHeaderRowsHtml(header, kit, copyLabel, isCompanyCopy) {
   const titleClass = isCompanyCopy ? 'bom-challan-title-inverse' : 'bom-challan-title-normal';
-  const capText = (kit && kit.kw) ? `${kit.kw} kW` : (header.capacity ? `${header.capacity} kW` : '');
+  const rawCap = (kit && kit.kw) ? kit.kw : (header.capacity || '');
+  const capText = rawCap ? (String(rawCap).trim().toLowerCase().endsWith('kw') ? String(rawCap).trim() : `${rawCap} kW`) : '';
   return `
     <tr class="bom-challan-row1">
       <td class="bom-challan-logo-cell" colspan="4">
@@ -821,10 +822,13 @@ function bomRenderChallanFooterRowsHtml(header) {
   const v1 = (header.vehicleNo || '').trim();
   const v2 = (header.vehicleNo2 || '').trim();
   const vText = [v1, v2].filter(Boolean).join(' / ') || '—';
+  const vStyle = vText.length > 20
+    ? 'font-size: 8.5pt !important; letter-spacing: -0.2px;'
+    : (vText.length > 14 ? 'font-size: 10pt !important;' : 'font-size: 12.5pt !important;');
   return `
     <tr class="bom-challan-footer-row1">
       <td class="bom-challan-footer-blank-left" colspan="2"></td>
-      <td class="bom-challan-footer-vehicle" colspan="4">${bomEsc(vText)}</td>
+      <td class="bom-challan-footer-vehicle" colspan="4" style="${vStyle} white-space:nowrap !important; overflow:hidden !important;">${bomEsc(vText)}</td>
       <td class="bom-challan-footer-blank-right" colspan="1"></td>
     </tr>
     <tr class="bom-challan-footer-row2">
@@ -1092,7 +1096,7 @@ window.printChallanDirectly = function(challanData) {
       box-sizing: border-box;
     }
 
-    .bom-challan-row1 { height: 24pt; }
+    .bom-challan-row1 { height: 32pt; }
     .bom-challan-row2 { height: 16pt; }
     .bom-challan-row3 { height: 17pt; }
     .bom-challan-row4 { height: 14pt; }
@@ -1108,7 +1112,7 @@ window.printChallanDirectly = function(challanData) {
       text-align: left;
     }
     .bom-challan-logo-cell {
-      padding: 1px 4px !important;
+      padding: 0 4px !important;
       text-align: left !important;
       vertical-align: middle !important;
     }
@@ -1116,9 +1120,10 @@ window.printChallanDirectly = function(challanData) {
       display: block !important;
       width: auto !important;
       max-width: 100% !important;
-      height: 24pt !important;
-      max-height: 24pt !important;
+      height: 30pt !important;
+      max-height: 30pt !important;
       object-fit: contain !important;
+      object-position: left center !important;
       margin: 0 !important;
     }
     .bom-challan-gst-cell {
@@ -1229,10 +1234,12 @@ window.printChallanDirectly = function(challanData) {
       border: none !important;
     }
     td.bom-challan-footer-vehicle {
-      font-size: 13pt;
+      font-size: 12.5pt;
       font-weight: 700;
       text-align: center;
       vertical-align: middle;
+      white-space: nowrap !important;
+      overflow: hidden !important;
     }
     td.bom-challan-footer-issuedby,
     td.bom-challan-footer-receivedby {
