@@ -94,6 +94,7 @@ window.PAGES.sales = {
           </div>
           <div class="actions-row">
             <button class="btn btn-red" type="button" id="saleBtnSave"><i class="fa-solid fa-truck"></i> Confirm Dispatch</button>
+            <button class="btn btn-blue" type="button" id="saleBtnChallan"><i class="fa-solid fa-file-invoice"></i> Create Challan</button>
             <button class="btn btn-ghost" type="button" id="saleBtnClearForm"><i class="fa-solid fa-eraser"></i> Clear Form</button>
           </div>
         </div>
@@ -1239,16 +1240,39 @@ window.PAGES.sales = {
     }
     $('saleBtnClearForm').addEventListener('click', clearSalesForm);
 
+    $('saleBtnChallan').addEventListener('click', () => {
+      const customer = $('saleCust').value.trim();
+      const orderNo = $('saleOrder').value.trim() || customer;
+      const chalanNo = $('saleChalanNo').value.trim();
+      const chalanDate = $('saleChalanDate').value || new Date().toISOString().slice(0, 10);
+      if (!customer) {
+        window.openModal('Customer Name Required', '<p>Please enter Customer Name first.</p>');
+        return;
+      }
+      if (!saleLines.length && !$('saleQty').value.trim() && !$('saleSerials').value.trim()) {
+        window.openModal('Items Required', '<p>Please add at least one product line before creating Challan.</p>');
+        return;
+      }
+      if ($('saleQty').value.trim() || $('saleSerials').value.trim()) {
+        $('saleBtnAddLine').click();
+      }
+      if (typeof window.openChallanFromSalesData === 'function') {
+        window.openChallanFromSalesData({ customer, orderNo, chalanNo, chalanDate, lines: saleLines });
+      }
+    });
+
     $('saleBtnSave').addEventListener('click', async () => {
       const customer = $('saleCust').value.trim();
-      const orderNo = $('saleOrder').value.trim();
-      const chalanNo = $('saleChalanNo').value.trim();
-      const chalanDate = PD.dmyFromISO($('saleChalanDate').value);
+      let orderNo = $('saleOrder').value.trim();
+      if (!orderNo && customer) orderNo = customer;
+      let chalanNo = $('saleChalanNo').value.trim();
+      let chalanDate = PD.dmyFromISO($('saleChalanDate').value);
+      if (!chalanDate) chalanDate = PD.dmyFromISO(new Date().toISOString().slice(0, 10));
       const invoiceNo = $('saleInvNo').value.trim();
       const invoiceDate = invoiceNo ? (PD.dmyFromISO($('saleInvDate').value) || '-') : '-';
 
-      if (!customer || !orderNo || !chalanNo || !chalanDate) {
-        window.openModal('Missing Fields', '<p>Customer Name, Order No, Challan No and Challan Date are required.</p>');
+      if (!customer) {
+        window.openModal('Missing Fields', '<p>Customer Name is required.</p>');
         return;
       }
 
@@ -1257,8 +1281,6 @@ window.PAGES.sales = {
       // mirrors process_sales_dispatch()'s own auto-add-current-line step.
       if (($('saleQty').value.trim() || $('saleSerials').value.trim())) {
         $('saleBtnAddLine').click();
-        // Give the async validation inside the click handler a chance to
-        // either push the line or show its own error modal.
         window.openModal('Line Pending', '<p>Product line details were found in the form and validated — please click <strong>Confirm Dispatch</strong> again to save.</p>');
         return;
       }
@@ -1270,24 +1292,41 @@ window.PAGES.sales = {
       const saveBtn = $('saleBtnSave');
       saveBtn.disabled = true;
       try {
+        const savedLines = saleLines.map((l) => ({ cat: l.cat, brand: l.brand, watt: l.watt, model: l.model, type: l.type, serials: l.serials, qty: l.qty }));
         const result = await window.Api.post('/sales/dispatch', {
           customer, orderNo, chalanNo, chalanDate, invoiceNo, invoiceDate,
           proofName: saleProof.files.length ? (saleProof.files.length === 1 ? saleProof.files[0].name : `${saleProof.files.length} files`) : '-',
-          lines: saleLines.map((l) => ({ cat: l.cat, brand: l.brand, watt: l.watt, model: l.model, type: l.type, serials: l.serials, qty: l.qty })),
+          lines: savedLines,
         });
         if (window.showToast) window.showToast('Sales Dispatch executed successfully!', 'success');
-        // Uploaded against chalanNo — Party Ledger groups OUT vouchers by
-        // chalan_no first (falling back to order_no only if no chalan), so
-        // this is the key that will actually be looked up later.
-        const uploadResult = await window.uploadAttachments('sales', chalanNo, saleProof.files);
-        const uploadWarning = !uploadResult.ok
-          ? `<p style="color:var(--red); margin-top:8px;">Note: the dispatch was saved, but the proof file(s) could not be uploaded (${uploadResult.error}). You can re-attach them from Sale Register &gt; Edit.</p>`
-          : '';
-        if (window.showSuccess) {
-          window.showSuccess('Dispatch Completed!', `<p>Project dispatch saved with ${result.lineCount} product line(s) and ${result.serialCount} serial(s).</p>${uploadWarning}`);
-        } else {
-          window.openModal('Success', `<p>Project dispatch saved with ${result.lineCount} product line(s) and ${result.serialCount} serial(s).</p>${uploadWarning}`);
+        
+        let uploadWarning = '';
+        if (chalanNo && saleProof.files.length) {
+          const uploadResult = await window.uploadAttachments('sales', chalanNo, saleProof.files);
+          if (!uploadResult.ok) {
+            uploadWarning = `<p style="color:var(--red); margin-top:8px;">Note: the dispatch was saved, but the proof file(s) could not be uploaded (${uploadResult.error}). You can re-attach them from Sale Register &gt; Edit.</p>`;
+          }
         }
+
+        const successHtml = `
+          <p>Project dispatch saved with <b>${result.lineCount}</b> product line(s) and <b>${result.serialCount}</b> serial(s).</p>
+          ${uploadWarning}
+          <div class="actions-row" style="margin-top:16px;">
+            <button class="btn btn-blue" id="salesModalPrintChallanBtn" type="button"><i class="fa-solid fa-file-invoice"></i> Generate &amp; Print Challan</button>
+            <button class="btn btn-ghost" type="button" onclick="closeModal()">Done</button>
+          </div>
+        `;
+        window.openModal('Dispatch Completed!', successHtml);
+
+        const printChallanBtn = document.getElementById('salesModalPrintChallanBtn');
+        if (printChallanBtn) {
+          printChallanBtn.addEventListener('click', () => {
+            if (typeof window.openChallanFromSalesData === 'function') {
+              window.openChallanFromSalesData({ customer, orderNo, chalanNo, chalanDate, lines: savedLines });
+            }
+          });
+        }
+
         clearSalesForm();
       } catch (err) {
         if (window.showError) {

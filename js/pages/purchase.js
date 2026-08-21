@@ -96,6 +96,7 @@ window.PAGES.purchase = {
               <div class="line-list" id="purLineList"><div class="empty">No product lines added yet — fill the fields above and click "Add Product Line".</div></div>
               <div class="line-btns">
                 <button class="btn btn-green" type="button" id="purBtnAddLine"><i class="fa-solid fa-plus"></i> Add Product Line</button>
+                <button class="btn btn-blue" type="button" id="purBtnImportKit"><i class="fa-solid fa-layer-group"></i> Inward from BOM Kit</button>
                 <button class="btn btn-ghost" type="button" id="purBtnRemoveLine"><i class="fa-solid fa-minus"></i> Remove Line</button>
               </div>
             </div>
@@ -1169,6 +1170,140 @@ window.PAGES.purchase = {
       $('purQty').value = '';
       updatePurSerialVisibility();
     });
+    $('purBtnImportKit').addEventListener('click', async () => {
+      const purEsc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      if (typeof bomHydrateCustomKits === 'function') await bomHydrateCustomKits();
+      const allKits = (typeof bomGetAllKits === 'function' ? bomGetAllKits() : (typeof bomLoadCustomKits === 'function' ? bomLoadCustomKits() : {})) || {};
+      const kitKeys = Object.keys(allKits);
+      if (!kitKeys.length) {
+        window.openModal('No BOM Kits Found', '<p>No BOM Kit templates found in the system. Please create a BOM Kit first in BOM Master.</p>');
+        return;
+      }
+
+      const defaultKitKey = kitKeys[0];
+      const kitOptions = kitKeys.map((k) => {
+        const kt = allKits[k];
+        const label = `${kt.name || k} (${kt.kw ? kt.kw + ' kW' : ''})`;
+        return `<option value="${purEsc(k)}">${purEsc(label)}</option>`;
+      }).join('');
+
+      const modalContent = `
+        <div class="form-grid cols-2" style="margin-bottom:12px;">
+          <div class="field">
+            <label>Select BOM Kit Template <span class="req">*</span></label>
+            <select id="purKitSelectModal">${kitOptions}</select>
+          </div>
+          <div class="field">
+            <label>Kit Quantity / Multiplier <span class="req">*</span></label>
+            <input type="number" id="purKitMultiplierModal" value="1" min="1" step="1">
+          </div>
+        </div>
+        <div style="font-weight:700; font-size:13px; margin:12px 0 6px; color:var(--gold);"><i class="fa-solid fa-list-check"></i> Kit Items Preview</div>
+        <div class="table-wrap" style="max-height:240px; overflow-y:auto; margin-bottom:16px; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
+          <table style="width:100%; border-collapse:collapse;" id="purKitPreviewTable">
+            <thead>
+              <tr>
+                <th style="text-align:left; padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.1);">Category</th>
+                <th style="text-align:left; padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.1);">Item Name</th>
+                <th style="text-align:center; padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.1);">Qty / Kit</th>
+                <th style="text-align:center; padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.1);">Total Qty</th>
+              </tr>
+            </thead>
+            <tbody id="purKitPreviewTbody"></tbody>
+          </table>
+        </div>
+        <div class="actions-row">
+          <button type="button" class="btn btn-green" id="purKitConfirmImportBtn"><i class="fa-solid fa-file-import"></i> Import Items into Purchase Lines</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        </div>
+      `;
+
+      window.openModal('Inward from BOM Kit Template', modalContent);
+
+      const selectEl = document.getElementById('purKitSelectModal');
+      const multEl = document.getElementById('purKitMultiplierModal');
+      const tbodyEl = document.getElementById('purKitPreviewTbody');
+      const confirmBtn = document.getElementById('purKitConfirmImportBtn');
+
+      function updatePreview() {
+        if (!selectEl || !tbodyEl) return;
+        const selectedKey = selectEl.value;
+        const mult = Math.max(1, parseInt(multEl.value || 1, 10));
+        const kitObj = allKits[selectedKey];
+        if (!kitObj || !kitObj.sections) {
+          tbodyEl.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:12px; color:var(--txt-muted);">No items in this kit</td></tr>';
+          return;
+        }
+
+        let rowsHtml = '';
+        kitObj.sections.forEach((sec) => {
+          (sec.items || []).forEach((it) => {
+            const defaultQty = Number(it.qty || 1);
+            const totalQty = defaultQty * mult;
+            rowsHtml += `
+              <tr>
+                <td style="padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.04); font-size:12px; color:var(--txt-muted);">${purEsc(it.category || sec.title || 'Other')}</td>
+                <td style="padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.04); font-size:12.5px; font-weight:600;">${purEsc(it.name || '')}</td>
+                <td style="padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.04); text-align:center; font-size:12px;">${defaultQty}</td>
+                <td style="padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.04); text-align:center; font-size:12px; font-weight:700; color:var(--green);">${totalQty}</td>
+              </tr>
+            `;
+          });
+        });
+        tbodyEl.innerHTML = rowsHtml || '<tr><td colspan="4" style="text-align:center; padding:12px; color:var(--txt-muted);">No items in this kit</td></tr>';
+      }
+
+      if (selectEl) selectEl.addEventListener('change', updatePreview);
+      if (multEl) multEl.addEventListener('input', updatePreview);
+      updatePreview();
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+          const selectedKey = selectEl.value;
+          const mult = Math.max(1, parseInt(multEl.value || 1, 10));
+          const kitObj = allKits[selectedKey];
+          if (!kitObj || !kitObj.sections) {
+            window.closeModal();
+            return;
+          }
+
+          const wh = $('purWh').value || (window.PURCHASE_DATA && window.PURCHASE_DATA.warehouses && window.PURCHASE_DATA.warehouses[0]) || 'Warehouse 1';
+          let addedCount = 0;
+
+          kitObj.sections.forEach((sec) => {
+            (sec.items || []).forEach((it) => {
+              const defaultQty = Number(it.qty || 1);
+              const totalQty = defaultQty * mult;
+              const cat = it.category || sec.title || 'Other';
+              const needsModel = purCategoryNeedsModel(cat);
+              const needsSerial = purCategoryNeedsSerial(cat);
+              const brand = it.brand || it.name || '';
+              const watt = needsModel ? '' : (it.watt || '');
+              const model = needsModel ? (it.model || it.name || '') : '';
+              const type = it.type || 'Standard';
+
+              purLines.push({
+                cat,
+                brand,
+                watt,
+                model,
+                type,
+                warehouse: wh,
+                qty: String(totalQty),
+                needsSerial
+              });
+              addedCount++;
+            });
+          });
+
+          renderLineList(purLineList, purLines, '');
+          updatePurSerialVisibility();
+          window.closeModal();
+          if (window.showToast) window.showToast(`${addedCount} items from "${kitObj.name || selectedKey}" added to Purchase Lines!`, 'success');
+        });
+      }
+    });
+
     $('purBtnRemoveLine').addEventListener('click', () => {
       const idx = selectedLineIndex(purLineList);
       if (idx === -1) return;

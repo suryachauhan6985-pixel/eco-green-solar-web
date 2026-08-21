@@ -809,6 +809,9 @@ window.attachColumnFilters = function (table) {
               <li><i class="fa-solid fa-chart-line"></i> Real-time inventory visibility</li>
               <li><i class="fa-solid fa-briefcase"></i> Built for field &amp; office teams</li>
             </ul>
+            <div style="margin-top:24px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.12); font-size:12px; color:rgba(255,255,255,0.7); display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-code" style="color:var(--gold);"></i> Developed by <strong style="color:var(--gold); font-weight:700;">Sumit Chauhan</strong>
+            </div>
           </div>
         </div>
         <div class="login-card">

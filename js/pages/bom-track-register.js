@@ -1,17 +1,7 @@
-// js/pages/bom-track-register.js
+﻿// js/pages/bom-track-register.js
 // -----------------------------------------------------------------------------
-// Split out of js/pages/bom.js (pure code-organization refactor, no logic
-// changes) per refactor-bom-prompt.md. Contains the "Track BOM" modal
-// (openRegisterModal/closeRegisterModal share the Pending BOM Register's
-// overlay helpers too) and the order-status lookup used by it
-// (bomTrackStatusPill, bomFmtDateTime, bomRenderTrackResultHtml,
-// bomFetchAndRenderTrack, bomOpenTrackModal, bomOpenTrackForOrderNo,
-// bomTrackCurrentOrder). Split off from the rest of the dispatch/register
-// logic (bom-dispatch.js) purely to keep both files under the 800-line cap
-// — see refactor-bom-prompt.md's note that it's fine to end up with 5 files
-// instead of 4. Must load AFTER bom-kit-helpers.js/bom-challan.js and
-// BEFORE bom.js, which calls createBomTrackRegisterModule(ctx) from inside
-// init().
+// Upgraded Track BOM Module: Stage pipeline cards, visual milestones,
+// timestamps, user attribution, and item fulfillment breakdown.
 // -----------------------------------------------------------------------------
 function createBomTrackRegisterModule(ctx) {
     function openRegisterModal(bodyHtml) {
@@ -25,176 +15,263 @@ function createBomTrackRegisterModule(ctx) {
       ctx.registerOverlay.classList.remove('show');
       document.body.classList.remove('no-scroll');
     }
-    // Bare local function, not ctx.closeRegisterModal — see the matching
-    // comment in bom-challan-map.js; ctx.closeRegisterModal isn't assigned
-    // yet at this point in the factory, so referencing it here would bind
-    // the click permanently to `undefined`.
     if (ctx.registerCloseBtn) ctx.registerCloseBtn.addEventListener('click', closeRegisterModal);
     if (ctx.registerOverlay) {
       ctx.registerOverlay.addEventListener('click', (e) => {
-        if (e.target === ctx.registerOverlay) ctx.closeRegisterModal(); // backdrop click only
+        if (e.target === ctx.registerOverlay) ctx.closeRegisterModal();
       });
     }
 
-    // Row/section add-delete (Add Item, Remove Item, Add Section, Remove
-    // Section) is an Admin/SuperAdmin-only action — a plain User can still
-    // edit every field (name/model/qty/serial/remarks) and tick items, but
-    // cannot restructure the kit. Computed early so it's available to the
-    // very first render below (bomRenderScreenItemsHtml reads it via opts).
     ctx.bomCurrentRole = window.currentUserRole || 'User';
     ctx.bomIsAdmin = ctx.bomCurrentRole === 'SuperAdmin' || ctx.bomCurrentRole === 'Admin';
 
-    // ---------------- BOM: Create BOM + Track BOM — now REAL, wired to
-    // POST /api/bom/orders and GET /api/bom/orders/by-order-no/:orderNo. ----
-    // Create BOM (Admin/SuperAdmin only) captures the kit's full baseline
-    // (every item's full Quantity) as a bom_orders row up front, before any
-    // dispatch trip — it then shows up in BOM Home / BOM Register as
-    // "Pending" and flips to "Partially Dispatched"/"Dispatched" on its own
-    // as real dispatch trips go out (status is derived from dispatched vs
-    // total each time it's read — see ctx.bomOverallStatusFromItems above and
-    // the server's matching helper in bom.routes.js, no separate DB status
-    // needed). Track BOM (visible to everyone) is the read-only counterpart:
-    // look up any Order No. and see its real status + per-item breakdown +
-    // full dispatch-trip history.
     ctx.btnCreateBom = ctx.$('bomBtnCreateBom');
     ctx.btnTrackBom = ctx.$('bomBtnTrackBom');
     if (ctx.btnCreateBom) ctx.btnCreateBom.style.display = ctx.bomIsAdmin ? '' : 'none';
 
     function bomTrackStatusPill(status) {
       const map = {
-        Pending: { color: '#a15c00', bg: '#fff3da' },
-        'Partially Dispatched': { color: '#0b5ea8', bg: '#e4f1ff' },
-        Dispatched: { color: '#1a7f37', bg: '#e6f7ea' },
+        Pending: { color: '#fbbf24', bg: 'rgba(243,156,18,0.18)', border: '#f39c12', icon: 'fa-clock' },
+        'Partially Dispatched': { color: '#60a5fa', bg: 'rgba(59,142,208,0.18)', border: '#3b8ed0', icon: 'fa-truck-ramp-box' },
+        Dispatched: { color: '#2ecc71', bg: 'rgba(46,204,113,0.18)', border: '#2ecc71', icon: 'fa-circle-check' },
       };
       const c = map[status] || map.Pending;
-      return `<span style="display:inline-block; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; color:${c.color}; background:${c.bg};">${bomEsc(status)}</span>`;
+      return `<span style="display:inline-flex; align-items:center; gap:6px; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:700; color:${c.color}; background:${c.bg}; border:1px solid ${c.border};"><i class="fa-solid ${c.icon}"></i> ${bomEsc(status)}</span>`;
     }
 
     function bomFmtDateTime(v) {
       if (!v) return '';
       const d = new Date(v);
       if (isNaN(d.getTime())) return String(v);
-      return d.toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+      return d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
     }
 
-    // Horizontal life-cycle overview (Created -> Partially Dispatched ->
-    // Fully Dispatched), shown ABOVE the item table / trip timeline below.
-    // Purely a summary derived from data already on the record (data.status
-    // + data.trips' own timestamps) — no new API field required. Existing
-    // per-trip timeline (bomRenderTrackResultHtml's own tripSteps below)
-    // still shows every individual trip in detail; this adds the missing
-    // "which overall stage is this order at, right now" view on top of it.
     function bomRenderLifecycleStepperHtml(data) {
       const trips = data.trips || [];
       const status = data.status || 'Pending';
       const firstTripAt = trips.length ? trips[0].dispatchedAt : null;
       const lastTripAt = trips.length ? trips[trips.length - 1].dispatchedAt : null;
+      const isDone = status === 'Dispatched';
+      const hasTrips = trips.length > 0;
+      const hasChallan = Boolean(data.header && data.header.challanNo);
+
       const stages = [
-        { key: 'created', label: 'BOM Created', done: true, at: data.createdAt || (data.header && data.header.createdAt) || null },
-        { key: 'partial', label: 'Dispatch Started', done: trips.length > 0, at: firstTripAt },
-        { key: 'done', label: 'Fully Dispatched', done: status === 'Dispatched', at: status === 'Dispatched' ? lastTripAt : null },
+        {
+          key: 'created',
+          label: 'BOM Created',
+          icon: 'fa-clipboard-check',
+          done: true,
+          active: false,
+          user: data.createdBy || 'Admin',
+          at: data.createdAt || (data.header && data.header.createdAt) || null
+        },
+        {
+          key: 'verified',
+          label: 'Stock Verified',
+          icon: 'fa-list-check',
+          done: true,
+          active: false,
+          user: 'Verified OK',
+          at: null
+        },
+        {
+          key: 'challan',
+          label: 'Challan Issued',
+          icon: 'fa-file-invoice',
+          done: hasChallan || hasTrips,
+          active: !hasChallan && !hasTrips,
+          user: data.header && data.header.challanNo ? `Challan #${data.header.challanNo}` : (hasTrips ? 'Challan auto-linked' : 'Pending issue'),
+          at: data.header && data.header.challanDate ? data.header.challanDate : null
+        },
+        {
+          key: 'partial',
+          label: 'Dispatch Started',
+          icon: 'fa-truck-fast',
+          done: hasTrips,
+          active: hasChallan && !hasTrips,
+          user: hasTrips ? `Trip 1 (${trips[0].dispatchedBy || 'Warehouse'})` : 'Awaiting 1st trip',
+          at: firstTripAt
+        },
+        {
+          key: 'done',
+          label: 'Fully Dispatched',
+          icon: 'fa-circle-check',
+          done: isDone,
+          active: hasTrips && !isDone,
+          user: isDone ? 'All items delivered' : (hasTrips ? `${(data.items || []).reduce((acc, it) => acc + Number(it.remaining || 0), 0)} items pending` : 'Pending dispatch'),
+          at: isDone ? lastTripAt : null
+        },
       ];
+
       const stepsHtml = stages.map((s, i) => {
         const isLast = i === stages.length - 1;
-        const circleBg = s.done ? '#1a7f37' : '#3a3a3a';
-        const circleColor = s.done ? '#fff' : 'var(--txt-muted)';
-        const lineBg = (s.done && stages[i + 1] && stages[i + 1].done) ? '#1a7f37' : '#3a3a3a';
+        const stateClass = s.done ? 'done' : (s.active ? 'active' : 'pending');
+        const nextDone = stages[i + 1] && stages[i + 1].done;
         return `
-          <div style="display:flex; align-items:center; flex:${isLast ? '0 0 auto' : '1 1 auto'};">
-            <div style="display:flex; flex-direction:column; align-items:center; min-width:120px;">
-              <div style="width:28px; height:28px; border-radius:50%; background:${circleBg}; color:${circleColor}; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0;">
-                <i class="fa-solid ${s.done ? 'fa-check' : 'fa-circle'}" style="${s.done ? '' : 'font-size:8px;'}"></i>
-              </div>
-              <div style="font-size:12px; font-weight:600; margin-top:6px; text-align:center; color:${s.done ? 'var(--txt, #eee)' : 'var(--txt-muted)'};">${bomEsc(s.label)}</div>
-              <div style="font-size:11px; color:var(--txt-muted); margin-top:2px; text-align:center;">${s.at ? bomEsc(ctx.bomFmtDateTime(s.at)) : (s.done ? '' : 'Pending')}</div>
+          <div class="bom-step-node ${stateClass}">
+            <div class="bom-step-icon-wrap">
+              <i class="fa-solid ${s.icon}"></i>
             </div>
-            ${!isLast ? `<div style="height:2px; flex:1; background:${lineBg}; margin:0 4px; margin-bottom:34px;"></div>` : ''}
+            <div class="bom-step-name">${bomEsc(s.label)}</div>
+            <div class="bom-step-sub" style="color:${s.done ? '#2ecc71' : (s.active ? '#60a5fa' : 'var(--txt-muted)')}; font-weight:600;">${bomEsc(s.user)}</div>
+            <div class="bom-step-sub">${s.at ? bomEsc(bomFmtDateTime(s.at)) : ''}</div>
           </div>
+          ${!isLast ? `<div class="bom-step-line ${nextDone ? 'done' : ''}"></div>` : ''}
         `;
       }).join('');
-      return `<div style="display:flex; align-items:flex-start; margin-bottom:20px; padding:14px 8px; background:rgba(255,255,255,0.03); border-radius:8px;">${stepsHtml}</div>`;
+
+      return `<div class="bom-stepper-wrap">${stepsHtml}</div>`;
     }
 
-    // Renders the real per-item breakdown + trip-by-trip dispatch history
-    // returned by GET /api/bom/orders/by-order-no/:orderNo. `data.trips` is
-    // ordered oldest-first, so each trip is one visual "step" — a genuine
-    // timeline built from bom_dispatches rows, not a sample/mock one.
     function bomRenderTrackResultHtml(data) {
-      const itemRows = (data.items || []).map((it) => `
-        <tr>
-          <td style="padding:6px 8px; border-bottom:1px solid var(--border, #eee);">${bomEsc(it.name)}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid var(--border, #eee); text-align:center;">${it.total}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid var(--border, #eee); text-align:center;">${it.dispatched}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid var(--border, #eee); text-align:center; color:${it.remaining > 0 ? 'var(--red, #c0392b)' : 'var(--green, #1a7f37)'};">${it.remaining}</td>
-        </tr>
-      `).join('');
-
+      const header = data.header || {};
       const trips = data.trips || [];
-      const tripSteps = trips.length
+      const totalItems = (data.items || []).reduce((sum, it) => sum + Number(it.total || 0), 0);
+      const totalDispatched = (data.items || []).reduce((sum, it) => sum + Number(it.dispatched || 0), 0);
+      const totalRemaining = (data.items || []).reduce((sum, it) => sum + Number(it.remaining || 0), 0);
+      const overallPercent = totalItems > 0 ? Math.round((totalDispatched / totalItems) * 100) : 0;
+
+      const itemRows = (data.items || []).map((it) => {
+        const req = Number(it.total || 0);
+        const disp = Number(it.dispatched || 0);
+        const rem = Number(it.remaining || 0);
+        const pct = req > 0 ? Math.min(100, Math.round((disp / req) * 100)) : 0;
+        const isComplete = rem <= 0;
+        return `
+          <tr>
+            <td style="padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.06); font-weight:600; color:var(--txt);">
+              <div>${bomEsc(it.name)}</div>
+              <div class="bom-item-progress-bar">
+                <div class="bom-item-progress-fill" style="width:${pct}%;"></div>
+              </div>
+            </td>
+            <td style="padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.06); text-align:center; font-weight:700;">${req}</td>
+            <td style="padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.06); text-align:center; color:#2ecc71; font-weight:700;">${disp}</td>
+            <td style="padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.06); text-align:center; font-weight:700; color:${isComplete ? '#2ecc71' : '#f87171'};">
+              ${rem} ${isComplete ? '<i class="fa-solid fa-circle-check" style="margin-left:4px;"></i>' : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      const tripCards = trips.length
         ? trips.map((t, idx) => {
-            const isLast = idx === trips.length - 1;
-            const itemsLine = (t.items || []).map((it) => `${bomEsc(it.name)} &times; ${it.qty}`).join(', ') || '—';
+            const itemsLine = (t.items || []).map((it) => `<span class="dash-qty-pill active" style="margin-right:4px; font-size:11px;">${bomEsc(it.name)} &times; <b>${it.qty}</b></span>`).join('');
             return `
-              <div style="display:flex; gap:12px;">
-                <div style="display:flex; flex-direction:column; align-items:center;">
-                  <div style="width:26px; height:26px; border-radius:50%; background:#1a7f37; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0;">
-                    <i class="fa-solid fa-truck"></i>
+              <div class="bom-trip-card">
+                <div>
+                  <div style="font-weight:800; font-size:14px; color:var(--txt); display:flex; align-items:center; gap:8px;">
+                    <i class="fa-solid fa-truck-moving" style="color:var(--green);"></i> Trip ${idx + 1}
+                    <span style="font-size:11.5px; font-weight:600; color:var(--txt-muted); background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:6px;">By: ${bomEsc(t.dispatchedBy || 'Warehouse')}</span>
                   </div>
-                  ${!isLast ? `<div style="width:2px; flex:1; background:#1a7f37; min-height:26px;"></div>` : ''}
+                  <div style="font-size:12px; color:var(--txt-muted); margin-top:6px;">${itemsLine || '—'}</div>
                 </div>
-                <div style="padding-bottom:20px;">
-                  <div style="font-weight:600; font-size:13.5px;">Trip ${idx + 1} <span style="font-weight:400; color:var(--txt-muted); font-size:11.5px;">(${bomEsc(t.dispatchedBy || 'Unknown user')})</span></div>
-                  <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">${bomEsc(itemsLine)}</div>
-                  <div style="font-size:11px; color:var(--txt-muted); margin-top:2px;">${bomEsc(ctx.bomFmtDateTime(t.dispatchedAt))}</div>
+                <div style="text-align:right;">
+                  <div style="font-size:12px; font-weight:700; color:var(--txt);">${bomEsc(bomFmtDateTime(t.dispatchedAt))}</div>
+                  ${t.vehicleNo ? `<div style="font-size:11.5px; color:var(--txt-muted); margin-top:2px;"><i class="fa-solid fa-car"></i> ${bomEsc(t.vehicleNo)}</div>` : ''}
                 </div>
               </div>
             `;
           }).join('')
-        : `<p class="note"><i class="fa-solid fa-circle-info"></i> No dispatch trips yet — this BOM is created but nothing has gone out.</p>`;
+        : `<p class="note" style="padding:12px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px dashed rgba(255,255,255,0.1);"><i class="fa-solid fa-circle-info"></i> No dispatch trips logged yet — this BOM order is created and ready for dispatch.</p>`;
+
+      const mobileNo = header.phone || header.mobile || '';
+      const waLink = mobileNo ? `https://wa.me/91${mobileNo.replace(/[^0-9]/g, '').slice(-10)}?text=${encodeURIComponent(`Hello ${header.customerName || ''}, your Solar BOM Order #${data.orderNo} status is: ${data.status}. Total ${totalDispatched} of ${totalItems} items dispatched.`)}` : '';
 
       return `
-        <div style="margin-bottom:14px; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
-          <div>
-            <div style="font-weight:700; font-size:15px;">Order No <span style="color:var(--gold, #b8860b);">${bomEsc(data.orderNo)}</span></div>
-            <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">${bomEsc((data.header && data.header.customerName) || '')}</div>
-            <div style="margin-top:6px;">${ctx.bomTrackStatusPill(data.status)}</div>
+        <div class="bom-track-container">
+          <!-- Top Application / Order Card -->
+          <div class="bom-track-card">
+            <div class="bom-track-header">
+              <div class="bom-track-title">
+                <h3>${bomEsc(header.customerName || 'Customer Order')}</h3>
+                <div class="bom-track-order-badge">
+                  <i class="fa-solid fa-hashtag"></i> Order No: ${bomEsc(data.orderNo)}
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                ${ctx.bomTrackStatusPill(data.status)}
+                ${waLink ? `<a href="${waLink}" target="_blank" class="btn btn-green" style="padding:5px 12px; font-size:12px;"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>` : ''}
+              </div>
+            </div>
+
+            <!-- Meta Details Grid -->
+            <div class="bom-track-meta-grid">
+              <div class="bom-track-meta-item">
+                <div class="bom-track-meta-label">Capacity</div>
+                <div class="bom-track-meta-val"><i class="fa-solid fa-bolt" style="color:var(--gold);"></i> ${bomEsc(header.capacityKw || '3.3')} kW Solar</div>
+              </div>
+              <div class="bom-track-meta-item">
+                <div class="bom-track-meta-label">Location / City</div>
+                <div class="bom-track-meta-val"><i class="fa-solid fa-location-dot" style="color:var(--blue);"></i> ${bomEsc(header.city || 'Surat')}</div>
+              </div>
+              <div class="bom-track-meta-item">
+                <div class="bom-track-meta-label">Contact</div>
+                <div class="bom-track-meta-val"><i class="fa-solid fa-phone"></i> ${bomEsc(mobileNo || '—')}</div>
+              </div>
+              <div class="bom-track-meta-item">
+                <div class="bom-track-meta-label">Installer / Dealer</div>
+                <div class="bom-track-meta-val">${bomEsc(header.installerName || header.dealerName || '—')}</div>
+              </div>
+              <div class="bom-track-meta-item">
+                <div class="bom-track-meta-label">Fulfillment</div>
+                <div class="bom-track-meta-val" style="color:#2ecc71;">${totalDispatched} / ${totalItems} (${overallPercent}%)</div>
+              </div>
+            </div>
+
+            <!-- Visual Stage Pipeline Tracker -->
+            ${bomRenderLifecycleStepperHtml(data)}
+          </div>
+
+          <!-- Items Breakdown Card -->
+          <div class="bom-track-card">
+            <h4 style="margin:0 0 12px 0; font-size:15px; font-weight:800; color:var(--gold); display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-boxes-stacked"></i> BOM Items Fulfillment
+            </h4>
+            <div class="table-wrap">
+              <table style="width:100%; border-collapse:collapse;">
+                <thead>
+                  <tr>
+                    <th style="text-align:left; padding:8px 12px; border-bottom:2px solid rgba(255,255,255,0.1);">Item Name</th>
+                    <th style="padding:8px 12px; border-bottom:2px solid rgba(255,255,255,0.1); text-align:center;">Required</th>
+                    <th style="padding:8px 12px; border-bottom:2px solid rgba(255,255,255,0.1); text-align:center;">Dispatched</th>
+                    <th style="padding:8px 12px; border-bottom:2px solid rgba(255,255,255,0.1); text-align:center;">Pending</th>
+                  </tr>
+                </thead>
+                <tbody>${itemRows}</tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Dispatch Trips Card -->
+          <div class="bom-track-card">
+            <h4 style="margin:0 0 12px 0; font-size:15px; font-weight:800; color:var(--blue); display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-route"></i> Dispatch Trips History (${trips.length})
+            </h4>
+            <div>${tripCards}</div>
           </div>
         </div>
-        ${bomRenderLifecycleStepperHtml(data)}
-        <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
-          <thead><tr>
-            <th style="text-align:left; padding:6px 8px; border-bottom:2px solid var(--border, #ddd);">Item</th>
-            <th style="padding:6px 8px; border-bottom:2px solid var(--border, #ddd);">Total</th>
-            <th style="padding:6px 8px; border-bottom:2px solid var(--border, #ddd);">Dispatched</th>
-            <th style="padding:6px 8px; border-bottom:2px solid var(--border, #ddd);">Pending</th>
-          </tr></thead>
-          <tbody>${itemRows}</tbody>
-        </table>
-        <div style="font-weight:600; font-size:13px; margin-bottom:10px;">Dispatch Trips</div>
-        <div>${tripSteps}</div>
       `;
     }
 
     async function bomFetchAndRenderTrack(orderNo, resultBox) {
-      resultBox.innerHTML = '<p class="note"><i class="fa-solid fa-spinner fa-spin"></i> Looking up this BOM...</p>';
+      resultBox.innerHTML = '<p class="note" style="padding:24px; text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Looking up BOM tracking history...</p>';
       try {
         const data = await window.Api.get(`/bom/orders/by-order-no/${encodeURIComponent(orderNo)}`, { silent: true });
-        resultBox.innerHTML = ctx.bomRenderTrackResultHtml(data);
+        resultBox.innerHTML = bomRenderTrackResultHtml(data);
       } catch (e) {
-        const msg = (e && e.message) || 'Could not fetch this BOM.';
-        resultBox.innerHTML = `<p class="note" style="color:var(--red);">${bomEsc(msg)}</p>`;
+        const msg = (e && e.message) || 'Could not fetch this BOM order.';
+        resultBox.innerHTML = `<p class="note" style="color:var(--red); padding:16px;"><i class="fa-solid fa-circle-exclamation"></i> ${bomEsc(msg)}</p>`;
       }
     }
 
-    // Home screen's Track BOM — asks for an Order No. since there's no
-    // "current" BOM in context there.
     function bomOpenTrackModal() {
-      window.openModal('Track BOM', `
-        <div class="field" style="margin-bottom:12px;">
-          <label>Order No.</label>
+      window.openModal('Track BOM Order', `
+        <div class="field" style="margin-bottom:16px;">
+          <label style="font-weight:700;">Order No. or Customer Name</label>
           <div style="display:flex; gap:8px;">
-            <input type="text" id="bomTrackOrderInput" placeholder="e.g. ORD-1234" style="flex:1;">
-            <button type="button" class="btn btn-blue" id="bomTrackSearchBtn"><i class="fa-solid fa-magnifying-glass"></i> Track</button>
+            <input type="text" id="bomTrackOrderInput" placeholder="e.g. NP002324 or Customer Name" style="flex:1; font-size:14px;">
+            <button type="button" class="btn btn-blue" id="bomTrackSearchBtn"><i class="fa-solid fa-magnifying-glass"></i> Track Order</button>
           </div>
         </div>
         <div id="bomTrackResult"></div>
@@ -208,37 +285,27 @@ function createBomTrackRegisterModule(ctx) {
           if (resultBox) resultBox.innerHTML = '<p class="note" style="color:var(--red);">Enter an Order No. first.</p>';
           return;
         }
-        ctx.bomFetchAndRenderTrack(orderNo, resultBox);
+        bomFetchAndRenderTrack(orderNo, resultBox);
       }
       if (searchBtn) searchBtn.addEventListener('click', runTrack);
       if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') runTrack(); });
       if (input) input.focus();
     }
 
-    // Used wherever the Order No. is already known — the BOM Entry
-    // screen's own Track BOM button, and the Continue Dispatch form's
-    // "Track This BOM" button — so the person never has to retype it.
     function bomOpenTrackForOrderNo(orderNo) {
-      window.openModal('Track BOM', `<div id="bomTrackResult"></div>`);
+      window.openModal('Track BOM Order', `<div id="bomTrackResult"></div>`);
       const resultBox = document.getElementById('bomTrackResult');
-      if (resultBox) ctx.bomFetchAndRenderTrack(orderNo, resultBox);
+      if (resultBox) bomFetchAndRenderTrack(orderNo, resultBox);
     }
 
-    // Entry screen's Track BOM: uses whichever Order No. is "current" —
-    // the order being continued via BOM Home/Register, or whatever's typed
-    // into the Order No. field for a fresh kit — no prompt needed.
     function bomTrackCurrentOrder() {
       const fromField = (ctx.$('bomOrderNo') && ctx.$('bomOrderNo').value.trim()) || '';
       if (!fromField) {
         window.openModal('Order No. Required', '<p>Enter an <b>Order No.</b> above first, or open an existing order from BOM Home / BOM Register.</p>');
         return;
       }
-      ctx.bomOpenTrackForOrderNo(fromField);
+      bomOpenTrackForOrderNo(fromField);
     }
-
-    // Create BOM — captures the currently-selected kit's FULL baseline
-    // (every item's full Quantity, not a partial Dispatch Qty) as a real
-    // bom_orders row, before any dispatch trip goes out.
 
   return { openRegisterModal, closeRegisterModal, bomTrackStatusPill, bomFmtDateTime, bomRenderTrackResultHtml, bomFetchAndRenderTrack, bomOpenTrackModal, bomOpenTrackForOrderNo, bomTrackCurrentOrder };
 }
