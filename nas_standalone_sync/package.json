@@ -1,0 +1,11 @@
+{
+  "name": "asustor-nas-serial-sync",
+  "version": "1.0.0",
+  "description": "24/7 Standalone Serial Numbers Excel Sync Service for ASUSTOR NAS",
+  "main": "nas_sync_daemon.js",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "mysql2": "^3.11.0"
+  }
+}

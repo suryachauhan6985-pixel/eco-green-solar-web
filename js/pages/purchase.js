@@ -1183,38 +1183,57 @@ window.PAGES.purchase = {
       const defaultKitKey = kitKeys[0];
       const kitOptions = kitKeys.map((k) => {
         const kt = allKits[k];
-        const label = `${kt.name || k} (${kt.kw ? kt.kw + ' kW' : ''})`;
+        const label = `${kt.name || k} ${kt.kw ? '(' + kt.kw + ' kW)' : ''}`;
         return `<option value="${purEsc(k)}">${purEsc(label)}</option>`;
       }).join('');
 
       const modalContent = `
-        <div class="form-grid cols-2" style="margin-bottom:12px;">
-          <div class="field">
-            <label>Select BOM Kit Template <span class="req">*</span></label>
-            <select id="purKitSelectModal">${kitOptions}</select>
+        <div style="min-width:320px; max-width:860px; width:100%;">
+          <div class="form-grid cols-2" style="margin-bottom:12px; gap:12px;">
+            <div class="field">
+              <label style="font-weight:700; margin-bottom:4px;">Select BOM Kit Template <span class="req">*</span></label>
+              <select id="purKitSelectModal" style="height:38px;">${kitOptions}</select>
+            </div>
+            <div class="field">
+              <label style="font-weight:700; margin-bottom:4px;">Base Multiplier (Set All Quantities)</label>
+              <input type="number" id="purKitMultiplierModal" value="1" min="1" step="1" style="height:38px;">
+            </div>
           </div>
-          <div class="field">
-            <label>Kit Quantity / Multiplier <span class="req">*</span></label>
-            <input type="number" id="purKitMultiplierModal" value="1" min="1" step="1">
+
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin:14px 0 8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-weight:700; font-size:13.5px; color:var(--gold);"><i class="fa-solid fa-list-check"></i> Kit Items &amp; Quantities</span>
+              <span id="purKitSelectedBadge" style="font-size:11px; padding:2px 8px; border-radius:999px; background:rgba(34,197,94,0.15); color:var(--green); font-weight:700;">0 selected</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="text" id="purKitSearchInput" placeholder="🔍 Filter items..." style="height:30px; width:170px; font-size:12px; padding:4px 8px; border-radius:6px;">
+              <button type="button" class="btn btn-ghost btn-sm" id="purKitSelectAllBtn" style="padding:3px 8px; font-size:11.5px;"><i class="fa-solid fa-check-double"></i> All</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="purKitDeselectAllBtn" style="padding:3px 8px; font-size:11.5px;">None</button>
+            </div>
           </div>
-        </div>
-        <div style="font-weight:700; font-size:13px; margin:12px 0 6px; color:var(--gold);"><i class="fa-solid fa-list-check"></i> Kit Items Preview</div>
-        <div class="table-wrap" style="max-height:240px; overflow-y:auto; margin-bottom:16px; border:1px solid rgba(255,255,255,0.06); border-radius:8px;">
-          <table style="width:100%; border-collapse:collapse;" id="purKitPreviewTable">
-            <thead>
-              <tr>
-                <th style="text-align:left; padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.1);">Category</th>
-                <th style="text-align:left; padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.1);">Item Name</th>
-                <th style="text-align:center; padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.1);">Qty / Kit</th>
-                <th style="text-align:center; padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.1);">Total Qty</th>
-              </tr>
-            </thead>
-            <tbody id="purKitPreviewTbody"></tbody>
-          </table>
-        </div>
-        <div class="actions-row">
-          <button type="button" class="btn btn-green" id="purKitConfirmImportBtn"><i class="fa-solid fa-file-import"></i> Import Items into Purchase Lines</button>
-          <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+
+          <div class="table-wrap" style="max-height:380px; overflow-y:auto; margin-bottom:16px; border:1px solid var(--border-light); border-radius:8px; background:var(--card-bg);">
+            <table style="width:100%; border-collapse:collapse;" id="purKitPreviewTable">
+              <thead>
+                <tr style="background:rgba(255,255,255,0.03); position:sticky; top:0; z-index:2;">
+                  <th style="width:36px; text-align:center; padding:8px 6px; border-bottom:1px solid var(--border);"><input type="checkbox" id="purKitMasterCheckbox" checked></th>
+                  <th style="text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); font-size:12px;">Category</th>
+                  <th style="text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); font-size:12px;">Item Name</th>
+                  <th style="text-align:center; width:90px; padding:8px 6px; border-bottom:1px solid var(--border); font-size:12px;">Qty / Kit</th>
+                  <th style="text-align:center; width:120px; padding:8px 10px; border-bottom:1px solid var(--border); font-size:12px; color:var(--green);">Inward Qty</th>
+                </tr>
+              </thead>
+              <tbody id="purKitPreviewTbody"></tbody>
+            </table>
+          </div>
+
+          <div class="actions-row" style="justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="font-size:12px; color:var(--txt-muted);"><i class="fa-solid fa-circle-info"></i> You can independently edit each item's quantity above.</div>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn btn-green" id="purKitConfirmImportBtn"><i class="fa-solid fa-file-import"></i> Import Selected Items into Purchase</button>
+              <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+            </div>
+          </div>
         </div>
       `;
 
@@ -1222,84 +1241,180 @@ window.PAGES.purchase = {
 
       const selectEl = document.getElementById('purKitSelectModal');
       const multEl = document.getElementById('purKitMultiplierModal');
+      const searchEl = document.getElementById('purKitSearchInput');
       const tbodyEl = document.getElementById('purKitPreviewTbody');
+      const masterCheck = document.getElementById('purKitMasterCheckbox');
+      const badgeEl = document.getElementById('purKitSelectedBadge');
       const confirmBtn = document.getElementById('purKitConfirmImportBtn');
 
-      function updatePreview() {
-        if (!selectEl || !tbodyEl) return;
+      let currentKitItems = [];
+
+      function loadKitItems() {
         const selectedKey = selectEl.value;
         const mult = Math.max(1, parseInt(multEl.value || 1, 10));
         const kitObj = allKits[selectedKey];
-        if (!kitObj || !kitObj.sections) {
-          tbodyEl.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:12px; color:var(--txt-muted);">No items in this kit</td></tr>';
-          return;
-        }
+        currentKitItems = [];
 
-        let rowsHtml = '';
-        kitObj.sections.forEach((sec) => {
-          (sec.items || []).forEach((it) => {
-            const defaultQty = Number(it.qty || 1);
-            const totalQty = defaultQty * mult;
-            rowsHtml += `
-              <tr>
-                <td style="padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.04); font-size:12px; color:var(--txt-muted);">${purEsc(it.category || sec.title || 'Other')}</td>
-                <td style="padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.04); font-size:12.5px; font-weight:600;">${purEsc(it.name || '')}</td>
-                <td style="padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.04); text-align:center; font-size:12px;">${defaultQty}</td>
-                <td style="padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.04); text-align:center; font-size:12px; font-weight:700; color:var(--green);">${totalQty}</td>
-              </tr>
-            `;
+        if (kitObj && kitObj.sections) {
+          kitObj.sections.forEach((sec) => {
+            (sec.items || []).forEach((it) => {
+              const defaultQty = Number(it.qty || 1);
+              currentKitItems.push({
+                selected: true,
+                category: it.category || sec.title || 'Other',
+                name: it.name || '',
+                brand: it.brand || it.name || '',
+                watt: it.watt || '',
+                model: it.model || '',
+                type: it.type || 'Standard',
+                defaultQty: defaultQty,
+                qty: defaultQty * mult
+              });
+            });
           });
-        });
-        tbodyEl.innerHTML = rowsHtml || '<tr><td colspan="4" style="text-align:center; padding:12px; color:var(--txt-muted);">No items in this kit</td></tr>';
+        }
+        renderTable();
       }
 
-      if (selectEl) selectEl.addEventListener('change', updatePreview);
-      if (multEl) multEl.addEventListener('input', updatePreview);
-      updatePreview();
+      function updateSelectedBadge() {
+        const selCount = currentKitItems.filter((it) => it.selected && it.qty > 0).length;
+        if (badgeEl) badgeEl.textContent = `${selCount} of ${currentKitItems.length} selected`;
+        if (masterCheck) masterCheck.checked = selCount === currentKitItems.length && currentKitItems.length > 0;
+      }
+
+      function renderTable() {
+        if (!tbodyEl) return;
+        const q = (searchEl ? searchEl.value : '').trim().toLowerCase();
+        let html = '';
+
+        currentKitItems.forEach((it, idx) => {
+          if (q && !it.name.toLowerCase().includes(q) && !it.category.toLowerCase().includes(q)) {
+            return;
+          }
+          const rowOpacity = it.selected ? '1' : '0.45';
+          html += `
+            <tr style="opacity:${rowOpacity}; transition:opacity .15s ease;" data-item-idx="${idx}">
+              <td style="text-align:center; padding:6px 6px; border-bottom:1px solid var(--border-light);">
+                <input type="checkbox" class="pur-kit-row-check" data-idx="${idx}" ${it.selected ? 'checked' : ''}>
+              </td>
+              <td style="padding:6px 10px; border-bottom:1px solid var(--border-light); font-size:12px; color:var(--txt-muted);">${purEsc(it.category)}</td>
+              <td style="padding:6px 10px; border-bottom:1px solid var(--border-light); font-size:12.5px; font-weight:600; color:var(--txt);">${purEsc(it.name)}</td>
+              <td style="padding:6px 6px; border-bottom:1px solid var(--border-light); text-align:center; font-size:12px; color:var(--txt-muted);">${it.defaultQty}</td>
+              <td style="padding:6px 10px; border-bottom:1px solid var(--border-light); text-align:center;">
+                <input type="number" class="pur-kit-item-qty" data-idx="${idx}" min="0" step="1" value="${it.qty}" style="width:75px; height:28px; text-align:center; font-size:12px; font-weight:700; border-radius:6px; color:var(--green);" ${!it.selected ? 'disabled' : ''}>
+              </td>
+            </tr>
+          `;
+        });
+
+        tbodyEl.innerHTML = html || '<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--txt-muted);">No items match this filter</td></tr>';
+        updateSelectedBadge();
+
+        // Wire row checkboxes
+        tbodyEl.querySelectorAll('.pur-kit-row-check').forEach((chk) => {
+          chk.addEventListener('change', (e) => {
+            const idx = parseInt(e.target.getAttribute('data-idx'), 10);
+            if (currentKitItems[idx]) {
+              currentKitItems[idx].selected = e.target.checked;
+              const row = e.target.closest('tr');
+              if (row) {
+                row.style.opacity = e.target.checked ? '1' : '0.45';
+                const qtyInput = row.querySelector('.pur-kit-item-qty');
+                if (qtyInput) qtyInput.disabled = !e.target.checked;
+              }
+            }
+            updateSelectedBadge();
+          });
+        });
+
+        // Wire individual quantity inputs
+        tbodyEl.querySelectorAll('.pur-kit-item-qty').forEach((inp) => {
+          inp.addEventListener('input', (e) => {
+            const idx = parseInt(e.target.getAttribute('data-idx'), 10);
+            if (currentKitItems[idx]) {
+              currentKitItems[idx].qty = Math.max(0, parseInt(e.target.value || 0, 10));
+            }
+            updateSelectedBadge();
+          });
+        });
+      }
+
+      if (selectEl) selectEl.addEventListener('change', loadKitItems);
+      if (multEl) {
+        multEl.addEventListener('input', () => {
+          const mult = Math.max(1, parseInt(multEl.value || 1, 10));
+          currentKitItems.forEach((it) => {
+            it.qty = it.defaultQty * mult;
+          });
+          renderTable();
+        });
+      }
+      if (searchEl) searchEl.addEventListener('input', renderTable);
+
+      if (masterCheck) {
+        masterCheck.addEventListener('change', (e) => {
+          const chk = e.target.checked;
+          currentKitItems.forEach((it) => { it.selected = chk; });
+          renderTable();
+        });
+      }
+
+      const selectAllBtn = document.getElementById('purKitSelectAllBtn');
+      if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', () => {
+          currentKitItems.forEach((it) => { it.selected = true; });
+          renderTable();
+        });
+      }
+
+      const deselectAllBtn = document.getElementById('purKitDeselectAllBtn');
+      if (deselectAllBtn) {
+        deselectAllBtn.addEventListener('click', () => {
+          currentKitItems.forEach((it) => { it.selected = false; });
+          renderTable();
+        });
+      }
+
+      loadKitItems();
 
       if (confirmBtn) {
         confirmBtn.addEventListener('click', () => {
-          const selectedKey = selectEl.value;
-          const mult = Math.max(1, parseInt(multEl.value || 1, 10));
-          const kitObj = allKits[selectedKey];
-          if (!kitObj || !kitObj.sections) {
-            window.closeModal();
+          const toImport = currentKitItems.filter((it) => it.selected && it.qty > 0);
+          if (!toImport.length) {
+            window.openModal('Nothing Selected', '<p>Please select at least one item with Quantity &gt; 0 to import.</p>');
             return;
           }
 
           const wh = $('purWh').value || (window.PURCHASE_DATA && window.PURCHASE_DATA.warehouses && window.PURCHASE_DATA.warehouses[0]) || 'Warehouse 1';
           let addedCount = 0;
 
-          kitObj.sections.forEach((sec) => {
-            (sec.items || []).forEach((it) => {
-              const defaultQty = Number(it.qty || 1);
-              const totalQty = defaultQty * mult;
-              const cat = it.category || sec.title || 'Other';
-              const needsModel = purCategoryNeedsModel(cat);
-              const needsSerial = purCategoryNeedsSerial(cat);
-              const brand = it.brand || it.name || '';
-              const watt = needsModel ? '' : (it.watt || '');
-              const model = needsModel ? (it.model || it.name || '') : '';
-              const type = it.type || 'Standard';
+          toImport.forEach((it) => {
+            const cat = it.category;
+            const needsModel = purCategoryNeedsModel(cat);
+            const needsSerial = purCategoryNeedsSerial(cat);
+            const brand = it.brand || it.name || '';
+            const watt = needsModel ? '' : (it.watt || '');
+            const model = needsModel ? (it.model || it.name || '') : '';
+            const type = it.type || 'Standard';
 
-              purLines.push({
-                cat,
-                brand,
-                watt,
-                model,
-                type,
-                warehouse: wh,
-                qty: String(totalQty),
-                needsSerial
-              });
-              addedCount++;
+            purLines.push({
+              cat,
+              brand,
+              watt,
+              model,
+              type,
+              warehouse: wh,
+              qty: String(it.qty),
+              needsSerial
             });
+            addedCount++;
           });
 
           renderLineList(purLineList, purLines, '');
           updatePurSerialVisibility();
           window.closeModal();
-          if (window.showToast) window.showToast(`${addedCount} items from "${kitObj.name || selectedKey}" added to Purchase Lines!`, 'success');
+          const kitName = allKits[selectEl.value] ? allKits[selectEl.value].name : selectEl.value;
+          if (window.showToast) window.showToast(`✔ ${addedCount} item(s) imported from "${kitName}"!`, 'success');
         });
       }
     });

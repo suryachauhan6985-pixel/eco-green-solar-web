@@ -234,19 +234,30 @@ module.exports = function registerLedgersRoutes(app, deps) {
 
     if (resolvedType === 'Customer' || resolvedType === 'Both') {
       const [outRows] = await pool.query(
-        `SELECT sales_date, serial_no, item_name, category, order_no, warehouse, status, sales_attachment, chalan_no, sales_invoice
-         FROM stock_ledger WHERE customer_name=? AND status='Sold' ORDER BY sales_date DESC, id DESC`,
+        `SELECT sales_date, chalan_date, serial_no, item_name, category, order_no, warehouse, status, sales_attachment, chalan_no, sales_invoice, quantity
+         FROM stock_ledger
+         WHERE customer_name=? AND (status='Sold' OR status='Dispatched' OR bom_dispatch_id IS NOT NULL)
+         ORDER BY COALESCE(sales_date, chalan_date) DESC, id DESC`,
         [name]
       );
       outRows.forEach((r) => {
         let refKey = '-';
-        for (const candidate of [r.chalan_no, r.order_no]) {
+        for (const candidate of [r.chalan_no, r.order_no, r.sales_invoice]) {
           if (candidate && String(candidate) !== '-' && String(candidate) !== '') { refKey = String(candidate); break; }
         }
         rows.push({
-          movement: 'OUT', date: r.sales_date, serial_no: r.serial_no, item_name: r.item_name,
-          category: r.category, warehouse: r.warehouse, status: r.status, proof: r.sales_attachment,
-          purchase_invoice: null, chalan_no: r.chalan_no, sales_invoice: r.sales_invoice, order_no: r.order_no,
+          movement: 'OUT',
+          date: r.sales_date || r.chalan_date || '-',
+          serial_no: r.serial_no || (r.quantity ? `Qty: ${r.quantity}` : '-'),
+          item_name: r.item_name,
+          category: r.category,
+          warehouse: r.warehouse,
+          status: r.status,
+          proof: r.sales_attachment,
+          purchase_invoice: null,
+          chalan_no: r.chalan_no,
+          sales_invoice: r.sales_invoice,
+          order_no: r.order_no,
           ref_key: refKey,
         });
       });

@@ -426,7 +426,7 @@ module.exports = function registerBomRoutes(app, deps) {
   // dispatch status/reference instead of Sold/Assigned. Caller must
   // already hold the transaction and have re-verified enough stock exists
   // (checkItems with forUpdate=true, called just before this).
-  async function fifoConsumeQtyForBom(conn, item, qtyNeeded, dispatchId) {
+  async function fifoConsumeQtyForBom(conn, item, qtyNeeded, dispatchId, customerName, orderNo, challanNo, challanDate) {
     let remaining = qtyNeeded;
     const modelVal = item.model ? String(item.model).trim() : null;
     const [rows] = await conn.query(
@@ -442,8 +442,10 @@ module.exports = function registerBomRoutes(app, deps) {
       if (remaining <= 0) break;
       if (row.quantity <= remaining) {
         await conn.query(
-          `UPDATE stock_ledger SET status=?, bom_dispatch_id=? WHERE id=?`,
-          [BOM_DISPATCH_STATUS, dispatchId, row.id]
+          `UPDATE stock_ledger
+           SET status=?, bom_dispatch_id=?, customer_name=?, order_no=?, chalan_no=?, chalan_date=?, sales_date=?
+           WHERE id=?`,
+          [BOM_DISPATCH_STATUS, dispatchId, customerName || null, orderNo || null, challanNo || null, challanDate || null, challanDate || null, row.id]
         );
         remaining -= row.quantity;
       } else {
@@ -451,10 +453,12 @@ module.exports = function registerBomRoutes(app, deps) {
           `INSERT INTO stock_ledger
              (item_id, item_name, category, brand_name, watt, solar_type, model, warehouse, status,
               supplier_name, purchase_invoice, purchase_date, purchase_attachment,
+              customer_name, order_no, chalan_no, chalan_date, sales_date,
               bom_dispatch_id, quantity, serial_no)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
           [row.item_id, row.item_name, row.category, row.brand_name, row.watt, row.solar_type, row.model, row.warehouse,
            BOM_DISPATCH_STATUS, row.supplier_name, row.purchase_invoice, row.purchase_date, row.purchase_attachment,
+           customerName || null, orderNo || null, challanNo || null, challanDate || null, challanDate || null,
            dispatchId, remaining]
         );
         await conn.query(`UPDATE stock_ledger SET quantity = quantity - ? WHERE id=?`, [remaining, row.id]);
@@ -545,13 +549,23 @@ module.exports = function registerBomRoutes(app, deps) {
       );
       const dispatchId = dispatchResult.insertId;
 
+      const custName = String(header.customerName || header.custName || '').trim();
+      const challanNo = String(header.challanNo || '').trim();
+      const challanDate = header.challanDate || new Date().toISOString().slice(0, 10);
+      const salesDate = challanDate;
+
       for (const r of results) {
         if (r.kind === 'serial') {
           for (const sn of r.serials) {
-            await conn.query(`UPDATE stock_ledger SET status=?, bom_dispatch_id=? WHERE serial_no=?`, [BOM_DISPATCH_STATUS, dispatchId, sn]);
+            await conn.query(
+              `UPDATE stock_ledger
+               SET status=?, bom_dispatch_id=?, customer_name=?, order_no=?, chalan_no=?, chalan_date=?, sales_date=?
+               WHERE serial_no=?`,
+              [BOM_DISPATCH_STATUS, dispatchId, custName || null, orderNo || null, challanNo || null, challanDate || null, salesDate || null, sn]
+            );
           }
         } else {
-          await fifoConsumeQtyForBom(conn, r.item, r.qty, dispatchId);
+          await fifoConsumeQtyForBom(conn, r.item, r.qty, dispatchId, custName, orderNo, challanNo, challanDate);
         }
       }
 
