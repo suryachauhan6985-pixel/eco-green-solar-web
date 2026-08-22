@@ -1003,12 +1003,11 @@ window.attachColumnFilters = function (table) {
       <div class="login-shell">
         <div class="login-brand-panel">
           <div class="login-brand-inner">
+            <div class="login-logo"><img src="assets/logo.png" alt="Eco Green Solar" class="brand-logo"></div>
             <div class="login-system-status">
               <span class="status-live-dot"></span>
               <span>Eco Green Cloud • Enterprise Operational</span>
             </div>
-            <div class="login-logo"><img src="assets/logo.png" alt="Eco Green Solar" class="brand-logo"></div>
-            <h1 class="login-brand-title">Eco Green Solar</h1>
             <p class="login-brand-tag">ERP for stock, sales &amp; field operations</p>
             
             <!-- Dynamic Moving Highlights Feed -->
@@ -1050,7 +1049,7 @@ window.attachColumnFilters = function (table) {
               </div>
             </div>
 
-            <!-- Ticker Progress & Controls -->
+            <!-- Ticker Controls (Centered Dots) -->
             <div class="login-ticker-footer">
               <div class="login-ticker-dots" id="loginTickerDots">
                 <span class="ticker-dot active" data-idx="0"></span>
@@ -1058,9 +1057,6 @@ window.attachColumnFilters = function (table) {
                 <span class="ticker-dot" data-idx="2"></span>
                 <span class="ticker-dot" data-idx="3"></span>
                 <span class="ticker-dot" data-idx="4"></span>
-              </div>
-              <div class="login-ticker-progress-track">
-                <div class="login-ticker-progress-bar" id="loginTickerProgressBar"></div>
               </div>
             </div>
           </div>
@@ -1932,39 +1928,53 @@ window.attachColumnFilters = function (table) {
     resetBackBtn.addEventListener('click', showForgotStep);
     resetResendBtn.addEventListener('click', attemptResendForgotOtp);
 
-    // ---------- 1. Dynamic Moving Highlights Feed (Auto-rotate every 3.5s) ----------
+    // ---------- 1. Dynamic Moving Highlights Feed (Auto-rotate every 3.5s with smooth horizontal slide) ----------
     const tickerCards = Array.from(loginOverlay.querySelectorAll('.login-ticker-card'));
     const tickerDots = Array.from(loginOverlay.querySelectorAll('.ticker-dot'));
-    const progressBar = loginOverlay.querySelector('#loginTickerProgressBar');
     let currentSlide = 0;
     let tickerTimer = null;
     let isHoveringTicker = false;
 
-    function showSlide(idx) {
+    function showSlide(idx, direction = 'next') {
       if (!tickerCards.length) return;
+      const prevSlide = currentSlide;
       currentSlide = (idx + tickerCards.length) % tickerCards.length;
+
       tickerCards.forEach((c, i) => {
-        c.classList.toggle('active', i === currentSlide);
+        if (i === currentSlide) {
+          c.classList.remove('slide-exit');
+          c.style.transition = 'none';
+          c.style.transform = direction === 'next' ? 'translateX(50px)' : 'translateX(-50px)';
+          c.style.opacity = '0';
+          // Force layout reflow
+          void c.offsetWidth;
+          c.style.transition = 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease';
+          c.classList.add('active');
+          c.style.transform = 'translateX(0)';
+          c.style.opacity = '1';
+        } else if (i === prevSlide && prevSlide !== currentSlide) {
+          c.classList.remove('active');
+          c.classList.add('slide-exit');
+          c.style.transition = 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease';
+          c.style.transform = direction === 'next' ? 'translateX(-50px)' : 'translateX(50px)';
+          c.style.opacity = '0';
+        } else {
+          c.classList.remove('active', 'slide-exit');
+          c.style.transform = 'translateX(50px)';
+          c.style.opacity = '0';
+        }
       });
+
       tickerDots.forEach((d, i) => {
         d.classList.toggle('active', i === currentSlide);
       });
-      if (progressBar) {
-        progressBar.style.transition = 'none';
-        progressBar.style.width = '0%';
-        requestAnimationFrame(() => {
-          progressBar.style.transition = 'width 3.5s linear';
-          progressBar.style.width = '100%';
-        });
-      }
     }
 
     function startTicker() {
       if (tickerTimer) clearInterval(tickerTimer);
-      showSlide(currentSlide);
       tickerTimer = setInterval(() => {
         if (!isHoveringTicker && loginOverlay && loginOverlay.style.display !== 'none') {
-          showSlide(currentSlide + 1);
+          showSlide(currentSlide + 1, 'next');
         }
       }, 3500);
     }
@@ -1972,7 +1982,8 @@ window.attachColumnFilters = function (table) {
     tickerDots.forEach((dot) => {
       dot.addEventListener('click', () => {
         const idx = parseInt(dot.dataset.idx, 10) || 0;
-        showSlide(idx);
+        const dir = idx >= currentSlide ? 'next' : 'prev';
+        showSlide(idx, dir);
         startTicker();
       });
     });
