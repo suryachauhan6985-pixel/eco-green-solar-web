@@ -621,3 +621,94 @@ html[data-theme="light"] .otp-boxes .otp-box{
 .egs-dp-day.future-warn{color:var(--orange);}
 .egs-dp-foot{display:flex; justify-content:space-between; margin-top:10px; gap:8px;}
 .egs-dp-foot .btn{padding:6px 10px; font-size:11px;}
+
+/* =====================================================================
+   DEVICE PERMISSIONS ONBOARDING MODAL & IOS INSTALL GUIDE
+   ===================================================================== */
+.egs-onboard-overlay{
+  position:fixed; inset:0; z-index:100100;
+  background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  display:flex; align-items:center; justify-content:center; padding:16px;
+  animation:egsFadeIn .25s ease;
+}
+.egs-onboard-card{
+  background:var(--panel); border:1px solid var(--border-light);
+  border-radius:20px; max-width:540px; width:100%; max-height:90vh; overflow-y:auto;
+  box-shadow:0 24px 60px rgba(0,0,0,0.6); padding:24px; box-sizing:border-box;
+}
+.egs-onboard-header{
+  text-align:center; margin-bottom:20px;
+}
+.egs-onboard-logo{
+  width:64px; height:64px; margin:0 auto 12px; border-radius:16px;
+  background:linear-gradient(135deg, rgba(59,142,208,0.2), rgba(46,204,113,0.15));
+  border:1px solid rgba(59,142,208,0.35);
+  display:flex; align-items:center; justify-content:center; font-size:28px; color:var(--blue);
+}
+.egs-onboard-title{
+  font-size:20px; font-weight:800; color:var(--txt); margin:0 0 6px;
+}
+.egs-onboard-sub{
+  font-size:13px; color:var(--txt-muted); line-height:1.5; margin:0;
+}
+.egs-onboard-list{
+  display:flex; flex-direction:column; gap:12px; margin:18px 0;
+}
+.egs-onboard-item{
+  display:flex; align-items:flex-start; gap:14px; padding:12px 14px;
+  background:var(--panel-alt); border:1px solid var(--border); border-radius:12px;
+}
+.egs-onboard-icon{
+  width:38px; height:38px; min-width:38px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center; font-size:16px;
+}
+.egs-onboard-icon.camera{ background:rgba(59,142,208,0.15); color:var(--blue); border:1px solid rgba(59,142,208,0.3); }
+.egs-onboard-icon.notify{ background:rgba(241,196,15,0.15); color:#F1C40F; border:1px solid rgba(241,196,15,0.3); }
+.egs-onboard-icon.storage{ background:rgba(46,204,113,0.15); color:#2ECC71; border:1px solid rgba(46,204,113,0.3); }
+.egs-onboard-icon.audio{ background:rgba(155,89,182,0.15); color:#9B59B6; border:1px solid rgba(155,89,182,0.3); }
+
+.egs-onboard-item-meta{ flex:1; min-width:0; }
+.egs-onboard-item-title{ font-size:13.5px; font-weight:700; color:var(--txt); display:flex; align-items:center; justify-content:space-between; }
+.egs-onboard-item-desc{ font-size:12px; color:var(--txt-muted); margin-top:3px; line-height:1.45; }
+
+/* iOS PWA Install Guide */
+.egs-ios-guide{
+  background:linear-gradient(145deg, rgba(59,142,208,0.08), rgba(0,0,0,0.3));
+  border:1px solid rgba(59,142,208,0.3); border-radius:16px; padding:18px; margin:16px 0;
+}
+.egs-ios-steps{
+  display:flex; flex-direction:column; gap:12px; margin-top:14px;
+}
+.egs-ios-step{
+  display:flex; align-items:center; gap:12px; padding:10px 12px;
+  background:var(--panel-alt); border-radius:10px; font-size:13px; color:var(--txt);
+}
+.egs-ios-badge{
+  width:26px; height:26px; min-width:26px; border-radius:50%;
+  background:var(--blue); color:#fff; font-weight:800; font-size:12px;
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* Legal & Privacy Policy Document Card */
+.egs-legal-doc{
+  padding:16px; background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px;
+  font-size:13px; line-height:1.65; color:var(--txt); max-height:420px; overflow-y:auto;
+}
+.egs-legal-section{ margin-bottom:18px; }
+.egs-legal-h4{ font-size:14px; font-weight:700; color:var(--gold); margin:0 0 6px; display:flex; align-items:center; gap:6px; }
+
+/* About System Version Spec Hero */
+.egs-about-hero{
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;
+  padding:18px; background:linear-gradient(135deg, rgba(59,142,208,0.12), rgba(212,175,55,0.06));
+  border:1px solid rgba(59,142,208,0.25); border-radius:14px; margin-bottom:16px;
+}
+.egs-spec-grid{
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-top:14px;
+}
+.egs-spec-box{
+  background:var(--panel-alt); border:1px solid var(--border); border-radius:10px; padding:12px;
+}
+.egs-spec-label{ font-size:11px; color:var(--txt-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:700; }
+.egs-spec-val{ font-size:13.5px; color:var(--txt); font-weight:700; margin-top:3px; word-break:break-word; }
+

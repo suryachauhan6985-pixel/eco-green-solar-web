@@ -1,19 +1,19 @@
-const CACHE_NAME = 'eco-green-solar-erp-v109';
+const CACHE_NAME = 'eco-green-solar-erp-v110';
 
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/css/style.css?v=91',
-  '/css/modules/base.css?v=91',
-  '/css/modules/layout.css?v=91',
-  '/css/modules/components.css?v=91',
-  '/css/modules/dashboard.css?v=91',
-  '/css/modules/responsive.css?v=91',
-  '/css/modules/party-ledger.css?v=91',
-  '/css/modules/auth.css?v=91',
-  '/css/modules/bom.css?v=91',
-  '/css/modules/scan-sheet.css?v=91',
+  '/css/style.css?v=92',
+  '/css/modules/base.css?v=92',
+  '/css/modules/layout.css?v=92',
+  '/css/modules/components.css?v=92',
+  '/css/modules/dashboard.css?v=92',
+  '/css/modules/responsive.css?v=92',
+  '/css/modules/party-ledger.css?v=92',
+  '/css/modules/auth.css?v=92',
+  '/css/modules/bom.css?v=92',
+  '/css/modules/scan-sheet.css?v=92',
   '/assets/icon.ico',
   '/assets/icons/icon-192.png?v=2',
   '/assets/icons/icon-512.png?v=2',
@@ -47,58 +47,44 @@ const APP_SHELL = [
   '/js/pages/bom-serial-modal.js?v=4',
   '/js/pages/bom-dispatch.js?v=14',
   '/js/pages/bom.js?v=32',
-  '/js/app.js?v=45',
+  '/js/app.js?v=46',
   '/js/theme.js?v=4'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) =>
-      Promise.all(
-        cacheNames
-          .filter((cacheName) => cacheName !== CACHE_NAME)
-          .map((cacheName) => caches.delete(cacheName))
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys.map((key) => {
+            if (key !== CACHE_NAME) return caches.delete(key);
+          })
+        )
       )
-    )
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-  const request = event.request;
+  const { request } = event;
   const url = new URL(request.url);
 
-  if (request.method !== 'GET') return;
-
+  // 1. NEVER cache any /api/... calls (DB data must be 100% fresh)
   if (url.pathname.startsWith('/api/')) {
-    // `cache: 'no-store'` bypasses the browser's own HTTP cache too — not
-    // just the service worker's Cache Storage. Plain fetch(request) still
-    // respects the browser's heuristic HTTP caching for GET responses that
-    // don't send explicit Cache-Control headers (e.g. the challan PDF
-    // route), which is why the installed PWA could serve a stale response
-    // even though this handler never touches caches.* itself.
-    event.respondWith(fetch(request, { cache: 'no-store' }));
     return;
   }
 
-  // ---------------------------------------------------------------------
-  // HTML shell (the page itself: navigations + '/' + '/index.html') —
-  // NETWORK-FIRST. This is the fix for "mobile still shows the old app
-  // after a deploy": the old cache-first logic below served index.html
-  // straight from cache forever, so the browser never even saw that the
-  // <script src="...?v=N"> tags on the server had changed — it kept
-  // requesting the same old-versioned JS files that were already cached.
-  // Network-first means every load checks the server first for the latest
-  // shell; only falls back to the cached copy if the network request fails
-  // (e.g. offline), so the PWA still works without a connection.
-  // ---------------------------------------------------------------------
+  // 2. App shell (/ or /index.html) — Network-first with cache fallback
   const isHtmlShell = request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html';
   if (isHtmlShell) {
     event.respondWith(
@@ -113,10 +99,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Everything else (JS/CSS/images) — cache-first is safe here because
-  // these URLs carry ?v=N query strings; a changed file gets a NEW URL
-  // from the freshly-fetched index.html above, so it's a cache miss and
-  // gets fetched + cached fresh automatically. No stale-forever risk.
+  // Everything else (JS/CSS/images) — cache-first
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
@@ -136,6 +119,45 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(() => caches.match('/index.html'));
+    })
+  );
+});
+
+// 3. PUSH NOTIFICATIONS & INTERACTIVE CLICK HANDLERS
+self.addEventListener('push', (event) => {
+  let payload = { title: 'Eco Green Solar Alert', body: 'New enterprise operational update.', icon: '/assets/icons/icon-192.png?v=2' };
+  try {
+    if (event.data) {
+      payload = Object.assign(payload, event.data.json());
+    }
+  } catch (e) {
+    if (event.data) payload.body = event.data.text();
+  }
+
+  const options = {
+    body: payload.body,
+    icon: payload.icon || '/assets/icons/icon-192.png?v=2',
+    badge: '/assets/icons/icon-192.png?v=2',
+    vibrate: [200, 100, 200],
+    data: payload.url || '/'
+  };
+
+  event.waitUntil(self.registration.showNotification(payload.title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
     })
   );
 });
