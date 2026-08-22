@@ -15,7 +15,7 @@ const { corsMiddleware } = require('./config/cors');
 const { pool } = require('./db/pool');
 const { ensureStartupSchema } = require('./db/schema');
 const { authenticateToken, issueToken, requireRole, setAuthPool } = require('./middleware/auth.middleware');
-const { loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter } = require('./middleware/rateLimiters');
+const { globalLimiter, mutationLimiter, exportLimiter, loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter } = require('./middleware/rateLimiters');
 const { hashPassword, verifyPassword } = require('./services/passwords');
 const { OTP_TTL_MINUTES, generateOtp, sendOtpEmail, maskEmail } = require('./services/email');
 const { itemNameSlug, getItemId, validateSalesLineSerials, getOrCreateItem } = require('./services/stockHelpers');
@@ -37,16 +37,72 @@ const registerBomRoutes = require('./routes/bom.routes');
 const registerBomKitsRoutes = require('./routes/bom_kits.routes');
 const registerSerialExcelRoutes = require('./routes/serial_excel.routes');
 
+// =====================================================================
+// PROCESS SAFETY & CRASH GUARDS
+// =====================================================================
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Process Safety] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[Process Safety] Uncaught Exception:', err);
+});
+
 const app = express();
 app.set('trust proxy', 1);
+
+// Disable server fingerprinting
+app.disable('x-powered-by');
+
+// HTTP Security Headers Middleware
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
 app.use(corsMiddleware());
+
+// Rate limiters across API
+app.use('/api/', globalLimiter);
+app.use('/api/', mutationLimiter);
+
+// Parse JSON payloads (20mb for bulk uploads/serials)
 app.use(express.json({ limit: '20mb' }));
 app.use(authenticateToken);
 app.use(express.static(path.join(__dirname, '..')));
 
 setAuthPool(pool);
 
-const deps = { pool, route, requireRole, issueToken, hashPassword, verifyPassword, OTP_TTL_MINUTES, generateOtp, sendOtpEmail, maskEmail, loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter, itemNameSlug, getItemId, validateSalesLineSerials, getOrCreateItem, getISTParts, ledgerTimestamp };
+const deps = {
+  pool,
+  route,
+  requireRole,
+  issueToken,
+  hashPassword,
+  verifyPassword,
+  OTP_TTL_MINUTES,
+  generateOtp,
+  sendOtpEmail,
+  maskEmail,
+  globalLimiter,
+  mutationLimiter,
+  exportLimiter,
+  loginLimiter,
+  otpLimiter,
+  registerLimiter,
+  forgotPasswordLimiter,
+  itemNameSlug,
+  getItemId,
+  validateSalesLineSerials,
+  getOrCreateItem,
+  getISTParts,
+  ledgerTimestamp
+};
 
 registerAttachmentRoutes(app, deps);
 registerHealthRoutes(app, deps);
@@ -74,3 +130,4 @@ app.listen(PORT, '0.0.0.0', () => {
     });
   });
 });
+

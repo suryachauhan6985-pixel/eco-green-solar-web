@@ -1,5 +1,5 @@
 module.exports = function registerAttachmentsRoutes(app, deps) {
-  const { pool, route } = deps;
+  const { pool, route, requireRole } = deps;
   const ALLOWED_ATTACHMENT_EXTENSIONS = new Set(['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'xls', 'xlsx']);
   const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB per file
 
@@ -62,9 +62,7 @@ module.exports = function registerAttachmentsRoutes(app, deps) {
     res.json({ success: true, files: inserted });
   }));
 
-  // GET /api/attachments?refType=&refNo= — metadata only (no file_data), so
-  // the Ledger's voucher-level Attachments panel loads instantly even if a
-  // file is several MB.
+  // GET /api/attachments?refType=&refNo= — metadata only (no file_data)
   app.get('/api/attachments', route(async (req, res) => {
     const refType = String(req.query.refType || '').trim();
     const refNo = String(req.query.refNo || '').trim();
@@ -80,27 +78,25 @@ module.exports = function registerAttachmentsRoutes(app, deps) {
     })) });
   }));
 
-  // GET /api/attachments/:id/file — streams the actual bytes so the browser
-  // can open/preview it (images and PDFs render inline; everything else the
-  // browser will offer to download), instead of just showing a filename.
+  // GET /api/attachments/:id/file — streams the actual bytes with sanitized disposition
   app.get('/api/attachments/:id/file', route(async (req, res) => {
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ error: 'Invalid attachment id.' });
     const [[row]] = await pool.query(`SELECT file_name, mime_type, file_data FROM attachments WHERE id=?`, [id]);
     if (!row) return res.status(404).json({ error: 'Attachment not found.' });
     const buffer = Buffer.from(row.file_data, 'base64');
+    const safeName = String(row.file_name || 'file').replace(/[^\w.-]/g, '_');
     res.setHeader('Content-Type', row.mime_type || 'application/octet-stream');
-    res.setHeader('Content-Disposition', `inline; filename="${String(row.file_name).replace(/"/g, '')}"`);
+    res.setHeader('Content-Disposition', `inline; filename="${safeName}"`);
     res.send(buffer);
   }));
 
-  // DELETE /api/attachments/:id — lets a mistaken/duplicate proof be removed.
-  app.delete('/api/attachments/:id', route(async (req, res) => {
+  // DELETE /api/attachments/:id — SuperAdmin/Admin only
+  app.delete('/api/attachments/:id', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const id = Number(req.params.id);
     if (!id) return res.status(400).json({ error: 'Invalid attachment id.' });
     const [result] = await pool.query(`DELETE FROM attachments WHERE id=?`, [id]);
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Attachment not found.' });
     res.json({ success: true });
   }));
-
 };

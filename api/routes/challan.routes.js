@@ -312,7 +312,7 @@ module.exports = function registerChallanRoutes(app, deps) {
     res.json({ success: true, message: `Challan #${existing.challan_no} deleted.` });
   }));
 
-  app.put('/api/challan/:id', route(async (req, res) => {
+  app.put('/api/challan/:id', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const id = req.params.id;
     const b = req.body || {};
     const challanNo = String(b.challanNo || '').trim();

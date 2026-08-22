@@ -3,7 +3,7 @@ const path = require('path');
 const ExcelJS = require('exceljs');
 
 module.exports = function registerBackupRoutes(app, deps) {
-  const { pool, route, getISTParts, ledgerTimestamp } = deps;
+  const { pool, route, requireRole, exportLimiter, getISTParts, ledgerTimestamp } = deps;
   const BACKUP_FOLDER_NAME = 'EcoGreenSolar_Backups';
   // Override with env var BACKUP_NAS_PATH if this server runs on a different
   // machine than the desktop app (same idea as NAS_BACKUP_PATH in backup.py).
@@ -127,7 +127,7 @@ module.exports = function registerBackupRoutes(app, deps) {
     } catch (e) { /* best-effort, never crash the server over a missed auto-backup */ }
   }
 
-  app.get('/api/backup/status', route(async (req, res) => {
+  app.get('/api/backup/status', requireRole('SuperAdmin'), route(async (req, res) => {
     const { dir, onNas } = resolveBackupDir();
     const [lastRows] = await pool.query(
       `SELECT backup_type, file_name, taken_on, status FROM backup_log WHERE status='Success' ORDER BY id DESC LIMIT 1`
@@ -144,18 +144,20 @@ module.exports = function registerBackupRoutes(app, deps) {
     });
   }));
 
-  app.post('/api/backup/run', route(async (req, res) => {
+  app.post('/api/backup/run', requireRole('SuperAdmin'), exportLimiter, route(async (req, res) => {
     const result = await runBackup('Manual');
     if (!result.success) return res.status(500).json({ error: result.message });
     res.json({ success: true, fileName: result.fileName, onNas: result.onNas });
   }));
 
-  // Serves a specific backup file straight from disk for download — this is
-  // the web equivalent of the desktop app's "Open Backup Folder" (a browser
-  // can't open an arbitrary NAS/network folder for security reasons, so
-  // downloading the actual file is the practical substitute).
-  app.get('/api/backup/download/:fileName', route(async (req, res) => {
-    const { fileName } = req.params;
+  // Serves a specific backup file straight from disk for download — SuperAdmin only, with strict path traversal protection
+  app.get('/api/backup/download/:fileName', requireRole('SuperAdmin'), exportLimiter, route(async (req, res) => {
+    const rawFileName = req.params.fileName;
+    const fileName = path.basename(String(rawFileName || ''));
+    if (!fileName || fileName !== rawFileName) {
+      return res.status(400).json({ error: 'Invalid backup file name.' });
+    }
+
     const [rows] = await pool.query(`SELECT file_path FROM backup_log WHERE file_name=? ORDER BY id DESC LIMIT 1`, [fileName]);
     if (!rows.length) return res.status(404).json({ error: 'Backup record not found.' });
     const filePath = rows[0].file_path;
