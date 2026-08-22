@@ -412,14 +412,22 @@ window.PAGES.partyledger = {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         e.stopImmediatePropagation();
+        const oldIdx = partyFocusIdx;
         partyFocusIdx = partyFocusIdx < 0 ? 0 : Math.min(partyFocusIdx + 1, directory.length - 1);
+        if (partyFocusIdx === oldIdx && selected && selected.partyName === (directory[partyFocusIdx] || {}).partyName) {
+          return; // Already at bottom boundary, no-op
+        }
         highlightPartyListFocus();
         const p = directory[partyFocusIdx];
         if (p) selectParty(p);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         e.stopImmediatePropagation();
+        const oldIdx = partyFocusIdx;
         partyFocusIdx = partyFocusIdx < 0 ? directory.length - 1 : Math.max(partyFocusIdx - 1, 0);
+        if (partyFocusIdx === oldIdx && selected && selected.partyName === (directory[partyFocusIdx] || {}).partyName) {
+          return; // Already at top boundary, no-op
+        }
         highlightPartyListFocus();
         const p = directory[partyFocusIdx];
         if (p) selectParty(p);
@@ -428,7 +436,7 @@ window.PAGES.partyledger = {
         e.stopImmediatePropagation();
         const p = (partyFocusIdx >= 0 ? directory[partyFocusIdx] : null) || selected;
         if (!p) return;
-        selectParty(p).then(() => openStatement());
+        selectParty(p, true).then(() => openStatement());
       } else if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -436,9 +444,15 @@ window.PAGES.partyledger = {
     }
     document.addEventListener('keydown', partyListKeyHandler);
 
-    async function selectParty(p) {
+    const partySummaryCache = new Map();
+    let partySummaryDebounce = null;
+    let partySummaryReqId = 0;
+
+    async function selectParty(p, immediate = false) {
+      if (!p) return;
       selected = p;
-      selectedRows = [];
+      
+      // Update DOM UI immediately (0ms latency, zero lag!)
       if (tbodyEl) {
         tbodyEl.querySelectorAll('tr').forEach((r, idx) => {
           r.classList.toggle('selected', directory[idx] && directory[idx].partyName === p.partyName);
@@ -451,21 +465,54 @@ window.PAGES.partyledger = {
       document.getElementById('btnRegisterLedger').style.display = !p.ledgerId ? 'inline-flex' : 'none';
       document.getElementById('btnOpenStatement').style.display = 'inline-flex';
       document.getElementById('plSummaryGrid').style.display = 'flex';
+
+      // Check In-Memory Cache first:
+      const cacheKey = `${p.partyName}::${p.type}`;
+      if (partySummaryCache.has(cacheKey)) {
+        const cached = partySummaryCache.get(cacheKey);
+        selectedRows = cached.rows;
+        document.getElementById('plSumIn').textContent = cached.inCount;
+        document.getElementById('plSumOut').textContent = cached.outCount;
+        document.getElementById('plSumBal').textContent = cached.bal;
+        return p;
+      }
+
+      // Show temporary indicator
       document.getElementById('plSumIn').textContent = '…';
       document.getElementById('plSumOut').textContent = '…';
       document.getElementById('plSumBal').textContent = '…';
 
-      try {
-        selectedRows = await fetchStatementRows(p.partyName, p.type);
-        const inCount = selectedRows.filter((r) => r.movement === 'IN').length;
-        const outCount = selectedRows.filter((r) => r.movement === 'OUT').length;
-        document.getElementById('plSumIn').textContent = inCount;
-        document.getElementById('plSumOut').textContent = outCount;
-        document.getElementById('plSumBal').textContent = inCount - outCount;
-      } catch (err) {
-        document.getElementById('plSumIn').textContent = '0';
-        document.getElementById('plSumOut').textContent = '0';
-        document.getElementById('plSumBal').textContent = '0';
+      // Debounce server fetch so holding arrow keys causes ZERO server requests
+      clearTimeout(partySummaryDebounce);
+      const reqId = ++partySummaryReqId;
+
+      const fetchTask = async () => {
+        try {
+          const rows = await fetchStatementRows(p.partyName, p.type);
+          if (reqId !== partySummaryReqId) return; // Stale request, discard
+          selectedRows = rows;
+          const inCount = rows.filter((r) => r.movement === 'IN').length;
+          const outCount = rows.filter((r) => r.movement === 'OUT').length;
+          const bal = inCount - outCount;
+          partySummaryCache.set(cacheKey, { rows, inCount, outCount, bal });
+
+          if (selected && selected.partyName === p.partyName) {
+            document.getElementById('plSumIn').textContent = inCount;
+            document.getElementById('plSumOut').textContent = outCount;
+            document.getElementById('plSumBal').textContent = bal;
+          }
+        } catch (err) {
+          if (reqId !== partySummaryReqId) return;
+          document.getElementById('plSumIn').textContent = '0';
+          document.getElementById('plSumOut').textContent = '0';
+          document.getElementById('plSumBal').textContent = '0';
+        }
+      };
+
+      if (immediate) {
+        await fetchTask();
+      } else {
+        partySummaryDebounce = setTimeout(fetchTask, 200);
       }
       return p;
     }
