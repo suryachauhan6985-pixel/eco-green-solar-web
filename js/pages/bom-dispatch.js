@@ -18,11 +18,14 @@ function createBomDispatchModule(ctx) {
       const out = [];
       (ctx.currentKitState || []).forEach((sec) => {
         (sec.items || []).forEach((it) => {
-          out.push({
-            name: it.name || '',
-            qty: bomEffectiveQty(it) || 0,
-            serials: bomSplitSerials(it.serials || ''),
-          });
+          const qty = bomEffectiveQty(it) || 0;
+          if (qty > 0) {
+            out.push({
+              name: it.name || '',
+              qty: qty,
+              serials: bomSplitSerials(it.serials || ''),
+            });
+          }
         });
       });
       return out;
@@ -38,12 +41,15 @@ function createBomDispatchModule(ctx) {
       const out = [];
       (ctx.currentKitState || []).forEach((sec) => {
         (sec.items || []).forEach((it) => {
-          out.push({
-            name: it.name || '',
-            qty: bomEffectiveQty(it) || 0,
-            totalQty: Number(it.qty) || bomEffectiveQty(it) || 0,
-            serials: bomSplitSerials(it.serials || ''),
-          });
+          const qty = bomEffectiveQty(it) || 0;
+          if (qty > 0) {
+            out.push({
+              name: it.name || '',
+              qty: qty,
+              totalQty: Number(it.qty) || qty,
+              serials: bomSplitSerials(it.serials || ''),
+            });
+          }
         });
       });
       return out;

@@ -224,6 +224,84 @@ module.exports = function registerChallanRoutes(app, deps) {
     res.json(rows);
   }));
 
+  // Specific routes MUST come before generic '/:id' routes
+  app.get('/api/challan/next-no', route(async (req, res) => {
+    const [[row]] = await pool.query(
+      `SELECT MAX(CAST(challan_no AS UNSIGNED)) AS maxNo
+       FROM bom_challans
+       WHERE challan_no REGEXP '^[0-9]+$'`
+    );
+    const nextNo = ((row && row.maxNo) || 0) + 1;
+    res.json({ nextNo: String(nextNo) });
+  }));
+
+  app.get('/api/challan/category-map', route(async (req, res) => {
+    const [rows] = await pool.query(`SELECT item_name, challan_category FROM challan_category_map`);
+    const map = {};
+    rows.forEach((r) => { map[r.item_name] = r.challan_category; });
+    res.json({ categories: CHALLAN_CATEGORIES, map });
+  }));
+
+  app.put('/api/challan/category-map', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
+    const mappings = Array.isArray(req.body && req.body.mappings) ? req.body.mappings : [];
+    for (const m of mappings) {
+      const itemName = String(m && m.itemName || '').trim();
+      const category = String(m && m.category || '').trim();
+      if (!itemName) continue;
+      if (!category) {
+        await pool.query(`DELETE FROM challan_category_map WHERE item_name=?`, [itemName]);
+        continue;
+      }
+      if (!CHALLAN_CATEGORIES.includes(category)) continue;
+      await pool.query(
+        `INSERT INTO challan_category_map (item_name, challan_category, updated_by)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE challan_category = VALUES(challan_category), updated_by = VALUES(updated_by)`,
+        [itemName, category, req.user ? req.user.username : null]
+      );
+    }
+    res.json({ success: true });
+  }));
+
+  app.get('/api/challan/by-no/:challanNo', route(async (req, res) => {
+    const [[row]] = await pool.query(
+      `SELECT * FROM bom_challans WHERE challan_no = ? ORDER BY id DESC LIMIT 1`,
+      [req.params.challanNo]
+    );
+    if (!row) return res.status(404).json({ error: 'Challan not found.' });
+    res.json({ ...row, items: JSON.parse(row.items_json || '{}') });
+  }));
+
+  app.get('/api/challan/by-no/:challanNo/pdf', route(async (req, res) => {
+    const cKey = `no_${req.params.challanNo}`;
+    const cached = getCachedPdf(cKey);
+    if (cached) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="Challan_${req.params.challanNo}.pdf"`);
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      return res.send(cached);
+    }
+
+    const [[row]] = await pool.query(
+      `SELECT * FROM bom_challans WHERE challan_no = ? ORDER BY id DESC LIMIT 1`,
+      [req.params.challanNo]
+    );
+    if (!row) return res.status(404).json({ error: 'Challan not found.' });
+    const record = { ...row, items: JSON.parse(row.items_json || '{}') };
+    const { pdfBuffer, cleanup } = await fillTemplateAndConvertToPdf(record);
+    try {
+      setCachedPdf(cKey, pdfBuffer);
+      if (row.id) setCachedPdf(`id_${row.id}`, pdfBuffer);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="Challan_${row.challan_no}.pdf"`);
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.send(pdfBuffer);
+    } finally {
+      await cleanup();
+    }
+  }));
+
+  // Generic parameterized ':id' routes
   app.delete('/api/challan/:id', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const id = req.params.id;
     const [[existing]] = await pool.query(`SELECT challan_no, customer_name FROM bom_challans WHERE id=?`, [id]);
@@ -267,102 +345,7 @@ module.exports = function registerChallanRoutes(app, deps) {
     });
   }));
 
-  // Auto-generate the next Challan No. — MAX(challan_no)+1 over every
-  // already-saved challan whose challan_no happens to be a plain number
-  // (older/hand-typed non-numeric challan_no values, if any, are ignored
-  // rather than breaking the MAX()). Starts at 1 if none exist yet. Purely
-  // a SUGGESTED starting value for the "Convert into Challan" modal's
-  // Challan No. field — it stays a normal editable text input, so this
-  // never blocks someone from typing over it. MUST be registered before
-  // GET '/api/challan/:id' (see route-order note at top of file).
-  app.get('/api/challan/next-no', route(async (req, res) => {
-    const [[row]] = await pool.query(
-      `SELECT MAX(CAST(challan_no AS UNSIGNED)) AS maxNo
-       FROM bom_challans
-       WHERE challan_no REGEXP '^[0-9]+$'`
-    );
-    const nextNo = ((row && row.maxNo) || 0) + 1;
-    res.json({ nextNo: String(nextNo) });
-  }));
-
-  // Returns the fixed category list + every currently-known item_name ->
-  // category mapping. MUST be registered before GET '/api/challan/:id'
-  // (see route-order note at top of file) — otherwise this never gets hit.
-  app.get('/api/challan/category-map', route(async (req, res) => {
-    const [rows] = await pool.query(`SELECT item_name, challan_category FROM challan_category_map`);
-    const map = {};
-    rows.forEach((r) => { map[r.item_name] = r.challan_category; });
-    res.json({ categories: CHALLAN_CATEGORIES, map });
-  }));
-
-  // Bulk save from the mapping-editor screen. Body: { mappings: [{ itemName, category }, ...] }.
-  // Admin/SuperAdmin only — this reassigns which Challan line an item's
-  // quantity feeds into, same trust level as editing Item Master.
-  app.put('/api/challan/category-map', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
-    const mappings = Array.isArray(req.body && req.body.mappings) ? req.body.mappings : [];
-    for (const m of mappings) {
-      const itemName = String(m && m.itemName || '').trim();
-      const category = String(m && m.category || '').trim();
-      if (!itemName) continue;
-      if (!category) {
-        // Blank selection = "unmapped" — remove any existing row rather than
-        // storing an empty category (compress logic just treats a missing
-        // row as unmapped/skip, same end result either way).
-        await pool.query(`DELETE FROM challan_category_map WHERE item_name=?`, [itemName]);
-        continue;
-      }
-      if (!CHALLAN_CATEGORIES.includes(category)) continue; // ignore unknown categories, don't 500 the whole batch
-      await pool.query(
-        `INSERT INTO challan_category_map (item_name, challan_category, updated_by)
-         VALUES (?, ?, ?)
-         ON DUPLICATE KEY UPDATE challan_category = VALUES(challan_category), updated_by = VALUES(updated_by)`,
-        [itemName, category, req.user ? req.user.username : null]
-      );
-    }
-    res.json({ success: true });
-  }));
-
-  // Look up challan by challan_no
-  app.get('/api/challan/by-no/:challanNo', route(async (req, res) => {
-    const [[row]] = await pool.query(
-      `SELECT * FROM bom_challans WHERE challan_no = ? ORDER BY id DESC LIMIT 1`,
-      [req.params.challanNo]
-    );
-    if (!row) return res.status(404).json({ error: 'Challan not found.' });
-    res.json({ ...row, items: JSON.parse(row.items_json || '{}') });
-  }));
-
-  app.get('/api/challan/by-no/:challanNo/pdf', route(async (req, res) => {
-    const cKey = `no_${req.params.challanNo}`;
-    const cached = getCachedPdf(cKey);
-    if (cached) {
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="Challan_${req.params.challanNo}.pdf"`);
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-      return res.send(cached);
-    }
-
-    const [[row]] = await pool.query(
-      `SELECT * FROM bom_challans WHERE challan_no = ? ORDER BY id DESC LIMIT 1`,
-      [req.params.challanNo]
-    );
-    if (!row) return res.status(404).json({ error: 'Challan not found.' });
-    const record = { ...row, items: JSON.parse(row.items_json || '{}') };
-    const { pdfBuffer, cleanup } = await fillTemplateAndConvertToPdf(record);
-    try {
-      setCachedPdf(cKey, pdfBuffer);
-      if (row.id) setCachedPdf(`id_${row.id}`, pdfBuffer);
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="Challan_${row.challan_no}.pdf"`);
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-      res.send(pdfBuffer);
-    } finally {
-      await cleanup();
-    }
-  }));
-
-  // Single record (for reprint). Registered AFTER '/category-map' so the
-  // static route above always wins that match.
+  // Single record (for reprint).
   app.get('/api/challan/:id', route(async (req, res) => {
     const [[row]] = await pool.query(`SELECT * FROM bom_challans WHERE id=?`, [req.params.id]);
     if (!row) return res.status(404).json({ error: 'Challan not found.' });

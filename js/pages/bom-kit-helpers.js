@@ -577,8 +577,12 @@ function bomBuildCategoryItemOptionsHtml(category, selectedName) {
 function bomRenderScreenItemRowHtml(sec, si, it, ii, opts) {
   const isAdmin = !!(opts && opts.isAdmin);
   const needsSerial = (opts && opts.needsSerial) || (() => false);
+  const isFullyDispatched = !isAdmin && (it.dispatchQty === '0' || (it.dispatchQty !== undefined && it.dispatchQty !== null && Number(it.dispatchQty) === 0));
+
   let serialCell;
-  if (needsSerial(it.name)) {
+  if (isFullyDispatched) {
+    serialCell = `<span class="badge" style="background:#16a34a; color:#fff; font-size:11px; font-weight:700; padding:3px 8px; border-radius:4px; display:inline-block; white-space:nowrap;"><i class="fa-solid fa-check-double"></i> Fully Dispatched</span>`;
+  } else if (needsSerial(it.name)) {
     const required = bomEffectiveQty(it);
     const entered = bomSplitSerials(it.serials).length;
     const isComplete = required != null && entered === required;
@@ -638,13 +642,25 @@ function bomRenderScreenItemRowHtml(sec, si, it, ii, opts) {
          ${isAdmin ? '<i class="fa-solid fa-arrow-pointer" style="font-size:8.5px; margin-left:4px;"></i>' : ''}
        </button>`;
 
+  const dispatchQtyCell = isAdmin ? '' : (
+    isFullyDispatched
+      ? `<td><input type="number" min="0" class="bom-field-input bom-field-dispatchqty" data-sec="${si}" data-idx="${ii}" data-field="dispatchQty" value="0" disabled style="opacity:0.6; cursor:not-allowed; text-align:center;" title="0 pending (already dispatched in earlier trip)"></td>`
+      : `<td><input type="number" min="0" class="bom-field-input bom-field-dispatchqty" data-sec="${si}" data-idx="${ii}" data-field="dispatchQty" value="${bomEscAttr(it.dispatchQty)}" title="How many of this item you are dispatching right now (can be less than Quantity for a partial dispatch)."></td>`
+  );
+
+  const checkCell = isFullyDispatched
+    ? `<input type="checkbox" class="bom-field-check" data-sec="${si}" data-idx="${ii}" data-field="checked" checked disabled title="This item was already completely dispatched in an earlier trip">`
+    : `<input type="checkbox" class="bom-field-check" data-sec="${si}" data-idx="${ii}" data-field="checked" ${it.checked ? 'checked' : ''} title="Tick once this item is verified">`;
+
+  const rowStyle = isFullyDispatched ? 'style="opacity:0.65; background:rgba(22, 163, 74, 0.05);"' : '';
+
   return `
-      <tr data-row-sec="${si}" data-row-idx="${ii}">
+      <tr data-row-sec="${si}" data-row-idx="${ii}" ${rowStyle}>
         <td><input type="text" class="bom-field-input bom-field-sr" data-sec="${si}" data-idx="${ii}" data-field="sr" value="${bomEscAttr(it.sr)}"></td>
         <td>${nameCell}</td>
         <td>${modelCell}</td>
         <td>${qtyCell}</td>
-        ${isAdmin ? '' : `<td><input type="number" min="0" class="bom-field-input bom-field-dispatchqty" data-sec="${si}" data-idx="${ii}" data-field="dispatchQty" value="${bomEscAttr(it.dispatchQty)}" title="How many of this item you are dispatching right now (can be less than Quantity for a partial dispatch)."></td>`}
+        ${dispatchQtyCell}
         <td class="bom-serial-cell">${serialCell}</td>
         <td class="bom-map-cell" style="text-align:center;">${mapBadge}</td>
         <td style="white-space:nowrap;">
@@ -654,7 +670,7 @@ function bomRenderScreenItemRowHtml(sec, si, it, ii, opts) {
           <button type="button" class="btn btn-red bom-mini-btn" data-remove-sec="${si}" data-remove-idx="${ii}" title="Remove item"><i class="fa-solid fa-xmark"></i></button>` : ''}
         </td>
         <td class="bom-check-cell">
-          <input type="checkbox" class="bom-field-check" data-sec="${si}" data-idx="${ii}" data-field="checked" ${it.checked ? 'checked' : ''} title="Tick once this item is verified">
+          ${checkCell}
         </td>
       </tr>`;
 }
@@ -992,4 +1008,46 @@ window.saveSerialExcelDirectly = async function(params) {
   }
 
   return true;
+};
+
+window.openSerialFolderSetupModal = async function() {
+  const dirHandle = await getStoredSerialDirHandle();
+  const folderName = dirHandle ? dirHandle.name : null;
+
+  const modalHtml = `
+    <div style="font-size:13px; line-height:1.6; text-align:left;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; padding:10px; border-radius:8px; background:${folderName ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)'}; border:1px solid ${folderName ? 'rgba(34,197,94,0.3)' : 'rgba(234,179,8,0.3)'};">
+        <i class="fa-solid ${folderName ? 'fa-circle-check' : 'fa-triangle-exclamation'}" style="color:${folderName ? '#22c55e' : '#eab308'}; font-size:20px;"></i>
+        <div>
+          <div style="font-weight:700; color:var(--txt);">${folderName ? `Connected: ${bomEsc(folderName)}` : 'Network Folder Not Connected Yet'}</div>
+          <div style="font-size:12px; color:var(--txt-muted);">${folderName ? 'Excel files will auto-save directly into date subfolders.' : 'Connect once to enable automatic background saving into date subfolders.'}</div>
+        </div>
+      </div>
+
+      <p style="margin-bottom:6px; color:var(--txt);"><b>Target Network Path:</b></p>
+      <div style="background:rgba(255,255,255,0.06); padding:8px 12px; border-radius:8px; font-family:monospace; font-size:11px; margin-bottom:14px; word-break:break-all; border:1px solid var(--border-light); color:var(--gold);">
+        ${DEFAULT_NETWORK_PATH_DISPLAY}
+      </div>
+
+      <p style="margin-bottom:16px; font-size:12px; color:var(--txt);">Click below to select the <b>SERAIL NO. (ORD. &amp; CHLN)</b> folder on your network drive. Browser will remember the connection permanently!</p>
+
+      <div class="actions-row" style="gap:10px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-green" id="btnConnectFolderNow"><i class="fa-solid fa-folder-open"></i> ${folderName ? 'Change / Reconnect Network Folder' : 'Connect Network Folder'}</button>
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  `;
+
+  window.openModal('📁 Serial Numbers Excel Network Folder', modalHtml);
+
+  const btn = document.getElementById('btnConnectFolderNow');
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      window.closeModal();
+      const h = await window.connectSerialNetworkFolder();
+      if (h && window.showToast) {
+        window.showToast(`✔ Connected to network folder: ${h.name}`, 'success');
+      }
+    });
+  }
 };

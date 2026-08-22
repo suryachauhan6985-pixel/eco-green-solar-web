@@ -98,6 +98,7 @@ window.PAGES.bom = {
         <button class="btn btn-green" type="button" id="bomBtnDispatch" disabled><i class="fa-solid fa-truck"></i> Create Dispatch</button>
         <button class="btn btn-green" type="button" id="bomBtnCreateBom" style="display:none;"><i class="fa-solid fa-plus-circle"></i> Generate BOM</button>
         <button class="btn btn-ghost" type="button" id="bomBtnTrackBom"><i class="fa-solid fa-route"></i> Track BOM</button>
+        <button class="btn btn-ghost" type="button" id="bomBtnFolderSetup" title="Connect Network Folder for Serial Numbers Excel"><i class="fa-solid fa-folder-open"></i> Network Folder</button>
         <button type="button" class="btn btn-ghost" id="bomBtnNewKit" title="Create a new BOM Kit / Template"><i class="fa-solid fa-plus"></i> New Kit</button>
       </div>
       <!-- "Pending BOM Register" and "Challan Category Mapping" used to be
@@ -566,13 +567,25 @@ window.PAGES.bom = {
     }
 
     // On-screen equivalent of the print sheet's blank "Checked" box: Verify
-    // BOM stays disabled until every item, in every section, is ticked.
+    // BOM stays disabled until every item being dispatched in this trip is ticked.
+    // Items with 0 dispatch qty (e.g. already fully dispatched in an earlier trip)
+    // do not block verification.
     function allItemsChecked() {
       if (!ctx.currentKitState || !ctx.currentKitState.length) return false;
-      return ctx.currentKitState.every((sec) => sec.items.length && sec.items.every((it) => it.checked));
+      let activeItemCount = 0;
+      for (const sec of ctx.currentKitState) {
+        for (const it of (sec.items || [])) {
+          const effQty = bomEffectiveQty(it);
+          if (effQty > 0) {
+            activeItemCount++;
+            if (!it.checked) return false;
+          }
+        }
+      }
+      return activeItemCount > 0;
     }
     function updateVerifyButtonState() {
-      // Verify stays locked until: (1) every item is ticked, AND
+      // Verify stays locked until: (1) every active item is ticked, AND
       // (2) a BOM has already been generated for this Order No.
       // Continue-Dispatch mode (ctx.bomInlineContinueOrderId) already has a
       // generated order, so it only needs the tick check.
@@ -596,8 +609,12 @@ window.PAGES.bom = {
         let blocked = 0;
         ctx.currentKitState.forEach((sec) => {
           sec.items.forEach((it) => {
+            const required = bomEffectiveQty(it);
+            if (required === 0) {
+              it.checked = true; // completed / dispatched
+              return;
+            }
             if (ctx.bomItemNeedsSerial(it.name)) {
-              const required = bomEffectiveQty(it);
               const entered = bomSplitSerials(it.serials).length;
               if (!entered || (required != null && entered !== required)) {
                 blocked += 1;
@@ -767,6 +784,15 @@ window.PAGES.bom = {
           }
 
           if (window.showToast) window.showToast('BOM verified — Create Dispatch is now unlocked.');
+        }
+      });
+    }
+
+    const folderSetupBtn = ctx.$('bomBtnFolderSetup');
+    if (folderSetupBtn) {
+      folderSetupBtn.addEventListener('click', () => {
+        if (typeof window.openSerialFolderSetupModal === 'function') {
+          window.openSerialFolderSetupModal();
         }
       });
     }

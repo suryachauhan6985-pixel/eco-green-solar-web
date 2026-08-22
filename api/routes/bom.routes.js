@@ -74,6 +74,11 @@ module.exports = function registerBomRoutes(app, deps) {
         continue;
       }
 
+      // If an item has 0 qty to dispatch in this trip (e.g. already completed), skip it
+      if (required <= 0) {
+        continue;
+      }
+
       const item = await findItemByName(runner, name);
       if (!item) {
         results.push({
@@ -517,7 +522,13 @@ module.exports = function registerBomRoutes(app, deps) {
         });
       }
 
-      const results = await checkItems(conn, items, true);
+      const dispatchItems = items.filter((it) => (Number(it && it.qty) || 0) > 0);
+      if (!dispatchItems.length) {
+        await conn.rollback();
+        return res.status(400).json({ error: 'No items with quantity > 0 selected for this dispatch trip.', items: [] });
+      }
+
+      const results = await checkItems(conn, dispatchItems, true);
       const failed = results.filter((r) => !r.ok);
       if (failed.length) {
         await conn.rollback();
@@ -530,7 +541,7 @@ module.exports = function registerBomRoutes(app, deps) {
       const [dispatchResult] = await conn.query(
         `INSERT INTO bom_dispatches (order_no, bom_order_id, header_json, items_json, dispatched_by)
          VALUES (?, ?, ?, ?, ?)`,
-        [orderNo, bomOrder.id, JSON.stringify(header), JSON.stringify(items), req.user ? req.user.username : null]
+        [orderNo, bomOrder.id, JSON.stringify(header), JSON.stringify(dispatchItems), req.user ? req.user.username : null]
       );
       const dispatchId = dispatchResult.insertId;
 
