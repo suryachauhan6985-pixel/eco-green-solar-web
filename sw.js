@@ -1,16 +1,16 @@
-const CACHE_NAME = 'eco-green-solar-erp-v81';
+const CACHE_NAME = 'eco-green-solar-erp-v82';
 
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/css/style.css?v=65',
-  '/css/modules/base.css?v=65',
-  '/css/modules/layout.css?v=65',
-  '/css/modules/components.css?v=65',
-  '/css/modules/dashboard.css?v=65',
-  '/css/modules/responsive.css?v=65',
-  '/css/modules/party-ledger.css?v=65',
+  '/css/style.css?v=66',
+  '/css/modules/base.css?v=66',
+  '/css/modules/layout.css?v=66',
+  '/css/modules/components.css?v=66',
+  '/css/modules/dashboard.css?v=66',
+  '/css/modules/responsive.css?v=66',
+  '/css/modules/party-ledger.css?v=66',
   '/css/modules/auth.css?v=60',
   '/css/modules/bom.css?v=60',
   '/css/modules/scan-sheet.css?v=60',
@@ -20,8 +20,9 @@ const APP_SHELL = [
   '/assets/icons/icon-1024.png?v=2',
   '/assets/logo.png',
   '/assets/challan_logo.png',
-  '/js/data/purchase-data.js?v=3',
   '/js/data/api.js?v=4',
+  '/js/data/store.js?v=3',
+  '/js/data/auth-store.js?v=7',
   '/js/data/sheets-store.js?v=3',
   '/js/pages/dashboard.js?v=6',
   '/js/pages/scansheet.js?v=23',
@@ -33,7 +34,7 @@ const APP_SHELL = [
   '/js/pages/saleregister.js?v=4',
   '/js/pages/reports.js?v=3',
   '/js/pages/returns.js?v=3',
-  '/js/pages/partyledger.js?v=12',
+  '/js/pages/partyledger.js?v=17',
   '/js/pages/lowstock.js?v=4',
   '/js/pages/backup.js?v=3',
   '/js/pages/bom-kit-helpers.js?v=19',
@@ -46,7 +47,7 @@ const APP_SHELL = [
   '/js/pages/bom-serial-modal.js?v=4',
   '/js/pages/bom-dispatch.js?v=14',
   '/js/pages/bom.js?v=32',
-  '/js/app.js?v=24',
+  '/js/app.js?v=25',
   '/js/theme.js?v=2'
 ];
 

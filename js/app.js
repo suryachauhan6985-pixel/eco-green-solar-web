@@ -2287,6 +2287,133 @@ window.attachColumnFilters = function (table) {
     } catch (e) { /* ignore (e.g. sandboxed iframe) */ }
   }
 
+  window.goPage = go;
+  window.navigateToPage = go;
+
+  // =====================================================================
+  // ENTERPRISE ERP KEYBOARD ENGINE (Tally / Shree Sava Style Navigation)
+  // =====================================================================
+  const TAB_KEY_MAP = {
+    '1': 'dashboard',
+    '2': 'scansheet',
+    '3': 'masters',
+    '4': 'purchase',
+    '5': 'sales',
+    '6': 'stockassign',
+    '7': 'purchaseregister',
+    '8': 'saleregister',
+    '9': 'partyledger',
+    '0': 'bom'
+  };
+
+  window.showKeyboardShortcutsModal = function () {
+    const html = `
+      <div style="display:flex; flex-direction:column; gap:16px; font-size:13px;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px;">
+          <!-- General Navigation -->
+          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
+            <h4 style="margin:0 0 10px; color:var(--blue); display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-compass"></i> General &amp; Tab Shortcuts
+            </h4>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Global Quick Search</span><div><kbd class="egs-kbd">Ctrl + K</kbd> or <kbd class="egs-kbd">/</kbd></div></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Switch Modules / Tabs</span><kbd class="egs-kbd">Alt + 1..9</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Party Ledger</span><kbd class="egs-kbd">Alt + 9</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Close Dialog / Modal</span><kbd class="egs-kbd">Esc</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Shortcuts Help</span><kbd class="egs-kbd">F1</kbd></div>
+            </div>
+          </div>
+
+          <!-- Party Ledger -->
+          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
+            <h4 style="margin:0 0 10px; color:var(--purple); display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-address-book"></i> Party Ledger &amp; Statements
+            </h4>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Jump to Search Bar</span><div><kbd class="egs-kbd">Tab</kbd> or <kbd class="egs-kbd">/</kbd></div></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Select Rows (Instant)</span><div><kbd class="egs-kbd">↑</kbd> <kbd class="egs-kbd">↓</kbd></div></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Open Statement Drill-Down</span><kbd class="egs-kbd">Enter</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Create New Ledger</span><div><kbd class="egs-kbd">Insert</kbd> or <kbd class="egs-kbd">Alt + C</kbd></div></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Edit Selected Ledger</span><div><kbd class="egs-kbd">F2</kbd> or <kbd class="egs-kbd">Ctrl + E</kbd></div></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Delete Ledger</span><kbd class="egs-kbd">Delete</kbd></div>
+            </div>
+          </div>
+
+          <!-- Data Entry & Forms -->
+          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px; grid-column: 1 / -1;">
+            <h4 style="margin:0 0 10px; color:var(--green); display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-keyboard"></i> Fast Form Entry (Tally Style)
+            </h4>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Next Form Field</span><kbd class="egs-kbd">Enter</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Previous Field</span><kbd class="egs-kbd">Shift + Enter</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Submit &amp; Save Form</span><div><kbd class="egs-kbd">Ctrl + Enter</kbd> or <kbd class="egs-kbd">Ctrl + S</kbd></div></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Back in Statement</span><div><kbd class="egs-kbd">Backspace</kbd> or <kbd class="egs-kbd">Esc</kbd></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    window.openModal('⌨️ Keyboard Shortcuts & Quick Navigation', html, { size: 'large' });
+  };
+
+  document.addEventListener('keydown', (e) => {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    const isTyping = tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable);
+
+    // F1 or Shift + ? -> Shortcuts help
+    if (!isTyping && (e.key === 'F1' || (e.shiftKey && e.key === '?'))) {
+      e.preventDefault();
+      window.showKeyboardShortcutsModal();
+      return;
+    }
+
+    // Ctrl + K or Global '/' -> Focus top search or active page search
+    if ((e.ctrlKey && (e.key === 'k' || e.key === 'K')) || (!isTyping && e.key === '/')) {
+      e.preventDefault();
+      const pageSearch = document.querySelector('#plSearch, #ssSearchInput, #mrSearch, #srSearch, #prSearch');
+      const topSearch = document.querySelector('.search-mini input');
+      const target = pageSearch || topSearch;
+      if (target) {
+        target.focus();
+        if (typeof target.select === 'function') target.select();
+      }
+      return;
+    }
+
+    // Alt + 1..9, Alt + 0 -> Quick Switch Modules
+    if (e.altKey && !e.ctrlKey && !e.shiftKey && TAB_KEY_MAP[e.key]) {
+      e.preventDefault();
+      go(TAB_KEY_MAP[e.key]);
+      return;
+    }
+
+    // Enter as Tab navigation inside forms (Tally/ERP accounting standard)
+    if (e.key === 'Enter' && isTyping && tag !== 'textarea' && e.target.type !== 'submit' && e.target.type !== 'button') {
+      const form = e.target.closest('form, .form-grid, .field-wrap, .auth-card, .modal-box');
+      if (form) {
+        const inputs = Array.from(form.querySelectorAll('input:not([type="hidden"]):not([disabled]), select:not([disabled])'))
+          .filter(el => el.offsetParent !== null);
+        const idx = inputs.indexOf(e.target);
+        if (idx !== -1) {
+          if (e.shiftKey) {
+            // Shift + Enter: previous field
+            e.preventDefault();
+            if (idx > 0) {
+              inputs[idx - 1].focus();
+              if (typeof inputs[idx - 1].select === 'function') inputs[idx - 1].select();
+            }
+          } else if (idx < inputs.length - 1) {
+            // Enter: next field
+            e.preventDefault();
+            inputs[idx + 1].focus();
+            if (typeof inputs[idx + 1].select === 'function') inputs[idx + 1].select();
+          }
+        }
+      }
+    }
+  });
+
   // ---------- Sidebar (mobile) ----------
   window.openSidebar = function () {
     document.getElementById('sidebar').classList.add('open');

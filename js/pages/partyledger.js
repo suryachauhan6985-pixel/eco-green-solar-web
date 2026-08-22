@@ -53,7 +53,7 @@ window.PAGES.partyledger = {
       <div class="pl-filter-bar">
         <div class="search-mini">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input id="plSearch" placeholder="Quick search by Party Name, Short Code, City, Mobile, GSTIN..." autocomplete="off">
+          <input id="plSearch" placeholder="Quick search by Party Name, Code, City, Mobile, GSTIN... (Press Tab or / to Focus | Arrow keys to navigate)" autocomplete="off">
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
           <label style="color:var(--txt-muted); font-size:12px; font-weight:700; white-space:nowrap;"><i class="fa-solid fa-filter"></i> Group / Type:</label>
@@ -392,17 +392,96 @@ window.PAGES.partyledger = {
     }
 
     function partyListKeyHandler(e) {
-      // Statement modal owns keys while open
+      // Statement modal and Ledger Form own keys while open
       if (stOverlay && stOverlay.classList.contains('show')) return;
       if (lfOverlay && lfOverlay.classList.contains('show')) return;
+
+      const isSearchFocused = document.activeElement === searchEl || (document.activeElement && document.activeElement.id === 'plSearch');
       const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-      if (tag === 'input' || tag === 'textarea' || tag === 'select') {
-        // From search box: Enter opens statement if a party is selected
-        if (e.key === 'Enter' && selected && (e.target === searchEl || e.target.id === 'plSearch')) {
+      const isOtherInput = !isSearchFocused && (tag === 'input' || tag === 'textarea' || tag === 'select');
+      if (isOtherInput) return;
+
+      // 1. Tab key behavior: Seamless switch between Search and Table
+      if (e.key === 'Tab') {
+        if (!isSearchFocused) {
+          // Anywhere in table / panel -> Tab jumps straight into search box
           e.preventDefault();
-          openStatement();
+          searchEl.focus();
+          if (typeof searchEl.select === 'function') searchEl.select();
+          return;
+        } else {
+          // Inside search bar -> Tab jumps directly into table first row
+          e.preventDefault();
+          searchEl.blur();
+          if (directory.length > 0) {
+            partyFocusIdx = partyFocusIdx < 0 ? 0 : partyFocusIdx;
+            highlightPartyListFocus();
+            const p = directory[partyFocusIdx];
+            if (p) selectParty(p);
+          }
+          return;
         }
+      }
+
+      // 2. While inside Search Bar
+      if (isSearchFocused) {
+        if (e.key === 'ArrowDown' || e.key === 'Enter') {
+          e.preventDefault();
+          searchEl.blur();
+          if (directory.length > 0) {
+            partyFocusIdx = partyFocusIdx < 0 ? 0 : partyFocusIdx;
+            highlightPartyListFocus();
+            const p = directory[partyFocusIdx];
+            if (p) selectParty(p);
+            if (e.key === 'Enter' && p) {
+              openStatement();
+            }
+          }
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          searchEl.value = '';
+          loadDirectory();
+          searchEl.blur();
+          return;
+        }
+        return; // standard typing
+      }
+
+      // 3. Shortcuts while in Directory Table / Panel
+      if (e.key === '/' || (e.ctrlKey && (e.key === 'f' || e.key === 'F'))) {
+        e.preventDefault();
+        searchEl.focus();
+        if (typeof searchEl.select === 'function') searchEl.select();
         return;
+      }
+
+      // Insert / Alt+C / Ctrl+N -> Create Ledger
+      if (e.key === 'Insert' || (e.altKey && (e.key === 'c' || e.key === 'C')) || (e.ctrlKey && (e.key === 'n' || e.key === 'N'))) {
+        if (isAdmin) {
+          e.preventDefault();
+          openLedgerForm(null);
+          return;
+        }
+      }
+
+      // F2 / Ctrl+E -> Edit Ledger
+      if (e.key === 'F2' || (e.ctrlKey && (e.key === 'e' || e.key === 'E'))) {
+        if (selected && selected.ledgerId && isAdmin) {
+          e.preventDefault();
+          openLedgerForm(selected);
+          return;
+        }
+      }
+
+      // Delete -> Delete Ledger
+      if (e.key === 'Delete' || e.key === 'Del') {
+        if (selected && selected.ledgerId && isAdmin) {
+          e.preventDefault();
+          deleteParty(selected);
+          return;
+        }
       }
 
       if (!tbodyEl) return;
@@ -440,6 +519,8 @@ window.PAGES.partyledger = {
       } else if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
         e.stopImmediatePropagation();
+        const p = (partyFocusIdx >= 0 ? directory[partyFocusIdx] : null) || selected;
+        if (p) selectParty(p, true).then(() => openStatement());
       }
     }
     document.addEventListener('keydown', partyListKeyHandler);
@@ -571,9 +652,13 @@ window.PAGES.partyledger = {
       importInput.click();
     });
     importInput.addEventListener('change', handleImportFile);
-    document.getElementById('btnDownloadTemplate').addEventListener('click', downloadTemplate);
-
     loadDirectory();
+    setTimeout(() => {
+      if (searchEl) {
+        searchEl.focus();
+        if (typeof searchEl.select === 'function') searchEl.select();
+      }
+    }, 120);
 
     // ---------------- Create / Edit Ledger modal ----------------
     const lfOverlay = document.getElementById('ledgerFormOverlay');
@@ -605,12 +690,49 @@ window.PAGES.partyledger = {
 
     let lfEscHandler = null;
     function attachLedgerFormEscape() {
-      lfEscHandler = (e) => { if (e.key === 'Escape') closeLedgerForm(); };
+      lfEscHandler = (e) => {
+        if (e.key === 'Escape') closeLedgerForm();
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          document.getElementById('lfSave').click();
+        }
+      };
       document.addEventListener('keydown', lfEscHandler);
     }
     function detachLedgerFormEscape() {
       if (lfEscHandler) { document.removeEventListener('keydown', lfEscHandler); lfEscHandler = null; }
     }
+
+    // Fast Enter-key navigation between ledger form inputs (Tally style)
+    const lfInputs = [
+      document.getElementById('lfName'),
+      document.getElementById('lfShort'),
+      document.getElementById('lfMobile'),
+      document.getElementById('lfAddress'),
+      document.getElementById('lfGstin')
+    ].filter(Boolean);
+
+    lfInputs.forEach((inp) => {
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (e.ctrlKey || e.metaKey) {
+            document.getElementById('lfSave').click();
+            return;
+          }
+          const visibleInputs = lfInputs.filter((el) => el.offsetParent !== null);
+          const currentVisibleIdx = visibleInputs.indexOf(inp);
+          if (currentVisibleIdx >= 0 && currentVisibleIdx < visibleInputs.length - 1) {
+            visibleInputs[currentVisibleIdx + 1].focus();
+            if (typeof visibleInputs[currentVisibleIdx + 1].select === 'function') {
+              visibleInputs[currentVisibleIdx + 1].select();
+            }
+          } else {
+            document.getElementById('lfSave').click();
+          }
+        }
+      });
+    });
 
     function openLedgerForm(editing) {
       editingLedgerId = editing ? editing.ledgerId : null;
@@ -630,7 +752,13 @@ window.PAGES.partyledger = {
       lfOverlay.classList.add('show');
       lockPageScroll();
       attachLedgerFormEscape();
-      document.getElementById('lfName').focus();
+      setTimeout(() => {
+        const nameField = document.getElementById('lfName');
+        if (nameField) {
+          nameField.focus();
+          if (typeof nameField.select === 'function') nameField.select();
+        }
+      }, 80);
     }
     function closeLedgerForm() {
       lfOverlay.classList.remove('show');
@@ -1220,13 +1348,16 @@ window.PAGES.partyledger = {
         } else if (e.key === ' ' || e.code === 'Space') {
           e.preventDefault();
           e.stopImmediatePropagation();
-        } else if (e.key === 'Backspace') {
+        } else if (e.key === 'Backspace' || (e.altKey && e.key === 'ArrowLeft')) {
           e.preventDefault();
           goBackLevel();
         } else if (e.key === 'Escape') {
           e.preventDefault();
           if (stMonth === null) closeStatement();
           else goBackLevel();
+        } else if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+          e.preventDefault();
+          document.getElementById('btnExportStatement').click();
         }
       };
       document.addEventListener('keydown', stmtKeyHandler);
