@@ -555,11 +555,15 @@ module.exports = function registerBomRoutes(app, deps) {
         }
       }
 
-      // Auto-save serials to network folder if any serials were dispatched in this trip
+      // Auto-save Solar Panel serials to network folder (exclude inverters)
       const dispatchedSerials = [];
       for (const r of results) {
         if (r.kind === 'serial' && Array.isArray(r.serials)) {
-          dispatchedSerials.push(...r.serials);
+          const itemName = String(r.item || '').trim().toUpperCase();
+          const isInverter = itemName.includes('INVERTER') || itemName.includes('DEYE') || itemName.includes('GROWATT') || itemName.includes('POLYCAB') || itemName.includes('SOLIS');
+          if (!isInverter) {
+            dispatchedSerials.push(...r.serials);
+          }
         }
       }
       if (dispatchedSerials.length) {

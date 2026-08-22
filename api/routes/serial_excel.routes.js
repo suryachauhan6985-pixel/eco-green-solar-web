@@ -66,18 +66,19 @@ function registerSerialExcelRoutes(app, deps) {
     const orderNo = req.params.orderNo;
     if (!orderNo) return res.status(400).json({ error: 'orderNo is required' });
 
-    // Query serial numbers for this order from stock_ledger
+    // Query Solar Panel serial numbers for this order from stock_ledger (exclude inverters)
     const [rows] = await pool.query(
-      `SELECT serial_no, customer_name, chalan_date, sales_date
+      `SELECT serial_no, item_name, category, customer_name, chalan_date, sales_date
         FROM stock_ledger
         WHERE order_no = ? AND serial_no IS NOT NULL AND serial_no != ''
+          AND (category LIKE '%PANEL%' OR (category NOT LIKE '%INVERTER%' AND item_name NOT LIKE '%INVERTER%' AND item_name NOT LIKE '%DEYE%' AND item_name NOT LIKE '%POLYCAB%' AND item_name NOT LIKE '%GROWATT%' AND item_name NOT LIKE '%SOLIS%'))
         ORDER BY id ASC`,
       [orderNo]
     );
 
     const serials = rows.map((r) => r.serial_no);
     if (!serials.length) {
-      return res.status(404).json({ error: `No scanned serial numbers found for Order #${orderNo}` });
+      return res.status(404).json({ error: `No Solar Panel serial numbers found for Order #${orderNo}` });
     }
 
     const customerName = rows[0].customer_name || '';

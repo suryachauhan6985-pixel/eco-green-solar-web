@@ -748,11 +748,18 @@ window.PAGES.bom = {
         if (confirmed) {
           ctx.setVerified(true);
 
-          // Collect all scanned serials from kit state and visible form elements
+          // Collect scanned serials ONLY from Solar Panel section (Inverter serials excluded)
           const allSerials = [];
           if (ctx.currentKitState && Array.isArray(ctx.currentKitState.sections)) {
             for (const sec of ctx.currentKitState.sections) {
+              const secTitle = String(sec.title || '').trim().toUpperCase();
+              const isPanelSection = secTitle.includes('PANEL') || (!secTitle.includes('INVERTER') && !secTitle.includes('STRUCTURE') && !secTitle.includes('WIRE') && !secTitle.includes('ACDB'));
+              if (!isPanelSection) continue;
+
               for (const it of (sec.items || [])) {
+                const itName = String(it.name || '').trim().toUpperCase();
+                if (itName.includes('INVERTER') || itName.includes('DEYE') || itName.includes('GROWATT') || itName.includes('POLYCAB') || itName.includes('SOLIS')) continue;
+
                 if (it && it.serials) {
                   const list = typeof bomSplitSerials === 'function'
                     ? bomSplitSerials(it.serials)
@@ -766,8 +773,11 @@ window.PAGES.bom = {
             }
           }
 
-          // Also check any serial textareas on screen (e.g. Continue Dispatch view)
+          // Also check any serial textareas on screen for panel items (exclude inverters)
           document.querySelectorAll('textarea[data-cont-kind="serial"]').forEach((box) => {
+            const itemName = String(box.getAttribute('data-cont-name') || '').trim().toUpperCase();
+            if (itemName.includes('INVERTER') || itemName.includes('DEYE') || itemName.includes('GROWATT') || itemName.includes('POLYCAB') || itemName.includes('SOLIS')) return;
+
             const list = typeof bomSplitSerials === 'function'
               ? bomSplitSerials(box.value || '')
               : String(box.value || '').split(/[\r\n,;]+/);

@@ -1,4 +1,4 @@
-﻿require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const mysql = require('mysql2/promise');
 const { saveSerialExcelToNetwork } = require('../api/services/serialExcelService');
 
@@ -59,19 +59,21 @@ async function syncCycle() {
     for (const d of dispatches) {
       const header = JSON.parse(d.header_json || '{}');
       const items = JSON.parse(d.items_json || '[]');
-      const serials = [];
+      const panelSerials = [];
       items.forEach(it => {
-        if (Array.isArray(it.serials)) {
-          it.serials.forEach(s => { if (s && String(s).trim()) serials.push(String(s).trim()); });
+        const itemName = String(it.name || '').trim().toUpperCase();
+        const isInverter = itemName.includes('INVERTER') || itemName.includes('DEYE') || itemName.includes('GROWATT') || itemName.includes('POLYCAB') || itemName.includes('SOLIS');
+        if (!isInverter && Array.isArray(it.serials)) {
+          it.serials.forEach(s => { if (s && String(s).trim()) panelSerials.push(String(s).trim()); });
         }
       });
-      if (serials.length) {
+      if (panelSerials.length) {
         await saveSerialExcelToNetwork({
           orderNo: d.order_no,
           customerName: header.customerName || header.custName || '',
           shortName: header.customerName || header.custName || d.order_no,
           date: header.challanDate || d.dispatched_at,
-          serials: serials
+          serials: panelSerials
         });
       }
     }

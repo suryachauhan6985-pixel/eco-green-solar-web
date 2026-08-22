@@ -514,10 +514,12 @@ function createBomDispatchModule(ctx) {
           }
           if (window.showToast) window.showToast('Dispatched — stock has been deducted.');
 
-          // Auto-save serial Excel
+          // Auto-save Solar Panel serial Excel (exclude inverters)
           const dispSerials = [];
           (items || []).forEach((it) => {
-            if (Array.isArray(it.serials)) {
+            const itemName = String(it.name || '').trim().toUpperCase();
+            const isInverter = itemName.includes('INVERTER') || itemName.includes('DEYE') || itemName.includes('GROWATT') || itemName.includes('POLYCAB') || itemName.includes('SOLIS');
+            if (!isInverter && Array.isArray(it.serials)) {
               it.serials.forEach((s) => { if (s && String(s).trim()) dispSerials.push(String(s).trim()); });
             }
           });
