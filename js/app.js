@@ -993,6 +993,7 @@ window.attachColumnFilters = function (table) {
     loginOverlay.className = 'login-overlay';
     loginOverlay.innerHTML = `
       <div class="login-bg" aria-hidden="true">
+        <canvas id="loginParticlesCanvas" class="login-canvas"></canvas>
         <span class="login-orb login-orb-a"></span>
         <span class="login-orb login-orb-b"></span>
         <span class="login-orb login-orb-c"></span>
@@ -1002,14 +1003,66 @@ window.attachColumnFilters = function (table) {
       <div class="login-shell">
         <div class="login-brand-panel">
           <div class="login-brand-inner">
+            <div class="login-system-status">
+              <span class="status-live-dot"></span>
+              <span>Eco Green Cloud • Enterprise Operational</span>
+            </div>
             <div class="login-logo"><img src="assets/logo.png" alt="Eco Green Solar" class="brand-logo"></div>
             <h1 class="login-brand-title">Eco Green Solar</h1>
             <p class="login-brand-tag">ERP for stock, sales &amp; field operations</p>
-            <ul class="login-brand-points">
-              <li><i class="fa-solid fa-lock"></i> Protected access with email OTP</li>
-              <li><i class="fa-solid fa-chart-line"></i> Real-time inventory visibility</li>
-              <li><i class="fa-solid fa-briefcase"></i> Built for field &amp; office teams</li>
-            </ul>
+            
+            <!-- Dynamic Moving Highlights Feed -->
+            <div class="login-ticker-container" id="loginTickerContainer">
+              <div class="login-ticker-card active" data-slide="0">
+                <div class="ticker-icon"><i class="fa-solid fa-solar-panel"></i></div>
+                <div class="ticker-text">
+                  <h4>Solar Project &amp; BOM Engine</h4>
+                  <p>Smart kit assembly with serial tracking, warranty &amp; live challan generation.</p>
+                </div>
+              </div>
+              <div class="login-ticker-card" data-slide="1">
+                <div class="ticker-icon" style="color:var(--gold); background:rgba(212,175,55,0.15);"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="ticker-text">
+                  <h4>Enterprise 2FA &amp; Security</h4>
+                  <p>Multi-device hardware tracking with email OTP protection &amp; active session audit.</p>
+                </div>
+              </div>
+              <div class="login-ticker-card" data-slide="2">
+                <div class="ticker-icon" style="color:var(--green); background:rgba(46,204,113,0.15);"><i class="fa-solid fa-chart-line"></i></div>
+                <div class="ticker-text">
+                  <h4>Real-Time Inventory Ledger</h4>
+                  <p>Multi-warehouse stock visibility, solar generation metrics &amp; low-stock alerts.</p>
+                </div>
+              </div>
+              <div class="login-ticker-card" data-slide="3">
+                <div class="ticker-icon" style="color:var(--purple); background:rgba(155,89,182,0.15);"><i class="fa-solid fa-wifi"></i></div>
+                <div class="ticker-text">
+                  <h4>Offline-First Mobile Sync</h4>
+                  <p>Instant barcode scanning in no-network zones with automatic cloud sync.</p>
+                </div>
+              </div>
+              <div class="login-ticker-card" data-slide="4">
+                <div class="ticker-icon" style="color:#00c0ef; background:rgba(0,192,239,0.15);"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <div class="ticker-text">
+                  <h4>Party Ledger &amp; Statements</h4>
+                  <p>Interactive statements, instant PDF delivery &amp; real-time balance drilldown.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ticker Progress & Controls -->
+            <div class="login-ticker-footer">
+              <div class="login-ticker-dots" id="loginTickerDots">
+                <span class="ticker-dot active" data-idx="0"></span>
+                <span class="ticker-dot" data-idx="1"></span>
+                <span class="ticker-dot" data-idx="2"></span>
+                <span class="ticker-dot" data-idx="3"></span>
+                <span class="ticker-dot" data-idx="4"></span>
+              </div>
+              <div class="login-ticker-progress-track">
+                <div class="login-ticker-progress-bar" id="loginTickerProgressBar"></div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="login-card">
@@ -1878,6 +1931,129 @@ window.attachColumnFilters = function (table) {
     resetNewPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptResetPassword(); });
     resetBackBtn.addEventListener('click', showForgotStep);
     resetResendBtn.addEventListener('click', attemptResendForgotOtp);
+
+    // ---------- 1. Dynamic Moving Highlights Feed (Auto-rotate every 3.5s) ----------
+    const tickerCards = Array.from(loginOverlay.querySelectorAll('.login-ticker-card'));
+    const tickerDots = Array.from(loginOverlay.querySelectorAll('.ticker-dot'));
+    const progressBar = loginOverlay.querySelector('#loginTickerProgressBar');
+    let currentSlide = 0;
+    let tickerTimer = null;
+    let isHoveringTicker = false;
+
+    function showSlide(idx) {
+      if (!tickerCards.length) return;
+      currentSlide = (idx + tickerCards.length) % tickerCards.length;
+      tickerCards.forEach((c, i) => {
+        c.classList.toggle('active', i === currentSlide);
+      });
+      tickerDots.forEach((d, i) => {
+        d.classList.toggle('active', i === currentSlide);
+      });
+      if (progressBar) {
+        progressBar.style.transition = 'none';
+        progressBar.style.width = '0%';
+        requestAnimationFrame(() => {
+          progressBar.style.transition = 'width 3.5s linear';
+          progressBar.style.width = '100%';
+        });
+      }
+    }
+
+    function startTicker() {
+      if (tickerTimer) clearInterval(tickerTimer);
+      showSlide(currentSlide);
+      tickerTimer = setInterval(() => {
+        if (!isHoveringTicker && loginOverlay && loginOverlay.style.display !== 'none') {
+          showSlide(currentSlide + 1);
+        }
+      }, 3500);
+    }
+
+    tickerDots.forEach((dot) => {
+      dot.addEventListener('click', () => {
+        const idx = parseInt(dot.dataset.idx, 10) || 0;
+        showSlide(idx);
+        startTicker();
+      });
+    });
+
+    const tickerContainer = loginOverlay.querySelector('#loginTickerContainer');
+    if (tickerContainer) {
+      tickerContainer.addEventListener('mouseenter', () => { isHoveringTicker = true; });
+      tickerContainer.addEventListener('mouseleave', () => { isHoveringTicker = false; });
+    }
+    startTicker();
+
+    // ---------- 2. Interactive Floating Particle Constellation Canvas ----------
+    const canvas = loginOverlay.querySelector('#loginParticlesCanvas');
+    if (canvas && canvas.getContext) {
+      const ctx = canvas.getContext('2d');
+      let width = 0;
+      let height = 0;
+      const particles = [];
+      const particleCount = 32;
+
+      function resizeCanvas() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.45,
+          vy: (Math.random() - 0.5) * 0.45,
+          radius: Math.random() * 2 + 1,
+          alpha: Math.random() * 0.5 + 0.25,
+          color: i % 3 === 0 ? 'rgba(59, 142, 208, ' : (i % 3 === 1 ? 'rgba(212, 175, 55, ' : 'rgba(46, 204, 113, ')
+        });
+      }
+
+      function drawParticles() {
+        if (!loginOverlay || loginOverlay.style.display === 'none') {
+          requestAnimationFrame(drawParticles);
+          return;
+        }
+        ctx.clearRect(0, 0, width, height);
+
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+
+          if (p.x < 0) p.x = width;
+          if (p.x > width) p.x = 0;
+          if (p.y < 0) p.y = height;
+          if (p.y > height) p.y = 0;
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fillStyle = `${p.color}${p.alpha})`;
+          ctx.fill();
+
+          for (let j = i + 1; j < particles.length; j++) {
+            const p2 = particles[j];
+            const dx = p.x - p2.x;
+            const dy = p.y - p2.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < 100) {
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.strokeStyle = `rgba(59, 142, 208, ${0.15 * (1 - dist / 100)})`;
+              ctx.lineWidth = 0.8;
+              ctx.stroke();
+            }
+          }
+        }
+        requestAnimationFrame(drawParticles);
+      }
+      drawParticles();
+    }
   }
 
 

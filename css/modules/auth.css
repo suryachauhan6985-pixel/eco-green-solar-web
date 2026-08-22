@@ -132,41 +132,161 @@ html[data-theme="light"] .login-grid{
   .login-card-top.mobile-only{ display:none !important; }
 }
 
+.login-canvas{
+  position:absolute; inset:0; pointer-events:none; z-index:0;
+  width:100%; height:100%;
+}
+
 .login-brand-panel{
   background: linear-gradient(160deg, rgba(59,142,208,.18), transparent 50%), var(--panel-alt);
   border-right:1px solid var(--border);
-  padding:36px 32px;
+  padding:32px 28px;
   display:flex; align-items:center;
 }
 .login-brand-inner{ width:100%; }
+
+.login-system-status{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:4px 12px;
+  background:rgba(46,204,113,0.12);
+  border:1px solid rgba(46,204,113,0.3);
+  border-radius:999px;
+  font-size:11px;
+  font-weight:700;
+  color:var(--green);
+  margin-bottom:14px;
+  letter-spacing:0.02em;
+  backdrop-filter:blur(4px);
+}
+.status-live-dot{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 6px var(--green);
+  animation:statusDotPulse 2s infinite;
+}
+@keyframes statusDotPulse{
+  0%,100%{ transform:scale(1); opacity:1; box-shadow:0 0 4px var(--green); }
+  50%{ transform:scale(1.3); opacity:.7; box-shadow:0 0 10px var(--green); }
+}
+
 .login-brand-title{
-  margin:14px 0 6px; font-size:22px; font-weight:800; color:var(--txt);
+  margin:12px 0 4px; font-size:22px; font-weight:800; color:var(--txt);
   letter-spacing:.2px;
 }
 .login-brand-tag{
-  margin:0 0 22px; color:var(--txt-muted); font-size:13px; line-height:1.45;
+  margin:0 0 16px;
+  font-size:12.5px;
+  line-height:1.45;
+  background:linear-gradient(90deg, var(--txt-muted) 0%, rgba(255,255,255,0.95) 50%, var(--txt-muted) 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:textShimmer 6s linear infinite;
 }
-.login-brand-points{
-  list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:12px;
+@keyframes textShimmer{
+  to{ background-position:200% center; }
 }
-.login-brand-points li{
-  display:flex; align-items:center; gap:10px;
-  font-size:13px; font-weight:600; color:var(--txt-label);
-  transition: transform .2s ease, color .2s ease;
+
+/* Moving Information Feed / Carousel */
+.login-ticker-container{
+  position:relative;
+  min-height:92px;
+  margin-top:12px;
 }
-.login-brand-points li:hover{
-  transform: translateX(4px);
-  color: var(--txt);
+.login-ticker-card{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  box-sizing:border-box;
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  padding:12px 14px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:14px;
+  opacity:0;
+  transform:translateY(16px) scale(0.97);
+  pointer-events:none;
+  transition:all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.login-brand-points i{
-  width:28px; height:28px; border-radius:8px;
-  display:inline-flex; align-items:center; justify-content:center;
-  background:rgba(59,142,208,.15); color:var(--blue); font-size:12px;
-  transition: transform .2s ease, background-color .2s ease;
+.login-ticker-card.active{
+  position:relative;
+  opacity:1;
+  transform:translateY(0) scale(1);
+  pointer-events:auto;
+  border-color:rgba(59,142,208,0.35);
+  background:rgba(255,255,255,0.05);
+  box-shadow:0 8px 24px rgba(0,0,0,0.22);
 }
-.login-brand-points li:hover i{
-  transform: scale(1.1);
-  background: rgba(59,142,208,.25);
+.ticker-icon{
+  width:36px;
+  height:36px;
+  border-radius:10px;
+  background:rgba(59,142,208,0.15);
+  color:var(--blue);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:15px;
+  flex-shrink:0;
+}
+.ticker-text h4{
+  margin:0 0 3px;
+  font-size:13px;
+  font-weight:700;
+  color:var(--txt);
+  letter-spacing:-0.01em;
+}
+.ticker-text p{
+  margin:0;
+  font-size:11.5px;
+  color:var(--txt-muted);
+  line-height:1.45;
+}
+
+.login-ticker-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:14px;
+  padding:0 2px;
+}
+.login-ticker-dots{
+  display:flex;
+  gap:6px;
+}
+.ticker-dot{
+  width:6px;
+  height:6px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.2);
+  cursor:pointer;
+  transition:all 0.3s ease;
+}
+.ticker-dot.active{
+  width:20px;
+  background:var(--blue);
+  box-shadow:0 0 8px rgba(59,142,208,0.6);
+}
+.login-ticker-progress-track{
+  width:72px;
+  height:3px;
+  background:rgba(255,255,255,0.1);
+  border-radius:999px;
+  overflow:hidden;
+}
+.login-ticker-progress-bar{
+  width:0%;
+  height:100%;
+  background:linear-gradient(90deg, var(--blue), var(--gold));
+  border-radius:999px;
+  transition:width 3.5s linear;
 }
 
 .login-card{
