@@ -688,4 +688,35 @@ module.exports = function registerAuthRoutes(app, deps) {
     res.json({ success: true });
   }));
 
+  // Send a test verification email to confirm email address format & delivery
+  app.post('/api/auth/send-test-alert-email', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
+    const { email, alertType } = req.body || {};
+    if (!email) return res.status(400).json({ error: 'Please enter at least one email address.' });
+
+    const rawList = String(email).split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+    if (!rawList.length) return res.status(400).json({ error: 'Please enter at least one email address.' });
+
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    for (const em of rawList) {
+      if (!EMAIL_RE.test(em)) {
+        return res.status(400).json({ error: `Invalid email format: '${em}'. Please provide valid email address(es) (e.g. store@gmail.com).` });
+      }
+    }
+
+    try {
+      for (const em of rawList) {
+        await sendOtpEmail(
+          em,
+          'ALERT-TEST',
+          `[Test Verification] Eco Green Solar ERP - ${alertType || 'Alert System'}`,
+          `Hello,\n\nThis is a verified test notification for Eco Green Solar ERP - ${alertType || 'Alert System'}.\nYour email '${em}' is confirmed and ready to receive automated notifications.\n\nTime: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}\nOperator: @${req.user.username}`
+        );
+      }
+      res.json({ success: true, count: rawList.length });
+    } catch (err) {
+      console.error('[Test Alert Email Error]:', err.message);
+      return res.status(500).json({ error: 'Could not send test email: ' + (err.message || 'Check SMTP / mailer setup.') });
+    }
+  }));
+
 };

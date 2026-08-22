@@ -32,10 +32,10 @@ function generateOtp() {
   return String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
 }
 
-async function sendOtpEmail(toEmail, otp) {
-  const subject = 'Your Eco Green Solar ERP Login OTP';
-  const text = `Your OTP is ${otp}. It is valid for ${OTP_TTL_MINUTES} minutes. Do not share this code with anyone.`;
-  const html = `<p>Your OTP is <strong style="font-size:20px;">${otp}</strong>.</p><p>It is valid for ${OTP_TTL_MINUTES} minutes. Do not share this code with anyone.</p>`;
+async function sendOtpEmail(toEmail, otp, customSubject, customBody) {
+  const subject = customSubject || 'Your Eco Green Solar ERP Login OTP';
+  const text = customBody || `Your OTP is ${otp}. It is valid for ${OTP_TTL_MINUTES} minutes. Do not share this code with anyone.`;
+  const html = customBody ? `<div style="font-family:sans-serif; padding:16px; color:#222;"><h2 style="color:#008080;">Eco Green Solar ERP</h2><p style="font-size:14px; line-height:1.5;">${customBody.replace(/\n/g, '<br>')}</p></div>` : `<p>Your OTP is <strong style="font-size:20px;">${otp}</strong>.</p><p>It is valid for ${OTP_TTL_MINUTES} minutes. Do not share this code with anyone.</p>`;
 
   const errors = [];
 

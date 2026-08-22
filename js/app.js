@@ -2347,6 +2347,7 @@ window.attachColumnFilters = function (table) {
 
         <!-- 6. Alerts & Inventory Tab -->
         <div class="settings-panel" id="tab-inventory">
+          <!-- Card 1: Stock Thresholds & Scanner Audio -->
           <div class="settings-card">
             <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between;">
               <span><i class="fa-solid fa-boxes-stacked" style="color:var(--gold);"></i> Stock Thresholds &amp; Scanner Audio</span>
@@ -2354,13 +2355,13 @@ window.attachColumnFilters = function (table) {
             </div>
             <div class="form-grid cols-2" style="margin-top:10px;">
               <div class="field">
-                <label>Low Stock Warning Threshold (Units) <span class="req">*</span></label>
-                <input type="number" id="setLowStockThreshold" min="1" placeholder="5" ${isAdmin ? '' : 'readonly'}>
+                <label style="font-weight:600; color:var(--txt); font-size:12px; margin-bottom:6px; display:block;">Low Stock Warning Threshold (Units) <span class="req">*</span></label>
+                <input type="number" id="setLowStockThreshold" min="1" placeholder="5" class="settings-email-input" ${isAdmin ? '' : 'readonly'}>
               </div>
               <div class="field">
-                <label>Scan Sheet Audio Feedback</label>
+                <label style="font-weight:600; color:var(--txt); font-size:12px; margin-bottom:6px; display:block;">Scan Sheet Audio Feedback</label>
                 <div style="display:flex; gap:6px;">
-                  <select id="setScannerSound" style="flex:1;">
+                  <select id="setScannerSound" class="settings-email-input" style="flex:1;">
                     <option value="beep" ${activeSoundSaved === 'beep' ? 'selected' : ''}>Classic ERP Beep (850Hz)</option>
                     <option value="chime" ${activeSoundSaved === 'chime' ? 'selected' : ''}>High Chime Tone (1200Hz)</option>
                     <option value="melody" ${activeSoundSaved === 'melody' ? 'selected' : ''}>Two-Tone Success Melody (650Hz ➔ 1050Hz)</option>
@@ -2371,43 +2372,54 @@ window.attachColumnFilters = function (table) {
                 </div>
               </div>
             </div>
+            ${isAdmin ? `
+            <div class="actions-row" style="margin-top:14px; justify-content:flex-end; border-top:1px solid var(--border-light); padding-top:12px;">
+              <button type="button" class="btn btn-green" id="setBtnSaveStockScanner"><i class="fa-solid fa-floppy-disk"></i> Save Stock &amp; Scanner Settings</button>
+            </div>` : ''}
           </div>
 
+          <!-- Card 2: Automated Email Alert Triggers -->
           <div class="settings-card" style="margin-top:16px;">
             <div class="settings-card-title"><i class="fa-solid fa-envelope" style="color:var(--blue);"></i> Automated Email Alert Triggers</div>
-            <p style="margin:0 0 12px; font-size:12.5px; color:var(--txt-muted);">
-              Set recipient Gmail addresses for automated ERP notifications. Multiple email addresses can be added separated by commas.
+            <p style="margin:0 0 14px; font-size:12.5px; color:var(--txt-muted);">
+              Set recipient Gmail address(es) for automated ERP notifications. Multiple email addresses can be added separated by commas.
             </p>
 
-            <div style="display:flex; flex-direction:column; gap:14px; margin-top:8px;">
+            <div style="display:flex; flex-direction:column; gap:12px; margin-top:8px;">
               <!-- Low Stock Email Alert -->
-              <div style="padding:12px; background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px;">
-                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:8px;">
-                  <input type="checkbox" id="setCheckLowStockEmail" style="accent-color:var(--gold); transform:scale(1.1);" ${isAdmin ? '' : 'disabled'}>
-                  <strong style="color:var(--txt); font-size:13px;">Low Stock Warning Email Alert</strong>
+              <div class="settings-email-card">
+                <label style="display:flex; align-items:center; gap:9px; cursor:pointer; margin-bottom:10px;">
+                  <input type="checkbox" id="setCheckLowStockEmail" style="accent-color:var(--gold); transform:scale(1.15);" ${isAdmin ? '' : 'disabled'}>
+                  <strong style="color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-triangle-exclamation" style="color:var(--gold); margin-right:4px;"></i> Low Stock Warning Email Alert</strong>
                 </label>
-                <div class="field">
-                  <label style="font-size:11.5px;">Recipient Email(s) for Low Stock Alerts</label>
-                  <input type="text" id="setLowStockEmails" placeholder="e.g. store@gmail.com, purchase@gmail.com" ${isAdmin ? '' : 'readonly'}>
+                <div class="field" style="margin-bottom:0;">
+                  <label style="font-size:12px; font-weight:600; color:var(--txt); margin-bottom:6px; display:block;">Recipient Email Address(es) for Low Stock Alerts</label>
+                  <div style="display:flex; gap:8px;">
+                    <input type="text" id="setLowStockEmails" class="settings-email-input" placeholder="e.g. store@gmail.com, purchase@gmail.com" ${isAdmin ? '' : 'readonly'}>
+                    ${isAdmin ? `<button type="button" class="btn btn-ghost" id="btnTestLowStockEmail" title="Send a verification test email to verify address"><i class="fa-solid fa-paper-plane"></i> Test Mail</button>` : ''}
+                  </div>
                 </div>
               </div>
 
               <!-- Dispatch Email Alert -->
-              <div style="padding:12px; background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px;">
-                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:8px;">
-                  <input type="checkbox" id="setCheckDispatchEmail" style="accent-color:var(--gold); transform:scale(1.1);" ${isAdmin ? '' : 'disabled'}>
-                  <strong style="color:var(--txt); font-size:13px;">BOM Challan &amp; Dispatch Summary Email</strong>
+              <div class="settings-email-card">
+                <label style="display:flex; align-items:center; gap:9px; cursor:pointer; margin-bottom:10px;">
+                  <input type="checkbox" id="setCheckDispatchEmail" style="accent-color:var(--gold); transform:scale(1.15);" ${isAdmin ? '' : 'disabled'}>
+                  <strong style="color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-truck-fast" style="color:var(--blue); margin-right:4px;"></i> BOM Challan &amp; Dispatch Summary Email</strong>
                 </label>
-                <div class="field">
-                  <label style="font-size:11.5px;">Recipient Email(s) for Dispatch Alerts</label>
-                  <input type="text" id="setDispatchEmails" placeholder="e.g. dispatch@gmail.com, logistics@gmail.com" ${isAdmin ? '' : 'readonly'}>
+                <div class="field" style="margin-bottom:0;">
+                  <label style="font-size:12px; font-weight:600; color:var(--txt); margin-bottom:6px; display:block;">Recipient Email Address(es) for Dispatch Alerts</label>
+                  <div style="display:flex; gap:8px;">
+                    <input type="text" id="setDispatchEmails" class="settings-email-input" placeholder="e.g. dispatch@gmail.com, logistics@gmail.com" ${isAdmin ? '' : 'readonly'}>
+                    ${isAdmin ? `<button type="button" class="btn btn-ghost" id="btnTestDispatchEmail" title="Send a verification test email to verify address"><i class="fa-solid fa-paper-plane"></i> Test Mail</button>` : ''}
+                  </div>
                 </div>
               </div>
             </div>
 
             ${isAdmin ? `
-            <div class="actions-row" style="margin-top:14px; justify-content:flex-end;">
-              <button type="button" class="btn btn-green" id="setBtnSaveAlerts"><i class="fa-solid fa-floppy-disk"></i> Save Alert &amp; Scanner Configuration</button>
+            <div class="actions-row" style="margin-top:16px; justify-content:flex-end; border-top:1px solid var(--border-light); padding-top:12px;">
+              <button type="button" class="btn btn-green" id="setBtnSaveEmailAlerts"><i class="fa-solid fa-floppy-disk"></i> Save Email Notification Settings</button>
             </div>` : ''}
           </div>
         </div>
@@ -2851,15 +2863,19 @@ window.attachColumnFilters = function (table) {
     if (chkCompact) chkCompact.addEventListener('change', handleDisplayPrefChange);
 
     // -------------------------------------------------------------
-    // 5. Alerts & Inventory Tab Async Initialization & Save
+    // 5. Alerts & Stock Tab
     // -------------------------------------------------------------
     const lowStockThreshInp = document.getElementById('setLowStockThreshold');
     const scannerSoundSel = document.getElementById('setScannerSound');
     const btnTestSound = document.getElementById('btnTestScannerSound');
     const chkLowStockEmail = document.getElementById('setCheckLowStockEmail');
     const lowStockEmailsInp = document.getElementById('setLowStockEmails');
+    const btnTestLowStock = document.getElementById('btnTestLowStockEmail');
     const chkDispatchEmail = document.getElementById('setCheckDispatchEmail');
     const dispatchEmailsInp = document.getElementById('setDispatchEmails');
+    const btnTestDispatch = document.getElementById('btnTestDispatchEmail');
+    const btnSaveStockScanner = document.getElementById('setBtnSaveStockScanner');
+    const btnSaveEmailAlerts = document.getElementById('setBtnSaveEmailAlerts');
 
     if (btnTestSound && scannerSoundSel) {
       btnTestSound.addEventListener('click', () => {
@@ -2880,32 +2896,165 @@ window.attachColumnFilters = function (table) {
       }).catch(() => {});
     }
 
-    const btnSaveAlerts = document.getElementById('setBtnSaveAlerts');
-    if (btnSaveAlerts) {
-      btnSaveAlerts.addEventListener('click', async () => {
+    // Helper: validate comma-separated emails
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    function parseAndValidateEmails(str) {
+      if (!str || !str.trim()) return { valid: true, emails: [] };
+      const rawList = str.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+      for (const em of rawList) {
+        if (!EMAIL_REGEX.test(em)) {
+          return { valid: false, invalidEmail: em, emails: rawList };
+        }
+      }
+      return { valid: true, emails: rawList };
+    }
+
+    // 1. Save Button: Stock Thresholds & Scanner Audio
+    if (btnSaveStockScanner) {
+      btnSaveStockScanner.addEventListener('click', async () => {
         const threshold = (lowStockThreshInp ? lowStockThreshInp.value.trim() : '5') || '5';
+        const numThresh = parseInt(threshold, 10);
+        if (!Number.isFinite(numThresh) || numThresh < 1) {
+          window.showError('Invalid Threshold', 'Low stock warning threshold must be a valid positive number (e.g. 5).');
+          return;
+        }
         const sound = scannerSoundSel ? scannerSoundSel.value : 'beep';
-        const lowStockEnabled = (chkLowStockEmail && chkLowStockEmail.checked) ? '1' : '0';
-        const lowStockEmails = (lowStockEmailsInp ? lowStockEmailsInp.value.trim() : '');
-        const dispatchEnabled = (chkDispatchEmail && chkDispatchEmail.checked) ? '1' : '0';
-        const dispatchEmails = (dispatchEmailsInp ? dispatchEmailsInp.value.trim() : '');
 
         try {
           await window.Api.put('/auth/app-settings', {
             settings: {
-              low_stock_threshold: threshold,
-              scanner_sound: sound,
-              low_stock_alert_enabled: lowStockEnabled,
-              low_stock_alert_emails: lowStockEmails,
-              dispatch_alert_enabled: dispatchEnabled,
-              dispatch_alert_emails: dispatchEmails
+              low_stock_threshold: String(numThresh),
+              scanner_sound: sound
             }
           });
 
           localStorage.setItem('egs_scanner_sound', sound);
-          if (window.showToast) window.showToast('Alerts & scanner configuration saved!');
+          if (window.showSuccess) {
+            window.showSuccess('Saved Successfully', `Stock threshold (${numThresh} units) and audio feedback have been updated.`);
+          } else if (window.showToast) {
+            window.showToast('Stock and scanner settings saved!', 'success');
+          }
         } catch (e) {
-          window.openModal('Save Failed', `<p style="color:var(--red);">${(e && e.message) || 'Could not save alert settings.'}</p>`);
+          window.showError('Save Failed', (e && e.message) || 'Could not save stock & scanner settings.');
+        }
+      });
+    }
+
+    // 2. Test Verification Email: Low Stock
+    if (btnTestLowStock && lowStockEmailsInp) {
+      btnTestLowStock.addEventListener('click', async () => {
+        const parsed = parseAndValidateEmails(lowStockEmailsInp.value);
+        if (!parsed.emails.length) {
+          window.showWarning('Email Address Required', 'Please enter at least one recipient email address to send a verification test mail.');
+          lowStockEmailsInp.focus();
+          return;
+        }
+        if (!parsed.valid) {
+          window.showError('Invalid Email Address', `The email address '${parsed.invalidEmail}' is not formatted correctly. Please use format like name@gmail.com.`);
+          lowStockEmailsInp.focus();
+          return;
+        }
+        try {
+          btnTestLowStock.disabled = true;
+          btnTestLowStock.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+          await window.Api.post('/auth/send-test-alert-email', {
+            email: parsed.emails.join(', '),
+            alertType: 'Low Stock Alerts'
+          });
+          window.showSuccess('Test Email Sent Successfully', `Verification email has been dispatched to: ${parsed.emails.join(', ')}`);
+        } catch (err) {
+          window.showError('Verification Failed', err.message || 'Could not send test email.');
+        } finally {
+          btnTestLowStock.disabled = false;
+          btnTestLowStock.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Test Mail';
+        }
+      });
+    }
+
+    // 3. Test Verification Email: Dispatch
+    if (btnTestDispatch && dispatchEmailsInp) {
+      btnTestDispatch.addEventListener('click', async () => {
+        const parsed = parseAndValidateEmails(dispatchEmailsInp.value);
+        if (!parsed.emails.length) {
+          window.showWarning('Email Address Required', 'Please enter at least one recipient email address to send a verification test mail.');
+          dispatchEmailsInp.focus();
+          return;
+        }
+        if (!parsed.valid) {
+          window.showError('Invalid Email Address', `The email address '${parsed.invalidEmail}' is not formatted correctly. Please use format like name@gmail.com.`);
+          dispatchEmailsInp.focus();
+          return;
+        }
+        try {
+          btnTestDispatch.disabled = true;
+          btnTestDispatch.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+          await window.Api.post('/auth/send-test-alert-email', {
+            email: parsed.emails.join(', '),
+            alertType: 'BOM Challan & Dispatch Alerts'
+          });
+          window.showSuccess('Test Email Sent Successfully', `Verification email has been dispatched to: ${parsed.emails.join(', ')}`);
+        } catch (err) {
+          window.showError('Verification Failed', err.message || 'Could not send test email.');
+        } finally {
+          btnTestDispatch.disabled = false;
+          btnTestDispatch.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Test Mail';
+        }
+      });
+    }
+
+    // 4. Save Button: Email Notification Settings
+    if (btnSaveEmailAlerts) {
+      btnSaveEmailAlerts.addEventListener('click', async () => {
+        const lowStockEnabled = (chkLowStockEmail && chkLowStockEmail.checked) ? '1' : '0';
+        const lowStockEmailsRaw = (lowStockEmailsInp ? lowStockEmailsInp.value.trim() : '');
+        const dispatchEnabled = (chkDispatchEmail && chkDispatchEmail.checked) ? '1' : '0';
+        const dispatchEmailsRaw = (dispatchEmailsInp ? dispatchEmailsInp.value.trim() : '');
+
+        // Validation
+        const parsedLowStock = parseAndValidateEmails(lowStockEmailsRaw);
+        if (!parsedLowStock.valid) {
+          window.showError('Invalid Low Stock Email', `The email address '${parsedLowStock.invalidEmail}' is invalid. Please provide valid email address(es) (e.g. name@gmail.com).`);
+          if (lowStockEmailsInp) lowStockEmailsInp.focus();
+          return;
+        }
+        if (lowStockEnabled === '1' && !parsedLowStock.emails.length) {
+          window.showWarning('Email Address Missing', 'Low Stock Warning Email Alert is enabled, but no recipient email address was provided.');
+          if (lowStockEmailsInp) lowStockEmailsInp.focus();
+          return;
+        }
+
+        const parsedDispatch = parseAndValidateEmails(dispatchEmailsRaw);
+        if (!parsedDispatch.valid) {
+          window.showError('Invalid Dispatch Email', `The email address '${parsedDispatch.invalidEmail}' is invalid. Please provide valid email address(es) (e.g. name@gmail.com).`);
+          if (dispatchEmailsInp) dispatchEmailsInp.focus();
+          return;
+        }
+        if (dispatchEnabled === '1' && !parsedDispatch.emails.length) {
+          window.showWarning('Email Address Missing', 'BOM Challan & Dispatch Email Alert is enabled, but no recipient email address was provided.');
+          if (dispatchEmailsInp) dispatchEmailsInp.focus();
+          return;
+        }
+
+        try {
+          await window.Api.put('/auth/app-settings', {
+            settings: {
+              low_stock_alert_enabled: lowStockEnabled,
+              low_stock_alert_emails: parsedLowStock.emails.join(', '),
+              dispatch_alert_enabled: dispatchEnabled,
+              dispatch_alert_emails: parsedDispatch.emails.join(', ')
+            }
+          });
+
+          if (lowStockEmailsInp) lowStockEmailsInp.value = parsedLowStock.emails.join(', ');
+          if (dispatchEmailsInp) dispatchEmailsInp.value = parsedDispatch.emails.join(', ');
+
+          if (window.showSuccess) {
+            window.showSuccess('Email Alerts Saved Successfully', 'Automated ERP email alert triggers and verified recipient addresses have been saved.');
+          } else if (window.showToast) {
+            window.showToast('Email alerts saved successfully!', 'success');
+          }
+        } catch (e) {
+          window.showError('Save Failed', (e && e.message) || 'Could not save email notification settings.');
         }
       });
     }
