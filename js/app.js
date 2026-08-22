@@ -996,6 +996,7 @@ window.attachColumnFilters = function (table) {
         <span class="login-orb login-orb-a"></span>
         <span class="login-orb login-orb-b"></span>
         <span class="login-orb login-orb-c"></span>
+        <span class="login-orb login-orb-d"></span>
         <span class="login-grid"></span>
       </div>
       <div class="login-shell">
@@ -1009,9 +1010,6 @@ window.attachColumnFilters = function (table) {
               <li><i class="fa-solid fa-chart-line"></i> Real-time inventory visibility</li>
               <li><i class="fa-solid fa-briefcase"></i> Built for field &amp; office teams</li>
             </ul>
-            <div style="margin-top:24px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.12); font-size:12px; color:rgba(255,255,255,0.7); display:flex; align-items:center; gap:8px;">
-              <i class="fa-solid fa-code" style="color:var(--gold);"></i> Developed by <strong style="color:var(--gold); font-weight:700;">Sumit Chauhan</strong>
-            </div>
           </div>
         </div>
         <div class="login-card">
@@ -1260,7 +1258,6 @@ window.attachColumnFilters = function (table) {
     const resetSubmitBtn = loginOverlay.querySelector('#resetSubmit');
     const resetBackBtn = loginOverlay.querySelector('#resetBack');
     const resetResendBtn = loginOverlay.querySelector('#resetResend');
-
     // ---------- OTP boxes: 6 separate single-digit inputs that stay in sync
     // with one hidden <input> (so the rest of the login code below can keep
     // reading/writing otpInput.value exactly as before — nothing else has
@@ -1269,25 +1266,30 @@ window.attachColumnFilters = function (table) {
     function wireOtpBoxes(boxesEl, hiddenEl, onComplete) {
       if (!boxesEl || !hiddenEl) return { focusFirst() {}, clear() {} };
       const boxes = Array.from(boxesEl.querySelectorAll('.otp-box'));
-      let completed = false;
-      function sync() {
+      let triggerTimer = null;
+      function sync(instant = false) {
+        if (triggerTimer) { clearTimeout(triggerTimer); triggerTimer = null; }
         hiddenEl.value = boxes.map((b) => b.value).join('');
-        if (!completed && hiddenEl.value.length === boxes.length && typeof onComplete === 'function') {
-          completed = true;
-          setTimeout(() => { completed = false; onComplete(hiddenEl.value); }, 40);
+        if (hiddenEl.value.length === boxes.length && typeof onComplete === 'function') {
+          if (instant) {
+            onComplete(hiddenEl.value);
+          } else {
+            triggerTimer = setTimeout(() => {
+              if (hiddenEl.value.length === boxes.length) onComplete(hiddenEl.value);
+            }, 450);
+          }
         }
       }
       boxes.forEach((box, i) => {
         box.addEventListener('input', () => {
           box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
           if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
-          sync();
+          sync(false);
         });
         box.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
-            sync();
-            if (hiddenEl.value.length === boxes.length && typeof onComplete === 'function') onComplete(hiddenEl.value);
+            sync(true);
             return;
           }
           if (e.key === 'Backspace' && !box.value && i > 0) {
@@ -1305,14 +1307,14 @@ window.attachColumnFilters = function (table) {
           text.slice(0, boxes.length).split('').forEach((ch, j) => {
             if (boxes[i + j]) boxes[i + j].value = ch;
           });
-          sync();
+          sync(true);
           const nextEmpty = boxes.find((b) => !b.value) || boxes[boxes.length - 1];
           nextEmpty.focus();
         });
       });
       return {
         focusFirst() { boxes[0].focus(); },
-        clear() { boxes.forEach((b) => { b.value = ''; }); hiddenEl.value = ''; completed = false; },
+        clear() { if (triggerTimer) clearTimeout(triggerTimer); boxes.forEach((b) => { b.value = ''; }); hiddenEl.value = ''; },
       };
     }
     // Bound after verify handlers are defined (see bottom of buildLoginOverlay).
@@ -1379,11 +1381,13 @@ window.attachColumnFilters = function (table) {
       loginOtpBoxesCtl.clear();
       otpError.classList.remove('show');
       pendingUsername = null;
+      errorBox.classList.remove('show');
+      userInput.focus();
     }
 
     function showOtpStep(maskedEmail) {
+      hideAllSteps();
       window.freshLoginInProgress = true;
-      stepCreds.style.display = 'none';
       stepOtp.style.display = '';
       otpHint.textContent = maskedEmail
         ? `Enter the 6-digit OTP sent to ${maskedEmail}.`
@@ -1468,16 +1472,18 @@ window.attachColumnFilters = function (table) {
         const pageId = (window.location.hash || '#dashboard').replace(/^#/, '') || 'dashboard';
         if (typeof go === 'function') go(window.PAGES[pageId] ? pageId : 'dashboard');
       } catch (e) { /* ignore */ }
-      const welcomeHtml = `
-        <div class="login-success-pop">
-          <div class="login-success-icon"><i class="fa-solid fa-circle-check"></i></div>
-          <h3 style="margin:10px 0 6px;font-size:18px;">Login successful</h3>
-          <p style="margin:0;color:var(--txt-muted);font-size:13px;">Welcome back, <b style="color:var(--txt);">${data.username}</b>.</p>
-        </div>`;
-      if (typeof window.openModal === 'function') {
+      
+      if (typeof window.showSuccess === 'function') {
+        window.showSuccess('Login Successful!', `Welcome back, @${data.username}. Loading your ERP workspace...`, 2200);
+      } else if (typeof window.openModal === 'function') {
+        const welcomeHtml = `
+          <div class="login-success-pop" style="text-align:center; padding:12px 0;">
+            <div class="login-success-icon" style="font-size:42px; color:var(--green); margin-bottom:12px;"><i class="fa-solid fa-circle-check"></i></div>
+            <h3 style="margin:0 0 6px; font-size:20px; font-weight:800; color:var(--txt);">Login Successful!</h3>
+            <p style="margin:0; color:var(--txt-muted); font-size:13.5px;">Welcome back, <b style="color:var(--gold);">@${data.username}</b>.</p>
+          </div>`;
         window.openModal('Welcome', welcomeHtml);
-        // Brief confirmation only — no Continue click required
-        setTimeout(() => { if (window.closeModal) window.closeModal(); }, 900);
+        setTimeout(() => { if (window.closeModal) window.closeModal(); }, 2000);
       } else if (typeof window.showToast === 'function') {
         window.showToast(`Login successful! Welcome, ${data.username}.`);
       }

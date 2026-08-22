@@ -13,48 +13,75 @@
   to{ opacity:1; }
 }
 @keyframes loginCardIn{
-  from{ opacity:0; transform:translateY(18px) scale(.98); }
+  from{ opacity:0; transform:translateY(24px) scale(.96); }
   to{ opacity:1; transform:translateY(0) scale(1); }
 }
-@keyframes loginOrb{
-  0%,100%{ transform:translate(0,0) scale(1); }
-  50%{ transform:translate(12px,-18px) scale(1.08); }
+@keyframes loginFloatA{
+  0%{ transform:translate(0, 0) scale(1) rotate(0deg); }
+  33%{ transform:translate(60px, 40px) scale(1.15) rotate(120deg); }
+  66%{ transform:translate(-40px, 80px) scale(0.9) rotate(240deg); }
+  100%{ transform:translate(0, 0) scale(1) rotate(360deg); }
+}
+@keyframes loginFloatB{
+  0%{ transform:translate(0, 0) scale(1); }
+  50%{ transform:translate(-80px, -60px) scale(1.2); }
+  100%{ transform:translate(0, 0) scale(1); }
+}
+@keyframes loginFloatC{
+  0%{ transform:translate(0, 0) scale(0.9); }
+  50%{ transform:translate(50px, -50px) scale(1.15); }
+  100%{ transform:translate(0, 0) scale(0.9); }
+}
+@keyframes gridDrift{
+  0%{ background-position: 0 0; }
+  100%{ background-position: 48px 48px; }
 }
 @keyframes loginPulse{
-  0%,100%{ box-shadow:0 0 0 0 rgba(59,142,208,.35); }
-  50%{ box-shadow:0 0 0 12px rgba(59,142,208,0); }
+  0%,100%{ box-shadow:0 0 0 0 rgba(59,142,208,.4); }
+  50%{ box-shadow:0 0 0 14px rgba(59,142,208,0); }
+}
+@keyframes cardHalo{
+  0%,100%{ box-shadow: 0 24px 64px rgba(0,0,0,.6), 0 0 35px rgba(59,142,208,.12); }
+  50%{ box-shadow: 0 24px 64px rgba(0,0,0,.6), 0 0 60px rgba(212,175,55,.18); }
 }
 
 .login-bg{
   position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0;
 }
 .login-orb{
-  position:absolute; border-radius:50%; filter:blur(40px); opacity:.45;
+  position:absolute; border-radius:50%; filter:blur(60px); opacity:.5;
 }
 .login-orb-a{
-  width:340px; height:340px; left:-80px; top:-60px;
-  background:radial-gradient(circle, var(--blue), transparent 70%);
-  animation:loginOrb 10s ease-in-out infinite;
+  width:450px; height:450px; left:-100px; top:-80px;
+  background:radial-gradient(circle, rgba(59,142,208,0.7) 0%, rgba(59,142,208,0.1) 60%, transparent 75%);
+  animation:loginFloatA 18s ease-in-out infinite;
 }
 .login-orb-b{
-  width:280px; height:280px; right:-60px; bottom:10%;
-  background:radial-gradient(circle, var(--gold), transparent 70%);
-  animation:loginOrb 12s ease-in-out infinite reverse;
+  width:400px; height:400px; right:-80px; bottom:5%;
+  background:radial-gradient(circle, rgba(212,175,55,0.65) 0%, rgba(243,156,18,0.1) 60%, transparent 75%);
+  animation:loginFloatB 15s ease-in-out infinite;
 }
 .login-orb-c{
-  width:200px; height:200px; left:40%; bottom:-40px;
-  background:radial-gradient(circle, var(--green), transparent 70%);
-  opacity:.25;
-  animation:loginOrb 14s ease-in-out infinite;
+  width:320px; height:320px; left:35%; bottom:-80px;
+  background:radial-gradient(circle, rgba(46,204,113,0.5) 0%, rgba(46,204,113,0.1) 60%, transparent 75%);
+  opacity:.35;
+  animation:loginFloatC 20s ease-in-out infinite;
+}
+.login-orb-d{
+  width:300px; height:300px; right:30%; top:-60px;
+  background:radial-gradient(circle, rgba(155,89,182,0.45) 0%, transparent 70%);
+  opacity:.3;
+  animation:loginFloatA 22s ease-in-out infinite reverse;
 }
 .login-grid{
   position:absolute; inset:0;
   background-image:
-    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
   background-size:48px 48px;
-  mask-image:radial-gradient(ellipse at center, #000 20%, transparent 75%);
-  opacity:.5;
+  mask-image:radial-gradient(ellipse at center, #000 30%, transparent 80%);
+  opacity:.65;
+  animation: gridDrift 20s linear infinite;
 }
 html[data-theme="light"] .login-grid{
   background-image:
@@ -68,12 +95,13 @@ html[data-theme="light"] .login-grid{
   display:grid;
   grid-template-columns: 1.05fr 1fr;
   gap:0;
-  border-radius:20px;
+  border-radius:22px;
   overflow:hidden;
-  border:1px solid var(--border-light);
+  border:1px solid rgba(255,255,255,0.1);
   background:var(--panel);
-  box-shadow: var(--shadow), 0 0 0 1px rgba(255,255,255,.03);
-  animation: loginCardIn .45s cubic-bezier(.2,.8,.2,1);
+  box-shadow: 0 24px 64px rgba(0,0,0,.6), 0 0 35px rgba(59,142,208,.12);
+  animation: loginCardIn .45s cubic-bezier(.2,.8,.2,1), cardHalo 8s ease-in-out infinite;
+  backdrop-filter: blur(16px);
 }
 @media (max-width:820px){
   .login-overlay{ align-items:flex-start; padding:16px 12px 24px; }
@@ -124,11 +152,21 @@ html[data-theme="light"] .login-grid{
 .login-brand-points li{
   display:flex; align-items:center; gap:10px;
   font-size:13px; font-weight:600; color:var(--txt-label);
+  transition: transform .2s ease, color .2s ease;
+}
+.login-brand-points li:hover{
+  transform: translateX(4px);
+  color: var(--txt);
 }
 .login-brand-points i{
   width:28px; height:28px; border-radius:8px;
   display:inline-flex; align-items:center; justify-content:center;
   background:rgba(59,142,208,.15); color:var(--blue); font-size:12px;
+  transition: transform .2s ease, background-color .2s ease;
+}
+.login-brand-points li:hover i{
+  transform: scale(1.1);
+  background: rgba(59,142,208,.25);
 }
 
 .login-card{
@@ -237,11 +275,15 @@ html[data-theme="light"] .otp-boxes .otp-box{
   font-weight:800; font-size:14.5px; border-radius:12px; cursor:pointer;
   margin-top:4px;
   box-shadow:0 8px 20px rgba(59,142,208,.28);
-  transition: transform .12s ease, filter .12s ease;
+  transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s ease, filter .18s ease;
 }
-.login-btn:hover{ filter:brightness(1.06); }
+.login-btn:hover{
+  filter:brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(59,142,208,.42);
+}
 .login-btn:active{ transform:translateY(1px); }
-.login-btn:disabled{ opacity:.65; cursor:default; filter:none; }
+.login-btn:disabled{ opacity:.65; cursor:default; filter:none; transform:none; }
 
 .login-error{
   display:none; color:var(--red); font-size:12px;
