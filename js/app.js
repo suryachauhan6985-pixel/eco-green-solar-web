@@ -2312,6 +2312,14 @@ window.attachColumnFilters = function (table) {
               </label>
             </div>
           </div>
+
+          <div class="settings-card" style="margin-top:16px;">
+            <div class="settings-card-title"><i class="fa-solid fa-sliders" style="color:var(--blue);"></i> Dashboard Widgets &amp; Metrics</div>
+            <p style="margin:0 0 14px; font-size:12.5px; color:var(--txt-muted);">
+              Choose which metric cards, solar generation summaries, and tables appear on your ERP Dashboard. You can also re-enable hidden sections anytime from here.
+            </p>
+            <button type="button" class="btn btn-blue" id="btnOpenDashCustomizerFromSettings"><i class="fa-solid fa-sliders"></i> Customize Dashboard Widgets</button>
+          </div>
         </div>
 
         <!-- 5. Company Profile Tab -->
@@ -2861,6 +2869,20 @@ window.attachColumnFilters = function (table) {
 
     if (chkAnimations) chkAnimations.addEventListener('change', handleDisplayPrefChange);
     if (chkCompact) chkCompact.addEventListener('change', handleDisplayPrefChange);
+
+    const btnOpenDashCust = document.getElementById('btnOpenDashCustomizerFromSettings');
+    if (btnOpenDashCust) {
+      btnOpenDashCust.addEventListener('click', () => {
+        if (window.openDashboardCustomizerModal) {
+          window.openDashboardCustomizerModal();
+        } else {
+          go('dashboard');
+          setTimeout(() => {
+            if (window.openDashboardCustomizerModal) window.openDashboardCustomizerModal();
+          }, 150);
+        }
+      });
+    }
 
     // -------------------------------------------------------------
     // 5. Alerts & Stock Tab

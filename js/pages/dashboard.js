@@ -204,6 +204,11 @@ window.PAGES.dashboard = {
           </div>
         </div>
       </div>
+
+      <!-- Floating Customize Trigger (Guarantees permanent accessibility under all conditions) -->
+      <button type="button" class="dash-floating-customize-btn" id="dashFloatingCustomizeBtn" title="Customize Dashboard Metrics &amp; Layout">
+        <i class="fa-solid fa-sliders"></i> <span>Customize Layout</span>
+      </button>
     </div>`,
   init() {
     function getCategoryIcon(cat) {
@@ -451,6 +456,10 @@ window.PAGES.dashboard = {
     function openCustomizerModal() {
       const currentPrefs = getWidgetPrefs();
       const html = `
+        <div style="background:rgba(59,142,208,0.1); border:1px solid rgba(59,142,208,0.3); border-radius:10px; padding:10px 14px; margin-bottom:14px; font-size:12px; color:var(--txt); display:flex; align-items:center; gap:10px;">
+          <i class="fa-solid fa-circle-info" style="color:var(--blue); font-size:16px;"></i>
+          <span><b>Tip:</b> You can customize or restore widgets anytime from the header button, floating button, or <b>System Settings ➔ Appearance</b>.</span>
+        </div>
         <div class="dash-customizer-grid">
           ${DASHBOARD_WIDGETS.map((w) => `
             <div class="dash-customizer-item">
@@ -508,9 +517,17 @@ window.PAGES.dashboard = {
       }
     }
 
+    // Expose globally so it can be invoked from Topbar, System Settings, or shortcuts
+    window.openDashboardCustomizerModal = openCustomizerModal;
+
     const customizeBtn = document.getElementById('dashCustomizeBtn');
     if (customizeBtn) {
       customizeBtn.addEventListener('click', openCustomizerModal);
+    }
+
+    const floatCustBtn = document.getElementById('dashFloatingCustomizeBtn');
+    if (floatCustBtn) {
+      floatCustBtn.addEventListener('click', openCustomizerModal);
     }
 
     // Live Network Users Session Tracker
@@ -597,16 +614,27 @@ window.PAGES.dashboard = {
 
     if (window.topbarExtra) {
       window.topbarExtra.innerHTML = `
-        <button class="topbar-live-btn" id="topbarBtnLiveUsers" type="button">
-          <span class="dot"></span>
-          <span>
-            <strong>Loading…</strong>
-            <small>Live session status</small>
-          </span>
-          <i class="fa-solid fa-chevron-right chevron"></i>
-        </button>`;
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="topbar-live-btn" id="topbarBtnLiveUsers" type="button">
+            <span class="dot"></span>
+            <span>
+              <strong>Loading…</strong>
+              <small>Live session status</small>
+            </span>
+            <i class="fa-solid fa-chevron-right chevron"></i>
+          </button>
+          <button class="topbar-live-btn" id="topbarBtnCustomize" type="button" title="Customize Dashboard Metrics &amp; Layout" style="padding:6px 12px; border-color:rgba(59,142,208,0.4);">
+            <i class="fa-solid fa-sliders" style="color:var(--gold); font-size:13px;"></i>
+            <span>
+              <strong style="font-size:12px;">Customize</strong>
+              <small style="font-size:10px;">Widgets &amp; Layout</small>
+            </span>
+          </button>
+        </div>`;
       const topbarBtn = document.getElementById('topbarBtnLiveUsers');
       if (topbarBtn) topbarBtn.addEventListener('click', openLiveUsersModal);
+      const topbarCustBtn = document.getElementById('topbarBtnCustomize');
+      if (topbarCustBtn) topbarCustBtn.addEventListener('click', openCustomizerModal);
       updateSummaryLabels();
     }
 
