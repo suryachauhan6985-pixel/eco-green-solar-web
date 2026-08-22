@@ -743,3 +743,81 @@ td.bom-challan-footer-caption{
     break-inside:avoid !important;
   }
 }
+
+/* ---------- High-Tech BOM Verification Overlay & Animation ---------- */
+.bom-verify-modal-box {
+  background: var(--card-bg, #161b22);
+  border: 1px solid rgba(59, 142, 208, 0.4);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 24px rgba(59, 142, 208, 0.2);
+  border-radius: 16px;
+  width: 460px;
+  max-width: 92vw;
+  padding: 28px 24px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.bom-verify-scanner {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bom-verify-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: var(--blue, #3b82f6);
+  border-right-color: var(--green, #22c55e);
+  animation: bomVerifySpin 0.75s linear infinite;
+}
+.bom-verify-pulse {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 142, 208, 0.25) 0%, transparent 70%);
+  animation: bomVerifyPulse 1.2s ease-in-out infinite alternate;
+}
+.bom-verify-icon {
+  font-size: 32px;
+  color: var(--blue, #3b82f6);
+  z-index: 2;
+  transition: all 0.25s ease;
+}
+.bom-verify-pbar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 16px 0 10px;
+  position: relative;
+}
+.bom-verify-pbar-fill {
+  height: 100%;
+  width: 30%;
+  background: linear-gradient(90deg, var(--blue, #3b82f6), var(--green, #22c55e));
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+@keyframes bomVerifySpin {
+  100% { transform: rotate(360deg); }
+}
+@keyframes bomVerifyPulse {
+  0% { transform: scale(0.9); opacity: 0.5; }
+  100% { transform: scale(1.15); opacity: 0.9; }
+}
+@keyframes bomPopCheck {
+  0% { transform: scale(0.3); opacity: 0; }
+  65% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.bom-pop-in {
+  animation: bomPopCheck 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}

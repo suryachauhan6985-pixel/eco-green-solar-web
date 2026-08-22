@@ -728,88 +728,198 @@ window.PAGES.bom = {
           }
         }
 
-        // Real stock check now happens HERE (moved off Convert into
-        // Challan) — checks whether Dispatch Qty for every item is
-        // actually available right now. Convert into Challan and Create
-        // Dispatch both stay locked until this passes.
-        const originalLabel = ctx.btnVerify.innerHTML;
-        ctx.btnVerify.disabled = true;
-        ctx.btnVerify.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking Stock...';
-        const canProceed = await ctx.bomRunStockCheck();
-        ctx.btnVerify.innerHTML = originalLabel;
-        ctx.updateVerifyButtonState(); // restores the normal enabled/disabled state
-        if (!canProceed) return;
+        // High-Tech Psychological Verification Micro-Interaction (< 1.2s total)
+        const verifyResult = await bomPerformAnimatedVerification();
+        if (!verifyResult || !verifyResult.success) {
+          ctx.updateVerifyButtonState();
+          return;
+        }
 
-        const confirmed = await window.confirmDialog(
-          'Verify BOM',
-          'Are you sure all items in this BOM are ready for dispatch?',
-          { kind: 'warning', okLabel: 'Yes, Verified' },
-        );
-        if (confirmed) {
-          ctx.setVerified(true);
+        ctx.setVerified(true);
+        ctx.updateVerifyButtonState();
 
-          // Collect scanned serials ONLY from Solar Panel section (Inverter serials excluded)
-          const allSerials = [];
-          if (ctx.currentKitState && Array.isArray(ctx.currentKitState.sections)) {
-            for (const sec of ctx.currentKitState.sections) {
-              const secTitle = String(sec.title || '').trim().toUpperCase();
-              const isPanelSection = secTitle.includes('PANEL') || (!secTitle.includes('INVERTER') && !secTitle.includes('STRUCTURE') && !secTitle.includes('WIRE') && !secTitle.includes('ACDB'));
-              if (!isPanelSection) continue;
+        // Collect scanned serials ONLY from Solar Panel section (Inverter serials excluded)
+        const allSerials = [];
+        if (ctx.currentKitState && Array.isArray(ctx.currentKitState.sections)) {
+          for (const sec of ctx.currentKitState.sections) {
+            const secTitle = String(sec.title || '').trim().toUpperCase();
+            const isPanelSection = secTitle.includes('PANEL') || (!secTitle.includes('INVERTER') && !secTitle.includes('STRUCTURE') && !secTitle.includes('WIRE') && !secTitle.includes('ACDB'));
+            if (!isPanelSection) continue;
 
-              for (const it of (sec.items || [])) {
-                const itName = String(it.name || '').trim().toUpperCase();
-                if (itName.includes('INVERTER') || itName.includes('DEYE') || itName.includes('GROWATT') || itName.includes('POLYCAB') || itName.includes('SOLIS')) continue;
+            for (const it of (sec.items || [])) {
+              const itName = String(it.name || '').trim().toUpperCase();
+              if (itName.includes('INVERTER') || itName.includes('DEYE') || itName.includes('GROWATT') || itName.includes('POLYCAB') || itName.includes('SOLIS')) continue;
 
-                if (it && it.serials) {
-                  const list = typeof bomSplitSerials === 'function'
-                    ? bomSplitSerials(it.serials)
-                    : (Array.isArray(it.serials) ? it.serials : String(it.serials).split(/[\r\n,;]+/));
-                  list.forEach((s) => {
-                    const trimmed = String(s || '').trim();
-                    if (trimmed && !allSerials.includes(trimmed)) allSerials.push(trimmed);
-                  });
-                }
+              if (it && it.serials) {
+                const list = typeof bomSplitSerials === 'function'
+                  ? bomSplitSerials(it.serials)
+                  : (Array.isArray(it.serials) ? it.serials : String(it.serials).split(/[\r\n,;]+/));
+                list.forEach((s) => {
+                  const trimmed = String(s || '').trim();
+                  if (trimmed && !allSerials.includes(trimmed)) allSerials.push(trimmed);
+                });
               }
             }
           }
-
-          // Also check any serial textareas on screen for panel items (exclude inverters)
-          document.querySelectorAll('textarea[data-cont-kind="serial"]').forEach((box) => {
-            const itemName = String(box.getAttribute('data-cont-name') || '').trim().toUpperCase();
-            if (itemName.includes('INVERTER') || itemName.includes('DEYE') || itemName.includes('GROWATT') || itemName.includes('POLYCAB') || itemName.includes('SOLIS')) return;
-
-            const list = typeof bomSplitSerials === 'function'
-              ? bomSplitSerials(box.value || '')
-              : String(box.value || '').split(/[\r\n,;]+/);
-            list.forEach((s) => {
-              const trimmed = String(s || '').trim();
-              if (trimmed && !allSerials.includes(trimmed)) allSerials.push(trimmed);
-            });
-          });
-
-          const custName = (ctx.$('bomCustomerName') ? String(ctx.$('bomCustomerName').value || '').trim() : '')
-            || (ctx.currentKitState && ctx.currentKitState.customerName)
-            || (ctx.currentContinueOrder && ctx.currentContinueOrder.header && ctx.currentContinueOrder.header.customerName)
-            || '';
-          const headerDate = (ctx.$('bomChallanDate') ? ctx.$('bomChallanDate').value : '')
-            || (ctx.currentContinueOrder && ctx.currentContinueOrder.header && ctx.currentContinueOrder.header.challanDate)
-            || new Date().toISOString();
-
-          if (allSerials.length > 0) {
-            if (typeof window.saveSerialExcelDirectly === 'function') {
-              window.saveSerialExcelDirectly({
-                orderNo: orderNo || (ctx.currentContinueOrder && ctx.currentContinueOrder.orderNo) || 'BOM',
-                customerName: custName,
-                shortName: custName || orderNo,
-                date: headerDate,
-                serials: allSerials
-              });
-            }
-          }
-
-          if (window.showToast) window.showToast('BOM verified — Create Dispatch is now unlocked.');
         }
+
+        // Also check any serial textareas on screen for panel items (exclude inverters)
+        document.querySelectorAll('textarea[data-cont-kind="serial"]').forEach((box) => {
+          const itemName = String(box.getAttribute('data-cont-name') || '').trim().toUpperCase();
+          if (itemName.includes('INVERTER') || itemName.includes('DEYE') || itemName.includes('GROWATT') || itemName.includes('POLYCAB') || itemName.includes('SOLIS')) return;
+
+          const list = typeof bomSplitSerials === 'function'
+            ? bomSplitSerials(box.value || '')
+            : String(box.value || '').split(/[\r\n,;]+/);
+          list.forEach((s) => {
+            const trimmed = String(s || '').trim();
+            if (trimmed && !allSerials.includes(trimmed)) allSerials.push(trimmed);
+          });
+        });
+
+        const custName = (ctx.$('bomCustomerName') ? String(ctx.$('bomCustomerName').value || '').trim() : '')
+          || (ctx.currentKitState && ctx.currentKitState.customerName)
+          || (ctx.currentContinueOrder && ctx.currentContinueOrder.header && ctx.currentContinueOrder.header.customerName)
+          || '';
+        const headerDate = (ctx.$('bomChallanDate') ? ctx.$('bomChallanDate').value : '')
+          || (ctx.currentContinueOrder && ctx.currentContinueOrder.header && ctx.currentContinueOrder.header.challanDate)
+          || new Date().toISOString();
+
+        if (allSerials.length > 0) {
+          if (typeof window.saveSerialExcelDirectly === 'function') {
+            window.saveSerialExcelDirectly({
+              orderNo: orderNo || (ctx.currentContinueOrder && ctx.currentContinueOrder.orderNo) || 'BOM',
+              customerName: custName,
+              shortName: custName || orderNo,
+              date: headerDate,
+              serials: allSerials
+            });
+          }
+        }
+
+        if (window.showToast) window.showToast('✔ BOM Verified — Create Dispatch & Challan are now unlocked!', 'success');
       });
+    }
+
+    async function bomPerformAnimatedVerification() {
+      const modalId = 'bomVerifyProgressModal';
+      let existingOverlay = document.getElementById(modalId);
+      if (existingOverlay) existingOverlay.remove();
+
+      const overlay = document.createElement('div');
+      overlay.id = modalId;
+      overlay.className = 'modal-overlay show';
+      overlay.style.zIndex = '99999';
+      overlay.style.backdropFilter = 'blur(6px)';
+
+      overlay.innerHTML = `
+        <div class="bom-verify-modal-box" onclick="event.stopPropagation()">
+          <div class="bom-verify-scanner" id="bomVerifyScannerWrap">
+            <div class="bom-verify-pulse"></div>
+            <div class="bom-verify-ring"></div>
+            <i class="fa-solid fa-bolt bom-verify-icon" id="bomVerifyIcon"></i>
+          </div>
+          <h3 id="bomVerifyTitle" style="margin:8px 0 4px; font-size:17.5px; font-weight:800; color:#ffffff; letter-spacing:0.3px;">Verifying BOM Items</h3>
+          <p id="bomVerifyStatus" style="font-size:12.5px; color:var(--txt-muted); margin:0 0 10px; min-height:20px; transition:all .2s ease;">🔍 Scanning BOM Items &amp; Categories...</p>
+          <div class="bom-verify-pbar">
+            <div class="bom-verify-pbar-fill" id="bomVerifyPbarFill" style="width:25%;"></div>
+          </div>
+          <div id="bomVerifyIssuesWrap" style="display:none; text-align:left; max-height:190px; overflow-y:auto; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25); border-radius:10px; padding:10px 14px; margin:14px 0 10px;"></div>
+          <div id="bomVerifyFooter" style="display:none; margin-top:14px;">
+            <button type="button" class="btn btn-ghost" id="bomVerifyCloseBtn" style="width:100%; justify-content:center;">Close &amp; Correct Items</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      const scannerWrap = overlay.querySelector('#bomVerifyScannerWrap');
+      const iconEl = overlay.querySelector('#bomVerifyIcon');
+      const titleEl = overlay.querySelector('#bomVerifyTitle');
+      const statusEl = overlay.querySelector('#bomVerifyStatus');
+      const pbarFill = overlay.querySelector('#bomVerifyPbarFill');
+      const issuesWrap = overlay.querySelector('#bomVerifyIssuesWrap');
+      const footerEl = overlay.querySelector('#bomVerifyFooter');
+      const closeBtn = overlay.querySelector('#bomVerifyCloseBtn');
+
+      if (closeBtn) closeBtn.addEventListener('click', () => { overlay.remove(); });
+
+      // Progressive micro-steps
+      const t1 = setTimeout(() => {
+        if (statusEl) statusEl.innerHTML = '⚡ Verifying Serial Numbers in Database...';
+        if (pbarFill) pbarFill.style.width = '65%';
+        if (iconEl) iconEl.className = 'fa-solid fa-barcode bom-verify-icon';
+      }, 200);
+
+      const t2 = setTimeout(() => {
+        if (statusEl) statusEl.innerHTML = '🛡️ Checking Available Warehouse Stock...';
+        if (pbarFill) pbarFill.style.width = '90%';
+        if (iconEl) iconEl.className = 'fa-solid fa-database bom-verify-icon';
+      }, 400);
+
+      // Concurrent API Stock Check
+      const items = ctx.bomCollectItemsForStockCheck();
+      let result = null;
+      let checkError = null;
+
+      try {
+        result = await window.Api.post('/bom/check-stock', { items });
+      } catch (e) {
+        checkError = (e && e.message) || 'Server connection error';
+      }
+
+      // Ensure around 600ms elapsed time for fast, satisfying high-tech animation
+      await new Promise((r) => setTimeout(r, 600));
+      clearTimeout(t1);
+      clearTimeout(t2);
+
+      const isSuccess = !checkError && result && result.canDispatch;
+
+      if (isSuccess) {
+        // SUCCESS STATE
+        scannerWrap.innerHTML = '<i class="fa-solid fa-circle-check bom-pop-in" style="font-size:52px; color:#22c55e; filter:drop-shadow(0 0 12px rgba(34,197,94,0.4));"></i>';
+        titleEl.style.color = '#22c55e';
+        titleEl.innerHTML = 'VERIFIED SUCCESSFULLY!';
+        statusEl.innerHTML = '<span style="color:var(--txt); font-weight:600;">All serial numbers &amp; stock quantities verified.</span><br><span style="color:var(--green); font-weight:700; font-size:11.5px;">✔ BOM Unlocked for Dispatch &amp; Challan</span>';
+        if (pbarFill) {
+          pbarFill.style.width = '100%';
+          pbarFill.style.background = '#22c55e';
+        }
+
+        // Wait 650ms so user enjoys the positive feedback, then close smoothly
+        await new Promise((r) => setTimeout(r, 650));
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 250);
+        return { success: true };
+      } else {
+        // FAILED STATE
+        scannerWrap.innerHTML = '<i class="fa-solid fa-circle-xmark bom-pop-in" style="font-size:52px; color:#ef4444; filter:drop-shadow(0 0 12px rgba(239,68,68,0.4));"></i>';
+        titleEl.style.color = '#ef4444';
+        titleEl.innerHTML = 'VERIFICATION BLOCKED';
+        statusEl.innerHTML = '<span style="color:#fca5a5;">The following issue(s) were found in database:</span>';
+        if (pbarFill) {
+          pbarFill.style.width = '100%';
+          pbarFill.style.background = '#ef4444';
+        }
+
+        const failedRows = (result && result.items ? result.items : []).filter((r) => !r.ok);
+        let issuesHtml = '<ul style="margin:0; padding-left:18px; font-size:12px; line-height:1.5;">';
+        if (checkError) {
+          issuesHtml += `<li style="color:#fca5a5;"><b>Error:</b> ${ctx.bomEsc ? ctx.bomEsc(checkError) : checkError}</li>`;
+        } else if (failedRows.length) {
+          failedRows.forEach((r) => {
+            issuesHtml += `<li style="margin-bottom:6px; color:#fca5a5;"><b style="color:#fff;">${r.name || 'Item'}</b>: ${r.reason || 'Stock shortage'}</li>`;
+          });
+        } else {
+          issuesHtml += `<li style="color:#fca5a5;">Unknown verification failure.</li>`;
+        }
+        issuesHtml += '</ul>';
+
+        issuesWrap.innerHTML = issuesHtml;
+        issuesWrap.style.display = 'block';
+        footerEl.style.display = 'block';
+        return { success: false };
+      }
     }
 
     // Flattens ctx.currentKitState's sections into the flat { name, qty, serials }
