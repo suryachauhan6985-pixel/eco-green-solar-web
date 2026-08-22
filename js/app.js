@@ -247,6 +247,65 @@ window.applyUserPreferences = function (prefs) {
 };
 try { window.applyUserPreferences(); } catch (e) {}
 
+// =====================================================================
+// YOUTUBE-STYLE GLOBAL NETWORK SENTINEL (Offline & Online Indicators)
+// =====================================================================
+let networkBannerEl = null;
+let onlineToastTimer = null;
+
+function ensureNetworkBanner() {
+  if (networkBannerEl) return networkBannerEl;
+  networkBannerEl = document.createElement('div');
+  networkBannerEl.id = 'egsNetworkBanner';
+  networkBannerEl.className = 'egs-offline-banner';
+  document.body.appendChild(networkBannerEl);
+  return networkBannerEl;
+}
+
+function handleNetworkChange() {
+  const isOnline = navigator.onLine;
+  const banner = ensureNetworkBanner();
+  if (onlineToastTimer) clearTimeout(onlineToastTimer);
+
+  document.body.classList.toggle('egs-is-offline', !isOnline);
+
+  let topbarPill = document.getElementById('topbarOfflinePill');
+  const topbarHead = document.querySelector('.topbar h1');
+
+  if (!isOnline) {
+    banner.className = 'egs-offline-banner is-offline active';
+    banner.innerHTML = `<i class="fa-solid fa-wifi"></i> <span>You are offline. Scans &amp; local edits will sync when reconnected.</span>`;
+
+    if (!topbarPill && topbarHead) {
+      topbarPill = document.createElement('span');
+      topbarPill.id = 'topbarOfflinePill';
+      topbarPill.className = 'topbar-offline-pill';
+      topbarPill.style.marginLeft = '10px';
+      topbarPill.innerHTML = `<i class="fa-solid fa-plane-slash"></i> Offline Mode`;
+      topbarHead.appendChild(topbarPill);
+    }
+  } else {
+    if (topbarPill) topbarPill.remove();
+    banner.className = 'egs-offline-banner is-online active';
+    banner.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>You are back online. Synchronizing data with server...</span>`;
+
+    // Trigger sheets sync
+    if (window.SheetsStore && typeof window.SheetsStore.syncNow === 'function') {
+      window.SheetsStore.syncNow().catch(() => {});
+    }
+
+    onlineToastTimer = setTimeout(() => {
+      banner.classList.remove('active');
+    }, 3200);
+  }
+}
+
+window.addEventListener('online', handleNetworkChange);
+window.addEventListener('offline', handleNetworkChange);
+if (!navigator.onLine) {
+  setTimeout(handleNetworkChange, 500);
+}
+
 (function () {
   const originalFetch = window.fetch.bind(window);
   window.fetch = function (input, init) {
