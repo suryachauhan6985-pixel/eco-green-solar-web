@@ -381,12 +381,14 @@ window.PAGES.partyledger = {
       highlightPartyListFocus();
     }
 
-    let partyFocusIdx = 0;
+    let partyFocusIdx = -1;
     function highlightPartyListFocus() {
       if (!tbodyEl) return;
       const rows = tbodyEl.querySelectorAll('tr');
-      rows.forEach((el, i) => el.classList.toggle('kbd-active', i === partyFocusIdx));
-      if (rows[partyFocusIdx]) rows[partyFocusIdx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      rows.forEach((el, i) => el.classList.toggle('kbd-active', partyFocusIdx >= 0 && i === partyFocusIdx));
+      if (partyFocusIdx >= 0 && rows[partyFocusIdx]) {
+        rows[partyFocusIdx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
     }
 
     function partyListKeyHandler(e) {
@@ -410,21 +412,21 @@ window.PAGES.partyledger = {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         e.stopImmediatePropagation();
-        partyFocusIdx = Math.min(partyFocusIdx + 1, directory.length - 1);
+        partyFocusIdx = partyFocusIdx < 0 ? 0 : Math.min(partyFocusIdx + 1, directory.length - 1);
         highlightPartyListFocus();
         const p = directory[partyFocusIdx];
         if (p) selectParty(p);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         e.stopImmediatePropagation();
-        partyFocusIdx = Math.max(partyFocusIdx - 1, 0);
+        partyFocusIdx = partyFocusIdx < 0 ? directory.length - 1 : Math.max(partyFocusIdx - 1, 0);
         highlightPartyListFocus();
         const p = directory[partyFocusIdx];
         if (p) selectParty(p);
       } else if (e.key === 'Enter') {
         e.preventDefault();
         e.stopImmediatePropagation();
-        const p = directory[partyFocusIdx] || selected;
+        const p = (partyFocusIdx >= 0 ? directory[partyFocusIdx] : null) || selected;
         if (!p) return;
         selectParty(p).then(() => openStatement());
       } else if (e.key === ' ' || e.code === 'Space') {
