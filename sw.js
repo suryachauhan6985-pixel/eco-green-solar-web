@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eco-green-solar-erp-v75';
+const CACHE_NAME = 'eco-green-solar-erp-v76';
 
 const APP_SHELL = [
   '/',
@@ -46,7 +46,7 @@ const APP_SHELL = [
   '/js/pages/bom-serial-modal.js?v=4',
   '/js/pages/bom-dispatch.js?v=14',
   '/js/pages/bom.js?v=32',
-  '/js/app.js?v=23',
+  '/js/app.js?v=24',
   '/js/theme.js?v=2'
 ];
 

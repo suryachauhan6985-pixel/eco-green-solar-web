@@ -29,41 +29,62 @@
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // GLOBAL LOADING OVERLAY — window.showLoader() / window.hideLoader().
-// Uses a counter (not a simple on/off flag) so that if two API calls happen
-// to overlap (e.g. a page loads two datasets at once), the overlay only
-// hides once ALL of them have finished — not the moment the first one
-// returns. Wired automatically into every /api/... call by the window.fetch
-// wrapper right below; pages/modules can also call these manually if they
-// ever need to show the overlay around non-fetch work.
+// Uses a counter + intelligent debounce so that fast cascading API calls
+// (e.g. dropdown cascades on Purchase/Sales/Masters) never flash the
+// full-screen overlay for a fraction of a second. Long-running requests
+// (> 200ms) or explicit actions with titles (Backup, Dispatch, etc.) show smoothly.
 // ---------------------------------------------------------------------------
 let __egsLoaderCount = 0;
+let __egsLoaderTimer = null;
+
 window.showLoader = function showLoader(title, sub) {
   __egsLoaderCount++;
   const el = document.getElementById('loaderOverlay');
-  if (el) {
-    let textWrap = el.querySelector('.loader-text-wrap');
-    if (!textWrap) {
-      textWrap = document.createElement('div');
-      textWrap.className = 'loader-text-wrap';
-      el.appendChild(textWrap);
-    }
-    if (title) {
-      textWrap.innerHTML = `
-        <div class="loader-title">${title}</div>
-        ${sub ? `<div class="loader-sub">${sub}</div>` : ''}
-      `;
-      textWrap.style.display = 'flex';
-    } else {
-      textWrap.innerHTML = '';
-      textWrap.style.display = 'none';
-    }
+  if (!el) return;
+
+  let textWrap = el.querySelector('.loader-text-wrap');
+  if (!textWrap) {
+    textWrap = document.createElement('div');
+    textWrap.className = 'loader-text-wrap';
+    el.appendChild(textWrap);
+  }
+
+  if (title) {
+    textWrap.innerHTML = `
+      <div class="loader-title">${title}</div>
+      ${sub ? `<div class="loader-sub">${sub}</div>` : ''}
+    `;
+    textWrap.style.display = 'flex';
+    // User-initiated action with title: show immediately
+    if (__egsLoaderTimer) { clearTimeout(__egsLoaderTimer); __egsLoaderTimer = null; }
     el.classList.add('active');
+    return;
+  } else {
+    textWrap.innerHTML = '';
+    textWrap.style.display = 'none';
+  }
+
+  // Fast background / cascading API calls (< 200ms) will finish before this fires,
+  // preventing rapid blinking and strobe flickering during page loads.
+  if (!__egsLoaderTimer && !el.classList.contains('active')) {
+    __egsLoaderTimer = setTimeout(() => {
+      if (__egsLoaderCount > 0) {
+        el.classList.add('active');
+      }
+      __egsLoaderTimer = null;
+    }, 200);
   }
 };
+
 window.hideLoader = function hideLoader(force) {
   if (force) __egsLoaderCount = 0;
   else __egsLoaderCount = Math.max(0, __egsLoaderCount - 1);
+
   if (__egsLoaderCount === 0) {
+    if (__egsLoaderTimer) {
+      clearTimeout(__egsLoaderTimer);
+      __egsLoaderTimer = null;
+    }
     const el = document.getElementById('loaderOverlay');
     if (el) {
       el.classList.remove('active');
