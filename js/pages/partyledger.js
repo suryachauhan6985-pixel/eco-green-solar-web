@@ -53,7 +53,7 @@ window.PAGES.partyledger = {
       <div class="pl-filter-bar">
         <div class="search-mini">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input id="plSearch" placeholder="Quick search by Party Name, Code, City, Mobile, GSTIN... (Press Tab or / to Focus | Arrow keys to navigate)" autocomplete="off">
+          <input id="plSearch" type="search" name="pl_search_query" placeholder="Quick search by Party Name, Code, City, Mobile, GSTIN... (Press Tab or / to Focus | Arrow keys to navigate)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other">
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
           <label style="color:var(--txt-muted); font-size:12px; font-weight:700; white-space:nowrap;"><i class="fa-solid fa-filter"></i> Group / Type:</label>
@@ -230,6 +230,10 @@ window.PAGES.partyledger = {
     const tbodyEl = document.getElementById('partyTableBody');
     const searchEl = document.getElementById('plSearch');
     const typeEl = document.getElementById('plTypeFilter');
+    if (searchEl) {
+      searchEl.value = '';
+      searchEl.defaultValue = '';
+    }
 
     // ---------------- Directory (table) ----------------
     async function loadDirectory() {
