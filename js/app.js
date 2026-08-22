@@ -28,17 +28,19 @@
 //   in yet", which is normal and not an error to react to.
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// GLOBAL LOADING INDICATORS — Unidirectional Top Progress Bar + Action Loader
-// Progresses strictly forward (0 -> 100% -> fade out). Never bounces back.
+// GLOBAL LOADING INDICATORS — Smooth Unidirectional Top Progress Bar + Action Loader
+// Batches cascading API calls into a SINGLE smooth sweep (0 -> 100% -> fade).
 // ---------------------------------------------------------------------------
 let __egsLoaderCount = 0;
 let __egsLoaderTimer = null;
+let __egsLoaderEndTimer = null;
 
 const topProgress = {
   el: null,
   percent: 0,
   trickleTimer: null,
   resetTimer: null,
+  isRunning: false,
 
   init() {
     if (this.el) return this.el;
@@ -59,23 +61,23 @@ const topProgress = {
       this.resetTimer = null;
     }
 
-    if (this.percent === 0 || this.percent >= 100) {
+    if (!this.isRunning || this.percent === 0 || this.percent >= 100) {
+      this.isRunning = true;
       this.percent = 0;
       this.el.style.transition = 'none';
       this.el.style.width = '0%';
       this.el.style.opacity = '1';
       void this.el.offsetWidth; // flush layout
+      this.set(35);
     }
-
-    this.set(Math.max(this.percent, 38));
 
     if (!this.trickleTimer) {
       this.trickleTimer = setInterval(() => {
-        if (this.percent < 88) {
-          const step = (88 - this.percent) * 0.18;
+        if (this.percent < 90) {
+          const step = (90 - this.percent) * 0.16;
           this.set(this.percent + step);
         }
-      }, 160);
+      }, 140);
     }
   },
 
@@ -84,7 +86,7 @@ const topProgress = {
     // Strictly unidirectional forward progression
     if (pct < this.percent && this.percent < 100) return;
     this.percent = Math.min(100, Math.max(0, pct));
-    this.el.style.transition = 'width 0.24s cubic-bezier(0.1, 0.85, 0.25, 1), opacity 0.25s ease';
+    this.el.style.transition = 'width 0.26s cubic-bezier(0.1, 0.85, 0.25, 1), opacity 0.2s ease';
     this.el.style.width = `${this.percent}%`;
     this.el.style.opacity = '1';
   },
@@ -96,29 +98,36 @@ const topProgress = {
       this.trickleTimer = null;
     }
     this.set(100);
+    this.isRunning = false;
 
     if (this.resetTimer) clearTimeout(this.resetTimer);
     this.resetTimer = setTimeout(() => {
       if (this.el) {
-        this.el.style.transition = 'opacity 0.25s ease';
+        this.el.style.transition = 'opacity 0.22s ease';
         this.el.style.opacity = '0';
         setTimeout(() => {
-          if (this.el && this.percent >= 100) {
+          if (this.el && !this.isRunning) {
             this.percent = 0;
             this.el.style.transition = 'none';
             this.el.style.width = '0%';
           }
-        }, 260);
+        }, 240);
       }
       this.resetTimer = null;
-    }, 120);
+    }, 150);
   }
 };
 
 window.showLoader = function showLoader(title, sub) {
   __egsLoaderCount++;
   
-  // 1. Unidirectional Top Micro-Progress Bar (Instant, strictly forward)
+  // Cancel pending completion if another call fires (cascading batching)
+  if (__egsLoaderEndTimer) {
+    clearTimeout(__egsLoaderEndTimer);
+    __egsLoaderEndTimer = null;
+  }
+
+  // 1. Unidirectional Top Micro-Progress Bar (Single sweep across batched calls)
   topProgress.start();
 
   // 2. Full-Screen Overlay (for long requests or explicit titled actions)
@@ -172,7 +181,16 @@ window.hideLoader = function hideLoader(force) {
       const textWrap = el.querySelector('.loader-text-wrap');
       if (textWrap) textWrap.innerHTML = '';
     }
-    topProgress.done();
+
+    // Debounce completion by 140ms so cascading requests during page loads
+    // (e.g. Purchase / Sales / BOM dropdowns) coalesce into a single progress sweep!
+    if (__egsLoaderEndTimer) clearTimeout(__egsLoaderEndTimer);
+    __egsLoaderEndTimer = setTimeout(() => {
+      if (__egsLoaderCount === 0) {
+        topProgress.done();
+      }
+      __egsLoaderEndTimer = null;
+    }, 140);
   }
 };
 

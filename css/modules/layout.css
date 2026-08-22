@@ -204,31 +204,28 @@ html[data-theme="light"] .brand-logo-img{
   animation: offlinePulse 2s infinite;
 }
 
-/* ---------- Sleek Top-Edge Loading Bar (Theme-Adaptive Enterprise Laser) ---------- */
+/* ---------- Sleek Top-Edge Loading Bar (Flat Corporate Solid Line - Zero Glow) ---------- */
 .egs-top-progress {
   position: fixed;
   top: 0;
   left: 0;
-  height: 3px;
+  height: 2.5px;
   width: 0%;
-  background: linear-gradient(90deg, var(--gold, #D4AF37) 0%, #F59E0B 50%, #FDE68A 85%, #FFFFFF 100%);
-  box-shadow: 0 0 10px rgba(212, 175, 55, 0.9), 0 0 4px #ffffff, 0 1px 4px rgba(0, 0, 0, 0.4);
+  background: var(--blue, #3B8ED0);
+  box-shadow: none !important;
   z-index: 999999;
   pointer-events: none;
   opacity: 0;
   transform: translateZ(0);
 }
 html[data-theme="emerald"] .egs-top-progress {
-  background: linear-gradient(90deg, #10B981 0%, #2ECC71 50%, #A7F3D0 85%, #FFFFFF 100%);
-  box-shadow: 0 0 10px rgba(46, 204, 113, 0.9), 0 0 4px #ffffff;
+  background: #2ECC71;
 }
 html[data-theme="ocean"] .egs-top-progress {
-  background: linear-gradient(90deg, #0284C7 0%, #38BDF8 50%, #BAE6FD 85%, #FFFFFF 100%);
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.9), 0 0 4px #ffffff;
+  background: #38BDF8;
 }
 html[data-theme="light"] .egs-top-progress {
-  background: linear-gradient(90deg, #D97706 0%, #F59E0B 50%, #D4AF37 85%, #B45309 100%);
-  box-shadow: 0 0 8px rgba(217, 119, 6, 0.8);
+  background: #2563EB;
 }
 
 /* Hardware-Accelerated High Performance Containers */
