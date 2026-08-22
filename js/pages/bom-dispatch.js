@@ -513,6 +513,24 @@ function createBomDispatchModule(ctx) {
             return;
           }
           if (window.showToast) window.showToast('Dispatched — stock has been deducted.');
+
+          // Auto-save serial Excel
+          const dispSerials = [];
+          (items || []).forEach((it) => {
+            if (Array.isArray(it.serials)) {
+              it.serials.forEach((s) => { if (s && String(s).trim()) dispSerials.push(String(s).trim()); });
+            }
+          });
+          if (dispSerials.length && typeof window.saveSerialExcelDirectly === 'function') {
+            window.saveSerialExcelDirectly({
+              orderNo: order.orderNo,
+              customerName: order.header ? (order.header.customerName || order.header.custName || '') : '',
+              shortName: order.header ? (order.header.customerName || order.header.custName || order.orderNo) : order.orderNo,
+              date: (order.header && order.header.challanDate) || new Date().toISOString(),
+              serials: dispSerials
+            });
+          }
+
           if (result.orderStatus === 'Completed' || !(result.pending || []).length) {
             window.openModal('Dispatch Complete', `<p>Order No <b>${bomEsc(order.orderNo)}</b> is now fully dispatched.</p>`);
             goBack();

@@ -748,7 +748,7 @@ window.PAGES.bom = {
         if (confirmed) {
           ctx.setVerified(true);
 
-          // Collect all scanned serials from kit state
+          // Collect all scanned serials from kit state and visible form elements
           const allSerials = [];
           if (ctx.currentKitState && Array.isArray(ctx.currentKitState.sections)) {
             for (const sec of ctx.currentKitState.sections) {
@@ -759,25 +759,40 @@ window.PAGES.bom = {
                     : (Array.isArray(it.serials) ? it.serials : String(it.serials).split(/[\r\n,;]+/));
                   list.forEach((s) => {
                     const trimmed = String(s || '').trim();
-                    if (trimmed) allSerials.push(trimmed);
+                    if (trimmed && !allSerials.includes(trimmed)) allSerials.push(trimmed);
                   });
                 }
               }
             }
           }
 
-          const custName = ctx.$('bomCustomerName') ? String(ctx.$('bomCustomerName').value || '').trim() : '';
-          const headerDate = ctx.$('bomChallanDate') ? ctx.$('bomChallanDate').value : '';
+          // Also check any serial textareas on screen (e.g. Continue Dispatch view)
+          document.querySelectorAll('textarea[data-cont-kind="serial"]').forEach((box) => {
+            const list = typeof bomSplitSerials === 'function'
+              ? bomSplitSerials(box.value || '')
+              : String(box.value || '').split(/[\r\n,;]+/);
+            list.forEach((s) => {
+              const trimmed = String(s || '').trim();
+              if (trimmed && !allSerials.includes(trimmed)) allSerials.push(trimmed);
+            });
+          });
+
+          const custName = (ctx.$('bomCustomerName') ? String(ctx.$('bomCustomerName').value || '').trim() : '')
+            || (ctx.currentKitState && ctx.currentKitState.customerName)
+            || (ctx.currentContinueOrder && ctx.currentContinueOrder.header && ctx.currentContinueOrder.header.customerName)
+            || '';
+          const headerDate = (ctx.$('bomChallanDate') ? ctx.$('bomChallanDate').value : '')
+            || (ctx.currentContinueOrder && ctx.currentContinueOrder.header && ctx.currentContinueOrder.header.challanDate)
+            || new Date().toISOString();
 
           if (allSerials.length > 0) {
             if (typeof window.saveSerialExcelDirectly === 'function') {
               window.saveSerialExcelDirectly({
-                orderNo: orderNo || 'BOM',
+                orderNo: orderNo || (ctx.currentContinueOrder && ctx.currentContinueOrder.orderNo) || 'BOM',
                 customerName: custName,
                 shortName: custName || orderNo,
-                date: headerDate || new Date().toISOString(),
-                serials: allSerials,
-                showPromptIfUnset: true
+                date: headerDate,
+                serials: allSerials
               });
             }
           }

@@ -20,11 +20,40 @@ function registerSerialExcelRoutes(app, deps) {
       return res.status(400).json({ error: 'serials array with at least 1 serial number is required.' });
     }
 
+    const cleanOrder = String(orderNo || '').trim();
+    const cleanCust = String(customerName || shortName || '').trim();
+    const scanDate = formatScanDate(date);
+
+    // 1. Persist to database queue
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS nas_serial_sync_queue (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          order_no VARCHAR(100) NOT NULL,
+          customer_name VARCHAR(255) DEFAULT '',
+          scan_date VARCHAR(50) DEFAULT '',
+          serials_json LONGTEXT NOT NULL,
+          synced_to_nas TINYINT(1) DEFAULT 0,
+          synced_at DATETIME NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      await pool.query(
+        `INSERT INTO nas_serial_sync_queue (order_no, customer_name, scan_date, serials_json)
+         VALUES (?, ?, ?, ?)`,
+        [cleanOrder, cleanCust, scanDate, JSON.stringify(serials)]
+      );
+    } catch (dbErr) {
+      console.warn('[SerialExcel] DB queue insert warning:', dbErr.message);
+    }
+
+    // 2. Attempt direct network save
     const result = await saveSerialExcelToNetwork({
-      orderNo,
-      customerName,
-      shortName,
-      date,
+      orderNo: cleanOrder,
+      customerName: cleanCust,
+      shortName: cleanCust || cleanOrder,
+      date: scanDate,
       serials
     });
 
