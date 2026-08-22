@@ -844,18 +844,18 @@ window.PAGES.bom = {
 
       if (closeBtn) closeBtn.addEventListener('click', () => { overlay.remove(); });
 
-      // Progressive micro-steps
+      // Progressive micro-steps with comfortable, legible pacing
       const t1 = setTimeout(() => {
         if (statusEl) statusEl.innerHTML = '⚡ Verifying Serial Numbers in Database...';
         if (pbarFill) pbarFill.style.width = '65%';
         if (iconEl) iconEl.className = 'fa-solid fa-barcode bom-verify-icon';
-      }, 200);
+      }, 450);
 
       const t2 = setTimeout(() => {
         if (statusEl) statusEl.innerHTML = '🛡️ Checking Available Warehouse Stock...';
         if (pbarFill) pbarFill.style.width = '90%';
         if (iconEl) iconEl.className = 'fa-solid fa-database bom-verify-icon';
-      }, 400);
+      }, 900);
 
       // Concurrent API Stock Check
       const items = ctx.bomCollectItemsForStockCheck();
@@ -868,8 +868,8 @@ window.PAGES.bom = {
         checkError = (e && e.message) || 'Server connection error';
       }
 
-      // Ensure around 600ms elapsed time for fast, satisfying high-tech animation
-      await new Promise((r) => setTimeout(r, 600));
+      // Ensure ~1350ms elapsed time so user comfortably reads all 3 scanning phases
+      await new Promise((r) => setTimeout(r, 1350));
       clearTimeout(t1);
       clearTimeout(t2);
 
@@ -886,8 +886,8 @@ window.PAGES.bom = {
           pbarFill.style.background = '#22c55e';
         }
 
-        // Wait 650ms so user enjoys the positive feedback, then close smoothly
-        await new Promise((r) => setTimeout(r, 650));
+        // Wait 1100ms so user can comfortably see and feel the green checkmark before auto-close
+        await new Promise((r) => setTimeout(r, 1100));
         overlay.classList.remove('show');
         setTimeout(() => overlay.remove(), 250);
         return { success: true };
