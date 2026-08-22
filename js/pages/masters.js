@@ -21,15 +21,15 @@ window.PAGES.masters = {
     </div>
 
     <div class="subtab-panel active" data-panel="item-reg">
-      <div class="grid-2">
 
-        <!-- LEFT PANEL: 3-STEP ITEM PROFILER -->
-        <div class="panel">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-            <h3 id="mItemFormHeading" style="margin:0;"><i class="fa-solid fa-box-open" style="color:var(--gold);"></i> Item Profiler & Registration</h3>
-            <button type="button" class="info-btn" data-info="Create product master templates. Subtypes (DCR, Non-DCR, Hybrid, etc.) are selected dynamically during Purchase Inward."><i class="fa-solid fa-circle-info"></i></button>
-          </div>
+      <!-- TOP PANEL: 3-STEP ITEM PROFILER -->
+      <div class="panel" style="margin-bottom:18px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+          <h3 id="mItemFormHeading" style="margin:0;"><i class="fa-solid fa-box-open" style="color:var(--gold);"></i> Item Profiler &amp; Registration</h3>
+          <button type="button" class="info-btn" data-info="Create product master templates. Subtypes (DCR, Non-DCR, Hybrid, etc.) are selected dynamically during Purchase Inward."><i class="fa-solid fa-circle-info"></i></button>
+        </div>
 
+        <div class="masters-step-grid">
           <!-- STEP 1: CATEGORY SELECTION & LIVE SMART STATUS -->
           <div class="master-step-block">
             <div class="master-step-title"><span class="step-num">1</span> Product Classification</div>
@@ -37,7 +37,7 @@ window.PAGES.masters = {
               <label>Select Category <span class="req">*</span></label>
               <select id="mItemCatDropdown"></select>
             </div>
-            <div class="category-meta-chips" id="mCategoryMetaChips">
+            <div class="category-meta-chips" id="mCategoryMetaChips" style="margin-top:10px;">
               <span class="chip chip-gold active" id="chipWattStatus"><i class="fa-solid fa-bolt"></i> Wattage Tracked</span>
               <span class="chip chip-blue active" id="chipSerialStatus"><i class="fa-solid fa-barcode"></i> Serial No. Required</span>
               <span class="chip active" id="chipSubtypesStatus"><i class="fa-solid fa-tags"></i> Subtypes: Loading...</span>
@@ -48,124 +48,138 @@ window.PAGES.masters = {
 
           <!-- STEP 2: BRAND & SPECIFICATION -->
           <div class="master-step-block">
-            <div class="master-step-title"><span class="step-num">2</span> Brand & Specifications</div>
-            <div class="form-grid cols-2">
-              <div class="field">
-                <label>Brand Name <span class="req">*</span></label>
-                <input id="mItemBrandInput" placeholder="e.g. Adani, Vikram, Waree..." list="mExistingBrandsList" autocomplete="off">
-                <datalist id="mExistingBrandsList"></datalist>
+            <div class="master-step-title"><span class="step-num">2</span> Brand &amp; Specifications</div>
+            <div class="field">
+              <label>Brand Name <span class="req">*</span></label>
+              <input id="mItemBrandInput" placeholder="e.g. Adani, Vikram, Waree..." list="mExistingBrandsList" autocomplete="off">
+              <datalist id="mExistingBrandsList"></datalist>
+            </div>
+            <div class="field" id="mItemWattField" style="margin-top:10px;">
+              <label>Wattage / Capacity <span class="req" id="mItemWattReq">*</span></label>
+              <div style="display:flex; gap:6px;">
+                <input id="mItemWattInput" placeholder="e.g. 545" style="flex:1;">
+                <select id="mItemWattUnitDropdown" style="width:82px;">
+                  <option value="W" selected>W</option>
+                  <option value="kW">kW</option>
+                </select>
               </div>
-              <div class="field" id="mItemWattField">
-                <label>Wattage / Capacity <span class="req" id="mItemWattReq">*</span></label>
-                <div style="display:flex; gap:6px;">
-                  <input id="mItemWattInput" placeholder="e.g. 545" style="flex:1;">
-                  <select id="mItemWattUnitDropdown" style="width:82px;">
-                    <option value="W" selected>W</option>
-                    <option value="kW">kW</option>
-                  </select>
-                </div>
-              </div>
-              <div class="field" id="mItemModelField" style="display:none;">
-                <label>Model / Specification <span class="req" id="mItemModelReq">*</span></label>
-                <input id="mItemModelInput" placeholder="e.g. 1.5 X 1.5, 4Pole / 3Phase">
-              </div>
+            </div>
+            <div class="field" id="mItemModelField" style="display:none; margin-top:10px;">
+              <label>Model / Specification <span class="req" id="mItemModelReq">*</span></label>
+              <input id="mItemModelInput" placeholder="e.g. 1.5 X 1.5, 4Pole / 3Phase">
             </div>
           </div>
 
           <!-- STEP 3: INVENTORY PARAMETERS & ALERT THRESHOLD -->
           <div class="master-step-block">
-            <div class="master-step-title"><span class="step-num">3</span> Inventory & Stock Controls</div>
-            <div class="form-grid cols-2">
-              <div class="field">
-                <label>Unit of Measure (UOM) <span class="req">*</span></label>
-                <select id="mItemUomDropdown"></select>
-              </div>
-              <div class="field">
-                <label>Low Stock Alert Level</label>
-                <input type="number" min="0" id="mItemMinStockInput" value="0" placeholder="Minimum stock warning">
-              </div>
+            <div class="master-step-title"><span class="step-num">3</span> Inventory &amp; Stock Controls</div>
+            <div class="field">
+              <label>Unit of Measure (UOM) <span class="req">*</span></label>
+              <select id="mItemUomDropdown"></select>
             </div>
-          </div>
-
-          <div class="actions-row" style="margin-top:16px;">
-            <button class="btn btn-blue" id="mBtnSaveItem" style="flex:1;"><i class="fa-solid fa-floppy-disk"></i> Save Product Profile</button>
-            <button class="btn btn-red" id="mBtnCancelItemEdit" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel</button>
+            <div class="field" style="margin-top:10px;">
+              <label>Low Stock Alert Level</label>
+              <input type="number" min="0" id="mItemMinStockInput" value="0" placeholder="Minimum stock warning">
+            </div>
           </div>
         </div>
 
-        <!-- RIGHT PANEL: REGISTERED CATALOG & QUICK SEARCH -->
-        <div class="panel">
-          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-            <h3 style="margin:0;"><i class="fa-solid fa-table-list"></i> Registered Inventory Catalog</h3>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button class="btn btn-ghost" id="mBtnImportItems" style="background:#1F7A4D; padding:6px 12px; font-size:12px;"><i class="fa-solid fa-file-import"></i> Upload Excel</button>
-              <button class="btn btn-ghost" id="mBtnDownloadItemTemplate" style="background:#4B6584; padding:6px 12px; font-size:12px;"><i class="fa-solid fa-download"></i> Download Template</button>
-              <input type="file" id="mItemImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
-            </div>
-          </div>
+        <div class="actions-row" style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+          <button class="btn btn-red" id="mBtnCancelItemEdit" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel</button>
+          <button class="btn btn-blue" id="mBtnSaveItem" style="min-width:220px;"><i class="fa-solid fa-floppy-disk"></i> Save Product Profile</button>
+        </div>
+      </div>
 
-          <!-- Stats Bar -->
-          <div class="masters-stats-row" id="mastersItemStatsRow">
-            <div class="masters-stat-item"><i class="fa-solid fa-cubes"></i> Total Products: <strong id="mStatTotalItems">0</strong></div>
-            <div class="masters-stat-item"><i class="fa-solid fa-bolt" style="color:#f39c12;"></i> Watt-Tracked: <strong id="mStatWattItems">0</strong></div>
-            <div class="masters-stat-item"><i class="fa-solid fa-barcode" style="color:#3b8ed0;"></i> Serial-Tracked: <strong id="mStatSerialItems">0</strong></div>
+      <!-- BOTTOM PANEL: REGISTERED CATALOG & QUICK SEARCH -->
+      <div class="panel">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+          <h3 style="margin:0;"><i class="fa-solid fa-table-list" style="color:var(--gold);"></i> Registered Inventory Catalog</h3>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-ghost" id="mBtnImportItems" style="background:#1F7A4D; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-file-import"></i> Upload Excel</button>
+            <button class="btn btn-ghost" id="mBtnDownloadItemTemplate" style="background:#4B6584; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-download"></i> Download Template</button>
+            <input type="file" id="mItemImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
           </div>
+        </div>
 
-          <!-- Search & Filter Bar -->
-          <div class="masters-filter-bar">
-            <div class="search-box">
-              <input type="text" id="mItemSearchInput" placeholder="Quick search by Brand, Category, Wattage, Model..." style="width:100%;">
-            </div>
-            <select id="mItemFilterCatDropdown" style="width:180px;">
+        <!-- Stats Bar -->
+        <div class="masters-stats-row" id="mastersItemStatsRow" style="margin-bottom:14px;">
+          <div class="masters-stat-item"><i class="fa-solid fa-cubes"></i> Total Products: <strong id="mStatTotalItems">0</strong></div>
+          <div class="masters-stat-item"><i class="fa-solid fa-bolt" style="color:#f39c12;"></i> Watt-Tracked: <strong id="mStatWattItems">0</strong></div>
+          <div class="masters-stat-item"><i class="fa-solid fa-barcode" style="color:#3b8ed0;"></i> Serial-Tracked: <strong id="mStatSerialItems">0</strong></div>
+        </div>
+
+        <!-- Search & Filter Bar with modern rounded glass look -->
+        <div class="masters-filter-bar">
+          <div class="search-mini" style="flex:1; max-width:540px;">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" id="mItemSearchInput" placeholder="Quick search by Brand, Category, Wattage, Model..." autocomplete="off">
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <label style="font-size:12.5px; color:var(--txt-muted); white-space:nowrap;"><i class="fa-solid fa-filter"></i> Category:</label>
+            <select id="mItemFilterCatDropdown" style="border-radius:20px; min-width:180px; padding:7px 14px; font-size:12.5px;">
               <option value="">All Categories</option>
             </select>
           </div>
-
-          <div class="table-wrap"><table>
-            <thead><tr><th>Category</th><th>Brand</th><th>Watt / Model</th><th>Subtype</th><th>Alert Stock</th><th>UOM</th><th>Actions</th></tr></thead>
-            <tbody id="mastersItemBody"></tbody>
-          </table></div>
         </div>
 
+        <div class="table-wrap" style="overflow-x:auto;"><table>
+          <thead><tr><th>Category</th><th>Brand</th><th>Watt / Model</th><th>Subtype</th><th>Alert Stock</th><th>UOM</th><th>Actions</th></tr></thead>
+          <tbody id="mastersItemBody"></tbody>
+        </table></div>
       </div>
+
     </div>
 
     <div class="subtab-panel" data-panel="category">
       <div class="grid-2">
         <div class="panel">
-          <h3><i class="fa-solid fa-plus"></i> Add New Category</h3>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+            <h3 style="margin:0;"><i class="fa-solid fa-plus" style="color:var(--green);"></i> Add New Category</h3>
+          </div>
           <div class="form-grid">
-            <div class="field span-2"><label>Category Name *</label><input id="mInputCatName" placeholder="e.g. Structure, Battery, Solar Panel..."></div>
+            <div class="field span-2"><label>Category Name <span class="req">*</span></label><input id="mInputCatName" placeholder="e.g. Structure, Battery, Solar Panel..."></div>
             <div class="field span-2">
-              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px;">
-                <input type="checkbox" id="mInputCatWattMandatory"> <span>Wattage / Capacity is mandatory for this category</span>
-              </label>
-            </div>
-            <div class="field span-2">
-              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12.5px;">
-                <input type="checkbox" id="mInputCatSerialMandatory"> <span>Serial No. is mandatory for this category</span>
-              </label>
+              <div style="display:flex; flex-direction:column; gap:10px; margin:6px 0 10px;">
+                <label class="master-toggle-pill" id="mToggleWattLabel" style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; cursor:pointer; transition:all .2s ease;">
+                  <input type="checkbox" id="mInputCatWattMandatory" style="accent-color:var(--gold); width:18px; height:18px; cursor:pointer;">
+                  <div style="flex:1;">
+                    <div style="font-weight:700; font-size:13px; color:var(--txt);"><i class="fa-solid fa-bolt" style="color:var(--gold); margin-right:6px;"></i> Wattage / Capacity Tracking</div>
+                    <div style="font-size:11.5px; color:var(--txt-muted);">Make Wattage/Capacity mandatory for items in this category</div>
+                  </div>
+                </label>
+                <label class="master-toggle-pill" id="mToggleSerialLabel" style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; cursor:pointer; transition:all .2s ease;">
+                  <input type="checkbox" id="mInputCatSerialMandatory" style="accent-color:var(--blue); width:18px; height:18px; cursor:pointer;">
+                  <div style="flex:1;">
+                    <div style="font-weight:700; font-size:13px; color:var(--txt);"><i class="fa-solid fa-barcode" style="color:var(--blue); margin-right:6px;"></i> Serial Number Tracking</div>
+                    <div style="font-size:11.5px; color:var(--txt-muted);">Make unique Serial Number scanning mandatory on inward &amp; dispatch</div>
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
-          <div class="actions-row"><button class="btn btn-blue" id="mBtnSaveCat"><i class="fa-solid fa-save"></i> Save Category</button></div>
+          <div class="actions-row" style="margin-top:14px;"><button class="btn btn-blue" id="mBtnSaveCat" style="width:100%; justify-content:center;"><i class="fa-solid fa-floppy-disk"></i> Save Category</button></div>
         </div>
         <div class="panel">
-          <h3><i class="fa-solid fa-list"></i> Category List</h3>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+            <h3 style="margin:0;"><i class="fa-solid fa-list" style="color:var(--gold);"></i> Category List</h3>
+          </div>
           <div class="table-wrap"><table><thead><tr><th>Category Name</th><th>Linked Products</th><th>Watt Rule</th><th>Serial Rule</th><th>Actions</th></tr></thead><tbody id="mastersCategoryBody"></tbody></table></div>
         </div>
       </div>
 
       <div class="panel" style="margin-top:20px;">
-        <h3><i class="fa-solid fa-tags"></i> Subtype / Variant Management (per Category)</h3>
-        <div class="form-grid cols-2">
-          <div class="field"><label>Target Category *</label><select id="mSubTargetCat"></select></div>
-          <div class="field"><label>Subtype / Type Name *</label><input id="mInputSubName" placeholder="e.g. DCR, Non-DCR, Hybrid, Mono PERC..."></div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+          <h3 style="margin:0;"><i class="fa-solid fa-tags" style="color:var(--blue);"></i> Subtype / Variant Management (per Category)</h3>
         </div>
-        <div class="actions-row">
-          <button class="btn btn-green" id="mBtnSaveSub"><i class="fa-solid fa-save"></i> Add Subtype</button>
+        <div class="form-grid cols-2">
+          <div class="field"><label>Target Category <span class="req">*</span></label><select id="mSubTargetCat"></select></div>
+          <div class="field"><label>Subtype / Type Name <span class="req">*</span></label><input id="mInputSubName" placeholder="e.g. DCR, Non-DCR, Hybrid, Mono PERC..."></div>
+        </div>
+        <div class="actions-row" style="margin-top:12px;">
+          <button class="btn btn-green" id="mBtnSaveSub"><i class="fa-solid fa-plus"></i> Add Subtype</button>
           <button class="btn btn-red" id="mBtnCancelSubEdit" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel</button>
         </div>
-        <div class="table-wrap" style="margin-top:12px;"><table><thead><tr><th>Subtype / Type</th><th>Actions</th></tr></thead><tbody id="mastersSubtypeBody"></tbody></table></div>
+        <div class="table-wrap" style="margin-top:14px;"><table><thead><tr><th>Subtype / Type</th><th>Actions</th></tr></thead><tbody id="mastersSubtypeBody"></tbody></table></div>
       </div>
     </div>
 
@@ -342,16 +356,18 @@ window.PAGES.masters = {
         <td class="gold-txt" style="font-weight:600;">${c.name}</td>
         <td>${c.item_count} items</td>
         <td>
-          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px;">
-            <input type="checkbox" class="m-cat-watt-toggle" data-cat="${c.name}" ${c.watt_mandatory ? 'checked' : ''}> Mandatory
-          </label>
+          <button type="button" class="btn-toggle-badge ${c.watt_mandatory ? 'active-gold' : 'inactive'}" data-action="toggle-watt" data-cat="${c.name}" title="Click to toggle Wattage Rule">
+            <i class="fa-solid ${c.watt_mandatory ? 'fa-bolt' : 'fa-circle-dot'}"></i>
+            <span>${c.watt_mandatory ? 'Mandatory' : 'Optional'}</span>
+          </button>
         </td>
         <td>
-          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px;">
-            <input type="checkbox" class="m-cat-serial-toggle" data-cat="${c.name}" ${c.serial_mandatory ? 'checked' : ''}> Mandatory
-          </label>
+          <button type="button" class="btn-toggle-badge ${c.serial_mandatory ? 'active-blue' : 'inactive'}" data-action="toggle-serial" data-cat="${c.name}" title="Click to toggle Serial Rule">
+            <i class="fa-solid ${c.serial_mandatory ? 'fa-barcode' : 'fa-circle-dot'}"></i>
+            <span>${c.serial_mandatory ? 'Mandatory' : 'Optional'}</span>
+          </button>
         </td>
-        <td><button class="btn btn-red m-cat-delete" data-cat="${c.name}" style="padding:6px 10px; font-size:11px;"><i class="fa-solid fa-trash"></i></button></td>
+        <td><button class="btn btn-red m-cat-delete" data-cat="${c.name}" style="padding:6px 10px; font-size:11px;" title="Delete Category"><i class="fa-solid fa-trash"></i></button></td>
       </tr>
     `).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--txt-muted);">No categories yet.</td></tr>`;
 
@@ -1024,35 +1040,32 @@ window.PAGES.masters = {
       }
     });
 
-    // --- Category: watt-mandatory inline toggle ---
-    $("mastersCategoryBody").addEventListener("change", async (e) => {
-      const chk = e.target.closest(".m-cat-watt-toggle");
-      if (!chk) return;
-      const newState = chk.checked;
-      const action = newState ? "mandatory" : "not mandatory";
+    // --- Category: watt-mandatory toggle badge ---
+    $("mastersCategoryBody").addEventListener("click", async (e) => {
+      const btn = e.target.closest('[data-action="toggle-watt"]');
+      if (!btn) return;
+      const catName = btn.dataset.cat;
+      const cat = (cachedCategories || []).find(c => c.name === catName);
+      const newState = cat ? !cat.watt_mandatory : true;
+      const action = newState ? "mandatory" : "optional";
       const confirmed = await window.confirmDialog(
         "Change Wattage Rule",
-        `Set Wattage / Capacity as ${action} for category '${chk.dataset.cat}'?`,
+        `Set Wattage / Capacity as <b>${action.toUpperCase()}</b> for category '${catName}'?`,
         { kind: "warning", okLabel: "Yes, Change" },
       );
-      if (!confirmed) {
-        // Undo the click — checkbox already flipped before "change" fired.
-        chk.checked = !newState;
-        return;
-      }
+      if (!confirmed) return;
       try {
         await fetch(
-          `${API_BASE}/masters/categories/${encodeURIComponent(chk.dataset.cat)}/watt-rule`,
+          `${API_BASE}/masters/categories/${encodeURIComponent(catName)}/watt-rule`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ watt_mandatory: chk.checked }),
+            body: JSON.stringify({ watt_mandatory: newState }),
           },
         );
-        window.showToast(`Wattage rule updated for '${chk.dataset.cat}'.`);
+        window.showToast(`Wattage rule updated to ${action} for '${catName}'.`);
         loadMastersSystemEngine();
       } catch (e2) {
-        chk.checked = !newState;
         window.openModal(
           "Database Error",
           '<p style="color:var(--red);">Could not update wattage rule.</p>',
@@ -1060,34 +1073,32 @@ window.PAGES.masters = {
       }
     });
 
-    // --- Category: serial-no-mandatory inline toggle ---
-    $("mastersCategoryBody").addEventListener("change", async (e) => {
-      const chk = e.target.closest(".m-cat-serial-toggle");
-      if (!chk) return;
-      const newState = chk.checked;
-      const action = newState ? "mandatory" : "not mandatory";
+    // --- Category: serial-no-mandatory toggle badge ---
+    $("mastersCategoryBody").addEventListener("click", async (e) => {
+      const btn = e.target.closest('[data-action="toggle-serial"]');
+      if (!btn) return;
+      const catName = btn.dataset.cat;
+      const cat = (cachedCategories || []).find(c => c.name === catName);
+      const newState = cat ? !cat.serial_mandatory : true;
+      const action = newState ? "mandatory" : "optional";
       const confirmed = await window.confirmDialog(
         "Change Serial No. Rule",
-        `Set Serial No. as ${action} for category '${chk.dataset.cat}'?`,
+        `Set Serial No. as <b>${action.toUpperCase()}</b> for category '${catName}'?`,
         { kind: "warning", okLabel: "Yes, Change" },
       );
-      if (!confirmed) {
-        chk.checked = !newState;
-        return;
-      }
+      if (!confirmed) return;
       try {
         await fetch(
-          `${API_BASE}/masters/categories/${encodeURIComponent(chk.dataset.cat)}/serial-rule`,
+          `${API_BASE}/masters/categories/${encodeURIComponent(catName)}/serial-rule`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ serial_mandatory: chk.checked }),
+            body: JSON.stringify({ serial_mandatory: newState }),
           },
         );
-        window.showToast(`Serial No. rule updated for '${chk.dataset.cat}'.`);
+        window.showToast(`Serial No. rule updated to ${action} for '${catName}'.`);
         loadMastersSystemEngine();
       } catch (e2) {
-        chk.checked = !newState;
         window.openModal(
           "Database Error",
           '<p style="color:var(--red);">Could not update serial no. rule.</p>',
