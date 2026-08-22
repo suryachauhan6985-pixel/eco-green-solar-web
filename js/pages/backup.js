@@ -52,6 +52,18 @@ window.PAGES.backup = {
     const locationEl = $('bkLocation');
     const tbody = $('bkBody');
 
+    const currentRole = window.currentUserRole || 'User';
+    const isAdmin = currentRole === 'SuperAdmin' || currentRole === 'Admin';
+
+    if (!isAdmin) {
+      lastBackupEl.innerHTML = '<span style="color:var(--gold);"><i class="fa-solid fa-lock"></i> Restricted:</span> Database Backup operations require Admin or SuperAdmin permissions.';
+      if (locationEl) locationEl.textContent = '';
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--txt-muted); font-style:italic; padding:28px;"><i class="fa-solid fa-shield-halved" style="font-size:24px; margin-bottom:8px; display:block; opacity:0.6;"></i>You are logged in with the <strong>${currentRole}</strong> role. Backup history is accessible to Administrators.</td></tr>`;
+      if (btnForce) btnForce.style.display = 'none';
+      if (btnDownloadLatest) btnDownloadLatest.style.display = 'none';
+      return;
+    }
+
     let latestSuccessFile = null;
 
     function downloadBackup(fileName) {

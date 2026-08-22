@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eco-green-solar-erp-v88';
+const CACHE_NAME = 'eco-green-solar-erp-v89';
 
 const APP_SHELL = [
   '/',
@@ -26,7 +26,7 @@ const APP_SHELL = [
   '/js/data/sheets-store.js?v=3',
   '/js/pages/dashboard.js?v=6',
   '/js/pages/scansheet.js?v=23',
-  '/js/pages/masters.js?v=8',
+  '/js/pages/masters.js?v=9',
   '/js/pages/purchase.js?v=7',
   '/js/pages/sales.js?v=9',
   '/js/pages/stockassign.js?v=3',
@@ -36,7 +36,7 @@ const APP_SHELL = [
   '/js/pages/returns.js?v=3',
   '/js/pages/partyledger.js?v=20',
   '/js/pages/lowstock.js?v=4',
-  '/js/pages/backup.js?v=3',
+  '/js/pages/backup.js?v=4',
   '/js/pages/bom-kit-helpers.js?v=19',
   '/js/pages/bom-challan.js?v=23',
   '/js/pages/bom-challan-map.js?v=3',

@@ -127,7 +127,7 @@ module.exports = function registerBackupRoutes(app, deps) {
     } catch (e) { /* best-effort, never crash the server over a missed auto-backup */ }
   }
 
-  app.get('/api/backup/status', requireRole('SuperAdmin'), route(async (req, res) => {
+  app.get('/api/backup/status', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { dir, onNas } = resolveBackupDir();
     const [lastRows] = await pool.query(
       `SELECT backup_type, file_name, taken_on, status FROM backup_log WHERE status='Success' ORDER BY id DESC LIMIT 1`
@@ -144,14 +144,14 @@ module.exports = function registerBackupRoutes(app, deps) {
     });
   }));
 
-  app.post('/api/backup/run', requireRole('SuperAdmin'), exportLimiter, route(async (req, res) => {
+  app.post('/api/backup/run', requireRole('SuperAdmin', 'Admin'), exportLimiter, route(async (req, res) => {
     const result = await runBackup('Manual');
     if (!result.success) return res.status(500).json({ error: result.message });
     res.json({ success: true, fileName: result.fileName, onNas: result.onNas });
   }));
 
-  // Serves a specific backup file straight from disk for download — SuperAdmin only, with strict path traversal protection
-  app.get('/api/backup/download/:fileName', requireRole('SuperAdmin'), exportLimiter, route(async (req, res) => {
+  // Serves a specific backup file straight from disk for download — SuperAdmin & Admin only, with strict path traversal protection
+  app.get('/api/backup/download/:fileName', requireRole('SuperAdmin', 'Admin'), exportLimiter, route(async (req, res) => {
     const rawFileName = req.params.fileName;
     const fileName = path.basename(String(rawFileName || ''));
     if (!fileName || fileName !== rawFileName) {
