@@ -6,14 +6,20 @@ const ExcelJS = require('exceljs');
 
 // Auto-detect base path: If running directly inside ASUSTOR Linux NAS or on Windows
 function getNasBasePath() {
-  const linuxPath = '/volume1/work/2023-24/Solar Rooftop/NP - Site Visit, 3D/SUMIT/Solar_ERP_DB/SERAIL NO. (ORD. & CHLN)';
-  const altLinuxPath = '/share/work/2023-24/Solar Rooftop/NP - Site Visit, 3D/SUMIT/Solar_ERP_DB/SERAIL NO. (ORD. & CHLN)';
+  const linuxPaths = [
+    '/volume1/WORK/2023-24/Solar Rooftop/NP - Site Visit, 3D/SUMIT/Solar_ERP_DB/SERAIL NO. (ORD. & CHLN)',
+    '/volume1/work/2023-24/Solar Rooftop/NP - Site Visit, 3D/SUMIT/Solar_ERP_DB/SERAIL NO. (ORD. & CHLN)',
+    '/share/WORK/2023-24/Solar Rooftop/NP - Site Visit, 3D/SUMIT/Solar_ERP_DB/SERAIL NO. (ORD. & CHLN)',
+    '/share/work/2023-24/Solar Rooftop/NP - Site Visit, 3D/SUMIT/Solar_ERP_DB/SERAIL NO. (ORD. & CHLN)'
+  ];
   const winUnc = '\\\\As6302t-989d\\work\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB\\SERAIL NO. (ORD. & CHLN)';
   
   if (process.platform === 'linux') {
-    if (fs.existsSync('/volume1/work')) return linuxPath;
-    if (fs.existsSync('/share/work')) return altLinuxPath;
-    return linuxPath;
+    for (const p of linuxPaths) {
+      const parent = path.dirname(p);
+      if (fs.existsSync(parent) || fs.existsSync('/volume1/WORK')) return p;
+    }
+    return linuxPaths[0];
   }
   return process.env.SERIAL_EXCEL_NETWORK_PATH || winUnc;
 }
@@ -107,7 +113,7 @@ async function saveSerialExcelToNas({ orderNo, shortName, customerName, date, se
       fs.mkdirSync(targetDir, { recursive: true });
     }
     await workbook.xlsx.writeFile(fullFilePath);
-    console.log(`[NAS Standalone] Successfully saved: ${fullFilePath}`);
+    console.log(`[NAS Standalone] Saved: ${fileName} in folder ${dateFolder} (${serialList.length} panels)`);
     return { success: true, savedPath: fullFilePath, fileName, dateFolder };
   } catch (err) {
     console.error(`[NAS Standalone] Write error:`, err.message);
@@ -131,6 +137,8 @@ async function getPool() {
   }
   return pool;
 }
+
+const syncedDispatchSignatures = new Map();
 
 async function syncCycle() {
   try {
@@ -178,14 +186,25 @@ async function syncCycle() {
           it.serials.forEach(s => { if (s && String(s).trim()) panelSerials.push(String(s).trim()); });
         }
       });
+      
+      const sig = `${d.id}_${d.order_no}_${panelSerials.join(',')}`;
+      if (syncedDispatchSignatures.get(d.id) === sig) {
+        continue;
+      }
+
       if (panelSerials.length) {
-        await saveSerialExcelToNas({
+        const res = await saveSerialExcelToNas({
           orderNo: d.order_no,
           customerName: header.customerName || header.custName || '',
           shortName: header.customerName || header.custName || d.order_no,
           date: header.challanDate || d.dispatched_at,
           serials: panelSerials
         });
+        if (res.success) {
+          syncedDispatchSignatures.set(d.id, sig);
+        }
+      } else {
+        syncedDispatchSignatures.set(d.id, sig);
       }
     }
   } catch (err) {

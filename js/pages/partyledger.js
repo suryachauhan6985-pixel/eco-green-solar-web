@@ -302,6 +302,9 @@ window.PAGES.partyledger = {
         const p = directory[partyFocusIdx] || selected;
         if (!p) return;
         selectParty(p).then(() => openStatement());
+      } else if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
       }
     }
     document.addEventListener('keydown', partyListKeyHandler);
@@ -654,6 +657,9 @@ window.PAGES.partyledger = {
       }
       renderSummary();
       renderLevel();
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
       stOverlay.classList.add('show');
       lockPageScroll();
       attachStatementKeyboardNav();
@@ -1024,6 +1030,9 @@ window.PAGES.partyledger = {
         } else if (e.key === 'Enter') {
           e.preventDefault();
           if (rows[stmtCurrentRow]) rows[stmtCurrentRow].click();
+        } else if (e.key === ' ' || e.code === 'Space') {
+          e.preventDefault();
+          e.stopImmediatePropagation();
         } else if (e.key === 'Backspace') {
           e.preventDefault();
           goBackLevel();
