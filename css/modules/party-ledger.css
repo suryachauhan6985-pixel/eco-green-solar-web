@@ -179,35 +179,47 @@
 
 .pl-table tbody tr {
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.1s ease;
 }
 
 .pl-table tbody tr:hover {
   background: rgba(59, 142, 208, 0.08);
 }
 
-.pl-table tbody tr.selected {
-  background: rgba(59, 142, 208, 0.14) !important;
-  border-left: 3px solid var(--blue);
+.pl-table tbody tr.selected,
+.pl-table tbody tr.kbd-active {
+  background: rgba(59, 142, 208, 0.22) !important;
 }
 
-.pl-table tbody tr.kbd-active {
-  background: rgba(59, 142, 208, 0.18) !important;
-  box-shadow: inset 0 0 0 1px rgba(59, 142, 208, 0.4);
+.pl-table tbody tr.selected td,
+.pl-table tbody tr.kbd-active td {
+  background: rgba(59, 142, 208, 0.22) !important;
+  color: var(--txt) !important;
+}
+
+.pl-table tbody tr.selected td:first-child,
+.pl-table tbody tr.kbd-active td:first-child {
+  border-left: 4px solid var(--blue) !important;
 }
 
 html[data-theme="light"] .pl-table tbody tr:hover {
-  background: rgba(37, 99, 235, 0.05);
+  background: rgba(37, 99, 235, 0.06);
 }
 
-html[data-theme="light"] .pl-table tbody tr.selected {
-  background: rgba(37, 99, 235, 0.10) !important;
-  border-left: 3px solid var(--blue);
-}
-
+html[data-theme="light"] .pl-table tbody tr.selected,
 html[data-theme="light"] .pl-table tbody tr.kbd-active {
-  background: rgba(37, 99, 235, 0.12) !important;
-  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.35);
+  background: #dbeafe !important;
+}
+
+html[data-theme="light"] .pl-table tbody tr.selected td,
+html[data-theme="light"] .pl-table tbody tr.kbd-active td {
+  background: #dbeafe !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .pl-table tbody tr.selected td:first-child,
+html[data-theme="light"] .pl-table tbody tr.kbd-active td:first-child {
+  border-left: 4px solid #2563eb !important;
 }
 
 .pl-table tbody td {

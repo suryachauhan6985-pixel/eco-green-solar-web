@@ -385,7 +385,11 @@ window.PAGES.partyledger = {
     function highlightPartyListFocus() {
       if (!tbodyEl) return;
       const rows = tbodyEl.querySelectorAll('tr');
-      rows.forEach((el, i) => el.classList.toggle('kbd-active', partyFocusIdx >= 0 && i === partyFocusIdx));
+      rows.forEach((el, i) => {
+        const isCurrent = partyFocusIdx >= 0 && i === partyFocusIdx;
+        el.classList.toggle('selected', isCurrent);
+        el.classList.toggle('kbd-active', isCurrent);
+      });
       if (partyFocusIdx >= 0 && rows[partyFocusIdx]) {
         rows[partyFocusIdx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
@@ -496,7 +500,6 @@ window.PAGES.partyledger = {
         if (partyFocusIdx === oldIdx && selected && selected.partyName === (directory[partyFocusIdx] || {}).partyName) {
           return; // Already at bottom boundary, no-op
         }
-        highlightPartyListFocus();
         const p = directory[partyFocusIdx];
         if (p) selectParty(p);
       } else if (e.key === 'ArrowUp') {
@@ -507,7 +510,6 @@ window.PAGES.partyledger = {
         if (partyFocusIdx === oldIdx && selected && selected.partyName === (directory[partyFocusIdx] || {}).partyName) {
           return; // Already at top boundary, no-op
         }
-        highlightPartyListFocus();
         const p = directory[partyFocusIdx];
         if (p) selectParty(p);
       } else if (e.key === 'Enter') {
@@ -533,12 +535,14 @@ window.PAGES.partyledger = {
       if (!p) return;
       selected = p;
       
-      // Update DOM UI immediately (0ms latency, zero lag!)
-      if (tbodyEl) {
-        tbodyEl.querySelectorAll('tr').forEach((r, idx) => {
-          r.classList.toggle('selected', directory[idx] && directory[idx].partyName === p.partyName);
-        });
+      const targetIdx = directory.indexOf(p);
+      if (targetIdx !== -1) {
+        partyFocusIdx = targetIdx;
       }
+      
+      // Update DOM UI immediately (0ms latency, zero lag!)
+      highlightPartyListFocus();
+
       document.getElementById('plHeaderTitle').innerHTML =
         `<strong>${p.partyName}</strong> ${p.shortName ? ` <span class="pl-short-code-badge">${p.shortName}</span>` : ''} <span class="p-tag ${(p.type||'both').toLowerCase()}">${p.type}</span>`;
       document.getElementById('btnEditLedger').style.display = p.ledgerId ? 'inline-flex' : 'none';
