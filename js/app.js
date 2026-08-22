@@ -572,6 +572,9 @@ try { window.applyUserPreferences(); } catch (e) {}
 
   function showTooltipFor(target) {
     if (!target) return;
+    // Do not show hover shortcut tooltips on navigation tabs or subtabs
+    if (target.closest('.nav-btn, .nav-scroll, .subtabs, .subtab, .m-tab, .tab, .ss-tab, .ss-tabs, .settings-tab-btn, .settings-tabs, .pl-tab-btn')) return;
+
     const msg = target.dataset.info || target.dataset.tooltip || target.getAttribute('title');
     if (!msg) return;
 
@@ -2949,7 +2952,6 @@ window.attachColumnFilters = function (table) {
         <button type="button" class="theme-btn" data-theme-set="light" title="Light"><i class="fa-solid fa-sun"></i> Light</button>
       </div>
       <div class="profile-menu-divider"></div>
-      <button type="button" class="profile-menu-item" id="profileMyAccount"><i class="fa-solid fa-user-gear"></i> My Profile &amp; Security</button>
       <button type="button" class="profile-menu-item" id="profileSettings"><i class="fa-solid fa-gear"></i> System Settings</button>
       <button type="button" class="profile-menu-item" id="profileLoginActivity"><i class="fa-solid fa-mobile-screen-button"></i> Login activity</button>
       <button type="button" class="profile-menu-item danger" id="profileLogout"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>`;
@@ -2981,14 +2983,6 @@ window.attachColumnFilters = function (table) {
       clearSession();
       showLoginOverlay('Add another account — your previous account stays saved for switching.');
     });
-
-    const myAccountBtn = menu.querySelector('#profileMyAccount');
-    if (myAccountBtn) {
-      myAccountBtn.addEventListener('click', () => {
-        closeProfileMenu();
-        openAppSettingsPanel('tab-profile');
-      });
-    }
 
     const settingsBtn = menu.querySelector('#profileSettings');
     if (settingsBtn) {
@@ -3033,31 +3027,12 @@ window.attachColumnFilters = function (table) {
   document.addEventListener('click', closeProfileMenu);
 
   // Build sidebar buttons from the registered pages
-  const TAB_SHORTCUT_LABELS = {
-    dashboard: 'Alt + 1',
-    scansheet: 'Alt + 2',
-    masters: 'Alt + 3',
-    purchase: 'Alt + 4',
-    sales: 'Alt + 5',
-    stockassign: 'Alt + 6',
-    purchaseregister: 'Alt + 7',
-    saleregister: 'Alt + 8',
-    partyledger: 'Alt + 9',
-    reports: 'Alt + R',
-    returns: 'Alt + D',
-    lowstock: 'Alt + L',
-    backup: 'Alt + B',
-    bom: 'Alt + 0 / Alt + M'
-  };
-
   NAV_ORDER.forEach((id) => {
     const page = window.PAGES[id];
     if (!page) return;
     const btn = document.createElement('button');
     btn.className = 'nav-btn' + (id === 'dashboard' ? ' active' : '');
     btn.dataset.tab = id;
-    const shortcutHint = TAB_SHORTCUT_LABELS[id] ? ` (${TAB_SHORTCUT_LABELS[id]})` : '';
-    btn.dataset.tooltip = `${page.name}${shortcutHint}`;
     btn.innerHTML = `<i class="fa-solid ${page.icon}"></i> <span>${page.name}</span>`;
     btn.onclick = () => go(id);
     navScroll.appendChild(btn);
