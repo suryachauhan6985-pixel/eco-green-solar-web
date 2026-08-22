@@ -574,3 +574,198 @@ html[data-theme="light"] .dash-shell .stat-card .value {
     justify-content: center;
   }
 }
+
+/* =====================================================================
+   SOLAR CAPACITY & VALUATION WIDGET (.dash-solar-grid)
+   ===================================================================== */
+.dash-solar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.dash-solar-card {
+  background: var(--panel);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.dash-solar-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--blue);
+}
+
+.dash-solar-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.dash-solar-icon.solar {
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+}
+
+.dash-solar-icon.inverter {
+  background: rgba(59, 142, 208, 0.15);
+  color: #3b8ed0;
+}
+
+.dash-solar-icon.battery {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+}
+
+.dash-solar-icon.valuation {
+  background: rgba(155, 89, 182, 0.15);
+  color: #9b59b6;
+}
+
+.dash-solar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dash-solar-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--txt-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dash-solar-value {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--txt);
+  letter-spacing: -0.02em;
+}
+
+.dash-solar-sub {
+  font-size: 11px;
+  color: var(--txt-muted);
+}
+
+/* =====================================================================
+   DASHBOARD WIDGET CUSTOMIZER MODAL
+   ===================================================================== */
+.dash-customizer-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: calc(75vh - 120px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.dash-customizer-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 16px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.dash-customizer-item:hover {
+  border-color: var(--blue);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dash-customizer-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dash-customizer-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(59, 142, 208, 0.15);
+  color: var(--blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.dash-customizer-text h4 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.dash-customizer-text p {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: var(--txt-muted);
+}
+
+/* iOS-style toggle switch */
+.egs-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.egs-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.egs-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--border);
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.egs-switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.egs-switch input:checked + .egs-switch-slider {
+  background-color: var(--blue);
+}
+
+.egs-switch input:checked + .egs-switch-slider:before {
+  transform: translateX(20px);
+}
+

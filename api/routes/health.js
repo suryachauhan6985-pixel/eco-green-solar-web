@@ -16,19 +16,22 @@ module.exports = function registerHealthRoutes(app, deps) {
   app.get('/api/dashboard/summary', route(async (req, res) => {
     const [[totals]] = await pool.query(`
       SELECT
-        COALESCE(SUM(CASE WHEN status='Available' THEN 1 ELSE 0 END),0) AS available,
-        COALESCE(SUM(CASE WHEN status='Assigned' THEN 1 ELSE 0 END),0) AS assigned,
-        COALESCE(SUM(CASE WHEN status='Sold' THEN 1 ELSE 0 END),0) AS sold,
-        COALESCE(SUM(CASE WHEN status='Damaged' THEN 1 ELSE 0 END),0) AS damaged
+        COALESCE(SUM(CASE WHEN status='Available' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS available,
+        COALESCE(SUM(CASE WHEN status='Assigned' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS assigned,
+        COALESCE(SUM(CASE WHEN status='Sold' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS sold,
+        COALESCE(SUM(CASE WHEN status='Damaged' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS damaged,
+        COALESCE(SUM(CASE WHEN status='Available' AND (category LIKE '%SOLAR%' OR category LIKE '%PANEL%') THEN (COALESCE(watt, 0) * COALESCE(quantity, 1)) ELSE 0 END),0) / 1000.0 AS solar_kw,
+        COALESCE(SUM(CASE WHEN status='Available' AND category LIKE '%INVERTER%' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS inverters_count,
+        COALESCE(SUM(CASE WHEN status='Available' AND category LIKE '%BATTERY%' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS batteries_count
       FROM stock_ledger
     `);
 
     const [categorySnapshot] = await pool.query(`
       SELECT i.category AS category,
-        COALESCE(SUM(CASE WHEN s.status='Available' THEN 1 ELSE 0 END),0) AS avail,
-        COALESCE(SUM(CASE WHEN s.status='Assigned' THEN 1 ELSE 0 END),0) AS assigned,
-        COALESCE(SUM(CASE WHEN s.status='Sold' THEN 1 ELSE 0 END),0) AS sold,
-        COALESCE(SUM(CASE WHEN s.status='Damaged' THEN 1 ELSE 0 END),0) AS damaged
+        COALESCE(SUM(CASE WHEN s.status='Available' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) AS avail,
+        COALESCE(SUM(CASE WHEN s.status='Assigned' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) AS assigned,
+        COALESCE(SUM(CASE WHEN s.status='Sold' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) AS sold,
+        COALESCE(SUM(CASE WHEN s.status='Damaged' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) AS damaged
       FROM items i
       LEFT JOIN stock_ledger s ON s.item_id = i.id
       GROUP BY i.category
@@ -38,21 +41,27 @@ module.exports = function registerHealthRoutes(app, deps) {
     const [[{ lowStockCount }]] = await pool.query(`
       SELECT COUNT(*) AS lowStockCount FROM (
         SELECT i.id, i.minimum_stock,
-          COALESCE(SUM(CASE WHEN s.status='Available' THEN 1 ELSE 0 END),0) AS current_stock
+          COALESCE(SUM(CASE WHEN s.status='Available' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) AS current_stock
         FROM items i
         LEFT JOIN stock_ledger s ON s.item_id = i.id
         WHERE i.minimum_stock > 0
         GROUP BY i.id, i.minimum_stock
-        HAVING COALESCE(SUM(CASE WHEN s.status='Available' THEN 1 ELSE 0 END),0) <= i.minimum_stock
+        HAVING COALESCE(SUM(CASE WHEN s.status='Available' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) <= i.minimum_stock
       ) t
     `);
+
+    const [[{ totalItems }]] = await pool.query(`SELECT COUNT(*) AS totalItems FROM items`);
 
     res.json({
       available: totals.available,
       assigned: totals.assigned,
       sold: totals.sold,
       damaged: totals.damaged,
+      solarKw: parseFloat(Number(totals.solar_kw || 0).toFixed(2)),
+      invertersCount: Number(totals.inverters_count || 0),
+      batteriesCount: Number(totals.batteries_count || 0),
       lowStockCount,
+      totalItems,
       categorySnapshot,
     });
   }));

@@ -64,6 +64,29 @@ window.PAGES = window.PAGES || {};
     wire();
   }
 
+  function renderSyncStatusHtml() {
+    const q = window.SheetsStore ? window.SheetsStore.getQueueStatus() : { isOnline: true, pendingCount: 0, isSyncing: false };
+    if (q.isSyncing) {
+      return `
+        <div class="ss-sync-bar" id="ssSyncBar">
+          <span class="ss-sync-badge syncing"><i class="fa-solid fa-spinner fa-spin"></i> Syncing ${q.pendingCount || 1} record${(q.pendingCount || 1) === 1 ? '' : 's'} to cloud...</span>
+        </div>`;
+    }
+    if (!q.isOnline || q.pendingCount > 0) {
+      return `
+        <div class="ss-sync-bar" id="ssSyncBar">
+          <span class="ss-sync-badge offline"><i class="fa-solid fa-triangle-exclamation"></i> Offline Mode • ${q.pendingCount} scan${q.pendingCount === 1 ? '' : 's'} queued</span>
+          <div class="ss-sync-actions">
+            <button type="button" class="btn btn-blue ss-sync-btn" id="ssManualSyncBtn"><i class="fa-solid fa-rotate"></i> Sync Now</button>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="ss-sync-bar" id="ssSyncBar">
+        <span class="ss-sync-badge online"><i class="fa-solid fa-cloud-check"></i> Online • All Scans Synced</span>
+      </div>`;
+  }
+
   // =========================================================================
   // SCREEN 1 (empty state) + SCREEN 4 (sheets list) — same "Sheets" tab view
   // =========================================================================
@@ -104,7 +127,10 @@ window.PAGES = window.PAGES || {};
 
     return `
       ${tabsHtml}
-      <div class="ss-body">${body}</div>
+      <div class="ss-body">
+        ${renderSyncStatusHtml()}
+        ${body}
+      </div>
       <button type="button" class="ss-fab" id="ssFab" title="Create new sheet"><i class="fa-solid fa-plus"></i></button>
       <button type="button" class="ss-gopro" id="ssGoPro"><i class="fa-solid fa-crown"></i> Go Pro+</button>
     `;
@@ -392,6 +418,7 @@ window.PAGES = window.PAGES || {};
         <button type="button" class="ss-icon-btn" id="ssEntryMenu" title="More"><i class="fa-solid fa-ellipsis-vertical"></i></button>
       </div>
       <div class="ss-body">
+        ${renderSyncStatusHtml()}
         <div class="panel" id="ssEntryForm">
           <h3><i class="fa-solid fa-pen"></i> New Entry</h3>
           ${ST.bluetoothScanMode ? `
@@ -1740,6 +1767,21 @@ window.PAGES = window.PAGES || {};
 
     document.querySelectorAll('.ss-edit-sheet').forEach((btn) => { btn.onclick = (e) => { e.stopPropagation(); startEditSheet(btn.dataset.id); }; });
     document.querySelectorAll('.ss-view-sheet').forEach((btn) => { btn.onclick = (e) => { e.stopPropagation(); openSheetDataEntry(btn.dataset.id); }; });
+    function wireSyncBtn() {
+      const syncBtn = document.getElementById('ssManualSyncBtn');
+      if (syncBtn) {
+        syncBtn.onclick = async () => {
+          syncBtn.disabled = true;
+          syncBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Syncing...';
+          if (window.SheetsStore && window.SheetsStore.syncNow) {
+            await window.SheetsStore.syncNow();
+          }
+          if (window.showToast) window.showToast('Sync queue flushed.');
+        };
+      }
+    }
+
+    wireSyncBtn();
     document.querySelectorAll('.ss-menu-sheet').forEach((btn) => { btn.onclick = (e) => { e.stopPropagation(); openSheetCardMenu(btn.dataset.id, btn); }; });
     document.querySelectorAll('.ss-sheet-card').forEach((card) => {
       card.addEventListener('click', (e) => {
@@ -1761,6 +1803,17 @@ window.PAGES = window.PAGES || {};
 
   function wireDataEntry() {
     ensureBluetoothScannerListener();
+    const syncBtn = document.getElementById('ssManualSyncBtn');
+    if (syncBtn) {
+      syncBtn.onclick = async () => {
+        syncBtn.disabled = true;
+        syncBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Syncing...';
+        if (window.SheetsStore && window.SheetsStore.syncNow) {
+          await window.SheetsStore.syncNow();
+        }
+        if (window.showToast) window.showToast('Sync queue flushed.');
+      };
+    }
     document.getElementById('ssBackFromEntry').onclick = () => { ST.view = 'list'; render(); };
     document.getElementById('ssTogglePreview').onclick = () => {
       const p = document.getElementById('ssPreviewPanel');
@@ -1831,6 +1884,32 @@ window.PAGES = window.PAGES || {};
       input.addEventListener('change', () => handleImageFieldChange(input));
     });
     document.querySelectorAll('.ss-del-row').forEach((btn) => { btn.onclick = () => deleteEntryRow(btn.dataset.id); });
+  }
+
+  // Live Sync Status Event Listener
+  if (typeof window !== 'undefined') {
+    window.addEventListener('egs:sync-status-changed', () => {
+      const existingBar = document.getElementById('ssSyncBar');
+      if (existingBar && existingBar.parentNode) {
+        const temp = document.createElement('div');
+        temp.innerHTML = renderSyncStatusHtml();
+        const newBar = temp.firstElementChild;
+        if (newBar) {
+          existingBar.replaceWith(newBar);
+          const syncBtn = document.getElementById('ssManualSyncBtn');
+          if (syncBtn) {
+            syncBtn.onclick = async () => {
+              syncBtn.disabled = true;
+              syncBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Syncing...';
+              if (window.SheetsStore && window.SheetsStore.syncNow) {
+                await window.SheetsStore.syncNow();
+              }
+              if (window.showToast) window.showToast('Sync queue flushed.');
+            };
+          }
+        }
+      }
+    });
   }
 
   // =========================================================================

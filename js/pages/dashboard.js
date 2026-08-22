@@ -1,4 +1,4 @@
-﻿// js/pages/dashboard.js
+// js/pages/dashboard.js
 window.PAGES = window.PAGES || {};
 
 window.PAGES.dashboard = {
@@ -8,7 +8,7 @@ window.PAGES.dashboard = {
   html: `
     <div class="dash-shell">
       <!-- Welcome & Quick Action Bar -->
-      <div class="dash-welcome-bar">
+      <div class="dash-welcome-bar" data-widget="w_welcome">
         <div class="dash-greeting">
           <h2>Hello, <span class="dash-user-name" id="dashUserGreeting">Admin</span> 👋</h2>
           <div class="dash-meta-badge">
@@ -21,12 +21,13 @@ window.PAGES.dashboard = {
           <button type="button" class="dash-btn-quick" onclick="go('purchase')"><i class="fa-solid fa-truck-ramp-box"></i> Inward</button>
           <button type="button" class="dash-btn-quick" onclick="go('sales')"><i class="fa-solid fa-cart-shopping"></i> Sales</button>
           <button type="button" class="dash-btn-quick" onclick="go('scansheet')"><i class="fa-solid fa-qrcode"></i> Scan Sheets</button>
+          <button type="button" class="dash-btn-quick" id="dashCustomizeBtn" title="Customize Dashboard Widgets"><i class="fa-solid fa-sliders"></i> Customize</button>
           <button type="button" class="dash-btn-quick" id="dashRefreshBtn" title="Refresh Live Data"><i class="fa-solid fa-rotate-right"></i></button>
         </div>
       </div>
 
       <!-- Low Stock Alert Banner -->
-      <div class="banner">
+      <div class="banner" data-widget="w_lowstock">
         <i class="fa-solid fa-triangle-exclamation"></i>
         <div class="banner-content">
           <strong id="dashLowStockCount">0 items</strong> are at or below minimum stock level. Immediate reorder recommended.
@@ -34,8 +35,47 @@ window.PAGES.dashboard = {
         <a href="#" onclick="go('lowstock');return false;" class="banner-btn">Review Low Stock <i class="fa-solid fa-arrow-right"></i></a>
       </div>
 
+      <!-- Solar Capacity & Live Inventory Portfolio Widget -->
+      <div class="dash-solar-grid" data-widget="w_solar_capacity">
+        <div class="dash-solar-card">
+          <div class="dash-solar-icon solar"><i class="fa-solid fa-solar-panel"></i></div>
+          <div class="dash-solar-info">
+            <span class="dash-solar-label">Solar Panels in Stock</span>
+            <div class="dash-solar-value"><span id="dashSolarKwVal">0</span> <small style="font-size:13px; font-weight:700; color:var(--gold);">KW</small></div>
+            <span class="dash-solar-sub">Total Generation Capacity</span>
+          </div>
+        </div>
+
+        <div class="dash-solar-card">
+          <div class="dash-solar-icon inverter"><i class="fa-solid fa-bolt"></i></div>
+          <div class="dash-solar-info">
+            <span class="dash-solar-label">Inverters Ready</span>
+            <div class="dash-solar-value" id="dashInvertersVal">0</div>
+            <span class="dash-solar-sub">Single &amp; 3-Phase Inverters</span>
+          </div>
+        </div>
+
+        <div class="dash-solar-card">
+          <div class="dash-solar-icon battery"><i class="fa-solid fa-car-battery"></i></div>
+          <div class="dash-solar-info">
+            <span class="dash-solar-label">Battery Systems</span>
+            <div class="dash-solar-value" id="dashBatteriesVal">0</div>
+            <span class="dash-solar-sub">Li-Ion &amp; Solar Batteries</span>
+          </div>
+        </div>
+
+        <div class="dash-solar-card">
+          <div class="dash-solar-icon valuation"><i class="fa-solid fa-layer-group"></i></div>
+          <div class="dash-solar-info">
+            <span class="dash-solar-label">Registered Master Catalog</span>
+            <div class="dash-solar-value" id="dashTotalItemsVal">0</div>
+            <span class="dash-solar-sub">Active Products &amp; SKUs</span>
+          </div>
+        </div>
+      </div>
+
       <!-- 4 Big Metric KPI Cards -->
-      <div class="stat-grid">
+      <div class="stat-grid" data-widget="w_kpi_cards">
         <div class="stat-card available" data-snap-key="avail">
           <div class="top">
             <span class="label">Available Stock</span>
@@ -110,7 +150,7 @@ window.PAGES.dashboard = {
       </div>
 
       <!-- Category Stock Distribution Card -->
-      <div class="dash-dist-card" id="dashDistCard" style="display:none;">
+      <div class="dash-dist-card" id="dashDistCard" data-widget="w_distribution" style="display:none;">
         <div class="dash-dist-header">
           <h3><i class="fa-solid fa-chart-simple" style="color:var(--blue);"></i> Category Stock Distribution</h3>
           <div class="dash-dist-legend" id="dashDistLegend"></div>
@@ -123,7 +163,7 @@ window.PAGES.dashboard = {
              @media min-width:901px) because the same "User Sessions" control
              is injected into the header/topbar instead — see init() below.
              Mobile: unchanged, shows here exactly like before. -->
-        <div class="panel dash-usersession-panel">
+        <div class="panel dash-usersession-panel" data-widget="w_usersession">
           <h3><i class="fa-solid fa-users"></i> User Sessions</h3>
           <button class="live-btn" id="btnLiveUsers">
             <span class="dot"></span>
@@ -136,7 +176,7 @@ window.PAGES.dashboard = {
         </div>
 
         <!-- Category Snapshot Table Panel -->
-        <div class="dash-table-panel">
+        <div class="dash-table-panel" data-widget="w_category_snapshot">
           <div class="dash-table-header-row">
             <h3><i class="fa-solid fa-layer-group"></i> Category-wise Snapshot</h3>
             <div class="dash-table-tools">
@@ -228,6 +268,10 @@ window.PAGES.dashboard = {
         animateCountUp(document.getElementById('dashAssignedVal'), data.assigned);
         animateCountUp(document.getElementById('dashSoldVal'), data.sold);
         animateCountUp(document.getElementById('dashDamagedVal'), data.damaged);
+        animateCountUp(document.getElementById('dashSolarKwVal'), data.solarKw || 0);
+        animateCountUp(document.getElementById('dashInvertersVal'), data.invertersCount || 0);
+        animateCountUp(document.getElementById('dashBatteriesVal'), data.batteriesCount || 0);
+        animateCountUp(document.getElementById('dashTotalItemsVal'), data.totalItems || 0);
         setText('dashLowStockCount', `${data.lowStockCount || 0} items`);
 
         const snapshotBody = document.getElementById('dashSnapshotBody');
@@ -362,6 +406,111 @@ window.PAGES.dashboard = {
         setTimeout(() => refreshBtn.classList.remove('rotating'), 600);
         if (window.showToast) window.showToast('Dashboard data refreshed.', 'info');
       });
+    }
+
+    // =========================================================================
+    // CUSTOMIZABLE DASHBOARD METRICS & WIDGET CONFIGURATION
+    // =========================================================================
+    const DASHBOARD_WIDGETS = [
+      { id: 'w_welcome', name: 'Welcome & Quick Action Header', icon: 'fa-hand-wave', desc: 'Greeting, live clock badge, and 1-click action shortcuts' },
+      { id: 'w_solar_capacity', name: 'Solar Capacity & Power Portfolio', icon: 'fa-solar-panel', desc: 'Total solar KW capacity, inverters count, and batteries in stock' },
+      { id: 'w_kpi_cards', name: 'Core Inventory KPI Cards', icon: 'fa-chart-simple', desc: '4 Big metric cards: Available, Assigned, Sold, and Damaged stock' },
+      { id: 'w_lowstock', name: 'Low Stock Alert Banner', icon: 'fa-triangle-exclamation', desc: 'Replenishment urgency notification when items hit minimum levels' },
+      { id: 'w_distribution', name: 'Category Stock Distribution Bar', icon: 'fa-chart-pie', desc: 'Visual distribution breakdown of items across categories' },
+      { id: 'w_category_snapshot', name: 'Category-wise Snapshot Table', icon: 'fa-table-cells', desc: 'Detailed table of stock counts per category with filters' },
+      { id: 'w_usersession', name: 'Live User Sessions Status', icon: 'fa-users', desc: 'Live status of team members currently active in the ERP' },
+    ];
+
+    function getWidgetPrefs() {
+      try {
+        const raw = localStorage.getItem('egs_dashboard_widgets_v1');
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      const defaults = {};
+      DASHBOARD_WIDGETS.forEach((w) => { defaults[w.id] = true; });
+      return defaults;
+    }
+
+    function applyWidgetVisibility() {
+      const prefs = getWidgetPrefs();
+      DASHBOARD_WIDGETS.forEach((w) => {
+        const isVisible = prefs[w.id] !== false;
+        const els = document.querySelectorAll(`[data-widget="${w.id}"]`);
+        els.forEach((el) => {
+          if (w.id === 'w_distribution') {
+            if (!isVisible) el.style.display = 'none';
+          } else {
+            el.style.display = isVisible ? '' : 'none';
+          }
+        });
+      });
+    }
+
+    applyWidgetVisibility();
+
+    function openCustomizerModal() {
+      const currentPrefs = getWidgetPrefs();
+      const html = `
+        <div class="dash-customizer-grid">
+          ${DASHBOARD_WIDGETS.map((w) => `
+            <div class="dash-customizer-item">
+              <div class="dash-customizer-meta">
+                <div class="dash-customizer-icon"><i class="fa-solid ${w.icon}"></i></div>
+                <div class="dash-customizer-text">
+                  <h4>${w.name}</h4>
+                  <p>${w.desc}</p>
+                </div>
+              </div>
+              <label class="egs-switch">
+                <input type="checkbox" data-custom-widget="${w.id}" ${currentPrefs[w.id] !== false ? 'checked' : ''}>
+                <span class="egs-switch-slider"></span>
+              </label>
+            </div>
+          `).join('')}
+        </div>
+        <div class="actions-row" style="margin-top:18px; justify-content:space-between; border-top:1px solid var(--border-light); padding-top:14px;">
+          <button type="button" class="btn btn-ghost" id="dashResetWidgetsBtn"><i class="fa-solid fa-rotate-left"></i> Reset to Default</button>
+          <button type="button" class="btn btn-green" id="dashSaveWidgetsBtn"><i class="fa-solid fa-floppy-disk"></i> Save Dashboard Layout</button>
+        </div>
+      `;
+
+      window.openModal('⚙️ Customize Dashboard Widgets', html, { size: 'medium' });
+
+      const saveBtn = document.getElementById('dashSaveWidgetsBtn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+          const newPrefs = {};
+          document.querySelectorAll('[data-custom-widget]').forEach((input) => {
+            const wid = input.dataset.customWidget;
+            newPrefs[wid] = input.checked;
+          });
+          localStorage.setItem('egs_dashboard_widgets_v1', JSON.stringify(newPrefs));
+          applyWidgetVisibility();
+          window.closeModal();
+          if (window.showSuccess) {
+            window.showSuccess('Layout Saved Successfully', 'Your customized dashboard metrics and widget preferences have been saved.');
+          } else if (window.showToast) {
+            window.showToast('Dashboard layout saved!', 'success');
+          }
+          if (window.Api) {
+            window.Api.put('/auth/preferences', { dashboard_widgets: newPrefs }).catch(() => {});
+          }
+        });
+      }
+
+      const resetBtn = document.getElementById('dashResetWidgetsBtn');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          document.querySelectorAll('[data-custom-widget]').forEach((input) => {
+            input.checked = true;
+          });
+        });
+      }
+    }
+
+    const customizeBtn = document.getElementById('dashCustomizeBtn');
+    if (customizeBtn) {
+      customizeBtn.addEventListener('click', openCustomizerModal);
     }
 
     // Live Network Users Session Tracker
