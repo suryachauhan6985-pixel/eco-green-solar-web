@@ -2643,12 +2643,33 @@ window.attachColumnFilters = function (table) {
       });
     }
 
+    function toggle() {
+      if (pop) closePop();
+      else open();
+    }
+
     function open() {
+      if (pop) return; // Prevent double-execution flicker when both focus and click fire
       view = parseISO(native.value) || startOfToday();
       renderPop();
     }
-    display.addEventListener('click', open);
-    display.addEventListener('focus', open);
+
+    display.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggle();
+    });
+    icon.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggle();
+    });
+    display.addEventListener('focus', () => {
+      if (!pop) open();
+    });
+    native.showPicker = function () {
+      open();
+    };
   }
 
   function scan(root) {
