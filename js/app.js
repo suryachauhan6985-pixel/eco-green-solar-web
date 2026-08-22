@@ -707,10 +707,13 @@ if (!navigator.onLine) {
     topbarExtra.id = 'topbarExtra';
     topbarExtra.className = 'topbar-extra';
     const topbarEl = document.querySelector('.topbar');
-    const searchMini = topbarEl ? topbarEl.querySelector('.search-mini') : null;
     if (topbarEl) {
-      if (searchMini) topbarEl.insertBefore(topbarExtra, searchMini);
-      else topbarEl.appendChild(topbarExtra);
+      const topbarRight = topbarEl.querySelector('.topbar-right');
+      if (topbarRight && topbarRight.parentNode === topbarEl) {
+        topbarEl.insertBefore(topbarExtra, topbarRight);
+      } else {
+        topbarEl.appendChild(topbarExtra);
+      }
     }
   }
   window.topbarExtra = topbarExtra;

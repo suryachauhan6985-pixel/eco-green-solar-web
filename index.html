@@ -59,7 +59,7 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=92">
+<link rel="stylesheet" href="css/style.css?v=93">
 <!-- Barcode/QR camera scanning (Sheets feature) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <!-- XLSX parsing for Sheets "Import CSV/XLSX" (CSV import needs no library) -->
@@ -128,7 +128,8 @@
         <h1 id="pageTitle">Dashboard</h1>
         <div class="sub" id="pageSub">Live overview of stock &amp; operations</div>
       </div>
-      <div style="display:flex; align-items:center; gap:8px;">
+      <div id="topbarExtra" class="topbar-extra"></div>
+      <div class="topbar-right" style="display:flex; align-items:center; gap:8px;">
         <button type="button" class="btn btn-gold" id="btnTopbarInstallApp" style="display:none; align-items:center; gap:6px; font-weight:700; border-radius:999px; padding:6px 14px; font-size:12px;" onclick="window.openAppInstallGuide()"><i class="fa-solid fa-download"></i> Install App</button>
         <div class="search-mini"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="egs-quick-search" id="egsQuickSearch" placeholder="Quick search anything... (Ctrl+K)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"></div>
       </div>
@@ -211,7 +212,7 @@
 <script src="js/pages/bom-dispatch.js?v=14"></script>
 <script src="js/pages/bom.js?v=32"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
-<script src="js/app.js?v=46"></script>
+<script src="js/app.js?v=47"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
