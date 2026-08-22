@@ -511,6 +511,127 @@ module.exports = function registerAuthRoutes(app, deps) {
     res.json({ success: true, preferences: clean });
   }));
 
+  // Self-Service User Profile Management (Username, Email, Password)
+  app.get('/api/auth/profile', route(async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Please log in.' });
+    const [[user]] = await pool.query(
+      `SELECT username, role, email, is_verified, created_at FROM users WHERE username = ?`,
+      [req.user.username]
+    );
+    if (!user) return res.status(404).json({ error: 'User profile not found.' });
+    res.json({
+      username: user.username,
+      role: user.role,
+      email: user.email || '',
+      isVerified: !!user.is_verified,
+      createdAt: user.created_at || null,
+    });
+  }));
+
+  app.put('/api/auth/profile', route(async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Please log in.' });
+    const curUname = req.user.username;
+    const { newUsername, newEmail, currentPassword, newPassword } = req.body || {};
+
+    const [[userRow]] = await pool.query(
+      `SELECT username, password, email, role FROM users WHERE username = ?`,
+      [curUname]
+    );
+    if (!userRow) return res.status(404).json({ error: 'User record not found.' });
+
+    let finalUsername = curUname;
+    let finalEmail = userRow.email || '';
+    let tokenReissued = null;
+
+    // 1. Password Verification (Required if changing password or sensitive account details)
+    if (newPassword || newUsername) {
+      if (!currentPassword) {
+        return res.status(400).json({ error: 'Please enter your current Password/PIN to confirm account updates.' });
+      }
+      const { valid } = await verifyPassword(currentPassword, userRow.password);
+      if (!valid) {
+        return res.status(401).json({ error: 'Current Password/PIN is incorrect.' });
+      }
+    }
+
+    // 2. Update Username (Atomic cascade across database)
+    if (newUsername && newUsername.trim().toLowerCase() !== curUname.toLowerCase()) {
+      const sanitized = newUsername.trim().toLowerCase();
+      if (!/^[a-zA-Z0-9_.@-]{3,50}$/.test(sanitized)) {
+        return res.status(400).json({ error: 'Username must be 3–50 characters (letters, numbers, dots, underscores, dashes).' });
+      }
+      const [[existingUser]] = await pool.query(`SELECT username FROM users WHERE username = ?`, [sanitized]);
+      if (existingUser) {
+        return res.status(400).json({ error: `Username '${sanitized}' is already taken.` });
+      }
+
+      const conn = await pool.getConnection();
+      try {
+        await conn.beginTransaction();
+
+        await conn.query(`UPDATE users SET username = ? WHERE username = ?`, [sanitized, curUname]);
+        await conn.query(`UPDATE user_sessions SET username = ? WHERE username = ?`, [sanitized, curUname]);
+        await conn.query(`UPDATE auth_device_sessions SET username = ? WHERE username = ?`, [sanitized, curUname]);
+        await conn.query(`UPDATE otp_codes SET username = ? WHERE username = ?`, [sanitized, curUname]);
+        await conn.query(`UPDATE scan_sheets SET created_by = ? WHERE created_by = ?`, [sanitized, curUname]);
+        await conn.query(`UPDATE bom_challans SET created_by = ? WHERE created_by = ?`, [sanitized, curUname]);
+        await conn.query(`UPDATE challan_category_map SET updated_by = ? WHERE updated_by = ?`, [sanitized, curUname]);
+        await conn.query(`UPDATE app_settings SET updated_by = ? WHERE updated_by = ?`, [sanitized, curUname]);
+        await conn.query(`UPDATE attachments SET uploaded_by = ? WHERE uploaded_by = ?`, [sanitized, curUname]);
+
+        await conn.commit();
+        finalUsername = sanitized;
+      } catch (err) {
+        await conn.rollback();
+        console.error('[Profile Update] Username cascade failed:', err);
+        return res.status(500).json({ error: 'Database update failed: ' + (err.message || 'Could not rename user.') });
+      } finally {
+        conn.release();
+      }
+
+      // Re-issue fresh token for new username
+      try {
+        const issued = issueToken(finalUsername, userRow.role, req.user.jti || undefined);
+        tokenReissued = issued.token;
+      } catch (e) { /* non-fatal */ }
+    }
+
+    // 3. Update Email
+    if (newEmail !== undefined && newEmail !== null) {
+      const sanitizedMail = String(newEmail).trim().toLowerCase();
+      if (sanitizedMail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitizedMail)) {
+        return res.status(400).json({ error: 'Please provide a valid email address.' });
+      }
+      if (sanitizedMail && sanitizedMail !== (userRow.email || '').toLowerCase()) {
+        const [[emailTaken]] = await pool.query(
+          `SELECT username FROM users WHERE LOWER(email) = ? AND role = ? AND username <> ?`,
+          [sanitizedMail, userRow.role, finalUsername]
+        );
+        if (emailTaken) {
+          return res.status(400).json({ error: `A ${userRow.role} account with this email already exists.` });
+        }
+      }
+      await pool.query(`UPDATE users SET email = ? WHERE username = ?`, [sanitizedMail || null, finalUsername]);
+      finalEmail = sanitizedMail;
+    }
+
+    // 4. Update Password
+    if (newPassword && String(newPassword).trim()) {
+      const passClean = String(newPassword).trim();
+      if (passClean.length < 4) {
+        return res.status(400).json({ error: 'New password must be at least 4 characters.' });
+      }
+      const hashed = await hashPassword(passClean);
+      await pool.query(`UPDATE users SET password = ? WHERE username = ?`, [hashed, finalUsername]);
+    }
+
+    res.json({
+      success: true,
+      username: finalUsername,
+      email: finalEmail,
+      token: tokenReissued || undefined,
+    });
+  }));
 
   // App-wide settings (challan sequence etc.) — Admin / SuperAdmin only for write
   app.get('/api/auth/app-settings', route(async (req, res) => {
@@ -520,15 +641,16 @@ module.exports = function registerAuthRoutes(app, deps) {
     (rows || []).forEach((r) => { settings[r.setting_key] = r.setting_value; });
     // Defaults
     if (settings.challan_prefix == null) settings.challan_prefix = '';
+    if (settings.challan_suffix == null) settings.challan_suffix = '';
     if (settings.challan_next == null) settings.challan_next = '1';
-    if (settings.challan_pad == null) settings.challan_pad = '4';
+    if (settings.challan_pad == null) settings.challan_pad = '3';
     res.json({ settings });
   }));
 
   app.put('/api/auth/app-settings', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     if (!req.user) return res.status(401).json({ error: 'Please log in.' });
     const body = (req.body && req.body.settings) ? req.body.settings : (req.body || {});
-    const allowed = ['challan_prefix', 'challan_next', 'challan_pad'];
+    const allowed = ['challan_prefix', 'challan_suffix', 'challan_next', 'challan_pad'];
     for (const key of allowed) {
       if (body[key] == null) continue;
       let val = String(body[key]).trim();
@@ -542,7 +664,8 @@ module.exports = function registerAuthRoutes(app, deps) {
         if (!Number.isFinite(n) || n < 0 || n > 10) return res.status(400).json({ error: 'Pad length must be 0–10.' });
         val = String(n);
       }
-      if (key === 'challan_prefix' && val.length > 30) return res.status(400).json({ error: 'Prefix too long.' });
+      if (key === 'challan_prefix' && val.length > 30) return res.status(400).json({ error: 'Prefix too long (max 30 chars).' });
+      if (key === 'challan_suffix' && val.length > 30) return res.status(400).json({ error: 'Suffix too long (max 30 chars).' });
       await pool.query(
         `INSERT INTO app_settings (setting_key, setting_value, updated_by) VALUES (?, ?, ?)
          ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value), updated_by=VALUES(updated_by)`,

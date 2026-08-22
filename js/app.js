@@ -1996,24 +1996,185 @@ window.attachColumnFilters = function (table) {
     }
   }
 
-  function openAppSettingsPanel() {
+  function openAppSettingsPanel(defaultTabId) {
     closeProfileMenu();
     const activeTheme = (typeof window.getAppTheme === 'function') ? window.getAppTheme() : 'dark';
+    const currentRole = window.currentUserRole || 'User';
+    const isAdmin = currentRole === 'SuperAdmin' || currentRole === 'Admin';
+    const currentUsername = window.currentUsername || 'user';
+    const initialTab = defaultTabId || (isAdmin ? 'tab-profile' : 'tab-profile');
+
     const settingsHtml = `
       <div class="settings-layout">
         <div class="settings-tabs">
-          <button type="button" class="settings-tab-btn active" data-tab="tab-theme"><i class="fa-solid fa-palette"></i> Appearance</button>
+          <button type="button" class="settings-tab-btn" data-tab="tab-profile"><i class="fa-solid fa-user-gear"></i> My Profile &amp; Security</button>
+          ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-users"><i class="fa-solid fa-users-gear"></i> User Accounts</button>' : ''}
+          <button type="button" class="settings-tab-btn" data-tab="tab-challan"><i class="fa-solid fa-file-invoice"></i> Challan &amp; Print</button>
+          <button type="button" class="settings-tab-btn" data-tab="tab-theme"><i class="fa-solid fa-palette"></i> Appearance</button>
           <button type="button" class="settings-tab-btn" data-tab="tab-company"><i class="fa-solid fa-building"></i> Company Profile</button>
-          <button type="button" class="settings-tab-btn" data-tab="tab-challan"><i class="fa-solid fa-file-invoice"></i> Challan & Print</button>
-          <button type="button" class="settings-tab-btn" data-tab="tab-inventory"><i class="fa-solid fa-boxes-stacked"></i> Alerts & Inventory</button>
-          <button type="button" class="settings-tab-btn" data-tab="tab-security"><i class="fa-solid fa-shield-halved"></i> Security & 2FA</button>
+          <button type="button" class="settings-tab-btn" data-tab="tab-inventory"><i class="fa-solid fa-boxes-stacked"></i> Alerts &amp; Stock</button>
           <button type="button" class="settings-tab-btn" data-tab="tab-roadmap"><i class="fa-solid fa-rocket"></i> Cloud Roadmap</button>
         </div>
 
-        <!-- 1. Appearance Tab -->
-        <div class="settings-panel active" id="tab-theme">
+        <!-- 1. My Profile & Security Tab -->
+        <div class="settings-panel" id="tab-profile">
           <div class="settings-card">
-            <div class="settings-card-title">Theme & Color Mode</div>
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border-light);">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span class="pa-avatar" style="width:40px; height:40px; font-size:16px; border-radius:50%; background:var(--blue); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-weight:700;">${(currentUsername[0] || 'U').toUpperCase()}</span>
+                <div>
+                  <strong style="font-size:15px; color:var(--txt);">@${currentUsername}</strong>
+                  <div style="font-size:12px; color:var(--txt-muted); display:flex; align-items:center; gap:6px; margin-top:2px;">
+                    <span class="pill pill-${currentRole === 'SuperAdmin' ? 'purple' : currentRole === 'Admin' ? 'gold' : 'blue'}" style="font-size:10.5px; padding:2px 8px; font-weight:700;">${currentRole}</span>
+                    <span>· OTP 2FA Enabled</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-card-title"><i class="fa-solid fa-id-card" style="color:var(--blue);"></i> Edit Account Credentials</div>
+            <p style="margin:0 0 10px; font-size:12px; color:var(--txt-muted);">Updating credentials takes effect instantly across all ERP modules and device sessions.</p>
+            <div class="form-grid cols-2" style="margin-top:10px;">
+              <div class="field">
+                <label>Username</label>
+                <input type="text" id="myProfileUsername" value="${currentUsername}" placeholder="Enter new username">
+              </div>
+              <div class="field">
+                <label>Registered Email (for OTP Login)</label>
+                <input type="email" id="myProfileEmail" placeholder="e.g. user@example.com">
+              </div>
+              <div class="field span-2">
+                <label>Current Password / PIN <span class="req">*</span> <small style="color:var(--gold); font-weight:normal;">(Required to confirm updates)</small></label>
+                <input type="password" id="myProfileCurPass" placeholder="Enter current password/PIN">
+              </div>
+              <div class="field">
+                <label>New Password / PIN <small style="color:var(--txt-muted); font-weight:normal;">(Leave empty to keep existing)</small></label>
+                <input type="password" id="myProfileNewPass" placeholder="New password (optional)">
+              </div>
+              <div class="field">
+                <label>Confirm New Password / PIN</label>
+                <input type="password" id="myProfileConfirmPass" placeholder="Re-enter new password">
+              </div>
+            </div>
+            <div class="actions-row" style="margin-top:14px; justify-content:flex-end;">
+              <button type="button" class="btn btn-blue" id="btnSaveMyProfile"><i class="fa-solid fa-check"></i> Save Profile Changes</button>
+            </div>
+          </div>
+
+          <div class="settings-card" style="margin-top:16px;">
+            <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between;">
+              <span><i class="fa-solid fa-mobile-screen-button" style="color:var(--gold);"></i> Active Devices &amp; Login Activity</span>
+              <button type="button" class="btn btn-ghost" id="setOpenLoginActivityBtn" style="font-size:11.5px; padding:4px 10px;"><i class="fa-solid fa-list"></i> Full Session Ledger</button>
+            </div>
+            <p style="margin:0; font-size:12.5px; color:var(--txt-muted);">
+              Manage active sessions and revoke access from unrecognized browsers or devices.
+            </p>
+          </div>
+        </div>
+
+        <!-- 2. User Accounts Management Tab (Admin / SuperAdmin) -->
+        ${isAdmin ? `
+        <div class="settings-panel" id="tab-users">
+          <div class="grid-2">
+            <div class="panel" style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
+              <h4 style="margin:0 0 10px; color:var(--gold); display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-user-plus"></i> Create / Update Account
+              </h4>
+              <div class="form-grid">
+                <div class="field"><label>Username <span class="req">*</span></label><input id="setMngUname" placeholder="e.g. amit" autocomplete="off"></div>
+                <div class="field"><label>Password / PIN <span class="req">*</span></label><input type="password" id="setMngPass" placeholder="••••••••"></div>
+                <div class="field"><label>Email (for OTP Login) <span class="req">*</span></label><input type="email" id="setMngEmail" placeholder="e.g. amit@example.com"></div>
+                <div class="field"><label>System Privilege</label>
+                  <select id="setMngRole"><option value="User">User</option><option value="Admin">Admin</option><option value="SuperAdmin">SuperAdmin</option></select>
+                </div>
+              </div>
+              <div class="actions-row" style="margin-top:12px; flex-wrap:wrap; gap:8px;">
+                <button type="button" class="btn btn-blue" id="setBtnAddUser"><i class="fa-solid fa-user-plus"></i> Add User</button>
+                <button type="button" class="btn btn-gold" id="setBtnUpdatePass"><i class="fa-solid fa-key"></i> Update Pass</button>
+                <button type="button" class="btn btn-ghost" id="setBtnUpdateEmail"><i class="fa-solid fa-envelope"></i> Update Email</button>
+              </div>
+            </div>
+
+            <div class="panel" style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
+              <h4 style="margin:0 0 10px; color:var(--blue); display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-users"></i> Access Control Ledger
+              </h4>
+              <div class="table-wrap" style="max-height:280px; overflow-y:auto;">
+                <table>
+                  <thead><tr><th>Username</th><th>Email</th><th>Role</th></tr></thead>
+                  <tbody id="setUsersLedgerBody"><tr><td colspan="3" class="pl-empty-hint"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>` : ''}
+
+        <!-- 3. Challan & Print Config Tab -->
+        <div class="settings-panel" id="tab-challan">
+          <div class="settings-card">
+            <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between;">
+              <span><i class="fa-solid fa-barcode" style="color:var(--gold);"></i> Challan Serial Numbering Series</span>
+              ${isAdmin ? '<span class="pill pill-green" style="font-size:11px; padding:2px 8px;">Admin Configurable</span>' : '<span class="pill pill-muted" style="font-size:11px; padding:2px 8px;">Read Only</span>'}
+            </div>
+            <p style="margin:0 0 12px 0; font-size:12.5px; color:var(--txt-muted);">
+              Configure how automatic sequential delivery challan numbers are generated (Prefix, Starting Sequence, Zero-Padding, Suffix).
+            </p>
+            <div class="form-grid cols-2" style="margin-top:10px;">
+              <div class="field">
+                <label>Challan Prefix (Optional)</label>
+                <input type="text" id="setChallanPrefix" placeholder="e.g. RF- or EGS-" ${isAdmin ? '' : 'readonly'}>
+              </div>
+              <div class="field">
+                <label>Next Sequence Number <span class="req">*</span></label>
+                <input type="number" id="setChallanNext" min="1" placeholder="e.g. 1 or 1001" ${isAdmin ? '' : 'readonly'}>
+              </div>
+              <div class="field">
+                <label>Number Digit Padding</label>
+                <select id="setChallanPad" ${isAdmin ? '' : 'disabled'}>
+                  <option value="0">No Padding (1, 2, ...)</option>
+                  <option value="2">2 Digits (01, 02, ...)</option>
+                  <option value="3" selected>3 Digits (001, 002, ...)</option>
+                  <option value="4">4 Digits (0001, 0002, ...)</option>
+                  <option value="5">5 Digits (00001, 00002, ...)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Challan Suffix (Optional)</label>
+                <input type="text" id="setChallanSuffix" placeholder="e.g. /2026 or -A" ${isAdmin ? '' : 'readonly'}>
+              </div>
+            </div>
+
+            <!-- Live Preview Display -->
+            <div style="margin-top:14px; padding:12px 16px; background:rgba(218,165,32,0.08); border:1px solid rgba(218,165,32,0.25); border-radius:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+              <span style="font-size:13px; color:var(--txt);">Next Generated Challan Preview:</span>
+              <strong id="setChallanPreview" style="font-size:16px; color:var(--gold); letter-spacing:0.5px;">...</strong>
+            </div>
+
+            ${isAdmin ? `
+            <div class="actions-row" style="margin-top:14px; justify-content:flex-end;">
+              <button type="button" class="btn btn-green" id="setBtnSaveChallan"><i class="fa-solid fa-floppy-disk"></i> Save Challan Configuration</button>
+            </div>` : ''}
+          </div>
+
+          <div class="settings-card" style="margin-top:16px;">
+            <div class="settings-card-title">Challan PDF Generation &amp; Sales Integration</div>
+            <div class="form-grid cols-2" style="margin-top:10px;">
+              <div class="field">
+                <label>Default Layout</label>
+                <input type="text" value="Landscape A4 (Customer + Company Copy)" readonly>
+              </div>
+              <div class="field">
+                <label>Sales Auto-Linking</label>
+                <input type="text" value="Auto-syncs Challan No. &amp; Date into Project Sales" readonly style="color:#2ecc71;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Appearance Tab -->
+        <div class="settings-panel" id="tab-theme">
+          <div class="settings-card">
+            <div class="settings-card-title">Theme &amp; Color Mode</div>
             <p class="note" style="margin:0 0 12px 0;">Select your preferred workspace color theme.</p>
             <div class="profile-theme-row" style="max-width:320px;">
               <button type="button" class="theme-btn${activeTheme === 'dark' ? ' active' : ''}" data-theme-set="dark" title="Dark"><i class="fa-solid fa-moon"></i> Dark</button>
@@ -2022,11 +2183,11 @@ window.attachColumnFilters = function (table) {
             </div>
           </div>
           <div class="settings-card">
-            <div class="settings-card-title">Display Density & Animation</div>
+            <div class="settings-card-title">Display Density &amp; Animation</div>
             <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
               <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
                 <input type="checkbox" checked style="accent-color:var(--gold);">
-                <span>Smooth UI Animations & Transitions</span>
+                <span>Smooth UI Animations &amp; Transitions</span>
               </label>
               <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
                 <input type="checkbox" style="accent-color:var(--gold);">
@@ -2036,7 +2197,7 @@ window.attachColumnFilters = function (table) {
           </div>
         </div>
 
-        <!-- 2. Company Profile Tab -->
+        <!-- 5. Company Profile Tab -->
         <div class="settings-panel" id="tab-company">
           <div class="settings-card">
             <div class="settings-card-title">Enterprise Identity</div>
@@ -2050,7 +2211,7 @@ window.attachColumnFilters = function (table) {
                 <input type="text" value="Main Warehouse (Surat)" readonly>
               </div>
               <div class="field">
-                <label>Operating State & City</label>
+                <label>Operating State &amp; City</label>
                 <input type="text" value="Gujarat — Surat" readonly>
               </div>
               <div class="field">
@@ -2067,37 +2228,10 @@ window.attachColumnFilters = function (table) {
           </div>
         </div>
 
-        <!-- 3. Challan & Print Config Tab -->
-        <div class="settings-panel" id="tab-challan">
-          <div class="settings-card">
-            <div class="settings-card-title">Challan PDF Generation</div>
-            <div class="form-grid cols-2" style="margin-top:10px;">
-              <div class="field">
-                <label>Default Layout</label>
-                <input type="text" value="Landscape A4 (Customer + Company Copy)" readonly>
-              </div>
-              <div class="field">
-                <label>Numbering System</label>
-                <input type="text" value="Automatic Sequential (Auto Next-No)" readonly style="color:#2ecc71; font-weight:700;">
-              </div>
-            </div>
-          </div>
-          <div class="settings-card">
-            <div class="settings-card-title">Sales Integration</div>
-            <p style="margin:0 0 10px 0; font-size:13px; color:var(--txt-muted);">
-              When a Challan is saved or generated, Challan No. and Date automatically sync back into the Project Sales entry.
-            </p>
-            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-              <input type="checkbox" checked disabled style="accent-color:var(--gold);">
-              <span>Auto-link Challan No. to Project Sales Form</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- 4. Alerts & Inventory Tab -->
+        <!-- 6. Alerts & Inventory Tab -->
         <div class="settings-panel" id="tab-inventory">
           <div class="settings-card">
-            <div class="settings-card-title">Stock Thresholds & Scanner</div>
+            <div class="settings-card-title">Stock Thresholds &amp; Scanner</div>
             <div class="form-grid cols-2" style="margin-top:10px;">
               <div class="field">
                 <label>Low Stock Warning Threshold</label>
@@ -2124,31 +2258,7 @@ window.attachColumnFilters = function (table) {
           </div>
         </div>
 
-        <!-- 5. Security & 2FA Tab -->
-        <div class="settings-panel" id="tab-security">
-          <div class="settings-card">
-            <div class="settings-card-title">Two-Factor Authentication (2FA)</div>
-            <p style="margin:0 0 12px 0; font-size:13px; color:var(--txt-muted);">
-              Secure OTP verification enabled on unrecognized devices and login sessions.
-            </p>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span class="pill" style="background:rgba(46,204,113,0.15); color:#2ecc71; border:1px solid rgba(46,204,113,0.3); padding:4px 10px; border-radius:6px; font-weight:700;">
-                <i class="fa-solid fa-lock"></i> OTP 2FA Active
-              </span>
-            </div>
-          </div>
-          <div class="settings-card">
-            <div class="settings-card-title">Active Devices & Sessions</div>
-            <p style="margin:0 0 12px 0; font-size:13px; color:var(--txt-muted);">
-              View all active browsers and revoke sessions across devices.
-            </p>
-            <button type="button" class="btn btn-ghost" id="setOpenLoginActivityBtn" style="font-size:12.5px;">
-              <i class="fa-solid fa-mobile-screen-button"></i> Open Login Activity Panel
-            </button>
-          </div>
-        </div>
-
-        <!-- 6. Roadmap Tab -->
+        <!-- 7. Roadmap Tab -->
         <div class="settings-panel" id="tab-roadmap">
           <div class="settings-card">
             <div class="settings-card-title">
@@ -2181,26 +2291,25 @@ window.attachColumnFilters = function (table) {
       </div>
     `;
 
-    window.openModal('System & ERP Settings', settingsHtml, { size: 'large' });
+    window.openModal('⚙️ System & ERP Settings', settingsHtml, { size: 'large' });
 
     // Wire Settings Tabs
     const tabBtns = document.querySelectorAll('.settings-tab-btn');
     const panels = document.querySelectorAll('.settings-panel');
+    function activateTab(tabId) {
+      tabBtns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === tabId));
+      panels.forEach((p) => p.classList.toggle('active', p.id === tabId));
+    }
     tabBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const targetId = btn.getAttribute('data-tab');
-        tabBtns.forEach((b) => b.classList.remove('active'));
-        panels.forEach((p) => p.classList.remove('active'));
-        btn.classList.add('active');
-        const p = document.getElementById(targetId);
-        if (p) p.classList.add('active');
-      });
+      btn.addEventListener('click', () => activateTab(btn.getAttribute('data-tab')));
     });
+    activateTab(initialTab);
 
     // Wire Theme buttons inside Settings
     const modalBox = document.querySelector('#modalOverlay .modal-box');
     if (modalBox && window.wireThemeButtons) window.wireThemeButtons(modalBox);
 
+    // Wire Login Activity button
     const loginActBtn = document.getElementById('setOpenLoginActivityBtn');
     if (loginActBtn) {
       loginActBtn.addEventListener('click', () => {
@@ -2208,7 +2317,233 @@ window.attachColumnFilters = function (table) {
         openLoginActivityPanel();
       });
     }
+
+    // -------------------------------------------------------------
+    // 1. My Profile Tab Async Initialization & Save
+    // -------------------------------------------------------------
+    const profileEmailInput = document.getElementById('myProfileEmail');
+    const profileUnameInput = document.getElementById('myProfileUsername');
+    if (profileEmailInput && window.Api) {
+      window.Api.get('/auth/profile').then((data) => {
+        if (data && data.email && profileEmailInput) profileEmailInput.value = data.email;
+        if (data && data.username && profileUnameInput) profileUnameInput.value = data.username;
+      }).catch(() => {});
+    }
+
+    const btnSaveProfile = document.getElementById('btnSaveMyProfile');
+    if (btnSaveProfile) {
+      btnSaveProfile.addEventListener('click', async () => {
+        const newUsername = (document.getElementById('myProfileUsername') || {}).value.trim();
+        const newEmail = (document.getElementById('myProfileEmail') || {}).value.trim();
+        const currentPassword = (document.getElementById('myProfileCurPass') || {}).value.trim();
+        const newPassword = (document.getElementById('myProfileNewPass') || {}).value.trim();
+        const confirmPassword = (document.getElementById('myProfileConfirmPass') || {}).value.trim();
+
+        if (!currentPassword) {
+          window.openModal('Authentication Required', '<p>Please enter your current Password / PIN to confirm changes to your account.</p>');
+          return;
+        }
+        if (newPassword && newPassword !== confirmPassword) {
+          window.openModal('Password Mismatch', '<p>The new password and confirmation do not match.</p>');
+          return;
+        }
+
+        try {
+          const res = await window.Api.put('/auth/profile', {
+            newUsername,
+            newEmail,
+            currentPassword,
+            newPassword: newPassword || undefined
+          });
+
+          if (res && res.success) {
+            if (res.token) {
+              const saved = JSON.parse(sessionStorage.getItem('auth_user') || '{}');
+              sessionStorage.setItem('auth_user', JSON.stringify({ ...saved, username: res.username, token: res.token }));
+            }
+            if (res.username) {
+              window.currentUsername = res.username;
+              updateProfileDisplay(res.username, currentRole);
+            }
+            if (window.showToast) window.showToast('Profile & credentials updated successfully!');
+            document.getElementById('myProfileCurPass').value = '';
+            document.getElementById('myProfileNewPass').value = '';
+            document.getElementById('myProfileConfirmPass').value = '';
+          }
+        } catch (err) {
+          window.openModal('Update Failed', `<p style="color:var(--red);">${err.message || 'Could not update profile.'}</p>`);
+        }
+      });
+    }
+
+    // -------------------------------------------------------------
+    // 2. Challan Tab Async Initialization & Live Preview
+    // -------------------------------------------------------------
+    const prefixInput = document.getElementById('setChallanPrefix');
+    const nextInput = document.getElementById('setChallanNext');
+    const padSelect = document.getElementById('setChallanPad');
+    const suffixInput = document.getElementById('setChallanSuffix');
+    const previewEl = document.getElementById('setChallanPreview');
+
+    function refreshChallanPreview() {
+      if (!previewEl) return;
+      const p = (prefixInput ? prefixInput.value : '');
+      const s = (suffixInput ? suffixInput.value : '');
+      const n = parseInt(nextInput ? nextInput.value : '1', 10) || 1;
+      const pad = parseInt(padSelect ? padSelect.value : '0', 10) || 0;
+      const padded = pad > 0 ? String(n).padStart(pad, '0') : String(n);
+      previewEl.textContent = `${p}${padded}${s}`;
+    }
+
+    [prefixInput, nextInput, padSelect, suffixInput].forEach((el) => {
+      if (el) el.addEventListener('input', refreshChallanPreview);
+      if (el) el.addEventListener('change', refreshChallanPreview);
+    });
+
+    if (window.Api) {
+      window.Api.get('/auth/app-settings').then((res) => {
+        const s = (res && res.settings) || {};
+        if (prefixInput && s.challan_prefix != null) prefixInput.value = s.challan_prefix;
+        if (nextInput && s.challan_next != null) nextInput.value = s.challan_next;
+        if (padSelect && s.challan_pad != null) padSelect.value = s.challan_pad;
+        if (suffixInput && s.challan_suffix != null) suffixInput.value = s.challan_suffix;
+        refreshChallanPreview();
+      }).catch(() => refreshChallanPreview());
+    }
+
+    const btnSaveChallan = document.getElementById('setBtnSaveChallan');
+    if (btnSaveChallan) {
+      btnSaveChallan.addEventListener('click', async () => {
+        const prefix = (prefixInput ? prefixInput.value.trim() : '');
+        const nextVal = (nextInput ? nextInput.value.trim() : '1');
+        const padVal = (padSelect ? padSelect.value : '3');
+        const suffixVal = (suffixInput ? suffixInput.value.trim() : '');
+
+        try {
+          await window.Api.put('/auth/app-settings', {
+            settings: {
+              challan_prefix: prefix,
+              challan_next: nextVal,
+              challan_pad: padVal,
+              challan_suffix: suffixVal
+            }
+          });
+          if (window.showToast) window.showToast('Challan numbering settings saved!');
+        } catch (err) {
+          window.openModal('Save Failed', `<p style="color:var(--red);">${err.message || 'Could not save challan settings.'}</p>`);
+        }
+      });
+    }
+
+    // -------------------------------------------------------------
+    // 3. User Accounts Tab (Admin / SuperAdmin)
+    // -------------------------------------------------------------
+    if (isAdmin) {
+      const unameInp = document.getElementById('setMngUname');
+      const passInp = document.getElementById('setMngPass');
+      const emailInp = document.getElementById('setMngEmail');
+      const roleInp = document.getElementById('setMngRole');
+      const ledgerBody = document.getElementById('setUsersLedgerBody');
+
+      async function loadSettingsUsersLedger() {
+        if (!ledgerBody) return;
+        try {
+          const rows = await window.Api.get('/masters/users');
+          if (!rows || !rows.length) {
+            ledgerBody.innerHTML = `<tr><td colspan="3" class="pl-empty-hint">No user accounts found</td></tr>`;
+            return;
+          }
+          ledgerBody.innerHTML = rows.map((u) => `
+            <tr style="cursor:pointer;" title="Click to fill form">
+              <td style="font-weight:700; color:var(--txt);">@${u.username}</td>
+              <td style="color:var(--txt-muted); font-size:12px;">${u.email || '-'}</td>
+              <td><span class="pill pill-${u.role === 'SuperAdmin' ? 'purple' : u.role === 'Admin' ? 'gold' : 'blue'}" style="font-size:10.5px; padding:2px 7px;">${u.role}</span></td>
+            </tr>
+          `).join('');
+
+          ledgerBody.querySelectorAll('tr').forEach((tr, i) => {
+            tr.addEventListener('click', () => {
+              const u = rows[i];
+              if (u) {
+                if (unameInp) unameInp.value = u.username;
+                if (emailInp) emailInp.value = u.email || '';
+                if (roleInp) roleInp.value = u.role || 'User';
+                if (passInp) passInp.focus();
+              }
+            });
+          });
+        } catch (e) {
+          ledgerBody.innerHTML = `<tr><td colspan="3" class="pl-empty-hint" style="color:var(--red);">Could not load user accounts</td></tr>`;
+        }
+      }
+
+      loadSettingsUsersLedger();
+
+      const btnAddUser = document.getElementById('setBtnAddUser');
+      if (btnAddUser) {
+        btnAddUser.addEventListener('click', async () => {
+          const username = unameInp.value.trim();
+          const password = passInp.value.trim();
+          const email = emailInp.value.trim();
+          const role = roleInp.value;
+          if (!username || !password || !email) {
+            window.openModal('Validation Error', '<p>Username, Password, and Email are required.</p>');
+            return;
+          }
+          try {
+            await window.Api.post('/masters/users', { username, password, email, role });
+            if (window.showToast) window.showToast(`User '@${username}' created!`);
+            unameInp.value = '';
+            passInp.value = '';
+            emailInp.value = '';
+            loadSettingsUsersLedger();
+          } catch (e) {
+            window.openModal('Failed', `<p style="color:var(--red);">${e.message || 'Could not add user.'}</p>`);
+          }
+        });
+      }
+
+      const btnUpdatePass = document.getElementById('setBtnUpdatePass');
+      if (btnUpdatePass) {
+        btnUpdatePass.addEventListener('click', async () => {
+          const username = unameInp.value.trim();
+          const password = passInp.value.trim();
+          if (!username || !password) {
+            window.openModal('Validation Error', '<p>Please enter username and new password.</p>');
+            return;
+          }
+          try {
+            await window.Api.put('/masters/users/password', { username, password });
+            if (window.showToast) window.showToast(`Password updated for '@${username}'!`);
+            passInp.value = '';
+          } catch (e) {
+            window.openModal('Failed', `<p style="color:var(--red);">${e.message || 'Could not update password.'}</p>`);
+          }
+        });
+      }
+
+      const btnUpdateEmail = document.getElementById('setBtnUpdateEmail');
+      if (btnUpdateEmail) {
+        btnUpdateEmail.addEventListener('click', async () => {
+          const username = unameInp.value.trim();
+          const email = emailInp.value.trim();
+          if (!username || !email) {
+            window.openModal('Validation Error', '<p>Please enter username and new email.</p>');
+            return;
+          }
+          try {
+            await window.Api.put('/masters/users/email', { username, email });
+            if (window.showToast) window.showToast(`Email updated for '@${username}'!`);
+            loadSettingsUsersLedger();
+          } catch (e) {
+            window.openModal('Failed', `<p style="color:var(--red);">${e.message || 'Could not update email.'}</p>`);
+          }
+        });
+      }
+    }
   }
+
+  window.openSettingsModal = openAppSettingsPanel;
 
   function openProfileMenu() {
     closeProfileMenu();
@@ -2249,6 +2584,7 @@ window.attachColumnFilters = function (table) {
         <button type="button" class="theme-btn" data-theme-set="light" title="Light"><i class="fa-solid fa-sun"></i> Light</button>
       </div>
       <div class="profile-menu-divider"></div>
+      <button type="button" class="profile-menu-item" id="profileMyAccount"><i class="fa-solid fa-user-gear"></i> My Profile &amp; Security</button>
       <button type="button" class="profile-menu-item" id="profileSettings"><i class="fa-solid fa-gear"></i> System Settings</button>
       <button type="button" class="profile-menu-item" id="profileLoginActivity"><i class="fa-solid fa-mobile-screen-button"></i> Login activity</button>
       <button type="button" class="profile-menu-item danger" id="profileLogout"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>`;
@@ -2280,6 +2616,14 @@ window.attachColumnFilters = function (table) {
       clearSession();
       showLoginOverlay('Add another account — your previous account stays saved for switching.');
     });
+
+    const myAccountBtn = menu.querySelector('#profileMyAccount');
+    if (myAccountBtn) {
+      myAccountBtn.addEventListener('click', () => {
+        closeProfileMenu();
+        openAppSettingsPanel('tab-profile');
+      });
+    }
 
     const settingsBtn = menu.querySelector('#profileSettings');
     if (settingsBtn) {

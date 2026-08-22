@@ -193,6 +193,24 @@ module.exports = function registerChallanRoutes(app, deps) {
 
     invalidatePdfCache(result.insertId, challanNo);
 
+    // Auto-advance challan_next in app_settings if applicable
+    try {
+      const numMatch = String(challanNo).match(/\d+/);
+      if (numMatch) {
+        const val = parseInt(numMatch[0], 10);
+        if (!isNaN(val)) {
+          await pool.query(
+            `INSERT INTO app_settings (setting_key, setting_value, updated_by)
+             VALUES ('challan_next', ?, ?)
+             ON DUPLICATE KEY UPDATE
+               setting_value = IF(CAST(VALUES(setting_value) AS UNSIGNED) > CAST(setting_value AS UNSIGNED), VALUES(setting_value), setting_value),
+               updated_by = VALUES(updated_by)`,
+            [String(val + 1), req.user ? req.user.username : 'system']
+          );
+        }
+      }
+    } catch (e) { /* non-fatal */ }
+
     // Auto-generate Panel Serials Excel in detached background task
     const serials = Array.isArray(b.panelSerials) ? b.panelSerials : [];
     if (serials.length) {
@@ -226,13 +244,39 @@ module.exports = function registerChallanRoutes(app, deps) {
 
   // Specific routes MUST come before generic '/:id' routes
   app.get('/api/challan/next-no', route(async (req, res) => {
-    const [[row]] = await pool.query(
-      `SELECT MAX(CAST(challan_no AS UNSIGNED)) AS maxNo
-       FROM bom_challans
-       WHERE challan_no REGEXP '^[0-9]+$'`
+    const [settingsRows] = await pool.query(
+      `SELECT setting_key, setting_value FROM app_settings WHERE setting_key IN ('challan_prefix', 'challan_suffix', 'challan_next', 'challan_pad')`
     );
-    const nextNo = ((row && row.maxNo) || 0) + 1;
-    res.json({ nextNo: String(nextNo) });
+    const s = {};
+    (settingsRows || []).forEach((r) => { s[r.setting_key] = r.setting_value; });
+    const prefix = s.challan_prefix != null ? s.challan_prefix : '';
+    const suffix = s.challan_suffix != null ? s.challan_suffix : '';
+    const pad = parseInt(s.challan_pad || '3', 10);
+    const manualNext = parseInt(s.challan_next || '1', 10) || 1;
+
+    // Check existing max numeric value across challans
+    const [existingRows] = await pool.query(`SELECT challan_no FROM bom_challans`);
+    let maxExisting = 0;
+    for (const r of existingRows) {
+      const str = String(r.challan_no || '').trim();
+      const m = str.match(/\d+/);
+      if (m) {
+        const val = parseInt(m[0], 10);
+        if (!isNaN(val) && val > maxExisting) maxExisting = val;
+      }
+    }
+
+    const nextSeq = Math.max(manualNext, maxExisting + 1);
+    const padded = pad > 0 ? String(nextSeq).padStart(pad, '0') : String(nextSeq);
+    const fullChallanNo = `${prefix}${padded}${suffix}`;
+
+    res.json({
+      nextNo: fullChallanNo,
+      nextSeq,
+      prefix,
+      suffix,
+      pad,
+    });
   }));
 
   app.get('/api/challan/category-map', route(async (req, res) => {

@@ -1456,6 +1456,15 @@ window.PAGES.masters = {
       }
     });
 
+    const btnOpenSettings = $("mBtnOpenSettingsUsers");
+    if (btnOpenSettings) {
+      btnOpenSettings.addEventListener("click", () => {
+        if (typeof window.openSettingsModal === 'function') {
+          window.openSettingsModal('tab-users');
+        }
+      });
+    }
+
     loadMastersSystemEngine();
   },
 };
