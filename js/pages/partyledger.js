@@ -375,10 +375,17 @@ window.PAGES.partyledger = {
         tbodyEl.appendChild(tr);
       });
 
-      // Keep focus index in range after re-render
+      // Keep focus index in range and default to first table row
       const rows = tbodyEl.querySelectorAll('tr');
-      if (partyFocusIdx >= rows.length) partyFocusIdx = Math.max(0, rows.length - 1);
+      if (partyFocusIdx < 0 && directory.length > 0) {
+        partyFocusIdx = 0;
+      } else if (partyFocusIdx >= rows.length) {
+        partyFocusIdx = Math.max(0, rows.length - 1);
+      }
       highlightPartyListFocus();
+      if (partyFocusIdx >= 0 && directory[partyFocusIdx] && (!selected || !directory.includes(selected))) {
+        selectParty(directory[partyFocusIdx]);
+      }
     }
 
     let partyFocusIdx = -1;
@@ -657,12 +664,6 @@ window.PAGES.partyledger = {
     });
     importInput.addEventListener('change', handleImportFile);
     loadDirectory();
-    setTimeout(() => {
-      if (searchEl) {
-        searchEl.focus();
-        if (typeof searchEl.select === 'function') searchEl.select();
-      }
-    }, 120);
 
     // ---------------- Create / Edit Ledger modal ----------------
     const lfOverlay = document.getElementById('ledgerFormOverlay');
