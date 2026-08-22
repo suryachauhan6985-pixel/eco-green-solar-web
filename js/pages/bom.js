@@ -98,7 +98,6 @@ window.PAGES.bom = {
         <button class="btn btn-green" type="button" id="bomBtnDispatch" disabled><i class="fa-solid fa-truck"></i> Create Dispatch</button>
         <button class="btn btn-green" type="button" id="bomBtnCreateBom" style="display:none;"><i class="fa-solid fa-plus-circle"></i> Generate BOM</button>
         <button class="btn btn-ghost" type="button" id="bomBtnTrackBom"><i class="fa-solid fa-route"></i> Track BOM</button>
-        <button class="btn btn-ghost" type="button" id="bomBtnFolderSetup" title="Connect Network Folder for Serial Numbers Excel"><i class="fa-solid fa-folder-open"></i> Network Folder</button>
         <button type="button" class="btn btn-ghost" id="bomBtnNewKit" title="Create a new BOM Kit / Template"><i class="fa-solid fa-plus"></i> New Kit</button>
       </div>
       <!-- "Pending BOM Register" and "Challan Category Mapping" used to be
@@ -784,15 +783,6 @@ window.PAGES.bom = {
           }
 
           if (window.showToast) window.showToast('BOM verified — Create Dispatch is now unlocked.');
-        }
-      });
-    }
-
-    const folderSetupBtn = ctx.$('bomBtnFolderSetup');
-    if (folderSetupBtn) {
-      folderSetupBtn.addEventListener('click', () => {
-        if (typeof window.openSerialFolderSetupModal === 'function') {
-          window.openSerialFolderSetupModal();
         }
       });
     }

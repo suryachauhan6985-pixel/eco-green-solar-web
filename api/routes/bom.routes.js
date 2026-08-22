@@ -555,6 +555,24 @@ module.exports = function registerBomRoutes(app, deps) {
         }
       }
 
+      // Auto-save serials to network folder if any serials were dispatched in this trip
+      const dispatchedSerials = [];
+      for (const r of results) {
+        if (r.kind === 'serial' && Array.isArray(r.serials)) {
+          dispatchedSerials.push(...r.serials);
+        }
+      }
+      if (dispatchedSerials.length) {
+        const { saveSerialExcelToNetwork } = require('../services/serialExcelService');
+        saveSerialExcelToNetwork({
+          orderNo,
+          customerName: header.customerName || header.custName || '',
+          shortName: header.customerName || header.custName || orderNo,
+          date: header.challanDate || header.date || new Date(),
+          serials: dispatchedSerials
+        }).catch((e) => console.warn('[BOM Dispatch] Serial Excel auto-save note:', e.message));
+      }
+
       // Recompute pending across the WHOLE order's baseline (not just the
       // items in this trip) so the response always reflects the full
       // picture — e.g. an item nobody touched this trip still shows up if

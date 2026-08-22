@@ -782,71 +782,11 @@ function bomRenderPrintSheetHtml(kit, header) {
 }
 
 // -----------------------------------------------------------------------------
-// Direct Network & Browser Serial Numbers Excel Handler
+// Direct Network & Background Serial Numbers Excel Handler
 // Automatically saves formatted Excel sheets (A1=Sr. No., B1=Serial No., NO blue fill)
-// into daily subfolders (e.g. 21-08-2026/NP003700 - VIKRAM 555.xlsx)
+// into daily subfolders (e.g. 22-08-2026/NP003700 - VIKRAM 555.xlsx)
+// Saves silently in the background on the server.
 // -----------------------------------------------------------------------------
-const EGS_FS_DB = 'egs_erp_fs_v1';
-const EGS_FS_STORE = 'handles';
-const EGS_FS_KEY = 'serial_excel_dir_handle';
-const DEFAULT_NETWORK_PATH_DISPLAY = '\\\\As6302t-989d\\work\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB\\SERAIL NO. (ORD. & CHLN)';
-
-function getStoredSerialDirHandle() {
-  return new Promise((resolve) => {
-    try {
-      const req = indexedDB.open(EGS_FS_DB, 1);
-      req.onupgradeneeded = (e) => {
-        e.target.result.createObjectStore(EGS_FS_STORE);
-      };
-      req.onsuccess = (e) => {
-        const db = e.target.result;
-        const tx = db.transaction(EGS_FS_STORE, 'readonly');
-        const store = tx.objectStore(EGS_FS_STORE);
-        const getReq = store.get(EGS_FS_KEY);
-        getReq.onsuccess = () => resolve(getReq.result || null);
-        getReq.onerror = () => resolve(null);
-      };
-      req.onerror = () => resolve(null);
-    } catch (e) {
-      resolve(null);
-    }
-  });
-}
-
-function setStoredSerialDirHandle(handle) {
-  return new Promise((resolve, reject) => {
-    try {
-      const req = indexedDB.open(EGS_FS_DB, 1);
-      req.onupgradeneeded = (e) => {
-        e.target.result.createObjectStore(EGS_FS_STORE);
-      };
-      req.onsuccess = (e) => {
-        const db = e.target.result;
-        const tx = db.transaction(EGS_FS_STORE, 'readwrite');
-        const store = tx.objectStore(EGS_FS_STORE);
-        store.put(handle, EGS_FS_KEY);
-        tx.oncomplete = () => resolve(true);
-        tx.onerror = () => reject(tx.error);
-      };
-      req.onerror = () => reject(req.error);
-    } catch (e) {
-      reject(e);
-    }
-  });
-}
-
-async function verifyFsPermission(fileHandle, readWrite) {
-  if (!fileHandle) return false;
-  const options = {};
-  if (readWrite) options.mode = 'readwrite';
-  try {
-    if ((await fileHandle.queryPermission(options)) === 'granted') return true;
-    if ((await fileHandle.requestPermission(options)) === 'granted') return true;
-  } catch (e) {
-    return false;
-  }
-  return false;
-}
 
 function generateSerialExcelBlob(serials) {
   const data = [
@@ -866,188 +806,27 @@ function generateSerialExcelBlob(serials) {
   return new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 }
 
-window.connectSerialNetworkFolder = async function() {
-  if (!('showDirectoryPicker' in window)) {
-    window.openModal('Browser Notice', '<p>Your current browser does not support local folder integration. Excel files will be downloaded directly.</p>');
-    return false;
-  }
-  try {
-    const dirHandle = await window.showDirectoryPicker({
-      id: 'egs_serial_folder',
-      mode: 'readwrite',
-      startIn: 'desktop'
-    });
-    if (dirHandle) {
-      await setStoredSerialDirHandle(dirHandle);
-      if (window.showToast) window.showToast(`Network folder connected: ${dirHandle.name}`, 'success');
-      return dirHandle;
-    }
-  } catch (err) {
-    if (err && err.name !== 'AbortError') {
-      console.warn('Directory pick error:', err);
-    }
-  }
-  return null;
-};
-
 window.saveSerialExcelDirectly = async function(params) {
-  const { orderNo, customerName, shortName, date, serials, showPromptIfUnset } = params || {};
+  const { orderNo, customerName, shortName, date, serials } = params || {};
   const list = Array.isArray(serials) ? serials.filter((s) => s && String(s).trim()) : [];
   if (!list.length) return false;
 
-  const now = date ? new Date(date) : new Date();
-  const d = isNaN(now.getTime()) ? new Date() : now;
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  const dateFolder = `${day}-${month}-${year}`;
-
   const cleanOrder = String(orderNo || '').replace(/[/\\?%*:|"<>]/g, '-').trim();
   const cleanShort = String(shortName || customerName || '').replace(/[/\\?%*:|"<>]/g, '-').trim();
-  let baseName = '';
-  if (cleanOrder && cleanShort && cleanOrder !== cleanShort) {
-    baseName = `${cleanOrder} - ${cleanShort}`;
-  } else if (cleanOrder) {
-    baseName = cleanOrder;
-  } else if (cleanShort) {
-    baseName = cleanShort;
-  } else {
-    baseName = `Serials_${Date.now()}`;
-  }
-  const fileName = `${baseName}.xlsx`;
 
-  // 1. Also notify backend API (in case running in LAN node environment)
+  // Send to backend API to auto-save to network folder silently
   if (window.Api && typeof window.Api.post === 'function') {
     window.Api.post('/serials/save-excel', {
       orderNo: cleanOrder,
       customerName: cleanShort,
       shortName: cleanShort,
-      date: dateFolder,
+      date: date || new Date().toISOString(),
       serials: list
-    }, { silent: true }).catch(() => {});
-  }
-
-  // 2. Try File System Access API directly to network share from browser
-  let writtenSuccessfully = false;
-  if ('showDirectoryPicker' in window) {
-    try {
-      const dirHandle = await getStoredSerialDirHandle();
-      if (dirHandle) {
-        const hasPerm = await verifyFsPermission(dirHandle, true);
-        if (hasPerm) {
-          const dateDir = await dirHandle.getDirectoryHandle(dateFolder, { create: true });
-          const fileHandle = await dateDir.getFileHandle(fileName, { create: true });
-          const writable = await fileHandle.createWritable();
-          const blob = generateSerialExcelBlob(list);
-          await writable.write(blob);
-          await writable.close();
-          writtenSuccessfully = true;
-
-          if (window.showToast) {
-            window.showToast(`✔ Serial Excel saved: ${dateFolder}/${fileName}`, 'success');
-          }
-          return true;
-        }
+    }, { silent: true }).then((res) => {
+      if (res && res.success) {
+        if (window.showToast) window.showToast(`✔ Scanned Serials Excel saved (${res.fileName})`, 'success');
       }
-    } catch (fsErr) {
-      console.warn('[SerialFS] Auto-write failed:', fsErr);
-    }
+    }).catch(() => {});
   }
-
-  // 3. If not written and showPromptIfUnset is true, show one-time folder connector or instant download
-  if (!writtenSuccessfully) {
-    if (showPromptIfUnset && 'showDirectoryPicker' in window) {
-      const modalHtml = `
-        <div style="font-size:13px; line-height:1.6; text-align:left;">
-          <p style="margin-bottom:8px; color:var(--txt);">Scanned <b>${list.length}</b> serial number(s) for <b>${bomEsc(fileName)}</b>.</p>
-          <p style="margin-bottom:8px; color:var(--txt-muted);">To automatically save all serial Excel files directly into your network folder:</p>
-          <div style="background:rgba(255,255,255,0.06); padding:8px 12px; border-radius:8px; font-family:monospace; font-size:11px; margin-bottom:14px; word-break:break-all; border:1px solid var(--border-light); color:var(--gold);">
-            ${DEFAULT_NETWORK_PATH_DISPLAY}
-          </div>
-          <p style="margin-bottom:16px; font-size:12px; color:var(--txt);">Click <b>Select Network Folder</b> once to connect. After this one-time setup, every scan and BOM verify will save into daily subfolders <b>instantly in the background</b>!</p>
-          <div class="actions-row" style="gap:10px; flex-wrap:wrap;">
-            <button type="button" class="btn btn-green" id="btnPickSerialDir"><i class="fa-solid fa-folder-open"></i> Select Network Folder &amp; Save</button>
-            <button type="button" class="btn btn-blue" id="btnDownloadSerialExcel"><i class="fa-solid fa-download"></i> Direct Download (.xlsx)</button>
-            <button type="button" class="btn btn-ghost" onclick="closeModal()">Close</button>
-          </div>
-        </div>
-      `;
-      window.openModal('📁 Save Serial Numbers Excel', modalHtml);
-
-      const pickBtn = document.getElementById('btnPickSerialDir');
-      if (pickBtn) {
-        pickBtn.addEventListener('click', async () => {
-          window.closeModal();
-          const handle = await window.connectSerialNetworkFolder();
-          if (handle) {
-            window.saveSerialExcelDirectly({ orderNo, customerName, shortName, date, serials: list, showPromptIfUnset: false });
-          }
-        });
-      }
-
-      const dlBtn = document.getElementById('btnDownloadSerialExcel');
-      if (dlBtn) {
-        dlBtn.addEventListener('click', () => {
-          window.closeModal();
-          const blob = generateSerialExcelBlob(list);
-          const a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          a.download = fileName;
-          a.click();
-          if (window.showToast) window.showToast(`Downloaded ${fileName}`, 'success');
-        });
-      }
-    } else {
-      const blob = generateSerialExcelBlob(list);
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = fileName;
-      a.click();
-      if (window.showToast) window.showToast(`✔ Serial Excel saved: ${fileName}`, 'success');
-    }
-  }
-
   return true;
-};
-
-window.openSerialFolderSetupModal = async function() {
-  const dirHandle = await getStoredSerialDirHandle();
-  const folderName = dirHandle ? dirHandle.name : null;
-
-  const modalHtml = `
-    <div style="font-size:13px; line-height:1.6; text-align:left;">
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; padding:10px; border-radius:8px; background:${folderName ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)'}; border:1px solid ${folderName ? 'rgba(34,197,94,0.3)' : 'rgba(234,179,8,0.3)'};">
-        <i class="fa-solid ${folderName ? 'fa-circle-check' : 'fa-triangle-exclamation'}" style="color:${folderName ? '#22c55e' : '#eab308'}; font-size:20px;"></i>
-        <div>
-          <div style="font-weight:700; color:var(--txt);">${folderName ? `Connected: ${bomEsc(folderName)}` : 'Network Folder Not Connected Yet'}</div>
-          <div style="font-size:12px; color:var(--txt-muted);">${folderName ? 'Excel files will auto-save directly into date subfolders.' : 'Connect once to enable automatic background saving into date subfolders.'}</div>
-        </div>
-      </div>
-
-      <p style="margin-bottom:6px; color:var(--txt);"><b>Target Network Path:</b></p>
-      <div style="background:rgba(255,255,255,0.06); padding:8px 12px; border-radius:8px; font-family:monospace; font-size:11px; margin-bottom:14px; word-break:break-all; border:1px solid var(--border-light); color:var(--gold);">
-        ${DEFAULT_NETWORK_PATH_DISPLAY}
-      </div>
-
-      <p style="margin-bottom:16px; font-size:12px; color:var(--txt);">Click below to select the <b>SERAIL NO. (ORD. &amp; CHLN)</b> folder on your network drive. Browser will remember the connection permanently!</p>
-
-      <div class="actions-row" style="gap:10px; flex-wrap:wrap;">
-        <button type="button" class="btn btn-green" id="btnConnectFolderNow"><i class="fa-solid fa-folder-open"></i> ${folderName ? 'Change / Reconnect Network Folder' : 'Connect Network Folder'}</button>
-        <button type="button" class="btn btn-ghost" onclick="closeModal()">Close</button>
-      </div>
-    </div>
-  `;
-
-  window.openModal('📁 Serial Numbers Excel Network Folder', modalHtml);
-
-  const btn = document.getElementById('btnConnectFolderNow');
-  if (btn) {
-    btn.addEventListener('click', async () => {
-      window.closeModal();
-      const h = await window.connectSerialNetworkFolder();
-      if (h && window.showToast) {
-        window.showToast(`✔ Connected to network folder: ${h.name}`, 'success');
-      }
-    });
-  }
 };
