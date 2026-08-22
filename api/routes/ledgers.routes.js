@@ -156,7 +156,14 @@ module.exports = function registerLedgersRoutes(app, deps) {
     });
 
     if (search) {
-      filtered = filtered.filter((p) => p.displayName.toLowerCase().includes(search) || p.partyName.toLowerCase().includes(search));
+      filtered = filtered.filter((p) =>
+        (p.displayName || '').toLowerCase().includes(search) ||
+        (p.partyName || '').toLowerCase().includes(search) ||
+        (p.shortName || '').toLowerCase().includes(search) ||
+        (p.mobile || '').toLowerCase().includes(search) ||
+        (p.address || '').toLowerCase().includes(search) ||
+        (p.gstin || '').toLowerCase().includes(search)
+      );
     }
 
     filtered.sort((a, b) => a.displayName.toLowerCase().localeCompare(b.displayName.toLowerCase()));

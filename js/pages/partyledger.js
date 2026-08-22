@@ -23,30 +23,41 @@ window.PAGES.partyledger = {
   html: `
     <div class="page-head"><i class="fa-solid fa-address-book" style="color:var(--purple);"></i><h2>Party Ledger</h2></div>
 
-    <div class="pl-grid">
-      <!-- LEFT: Party Ledger Control -->
-      <div class="pl-left">
-        <h3><i class="fa-solid fa-address-book"></i> Party Ledger Control</h3>
-        <div class="pl-sub">Party master, transaction statement, and register-driven edit access</div>
-
-        <button class="btn btn-green" id="btnCreateLedger"><i class="fa-solid fa-plus"></i>&nbsp; Create New Ledger</button>
-        <button class="btn btn-ghost" id="btnRefreshParties"><i class="fa-solid fa-sync"></i> Refresh List</button>
-        <button class="btn btn-green" id="btnImportLedgers"><i class="fa-solid fa-file-import"></i> Import Ledgers from Excel</button>
-        <button class="btn btn-blue" id="btnDownloadTemplate"><i class="fa-solid fa-download"></i> Download Excel Template</button>
-        <input type="file" id="plImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
+    <div class="pl-directory-panel">
+      <!-- HEADER & TOP ACTION TOOLBAR -->
+      <div class="pl-header-toolbar">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <h3 style="margin:0; font-size:16px; font-weight:800; color:var(--purple); display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-folder-tree"></i> Registered &amp; Transaction Ledgers Directory
+          </h3>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-green" id="btnCreateLedger" style="padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-plus"></i> Create New Ledger</button>
+          <button class="btn btn-ghost" id="btnImportLedgers" style="background:#1F7A4D; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-file-import"></i> Upload Excel</button>
+          <button class="btn btn-ghost" id="btnDownloadTemplate" style="background:#4B6584; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-download"></i> Download Template</button>
+          <button class="btn btn-ghost" id="btnRefreshParties" style="padding:6px 12px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          <input type="file" id="plImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
+        </div>
       </div>
 
-      <!-- RIGHT: Ledgers Directory -->
-      <div class="pl-right">
-        <h3>Registered &amp; Transaction Ledgers Directory
-          <span style="color:var(--txt-muted); font-weight:600; font-size:11px;">(tap to select &middot; double-tap or "Open Statement" to view)</span>
-        </h3>
+      <!-- DIRECTORY METRICS STRIP -->
+      <div class="pl-stats-strip">
+        <div class="pl-stat-pill active-total"><i class="fa-solid fa-address-book"></i> Total Accounts: <strong id="plStatTotal">0</strong></div>
+        <div class="pl-stat-pill"><i class="fa-solid fa-hand-holding-dollar" style="color:var(--blue);"></i> Customers: <strong id="plStatCust">0</strong></div>
+        <div class="pl-stat-pill"><i class="fa-solid fa-truck-ramp-box" style="color:#2ecc71;"></i> Suppliers: <strong id="plStatSupp">0</strong></div>
+        <div class="pl-stat-pill"><i class="fa-solid fa-handshake" style="color:var(--orange);"></i> Dealers / Others: <strong id="plStatDealers">0</strong></div>
+        <div class="pl-stat-pill"><i class="fa-solid fa-circle-question" style="color:var(--txt-muted);"></i> Unregistered: <strong id="plStatUnreg">0</strong></div>
+      </div>
 
-        <div class="pl-toolbar">
+      <!-- SMART SEARCH & FILTER TOOLBAR -->
+      <div class="pl-filter-bar">
+        <div class="search-mini">
           <i class="fa-solid fa-magnifying-glass"></i>
-          <input id="plSearch" placeholder="Search party name...">
-          <label style="color:var(--txt-label); font-size:12px; font-weight:700; white-space:nowrap;">Type:</label>
-          <select id="plTypeFilter">
+          <input id="plSearch" placeholder="Quick search by Party Name, Short Code, City, Mobile, GSTIN..." autocomplete="off">
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <label style="color:var(--txt-muted); font-size:12px; font-weight:700; white-space:nowrap;"><i class="fa-solid fa-filter"></i> Group / Type:</label>
+          <select id="plTypeFilter" style="border-radius:20px; min-width:160px; padding:7px 12px; font-size:12.5px;">
             <option>All Parties</option>
             <option>Suppliers Only</option>
             <option>Customers Only</option>
@@ -55,24 +66,45 @@ window.PAGES.partyledger = {
             <option>Fabricators Only</option>
           </select>
         </div>
+      </div>
 
-        <ul class="party-list" id="partyList"></ul>
+      <!-- HIGH-DENSITY LEDGER DIRECTORY TABLE -->
+      <div class="pl-table-wrap">
+        <table class="pl-table">
+          <thead>
+            <tr>
+              <th>Ledger / Account Name</th>
+              <th>Short Code</th>
+              <th>Group / Type</th>
+              <th>City / Address</th>
+              <th>Mobile / Phone</th>
+              <th>GSTIN</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="partyTableBody"></tbody>
+        </table>
+      </div>
 
-        <div class="pl-header-row">
-          <div class="p-title" id="plHeaderTitle">Select a Party from the list to view details</div>
-          <button class="btn btn-blue" id="btnEditLedger" style="display:none; padding:7px 12px; font-size:12px;"><i class="fa-solid fa-pen"></i> Edit Ledger</button>
-          <button class="btn btn-gold" id="btnRegisterLedger" style="display:none; padding:7px 12px; font-size:12px;"><i class="fa-solid fa-user-plus"></i> Register Ledger</button>
-          <button class="btn btn-green" id="btnOpenStatement" style="display:none; padding:7px 12px; font-size:12px;"><i class="fa-solid fa-up-right-from-square"></i> Open Statement</button>
-          <button class="btn btn-red" id="btnDeleteLedger" style="display:none; padding:7px 12px; font-size:12px;"><i class="fa-solid fa-trash"></i> Delete Ledger</button>
+      <!-- SELECTED PARTY BOTTOM BAR -->
+      <div class="pl-selected-bar" id="plSelectedBar">
+        <div class="pl-selected-info">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-circle-check" style="color:var(--purple); font-size:16px;"></i>
+            <span id="plHeaderTitle" style="font-size:13.5px; color:var(--txt); font-weight:600;">Select a Party from table</span>
+          </div>
+          <div class="pl-selected-metrics" id="plSummaryGrid" style="display:none;">
+            <div class="pl-selected-metric-item in">Inward: <strong id="plSumIn">0</strong></div>
+            <div class="pl-selected-metric-item out">Outward: <strong id="plSumOut">0</strong></div>
+            <div class="pl-selected-metric-item bal">Net Balance: <strong id="plSumBal">0</strong></div>
+          </div>
         </div>
-
-        <div class="mini-stat-grid" id="plSummaryGrid" style="display:none;">
-          <div class="mini-stat in"><div class="m-label">Inward</div><div class="m-val" id="plSumIn">0</div></div>
-          <div class="mini-stat out"><div class="m-label">Outward</div><div class="m-val" id="plSumOut">0</div></div>
-          <div class="mini-stat bal"><div class="m-label">Net Balance</div><div class="m-val" id="plSumBal">0</div></div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-green" id="btnOpenStatement" style="display:none; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-up-right-from-square"></i> Open Statement</button>
+          <button class="btn btn-blue" id="btnEditLedger" style="display:none; padding:6px 12px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-pen"></i> Edit Ledger</button>
+          <button class="btn btn-gold" id="btnRegisterLedger" style="display:none; padding:6px 12px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-user-plus"></i> Register</button>
+          <button class="btn btn-red" id="btnDeleteLedger" style="display:none; padding:6px 12px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-trash"></i> Delete</button>
         </div>
-
-        <div class="pl-empty-hint" id="plEmptyHint">No party selected yet — click any party above to see its inward/outward summary.</div>
       </div>
     </div>
 
@@ -195,13 +227,13 @@ window.PAGES.partyledger = {
     let selected = null;  // one entry from `directory`
     let selectedRows = []; // flat statement rows for the currently selected party (cached)
 
-    const listEl = document.getElementById('partyList');
+    const tbodyEl = document.getElementById('partyTableBody');
     const searchEl = document.getElementById('plSearch');
     const typeEl = document.getElementById('plTypeFilter');
 
-    // ---------------- Directory (list) ----------------
+    // ---------------- Directory (table) ----------------
     async function loadDirectory() {
-      listEl.innerHTML = `<li class="pl-empty-hint">Loading parties…</li>`;
+      if (tbodyEl) tbodyEl.innerHTML = `<tr><td colspan="7" class="pl-empty-hint"><i class="fa-solid fa-spinner fa-spin" style="margin-right:6px; color:var(--purple);"></i> Loading party directory…</td></tr>`;
       try {
         const params = new URLSearchParams({
           search: searchEl.value.trim(),
@@ -212,56 +244,149 @@ window.PAGES.partyledger = {
         directory = await res.json();
         renderList();
       } catch (err) {
-        listEl.innerHTML = `<li class="pl-empty-hint">${err.message}</li>`;
+        if (tbodyEl) tbodyEl.innerHTML = `<tr><td colspan="7" class="pl-empty-hint" style="color:var(--red);">${err.message}</td></tr>`;
       }
     }
 
     function renderList() {
-      listEl.innerHTML = '';
+      if (!tbodyEl) return;
+      tbodyEl.innerHTML = '';
+
+      // Update Directory Stats
+      const total = directory.length;
+      const custCount = directory.filter(p => p.type === 'Customer' || p.type === 'Both').length;
+      const suppCount = directory.filter(p => p.type === 'Supplier' || p.type === 'Both').length;
+      const dealerCount = directory.filter(p => !['Customer', 'Supplier', 'Both'].includes(p.type)).length;
+      const unregCount = directory.filter(p => !p.ledgerId).length;
+
+      const statTotal = document.getElementById('plStatTotal');
+      const statCust = document.getElementById('plStatCust');
+      const statSupp = document.getElementById('plStatSupp');
+      const statDealers = document.getElementById('plStatDealers');
+      const statUnreg = document.getElementById('plStatUnreg');
+
+      if (statTotal) statTotal.textContent = total;
+      if (statCust) statCust.textContent = custCount;
+      if (statSupp) statSupp.textContent = suppCount;
+      if (statDealers) statDealers.textContent = dealerCount;
+      if (statUnreg) statUnreg.textContent = unregCount;
+
       if (!directory.length) {
-        listEl.innerHTML = `<li class="pl-empty-hint">No parties match this search/filter.</li>`;
+        tbodyEl.innerHTML = `<tr><td colspan="7" class="pl-empty-hint">No party accounts match this search or filter criteria.</td></tr>`;
         return;
       }
+
+      const iconMap = {
+        Both: 'fa-arrows-rotate',
+        Supplier: 'fa-truck-ramp-box',
+        Customer: 'fa-hand-holding-dollar',
+        Dealer: 'fa-handshake',
+        Installer: 'fa-screwdriver-wrench',
+        Fabricator: 'fa-industry',
+      };
+
       directory.forEach((p, idx) => {
-        const li = document.createElement('li');
-        li.className = 'party-item' + (!p.ledgerId ? ' unregistered' : '') + (selected && selected.partyName === p.partyName ? ' selected' : '');
-        const iconMap = {
-          Both: 'fa-arrows-rotate',
-          Supplier: 'fa-truck-ramp-box',
-          Customer: 'fa-hand-holding-dollar',
-          Dealer: 'fa-handshake',
-          Installer: 'fa-screwdriver-wrench',
-          Fabricator: 'fa-industry',
-        };
+        const tr = document.createElement('tr');
+        const isSel = selected && selected.partyName === p.partyName;
+        tr.className = (isSel ? 'selected' : '') + (!p.ledgerId ? ' unregistered' : '');
+        tr.dataset.partyIdx = String(idx);
+        tr.tabIndex = -1;
+
         const icon = iconMap[p.type] || 'fa-address-card';
-        const tagClass = p.type.toLowerCase();
-        li.innerHTML = `
-          <i class="fa-solid ${icon}"></i>
-          <span class="p-name">${p.displayName}</span>
-          <span class="p-tag ${tagClass}">${p.type}</span>
-          ${!p.ledgerId ? '<span class="p-badge-unreg">(unregistered)</span>' : ''}
+        const tagClass = (p.type || 'both').toLowerCase();
+
+        tr.innerHTML = `
+          <td>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid ${icon}" style="color:var(--purple); width:16px;"></i>
+              <strong style="color:var(--txt); font-size:13px;">${p.partyName}</strong>
+              ${!p.ledgerId ? '<span class="p-badge-unreg">(unregistered)</span>' : ''}
+            </div>
+          </td>
+          <td>
+            ${p.shortName ? `<span class="pl-short-code-badge">${p.shortName}</span>` : '<span style="color:var(--txt-muted);">-</span>'}
+          </td>
+          <td>
+            <span class="p-tag ${tagClass}">${p.type}</span>
+          </td>
+          <td>
+            <span style="color:var(--txt-muted);">${p.address && p.address !== '-' ? p.address : '-'}</span>
+          </td>
+          <td>
+            ${p.mobile && p.mobile !== '-' ? `<span style="color:var(--blue); font-weight:600;"><i class="fa-solid fa-phone" style="font-size:10px; margin-right:4px;"></i>${p.mobile}</span>` : '<span style="color:var(--txt-muted);">-</span>'}
+          </td>
+          <td>
+            <span style="font-family:monospace; font-size:11.5px; color:var(--txt-muted);">${p.gstin && p.gstin !== '-' ? p.gstin : '-'}</span>
+          </td>
+          <td style="text-align:right;">
+            <div style="display:inline-flex; gap:6px; align-items:center; justify-content:flex-end;">
+              <button type="button" class="btn btn-green btn-table-stmt" style="padding:4px 10px; font-size:11px; border-radius:14px;" title="Open Statement"><i class="fa-solid fa-up-right-from-square"></i> Statement</button>
+              ${p.ledgerId ? `<button type="button" class="btn btn-blue btn-table-edit" style="padding:4px 8px; font-size:11px; border-radius:14px;" title="Edit Ledger"><i class="fa-solid fa-pen"></i></button>` : `<button type="button" class="btn btn-gold btn-table-reg" style="padding:4px 8px; font-size:11px; border-radius:14px;" title="Register Ledger"><i class="fa-solid fa-user-plus"></i></button>`}
+              ${p.ledgerId && isAdmin ? `<button type="button" class="btn btn-red btn-table-del" style="padding:4px 8px; font-size:11px; border-radius:14px;" title="Delete Ledger"><i class="fa-solid fa-trash"></i></button>` : ''}
+            </div>
+          </td>
         `;
-        li.dataset.partyIdx = String(idx);
-        li.tabIndex = -1;
-        li.addEventListener('click', () => {
+
+        tr.addEventListener('click', () => {
           partyFocusIdx = idx;
           selectParty(p);
           highlightPartyListFocus();
         });
-        li.addEventListener('dblclick', () => { selectParty(p).then(openStatement); });
-        listEl.appendChild(li);
+
+        tr.addEventListener('dblclick', () => {
+          selectParty(p).then(() => openStatement());
+        });
+
+        const btnStmt = tr.querySelector('.btn-table-stmt');
+        if (btnStmt) {
+          btnStmt.addEventListener('click', (e) => {
+            e.stopPropagation();
+            partyFocusIdx = idx;
+            selectParty(p).then(() => openStatement());
+          });
+        }
+
+        const btnEdit = tr.querySelector('.btn-table-edit');
+        if (btnEdit) {
+          btnEdit.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectParty(p);
+            openLedgerForm(p);
+          });
+        }
+
+        const btnReg = tr.querySelector('.btn-table-reg');
+        if (btnReg) {
+          btnReg.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectParty(p);
+            openLedgerForm({ partyName: p.partyName, type: p.type === 'Both' ? 'Customer' : p.type });
+          });
+        }
+
+        const btnDel = tr.querySelector('.btn-table-del');
+        if (btnDel) {
+          btnDel.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteParty(p);
+          });
+        }
+
+        tbodyEl.appendChild(tr);
       });
+
       // Keep focus index in range after re-render
-      const items = listEl.querySelectorAll('.party-item');
-      if (partyFocusIdx >= items.length) partyFocusIdx = Math.max(0, items.length - 1);
+      const rows = tbodyEl.querySelectorAll('tr');
+      if (partyFocusIdx >= rows.length) partyFocusIdx = Math.max(0, rows.length - 1);
       highlightPartyListFocus();
     }
 
     let partyFocusIdx = 0;
     function highlightPartyListFocus() {
-      const items = listEl.querySelectorAll('.party-item');
-      items.forEach((el, i) => el.classList.toggle('kbd-active', i === partyFocusIdx));
-      if (items[partyFocusIdx]) items[partyFocusIdx].scrollIntoView({ block: 'nearest' });
+      if (!tbodyEl) return;
+      const rows = tbodyEl.querySelectorAll('tr');
+      rows.forEach((el, i) => el.classList.toggle('kbd-active', i === partyFocusIdx));
+      if (rows[partyFocusIdx]) rows[partyFocusIdx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
 
     function partyListKeyHandler(e) {
@@ -269,23 +394,23 @@ window.PAGES.partyledger = {
       if (stOverlay && stOverlay.classList.contains('show')) return;
       if (lfOverlay && lfOverlay.classList.contains('show')) return;
       const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-      // Allow arrows/enter from search only for Enter when party already selected? Prefer list nav always except typing in inputs for search
       if (tag === 'input' || tag === 'textarea' || tag === 'select') {
         // From search box: Enter opens statement if a party is selected
-        if (e.key === 'Enter' && selected && (e.target === searchEl || e.target.id === 'partySearch')) {
+        if (e.key === 'Enter' && selected && (e.target === searchEl || e.target.id === 'plSearch')) {
           e.preventDefault();
           openStatement();
         }
         return;
       }
 
-      const items = listEl.querySelectorAll('.party-item');
-      if (!items.length) return;
+      if (!tbodyEl) return;
+      const rows = tbodyEl.querySelectorAll('tr');
+      if (!rows.length) return;
 
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         e.stopImmediatePropagation();
-        partyFocusIdx = Math.min(partyFocusIdx + 1, items.length - 1);
+        partyFocusIdx = Math.min(partyFocusIdx + 1, directory.length - 1);
         highlightPartyListFocus();
         const p = directory[partyFocusIdx];
         if (p) selectParty(p);
@@ -312,22 +437,18 @@ window.PAGES.partyledger = {
     async function selectParty(p) {
       selected = p;
       selectedRows = [];
-      renderList();
-      document.getElementById('plHeaderTitle').textContent =
-        `${p.partyName}${p.shortName ? ' / ' + p.shortName : ''}  (${p.type} Ledger Selected)`;
+      if (tbodyEl) {
+        tbodyEl.querySelectorAll('tr').forEach((r, idx) => {
+          r.classList.toggle('selected', directory[idx] && directory[idx].partyName === p.partyName);
+        });
+      }
+      document.getElementById('plHeaderTitle').innerHTML =
+        `<strong>${p.partyName}</strong> ${p.shortName ? ` <span class="pl-short-code-badge">${p.shortName}</span>` : ''} <span class="p-tag ${(p.type||'both').toLowerCase()}">${p.type}</span>`;
       document.getElementById('btnEditLedger').style.display = p.ledgerId ? 'inline-flex' : 'none';
-      document.getElementById('btnDeleteLedger').style.display = p.ledgerId ? 'inline-flex' : 'none';
-      // Unregistered parties (legacy names sourced only from stock_ledger
-      // transactions, no row in the `ledgers` table) have nothing to edit
-      // or delete — same as the desktop app (has_registered_ledger gate).
-      // Instead offer "Register Ledger": opens the same Create-Ledger form
-      // pre-filled with this name/type, so SuperAdmin can properly create
-      // it as a real ledger in one click (once created, it automatically
-      // replaces the legacy "(unregistered)" entry in this list).
+      document.getElementById('btnDeleteLedger').style.display = p.ledgerId && isAdmin ? 'inline-flex' : 'none';
       document.getElementById('btnRegisterLedger').style.display = !p.ledgerId ? 'inline-flex' : 'none';
       document.getElementById('btnOpenStatement').style.display = 'inline-flex';
-      document.getElementById('plEmptyHint').style.display = 'none';
-      document.getElementById('plSummaryGrid').style.display = 'grid';
+      document.getElementById('plSummaryGrid').style.display = 'flex';
       document.getElementById('plSumIn').textContent = '…';
       document.getElementById('plSumOut').textContent = '…';
       document.getElementById('plSumBal').textContent = '…';
@@ -353,6 +474,32 @@ window.PAGES.partyledger = {
       if (!res.ok) throw new Error('Could not load transactions for this party.');
       const data = await res.json();
       return data.rows || [];
+    }
+
+    async function deleteParty(p) {
+      if (!isAdmin) { window.openModal('Access Denied', '<p>Only SuperAdmin can delete ledgers.</p>'); return; }
+      const target = p || selected;
+      if (!target || !target.ledgerId) return;
+      if (!(await window.confirmDanger('Delete Ledger', `Delete the Ledger '${target.partyName}'?`))) return;
+      try {
+        const res = await fetch(`${API_BASE}/ledgers/${target.ledgerId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not delete this ledger.');
+        if (window.showToast) window.showToast('Ledger removed from master list.');
+        if (selected && selected.ledgerId === target.ledgerId) {
+          selected = null;
+          selectedRows = [];
+          document.getElementById('plHeaderTitle').textContent = 'Select a Party from table';
+          document.getElementById('btnEditLedger').style.display = 'none';
+          document.getElementById('btnDeleteLedger').style.display = 'none';
+          document.getElementById('btnRegisterLedger').style.display = 'none';
+          document.getElementById('btnOpenStatement').style.display = 'none';
+          document.getElementById('plSummaryGrid').style.display = 'none';
+        }
+        await loadDirectory();
+      } catch (err) {
+        window.openModal('Error', `<p style="color:var(--red);">${err.message}</p>`);
+      }
     }
 
     let searchDebounce = null;
@@ -498,28 +645,7 @@ window.PAGES.partyledger = {
       }
     });
 
-    document.getElementById('btnDeleteLedger').addEventListener('click', async () => {
-      if (!isAdmin) { window.openModal('Access Denied', '<p>Only SuperAdmin can delete ledgers.</p>'); return; }
-      if (!selected || !selected.ledgerId) return;
-      if (!(await window.confirmDanger('Delete Ledger', `Delete the Ledger '${selected.partyName}'?`))) return;
-      try {
-        const res = await fetch(`${API_BASE}/ledgers/${selected.ledgerId}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Could not delete this ledger.');
-        if (window.showToast) window.showToast('Ledger removed from master list.');
-        selected = null;
-        selectedRows = [];
-        document.getElementById('plHeaderTitle').textContent = 'Select a Party from the list to view details';
-        document.getElementById('btnEditLedger').style.display = 'none';
-        document.getElementById('btnDeleteLedger').style.display = 'none';
-        document.getElementById('btnOpenStatement').style.display = 'none';
-        document.getElementById('plSummaryGrid').style.display = 'none';
-        document.getElementById('plEmptyHint').style.display = 'block';
-        await loadDirectory();
-      } catch (err) {
-        window.openModal('Error', `<p style="color:var(--red);">${err.message}</p>`);
-      }
-    });
+    document.getElementById('btnDeleteLedger').addEventListener('click', () => deleteParty(selected));
 
     // ---------------- Import / Export (CSV, same data desktop app's Excel does) ----------------
     function downloadCsv(filename, rows) {
