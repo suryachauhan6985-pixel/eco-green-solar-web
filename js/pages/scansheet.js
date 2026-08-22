@@ -1845,10 +1845,9 @@ window.PAGES = window.PAGES || {};
       ST.tab = 'sheets';
       ST.activeSheetId = null;
       ST.editingSheetId = null;
-      const r = root();
-      if (r) r.innerHTML = '<div style="padding:60px 20px;text-align:center;color:#888;"><i class="fa-solid fa-spinner fa-spin"></i>&nbsp; Loading your sheets…</div>';
-      // Pull the latest sheets/rows from the database (not just whatever this
-      // browser had cached) so data survives logout/login and works across devices.
+      // Render immediately from memory/cache (zero flicker/flash)
+      render();
+      // Silently hydrate from server in background and refresh view
       window.SheetsStore.hydrate().then(render);
     },
   };
