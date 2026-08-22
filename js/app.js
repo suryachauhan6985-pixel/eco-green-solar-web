@@ -1948,14 +1948,14 @@ window.attachColumnFilters = function (table) {
           c.style.opacity = '0';
           // Force layout reflow
           void c.offsetWidth;
-          c.style.transition = 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease';
+          c.style.transition = 'transform 0.85s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.8s ease';
           c.classList.add('active');
           c.style.transform = 'translateX(0)';
           c.style.opacity = '1';
         } else if (i === prevSlide && prevSlide !== currentSlide) {
           c.classList.remove('active');
           c.classList.add('slide-exit');
-          c.style.transition = 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease';
+          c.style.transition = 'transform 0.85s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.8s ease';
           c.style.transform = direction === 'next' ? 'translateX(-50px)' : 'translateX(50px)';
           c.style.opacity = '0';
         } else {
@@ -1976,7 +1976,7 @@ window.attachColumnFilters = function (table) {
         if (!isHoveringTicker && loginOverlay && loginOverlay.style.display !== 'none') {
           showSlide(currentSlide + 1, 'next');
         }
-      }, 3500);
+      }, 5000);
     }
 
     tickerDots.forEach((dot) => {
