@@ -334,14 +334,21 @@ window.PAGES.masters = {
     async function loadMastersSystemEngine() {
       subtypeInfoCache = {};
       try {
-        const [cats, items, whs, units, users, brands] = await Promise.all([
-          fetch(`${API_BASE}/masters/categories`).then(r => r.json()),
-          fetch(`${API_BASE}/masters/items`).then(r => r.json()),
-          fetch(`${API_BASE}/masters/warehouses`).then(r => r.json()),
-          fetch(`${API_BASE}/masters/units`).then(r => r.json()),
-          fetch(`${API_BASE}/masters/users`).then(r => r.json()).catch(() => []),
-          fetch(`${API_BASE}/masters/brands`).then(r => r.json()).catch(() => [])
+        const [catsRes, itemsRes, whsRes, unitsRes, usersRes, brandsRes] = await Promise.all([
+          fetch(`${API_BASE}/masters/categories`).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`${API_BASE}/masters/items`).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`${API_BASE}/masters/warehouses`).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`${API_BASE}/masters/units`).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`${API_BASE}/masters/users`).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`${API_BASE}/masters/brands`).then(r => r.ok ? r.json() : []).catch(() => [])
         ]);
+
+        const cats = Array.isArray(catsRes) ? catsRes : [];
+        const items = Array.isArray(itemsRes) ? itemsRes : [];
+        const whs = Array.isArray(whsRes) ? whsRes : [];
+        const units = Array.isArray(unitsRes) ? unitsRes : [];
+        const users = Array.isArray(usersRes) ? usersRes : [];
+        const brands = Array.isArray(brandsRes) ? brandsRes : [];
 
         cachedCategories = cats;
 

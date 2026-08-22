@@ -288,13 +288,13 @@ module.exports = function registerMastersRoutes(app, deps) {
     res.json(rows);
   }));
 
-  // Users — SuperAdmin only access
-  app.get('/api/masters/users', requireRole('SuperAdmin'), route(async (req, res) => {
+  // Users — SuperAdmin & Admin access
+  app.get('/api/masters/users', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const [rows] = await pool.query(`SELECT username, role, email FROM users ORDER BY username ASC`);
     res.json(rows);
   }));
 
-  app.post('/api/masters/users', requireRole('SuperAdmin'), route(async (req, res) => {
+  app.post('/api/masters/users', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { username, password, role, email } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Username and Password are mandatory.' });
     const uname = username.trim().toLowerCase();
@@ -326,7 +326,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     }
   }));
 
-  app.put('/api/masters/users/password', requireRole('SuperAdmin'), route(async (req, res) => {
+  app.put('/api/masters/users/password', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Username and new Password are mandatory.' });
     const hashed = await hashPassword(password);
@@ -338,7 +338,7 @@ module.exports = function registerMastersRoutes(app, deps) {
   // Sets/updates the email OTP login relies on for a given user — separate
   // from the password update so an admin can fix/add just the email without
   // touching the password.
-  app.put('/api/masters/users/email', requireRole('SuperAdmin'), route(async (req, res) => {
+  app.put('/api/masters/users/email', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { username, email } = req.body;
     if (!username || !email) return res.status(400).json({ error: 'Username and Email are mandatory.' });
     const [result] = await pool.query(
