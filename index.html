@@ -27,7 +27,7 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=71">
+<link rel="stylesheet" href="css/style.css?v=72">
 <!-- Barcode/QR camera scanning (Sheets feature) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <!-- XLSX parsing for Sheets "Import CSV/XLSX" (CSV import needs no library) -->
@@ -88,7 +88,7 @@
     </div>
     <button type="button" class="avatar mobile-profile-avatar" id="mobileProfileAvatar" style="width:34px;height:34px;font-size:13px;border:none;padding:0;" title="Profile">S</button>
   </div>
-  <div class="search-mini mobile-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="egs-quick-search-mobile" id="egsQuickSearchMobile" placeholder="Quick search anything..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" onblur="if(!this.value) this.setAttribute('readonly','readonly');"></div>
+  <div class="search-mini mobile-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="egs-quick-search-mobile" id="egsQuickSearchMobile" placeholder="Quick search anything... (Ctrl+K)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"></div>
 </div>
 
     <div class="topbar">
@@ -96,7 +96,7 @@
         <h1 id="pageTitle">Dashboard</h1>
         <div class="sub" id="pageSub">Live overview of stock &amp; operations</div>
       </div>
-      <div class="search-mini"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="egs-quick-search" id="egsQuickSearch" placeholder="Quick search anything..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other" readonly onfocus="this.removeAttribute('readonly');" onblur="if(!this.value) this.setAttribute('readonly','readonly');"></div>
+      <div class="search-mini"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="egs-quick-search" id="egsQuickSearch" placeholder="Quick search anything... (Ctrl+K)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"></div>
     </div>
 
     <div class="content" id="content"><!-- page HTML injected here by js/app.js --></div>
@@ -176,7 +176,7 @@
 <script src="js/pages/bom-dispatch.js?v=14"></script>
 <script src="js/pages/bom.js?v=32"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
-<script src="js/app.js?v=27"></script>
+<script src="js/app.js?v=28"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

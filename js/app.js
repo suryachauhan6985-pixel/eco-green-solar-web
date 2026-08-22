@@ -2324,13 +2324,32 @@ window.attachColumnFilters = function (table) {
   document.addEventListener('click', closeProfileMenu);
 
   // Build sidebar buttons from the registered pages
+  const TAB_SHORTCUT_LABELS = {
+    dashboard: 'Alt + 1',
+    scansheet: 'Alt + 2',
+    masters: 'Alt + 3',
+    purchase: 'Alt + 4',
+    sales: 'Alt + 5',
+    stockassign: 'Alt + 6',
+    purchaseregister: 'Alt + 7',
+    saleregister: 'Alt + 8',
+    partyledger: 'Alt + 9',
+    reports: 'Alt + R',
+    returns: 'Alt + D',
+    lowstock: 'Alt + L',
+    backup: 'Alt + B',
+    bom: 'Alt + 0 / Alt + M'
+  };
+
   NAV_ORDER.forEach((id) => {
     const page = window.PAGES[id];
     if (!page) return;
     const btn = document.createElement('button');
     btn.className = 'nav-btn' + (id === 'dashboard' ? ' active' : '');
     btn.dataset.tab = id;
-    btn.innerHTML = `<i class="fa-solid ${page.icon}"></i> ${page.name}`;
+    const shortcutHint = TAB_SHORTCUT_LABELS[id] ? ` (${TAB_SHORTCUT_LABELS[id]})` : '';
+    btn.dataset.tooltip = `${page.name}${shortcutHint}`;
+    btn.innerHTML = `<i class="fa-solid ${page.icon}"></i> <span>${page.name}</span>`;
     btn.onclick = () => go(id);
     navScroll.appendChild(btn);
   });
@@ -2384,9 +2403,10 @@ window.attachColumnFilters = function (table) {
   window.navigateToPage = go;
 
   // =====================================================================
-  // ENTERPRISE ERP KEYBOARD ENGINE (Tally / Shree Sava Style Navigation)
+  // ENTERPRISE ERP KEYBOARD ENGINE (All 14 Modules + Universal Shortcuts)
   // =====================================================================
   const TAB_KEY_MAP = {
+    // Number keys (1 to 9, 0)
     '1': 'dashboard',
     '2': 'scansheet',
     '3': 'masters',
@@ -2396,41 +2416,65 @@ window.attachColumnFilters = function (table) {
     '7': 'purchaseregister',
     '8': 'saleregister',
     '9': 'partyledger',
-    '0': 'bom'
+    '0': 'bom',
+
+    // Direct Letter keys (with Alt or Alt+Shift)
+    'r': 'reports',
+    'R': 'reports',
+    'd': 'returns',
+    'D': 'returns',
+    'p': 'partyledger',
+    'P': 'partyledger',
+    'l': 'lowstock',
+    'L': 'lowstock',
+    'b': 'backup',
+    'B': 'backup',
+    'm': 'bom',
+    'M': 'bom',
+    's': 'sales',
+    'S': 'sales',
+    'u': 'purchaseregister',
+    'U': 'purchaseregister',
+    'k': 'bom',
+    'K': 'bom'
   };
 
   window.showKeyboardShortcutsModal = function () {
     const html = `
-      <div style="display:flex; flex-direction:column; gap:16px; font-size:13px;">
+      <div style="display:flex; flex-direction:column; gap:16px; font-size:13px; max-height:calc(80vh - 120px); overflow-y:auto; padding-right:4px;">
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(290px, 1fr)); gap:14px;">
           
           <!-- Module & Tab Navigation -->
           <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
             <h4 style="margin:0 0 10px; color:var(--blue); display:flex; align-items:center; gap:8px;">
-              <i class="fa-solid fa-compass"></i> Module &amp; Tab Shortcuts
+              <i class="fa-solid fa-compass"></i> All 14 Modules &amp; Tabs
             </h4>
             <div style="display:flex; flex-direction:column; gap:7px;">
               <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Dashboard</span><kbd class="egs-kbd">Alt + 1</kbd></div>
               <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Scan Sheets</span><kbd class="egs-kbd">Alt + 2</kbd></div>
               <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Masters / Item Profiler</span><kbd class="egs-kbd">Alt + 3</kbd></div>
               <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Purchase Inward</span><kbd class="egs-kbd">Alt + 4</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Project Sales</span><kbd class="egs-kbd">Alt + 5</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Project Sales</span><div><kbd class="egs-kbd">Alt + 5</kbd> or <kbd class="egs-kbd">Alt + S</kbd></div></div>
               <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Stock Assign</span><kbd class="egs-kbd">Alt + 6</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Purchase Register</span><kbd class="egs-kbd">Alt + 7</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Purchase Register</span><div><kbd class="egs-kbd">Alt + 7</kbd> or <kbd class="egs-kbd">Alt + U</kbd></div></div>
               <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Sale Register</span><kbd class="egs-kbd">Alt + 8</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Party Ledger</span><kbd class="egs-kbd">Alt + 9</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">BOM Kit Builder</span><kbd class="egs-kbd">Alt + 0</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Party Ledger</span><div><kbd class="egs-kbd">Alt + 9</kbd> or <kbd class="egs-kbd">Alt + P</kbd></div></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Master Reports</span><kbd class="egs-kbd">Alt + R</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Return &amp; Damage</span><kbd class="egs-kbd">Alt + D</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Low Stock Alert</span><kbd class="egs-kbd">Alt + L</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Backup &amp; Restore</span><kbd class="egs-kbd">Alt + B</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">BOM Kit Builder</span><div><kbd class="egs-kbd">Alt + 0</kbd> or <kbd class="egs-kbd">Alt + M</kbd></div></div>
             </div>
           </div>
 
-          <!-- Party Ledger & Statements -->
+          <!-- Party Ledger & Directory Table -->
           <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
             <h4 style="margin:0 0 10px; color:var(--purple); display:flex; align-items:center; gap:8px;">
-              <i class="fa-solid fa-address-book"></i> Party Ledger &amp; Directory
+              <i class="fa-solid fa-address-book"></i> Party Ledger &amp; Statements
             </h4>
             <div style="display:flex; flex-direction:column; gap:7px;">
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Jump to Search Bar</span><div><kbd class="egs-kbd">Tab</kbd> or <kbd class="egs-kbd">/</kbd></div></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Navigate Rows</span><div><kbd class="egs-kbd">↑</kbd> <kbd class="egs-kbd">↓</kbd></div></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Switch Search &amp; Table</span><kbd class="egs-kbd">Tab</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Navigate Table Rows</span><div><kbd class="egs-kbd">↑</kbd> <kbd class="egs-kbd">↓</kbd></div></div>
               <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Open Statement Modal</span><div><kbd class="egs-kbd">Enter</kbd> or <kbd class="egs-kbd">Space</kbd></div></div>
               <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Create New Ledger</span><div><kbd class="egs-kbd">Insert</kbd> or <kbd class="egs-kbd">Alt + C</kbd></div></div>
               <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Edit Selected Ledger</span><div><kbd class="egs-kbd">F2</kbd> or <kbd class="egs-kbd">Ctrl + E</kbd></div></div>
@@ -2444,15 +2488,16 @@ window.attachColumnFilters = function (table) {
           <!-- Common Global & Form Actions -->
           <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px; grid-column: 1 / -1;">
             <h4 style="margin:0 0 10px; color:var(--green); display:flex; align-items:center; gap:8px;">
-              <i class="fa-solid fa-bolt"></i> Fast Enterprise Keyboard Actions
+              <i class="fa-solid fa-bolt"></i> Universal ERP Actions
             </h4>
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px;">
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Global Quick Search</span><div><kbd class="egs-kbd">Ctrl + K</kbd> or <kbd class="egs-kbd">/</kbd></div></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Close Modal / Cancel</span><kbd class="egs-kbd">Esc</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Universal Quick Search</span><kbd class="egs-kbd">Ctrl + K</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Active Page Search</span><kbd class="egs-kbd">/</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Close Window / Dismiss</span><kbd class="egs-kbd">Esc</kbd></div>
               <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Next Form Field</span><kbd class="egs-kbd">Enter</kbd></div>
               <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Previous Form Field</span><kbd class="egs-kbd">Shift + Enter</kbd></div>
               <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Save / Submit Form</span><div><kbd class="egs-kbd">Ctrl + Enter</kbd> or <kbd class="egs-kbd">Ctrl + S</kbd></div></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Shortcuts Help</span><kbd class="egs-kbd">F1</kbd></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Shortcuts Reference Help</span><kbd class="egs-kbd">F1</kbd></div>
             </div>
           </div>
         </div>
@@ -2465,8 +2510,34 @@ window.attachColumnFilters = function (table) {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     const isTyping = tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable);
 
-    // Universal Escape Key: Closes any active modal, dialog, popup or drawer
+    // 1. Universal Quick Search: Ctrl + K (or Cmd + K) -> Always focus top global search bar
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      e.stopPropagation();
+      const topSearch = document.getElementById('egsQuickSearch') || document.getElementById('egsQuickSearchMobile') || document.querySelector('.search-mini input');
+      if (topSearch) {
+        topSearch.removeAttribute('readonly');
+        topSearch.focus();
+        if (typeof topSearch.select === 'function') topSearch.select();
+        const parentMini = topSearch.closest('.search-mini');
+        if (parentMini) {
+          parentMini.classList.add('search-mini-highlight');
+          setTimeout(() => parentMini.classList.remove('search-mini-highlight'), 1200);
+        }
+      }
+      return;
+    }
+
+    // 2. Universal Escape Key: Closes any active modal, dialog, popup, drawer, or quick search
     if (e.key === 'Escape') {
+      if (e.target && (e.target.id === 'egsQuickSearch' || e.target.id === 'egsQuickSearchMobile')) {
+        e.preventDefault();
+        e.target.value = '';
+        applyGlobalTableSearch('');
+        e.target.blur();
+        return;
+      }
+
       let handled = false;
       const modalOverlay = document.getElementById('modalOverlay');
       if (modalOverlay && modalOverlay.classList.contains('show')) {
@@ -2512,34 +2583,43 @@ window.attachColumnFilters = function (table) {
       }
     }
 
-    // F1 or Shift + ? -> Shortcuts help
+    // 3. F1 or Shift + ? -> Shortcuts help
     if (!isTyping && (e.key === 'F1' || (e.shiftKey && e.key === '?'))) {
       e.preventDefault();
       window.showKeyboardShortcutsModal();
       return;
     }
 
-    // Ctrl + K or Global '/' -> Focus top search or active page search
-    if ((e.ctrlKey && (e.key === 'k' || e.key === 'K')) || (!isTyping && e.key === '/')) {
+    // 4. Active Page Search: Global '/' outside typing inputs
+    if (!isTyping && e.key === '/') {
       e.preventDefault();
-      const pageSearch = document.querySelector('#plSearch, #ssSearchInput, #mrSearch, #srSearch, #prSearch');
-      const topSearch = document.querySelector('.search-mini input');
+      e.stopPropagation();
+      const pageSearch = document.querySelector('#plSearch, #ssSearchInput, #mrSearch, #srSearch, #prSearch, #purSearchInv');
+      const topSearch = document.getElementById('egsQuickSearch') || document.getElementById('egsQuickSearchMobile') || document.querySelector('.search-mini input');
       const target = pageSearch || topSearch;
       if (target) {
+        target.removeAttribute('readonly');
         target.focus();
         if (typeof target.select === 'function') target.select();
       }
       return;
     }
 
-    // Alt + 1..9, Alt + 0 -> Quick Switch Modules
-    if (e.altKey && !e.ctrlKey && !e.shiftKey && TAB_KEY_MAP[e.key]) {
+    // 5. Module & Tab Navigation: Alt + [Key] or Ctrl + [Number]
+    if (e.altKey && !e.ctrlKey && !e.metaKey && TAB_KEY_MAP[e.key]) {
       e.preventDefault();
+      e.stopPropagation();
+      go(TAB_KEY_MAP[e.key]);
+      return;
+    }
+    if (e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey && !isTyping && /^[0-9]$/.test(e.key) && TAB_KEY_MAP[e.key]) {
+      e.preventDefault();
+      e.stopPropagation();
       go(TAB_KEY_MAP[e.key]);
       return;
     }
 
-    // Enter as field progression inside forms
+    // 6. Enter as field progression inside forms
     if (e.key === 'Enter' && isTyping && tag !== 'textarea' && e.target.type !== 'submit' && e.target.type !== 'button') {
       const form = e.target.closest('form, .form-grid, .field-wrap, .auth-card, .modal-box');
       if (form) {

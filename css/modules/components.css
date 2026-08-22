@@ -975,4 +975,12 @@ html[data-theme="light"] .egs-tooltip {
   left: calc(var(--arrow-x, 50%) - 4px);
 }
 
+/* Universal Search Highlight Glow (Ctrl + K) */
+.search-mini-highlight {
+  border-color: var(--blue) !important;
+  box-shadow: 0 0 0 3px rgba(59, 142, 208, 0.35), 0 0 16px rgba(59, 142, 208, 0.4) !important;
+  transform: scale(1.02);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 
