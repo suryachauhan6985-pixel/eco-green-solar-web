@@ -973,6 +973,7 @@ window.PAGES = window.PAGES || {};
       ? 'This serial no. already exists in the record. Delete the old row first, or Retry with a different code.'
       : 'Scanned successfully.';
     if (saveBtn) saveBtn.style.display = dup ? 'none' : '';
+    if (!dup && window.playScannerTone) window.playScannerTone();
 
     panel.style.display = 'flex';
     setScanStatus('');

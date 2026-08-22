@@ -164,6 +164,89 @@ window.focusInvalidField = function focusInvalidField(el) {
   document.head.appendChild(style);
 })();
 
+// Web Audio API Sound Synthesizer for Barcode Scanners & Feedback
+window.playScannerTone = function (toneName) {
+  const chosen = toneName || localStorage.getItem('egs_scanner_sound') || 'beep';
+  if (chosen === 'mute' || chosen === 'none') return;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    if (chosen === 'chime') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, now);
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } else if (chosen === 'melody') {
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      const gain2 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(650, now);
+      gain1.gain.setValueAtTime(0.2, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.12);
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1050, now + 0.12);
+      gain2.gain.setValueAtTime(0.2, now + 0.12);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.12);
+      osc2.stop(now + 0.32);
+    } else if (chosen === 'click') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(400, now);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } else {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(850, now);
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.18);
+    }
+  } catch (e) {
+    console.warn('[Audio] Could not play tone:', e);
+  }
+};
+
+window.applyUserPreferences = function (prefs) {
+  const p = prefs || {};
+  const isCompact = p.compact_tables != null ? !!p.compact_tables : (localStorage.getItem('egs_compact_tables') === '1');
+  const isSmooth = p.smooth_animations != null ? !!p.smooth_animations : (localStorage.getItem('egs_smooth_animations') !== '0');
+  const scannerSound = p.scanner_sound || localStorage.getItem('egs_scanner_sound') || 'beep';
+
+  document.body.classList.toggle('compact-table-mode', isCompact);
+  document.body.classList.toggle('disable-ui-animations', !isSmooth);
+  localStorage.setItem('egs_compact_tables', isCompact ? '1' : '0');
+  localStorage.setItem('egs_smooth_animations', isSmooth ? '1' : '0');
+  localStorage.setItem('egs_scanner_sound', scannerSound);
+};
+try { window.applyUserPreferences(); } catch (e) {}
+
 (function () {
   const originalFetch = window.fetch.bind(window);
   window.fetch = function (input, init) {
@@ -2002,7 +2085,11 @@ window.attachColumnFilters = function (table) {
     const currentRole = window.currentUserRole || 'User';
     const isAdmin = currentRole === 'SuperAdmin' || currentRole === 'Admin';
     const currentUsername = window.currentUsername || 'user';
-    const initialTab = defaultTabId || (isAdmin ? 'tab-profile' : 'tab-profile');
+    const initialTab = defaultTabId || 'tab-profile';
+
+    const isCompactSaved = localStorage.getItem('egs_compact_tables') === '1';
+    const isSmoothSaved = localStorage.getItem('egs_smooth_animations') !== '0';
+    const activeSoundSaved = localStorage.getItem('egs_scanner_sound') || 'beep';
 
     const settingsHtml = `
       <div class="settings-layout">
@@ -2033,7 +2120,7 @@ window.attachColumnFilters = function (table) {
             </div>
 
             <div class="settings-card-title"><i class="fa-solid fa-id-card" style="color:var(--blue);"></i> Edit Account Credentials</div>
-            <p style="margin:0 0 10px; font-size:12px; color:var(--txt-muted);">Updating credentials takes effect instantly across all ERP modules and device sessions.</p>
+            <p style="margin:0 0 10px; font-size:12px; color:var(--txt-muted);">Updating credentials takes effect instantly across all ERP modules and active device sessions.</p>
             <div class="form-grid cols-2" style="margin-top:10px;">
               <div class="field">
                 <label>Username</label>
@@ -2046,7 +2133,35 @@ window.attachColumnFilters = function (table) {
               <div class="field span-2">
                 <label>Current Password / PIN <span class="req">*</span> <small style="color:var(--gold); font-weight:normal;">(Required to confirm updates)</small></label>
                 <input type="password" id="myProfileCurPass" placeholder="Enter current password/PIN">
+                <div style="margin-top:5px; text-align:right;">
+                  <a href="javascript:void(0)" id="btnProfileForgotPass" style="color:var(--gold); font-size:12px; text-decoration:underline; font-weight:600;"><i class="fa-solid fa-key"></i> Forgot current password? Reset via OTP</a>
+                </div>
               </div>
+
+              <!-- Inline Forgot Password OTP Box (Hidden by default) -->
+              <div id="profileForgotOtpBox" class="field span-2" style="display:none; background:rgba(218,165,32,0.07); border:1px solid rgba(218,165,32,0.3); border-radius:10px; padding:14px; margin-bottom:10px;">
+                <div style="font-weight:700; color:var(--gold); font-size:13px; margin-bottom:4px;"><i class="fa-solid fa-envelope-circle-check"></i> Reset Password via Email OTP</div>
+                <p id="profileForgotOtpDesc" style="margin:0 0 12px; font-size:12px; color:var(--txt-muted);">We have emailed a 6-digit verification OTP to your registered address.</p>
+                <div class="form-grid cols-2">
+                  <div class="field">
+                    <label>Enter 6-Digit OTP <span class="req">*</span></label>
+                    <input type="text" id="profileForgotOtpInput" placeholder="123456" maxlength="6" style="font-weight:700; letter-spacing:2px; text-align:center;">
+                  </div>
+                  <div class="field">
+                    <label>Set New Password / PIN <span class="req">*</span></label>
+                    <input type="password" id="profileForgotNewPass" placeholder="At least 6 characters">
+                  </div>
+                  <div class="field span-2">
+                    <label>Confirm New Password / PIN <span class="req">*</span></label>
+                    <input type="password" id="profileForgotConfirmPass" placeholder="Re-enter new password">
+                  </div>
+                </div>
+                <div class="actions-row" style="margin-top:12px; justify-content:flex-end; gap:8px;">
+                  <button type="button" class="btn btn-ghost" id="btnProfileCancelForgot">Cancel</button>
+                  <button type="button" class="btn btn-gold" id="btnProfileVerifyOtpReset"><i class="fa-solid fa-lock-open"></i> Verify OTP &amp; Reset Password</button>
+                </div>
+              </div>
+
               <div class="field">
                 <label>New Password / PIN <small style="color:var(--txt-muted); font-weight:normal;">(Leave empty to keep existing)</small></label>
                 <input type="password" id="myProfileNewPass" placeholder="New password (optional)">
@@ -2061,14 +2176,21 @@ window.attachColumnFilters = function (table) {
             </div>
           </div>
 
+          <!-- Embedded Active Devices & Login Activity -->
           <div class="settings-card" style="margin-top:16px;">
-            <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between;">
-              <span><i class="fa-solid fa-mobile-screen-button" style="color:var(--gold);"></i> Active Devices &amp; Login Activity</span>
-              <button type="button" class="btn btn-ghost" id="setOpenLoginActivityBtn" style="font-size:11.5px; padding:4px 10px;"><i class="fa-solid fa-list"></i> Full Session Ledger</button>
+            <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+              <span style="display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-mobile-screen-button" style="color:var(--gold);"></i> Active Devices &amp; Login Activity
+                <span id="setProfileSessionsCount" class="pill pill-blue" style="font-size:10.5px; padding:2px 8px;">Loading...</span>
+              </span>
+              <button type="button" class="btn btn-ghost" id="setProfileRevokeOthers" style="font-size:11.5px; padding:4px 10px;"><i class="fa-solid fa-shield-halved"></i> Log out other devices</button>
             </div>
-            <p style="margin:0; font-size:12.5px; color:var(--txt-muted);">
-              Manage active sessions and revoke access from unrecognized browsers or devices.
+            <p style="margin:0 0 10px; font-size:12px; color:var(--txt-muted);">
+              Manage devices signed into your account. You can log out individual devices or all other sessions at once.
             </p>
+            <div id="setProfileSessionsList" class="sess-list" style="max-height:220px; overflow-y:auto;">
+              <div style="text-align:center; padding:14px; color:var(--txt-muted); font-size:12.5px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading active devices...</div>
+            </div>
           </div>
         </div>
 
@@ -2155,26 +2277,12 @@ window.attachColumnFilters = function (table) {
               <button type="button" class="btn btn-green" id="setBtnSaveChallan"><i class="fa-solid fa-floppy-disk"></i> Save Challan Configuration</button>
             </div>` : ''}
           </div>
-
-          <div class="settings-card" style="margin-top:16px;">
-            <div class="settings-card-title">Challan PDF Generation &amp; Sales Integration</div>
-            <div class="form-grid cols-2" style="margin-top:10px;">
-              <div class="field">
-                <label>Default Layout</label>
-                <input type="text" value="Landscape A4 (Customer + Company Copy)" readonly>
-              </div>
-              <div class="field">
-                <label>Sales Auto-Linking</label>
-                <input type="text" value="Auto-syncs Challan No. &amp; Date into Project Sales" readonly style="color:#2ecc71;">
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- 4. Appearance Tab -->
         <div class="settings-panel" id="tab-theme">
           <div class="settings-card">
-            <div class="settings-card-title">Theme &amp; Color Mode</div>
+            <div class="settings-card-title"><i class="fa-solid fa-circle-half-stroke" style="color:var(--gold);"></i> Theme &amp; Color Mode</div>
             <p class="note" style="margin:0 0 12px 0;">Select your preferred workspace color theme.</p>
             <div class="profile-theme-row" style="max-width:320px;">
               <button type="button" class="theme-btn${activeTheme === 'dark' ? ' active' : ''}" data-theme-set="dark" title="Dark"><i class="fa-solid fa-moon"></i> Dark</button>
@@ -2183,15 +2291,21 @@ window.attachColumnFilters = function (table) {
             </div>
           </div>
           <div class="settings-card">
-            <div class="settings-card-title">Display Density &amp; Animation</div>
-            <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
-              <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-                <input type="checkbox" checked style="accent-color:var(--gold);">
-                <span>Smooth UI Animations &amp; Transitions</span>
+            <div class="settings-card-title"><i class="fa-solid fa-table-cells" style="color:var(--blue);"></i> Display Density &amp; Animation</div>
+            <div style="display:flex; flex-direction:column; gap:14px; margin-top:12px;">
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="setCheckAnimations" ${isSmoothSaved ? 'checked' : ''} style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
+                <div>
+                  <div style="font-weight:600; color:var(--txt); font-size:13px;">Smooth UI Animations &amp; Transitions</div>
+                  <div style="font-size:12px; color:var(--txt-muted);">Enables smooth modal transitions, tab fades, and button interactive effects.</div>
+                </div>
               </label>
-              <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-                <input type="checkbox" style="accent-color:var(--gold);">
-                <span>Compact Table Row Density (High Information Density)</span>
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="setCheckCompactTables" ${isCompactSaved ? 'checked' : ''} style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
+                <div>
+                  <div style="font-weight:600; color:var(--txt); font-size:13px;">Compact Table Row Density (High Information Density)</div>
+                  <div style="font-size:12px; color:var(--txt-muted);">Reduces table row heights and cell padding to display 50%+ more inventory &amp; ledger rows simultaneously on PC screens.</div>
+                </div>
               </label>
             </div>
           </div>
@@ -2200,7 +2314,7 @@ window.attachColumnFilters = function (table) {
         <!-- 5. Company Profile Tab -->
         <div class="settings-panel" id="tab-company">
           <div class="settings-card">
-            <div class="settings-card-title">Enterprise Identity</div>
+            <div class="settings-card-title"><i class="fa-solid fa-building" style="color:var(--blue);"></i> Enterprise Identity</div>
             <div class="form-grid cols-2" style="margin-top:10px;">
               <div class="field">
                 <label>Company Name</label>
@@ -2221,7 +2335,7 @@ window.attachColumnFilters = function (table) {
             </div>
           </div>
           <div class="settings-card">
-            <div class="settings-card-title">System Attribution</div>
+            <div class="settings-card-title"><i class="fa-solid fa-code" style="color:var(--gold);"></i> System Attribution</div>
             <p style="margin:0; font-size:13px; color:var(--txt-muted);">
               Eco Green Solar ERP Suite • Developed by <strong style="color:var(--gold);">Sumit Chauhan</strong>
             </p>
@@ -2231,30 +2345,67 @@ window.attachColumnFilters = function (table) {
         <!-- 6. Alerts & Inventory Tab -->
         <div class="settings-panel" id="tab-inventory">
           <div class="settings-card">
-            <div class="settings-card-title">Stock Thresholds &amp; Scanner</div>
+            <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between;">
+              <span><i class="fa-solid fa-boxes-stacked" style="color:var(--gold);"></i> Stock Thresholds &amp; Scanner Audio</span>
+              ${isAdmin ? '<span class="pill pill-green" style="font-size:11px; padding:2px 8px;">Admin Configurable</span>' : '<span class="pill pill-muted" style="font-size:11px; padding:2px 8px;">Read Only</span>'}
+            </div>
             <div class="form-grid cols-2" style="margin-top:10px;">
               <div class="field">
-                <label>Low Stock Warning Threshold</label>
-                <input type="text" value="5 Units" readonly>
+                <label>Low Stock Warning Threshold (Units) <span class="req">*</span></label>
+                <input type="number" id="setLowStockThreshold" min="1" placeholder="5" ${isAdmin ? '' : 'readonly'}>
               </div>
               <div class="field">
                 <label>Scan Sheet Audio Feedback</label>
-                <input type="text" value="Beep on Valid Serial" readonly style="color:#2ecc71;">
+                <div style="display:flex; gap:6px;">
+                  <select id="setScannerSound" style="flex:1;">
+                    <option value="beep" ${activeSoundSaved === 'beep' ? 'selected' : ''}>Classic ERP Beep (850Hz)</option>
+                    <option value="chime" ${activeSoundSaved === 'chime' ? 'selected' : ''}>High Chime Tone (1200Hz)</option>
+                    <option value="melody" ${activeSoundSaved === 'melody' ? 'selected' : ''}>Two-Tone Success Melody (650Hz ➔ 1050Hz)</option>
+                    <option value="click" ${activeSoundSaved === 'click' ? 'selected' : ''}>Subtle Soft Click</option>
+                    <option value="mute" ${activeSoundSaved === 'mute' ? 'selected' : ''}>Mute / Disabled</option>
+                  </select>
+                  <button type="button" class="btn btn-ghost" id="btnTestScannerSound" title="Listen to selected sound"><i class="fa-solid fa-volume-high"></i> Test</button>
+                </div>
               </div>
             </div>
           </div>
-          <div class="settings-card">
-            <div class="settings-card-title">
-              <span>Automated Dispatch Alerts</span>
-              <span class="settings-badge-soon">Coming Soon</span>
-            </div>
-            <p style="margin:0 0 10px 0; font-size:13px; color:var(--txt-muted);">
-              Instant SMS and WhatsApp notifications sent to customers upon stock dispatch.
+
+          <div class="settings-card" style="margin-top:16px;">
+            <div class="settings-card-title"><i class="fa-solid fa-envelope" style="color:var(--blue);"></i> Automated Email Alert Triggers</div>
+            <p style="margin:0 0 12px; font-size:12.5px; color:var(--txt-muted);">
+              Set recipient Gmail addresses for automated ERP notifications. Multiple email addresses can be added separated by commas.
             </p>
-            <div style="display:flex; gap:16px; opacity:0.6;">
-              <label><input type="checkbox" disabled> WhatsApp Notification</label>
-              <label><input type="checkbox" disabled> Email Dispatch Summary</label>
+
+            <div style="display:flex; flex-direction:column; gap:14px; margin-top:8px;">
+              <!-- Low Stock Email Alert -->
+              <div style="padding:12px; background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:8px;">
+                  <input type="checkbox" id="setCheckLowStockEmail" style="accent-color:var(--gold); transform:scale(1.1);" ${isAdmin ? '' : 'disabled'}>
+                  <strong style="color:var(--txt); font-size:13px;">Low Stock Warning Email Alert</strong>
+                </label>
+                <div class="field">
+                  <label style="font-size:11.5px;">Recipient Email(s) for Low Stock Alerts</label>
+                  <input type="text" id="setLowStockEmails" placeholder="e.g. store@gmail.com, purchase@gmail.com" ${isAdmin ? '' : 'readonly'}>
+                </div>
+              </div>
+
+              <!-- Dispatch Email Alert -->
+              <div style="padding:12px; background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom:8px;">
+                  <input type="checkbox" id="setCheckDispatchEmail" style="accent-color:var(--gold); transform:scale(1.1);" ${isAdmin ? '' : 'disabled'}>
+                  <strong style="color:var(--txt); font-size:13px;">BOM Challan &amp; Dispatch Summary Email</strong>
+                </label>
+                <div class="field">
+                  <label style="font-size:11.5px;">Recipient Email(s) for Dispatch Alerts</label>
+                  <input type="text" id="setDispatchEmails" placeholder="e.g. dispatch@gmail.com, logistics@gmail.com" ${isAdmin ? '' : 'readonly'}>
+                </div>
+              </div>
             </div>
+
+            ${isAdmin ? `
+            <div class="actions-row" style="margin-top:14px; justify-content:flex-end;">
+              <button type="button" class="btn btn-green" id="setBtnSaveAlerts"><i class="fa-solid fa-floppy-disk"></i> Save Alert &amp; Scanner Configuration</button>
+            </div>` : ''}
           </div>
         </div>
 
@@ -2309,15 +2460,6 @@ window.attachColumnFilters = function (table) {
     const modalBox = document.querySelector('#modalOverlay .modal-box');
     if (modalBox && window.wireThemeButtons) window.wireThemeButtons(modalBox);
 
-    // Wire Login Activity button
-    const loginActBtn = document.getElementById('setOpenLoginActivityBtn');
-    if (loginActBtn) {
-      loginActBtn.addEventListener('click', () => {
-        window.closeModal();
-        openLoginActivityPanel();
-      });
-    }
-
     // -------------------------------------------------------------
     // 1. My Profile Tab Async Initialization & Save
     // -------------------------------------------------------------
@@ -2339,9 +2481,11 @@ window.attachColumnFilters = function (table) {
         const newPassword = (document.getElementById('myProfileNewPass') || {}).value.trim();
         const confirmPassword = (document.getElementById('myProfileConfirmPass') || {}).value.trim();
 
-        if (!currentPassword) {
-          window.openModal('Authentication Required', '<p>Please enter your current Password / PIN to confirm changes to your account.</p>');
-          return;
+        if (newPassword || newUsername) {
+          if (!currentPassword) {
+            window.openModal('Authentication Required', '<p>Please enter your current Password / PIN to confirm changes to your account.</p>');
+            return;
+          }
         }
         if (newPassword && newPassword !== confirmPassword) {
           window.openModal('Password Mismatch', '<p>The new password and confirmation do not match.</p>');
@@ -2352,7 +2496,7 @@ window.attachColumnFilters = function (table) {
           const res = await window.Api.put('/auth/profile', {
             newUsername,
             newEmail,
-            currentPassword,
+            currentPassword: currentPassword || undefined,
             newPassword: newPassword || undefined
           });
 
@@ -2372,6 +2516,139 @@ window.attachColumnFilters = function (table) {
           }
         } catch (err) {
           window.openModal('Update Failed', `<p style="color:var(--red);">${err.message || 'Could not update profile.'}</p>`);
+        }
+      });
+    }
+
+    // Forgot Password flow inside Profile
+    const btnForgotPass = document.getElementById('btnProfileForgotPass');
+    const forgotBox = document.getElementById('profileForgotOtpBox');
+    const btnCancelForgot = document.getElementById('btnProfileCancelForgot');
+    const btnVerifyForgot = document.getElementById('btnProfileVerifyOtpReset');
+
+    if (btnForgotPass && forgotBox) {
+      btnForgotPass.addEventListener('click', async () => {
+        try {
+          const res = await window.Api.post('/auth/forgot-password', { username: currentUsername });
+          if (res && res.success) {
+            const desc = document.getElementById('profileForgotOtpDesc');
+            if (desc) desc.textContent = `We have emailed a 6-digit verification OTP to ${res.maskedEmail || 'your registered email'}. Enter it below with your new password.`;
+            forgotBox.style.display = 'block';
+            forgotBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (window.showToast) window.showToast('OTP sent to your email!');
+          }
+        } catch (e) {
+          window.openModal('OTP Failed', `<p style="color:var(--red);">${(e && e.message) || 'Could not send OTP. Ensure your account has a registered email.'}</p>`);
+        }
+      });
+    }
+
+    if (btnCancelForgot && forgotBox) {
+      btnCancelForgot.addEventListener('click', () => {
+        forgotBox.style.display = 'none';
+      });
+    }
+
+    if (btnVerifyForgot) {
+      btnVerifyForgot.addEventListener('click', async () => {
+        const otp = (document.getElementById('profileForgotOtpInput') || {}).value.trim();
+        const newPass = (document.getElementById('profileForgotNewPass') || {}).value.trim();
+        const confirmPass = (document.getElementById('profileForgotConfirmPass') || {}).value.trim();
+
+        if (!otp || !newPass) {
+          window.openModal('Validation Error', '<p>Please enter the OTP and your new password.</p>');
+          return;
+        }
+        if (newPass !== confirmPass) {
+          window.openModal('Password Mismatch', '<p>The new password and confirmation do not match.</p>');
+          return;
+        }
+
+        try {
+          await window.Api.post('/auth/reset-password', {
+            username: currentUsername,
+            otp,
+            newPassword: newPass
+          });
+          if (window.showToast) window.showToast('Password reset successfully!');
+          if (forgotBox) forgotBox.style.display = 'none';
+          document.getElementById('profileForgotOtpInput').value = '';
+          document.getElementById('profileForgotNewPass').value = '';
+          document.getElementById('profileForgotConfirmPass').value = '';
+        } catch (e) {
+          window.openModal('Reset Failed', `<p style="color:var(--red);">${(e && e.message) || 'Could not reset password.'}</p>`);
+        }
+      });
+    }
+
+    // -------------------------------------------------------------
+    // Active Devices List & Revocation (Embedded)
+    // -------------------------------------------------------------
+    const sessionsListEl = document.getElementById('setProfileSessionsList');
+    const sessionsCountEl = document.getElementById('setProfileSessionsCount');
+
+    async function loadProfileActiveSessions() {
+      if (!sessionsListEl) return;
+      try {
+        const data = await window.Api.get('/auth/my-sessions');
+        const sessions = (data && data.sessions) || [];
+        const active = sessions.filter((s) => !s.revoked);
+        if (sessionsCountEl) sessionsCountEl.textContent = `${active.length} Device${active.length === 1 ? '' : 's'} Active`;
+
+        if (!active.length) {
+          sessionsListEl.innerHTML = '<p class="note" style="padding:10px 0; margin:0;">No other active sessions found.</p>';
+          return;
+        }
+
+        sessionsListEl.innerHTML = active.map((s) => {
+          const when = s.lastSeen ? String(s.lastSeen).replace('T', ' ').slice(0, 16) : 'Just now';
+          const isThis = !!s.isCurrent;
+          const badge = isThis ? '<span class="pill pill-green" style="font-size:10px; padding:2px 6px;">This device</span>' : '';
+          const btn = isThis ? '' : `<button type="button" class="btn btn-ghost bom-mini-btn" data-revoke-session-id="${s.id}"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>`;
+          return `
+            <div class="sess-row" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-bottom:1px solid var(--border-light); gap:10px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="font-size:16px; color:var(--blue); width:24px; text-align:center;"><i class="fa-solid ${s.deviceLabel && s.deviceLabel.toLowerCase().includes('mobile') ? 'fa-mobile-screen' : 'fa-desktop'}"></i></div>
+                <div>
+                  <div style="font-size:12.5px; font-weight:700; color:var(--txt);">${s.deviceLabel || 'Device / Browser'} ${badge}</div>
+                  <div style="font-size:11.5px; color:var(--txt-muted);">Last active ${when}${s.ip ? ' · IP ' + s.ip : ''}</div>
+                </div>
+              </div>
+              <div>${btn}</div>
+            </div>
+          `;
+        }).join('');
+
+        sessionsListEl.querySelectorAll('[data-revoke-session-id]').forEach((b) => {
+          b.addEventListener('click', async () => {
+            const sid = b.getAttribute('data-revoke-session-id');
+            try {
+              await window.Api.post('/auth/sessions/' + sid + '/revoke', {});
+              if (window.showToast) window.showToast('Device logged out');
+              loadProfileActiveSessions();
+            } catch (e) {
+              window.openModal('Error', `<p>${(e && e.message) || 'Failed to revoke device.'}</p>`);
+            }
+          });
+        });
+      } catch (e) {
+        if (sessionsListEl) sessionsListEl.innerHTML = '<p class="note" style="color:var(--red);">Could not load active devices.</p>';
+      }
+    }
+
+    loadProfileActiveSessions();
+
+    const btnRevokeOthers = document.getElementById('setProfileRevokeOthers');
+    if (btnRevokeOthers) {
+      btnRevokeOthers.addEventListener('click', async () => {
+        const ok = await window.confirmDialog('Log out other devices', 'All other devices will be signed out. This device stays logged in.', { kind: 'warning', okLabel: 'Log out others' });
+        if (!ok) return;
+        try {
+          await window.Api.post('/auth/sessions/revoke-others', {});
+          if (window.showToast) window.showToast('Other devices logged out successfully');
+          loadProfileActiveSessions();
+        } catch (e) {
+          window.openModal('Error', `<p>${(e && e.message) || 'Failed to log out others.'}</p>`);
         }
       });
     }
@@ -2540,6 +2817,94 @@ window.attachColumnFilters = function (table) {
           }
         });
       }
+    }
+
+    // -------------------------------------------------------------
+    // 4. Appearance Tab Dynamic Toggling & Preferences Save
+    // -------------------------------------------------------------
+    const chkAnimations = document.getElementById('setCheckAnimations');
+    const chkCompact = document.getElementById('setCheckCompactTables');
+
+    function handleDisplayPrefChange() {
+      const isSmooth = chkAnimations ? chkAnimations.checked : true;
+      const isCompact = chkCompact ? chkCompact.checked : false;
+
+      if (window.applyUserPreferences) {
+        window.applyUserPreferences({
+          smooth_animations: isSmooth,
+          compact_tables: isCompact
+        });
+      }
+
+      if (window.Api) {
+        window.Api.put('/auth/preferences', {
+          smooth_animations: isSmooth,
+          compact_tables: isCompact
+        }).catch(() => {});
+      }
+    }
+
+    if (chkAnimations) chkAnimations.addEventListener('change', handleDisplayPrefChange);
+    if (chkCompact) chkCompact.addEventListener('change', handleDisplayPrefChange);
+
+    // -------------------------------------------------------------
+    // 5. Alerts & Inventory Tab Async Initialization & Save
+    // -------------------------------------------------------------
+    const lowStockThreshInp = document.getElementById('setLowStockThreshold');
+    const scannerSoundSel = document.getElementById('setScannerSound');
+    const btnTestSound = document.getElementById('btnTestScannerSound');
+    const chkLowStockEmail = document.getElementById('setCheckLowStockEmail');
+    const lowStockEmailsInp = document.getElementById('setLowStockEmails');
+    const chkDispatchEmail = document.getElementById('setCheckDispatchEmail');
+    const dispatchEmailsInp = document.getElementById('setDispatchEmails');
+
+    if (btnTestSound && scannerSoundSel) {
+      btnTestSound.addEventListener('click', () => {
+        const sound = scannerSoundSel.value;
+        if (window.playScannerTone) window.playScannerTone(sound);
+      });
+    }
+
+    if (window.Api) {
+      window.Api.get('/auth/app-settings').then((res) => {
+        const s = (res && res.settings) || {};
+        if (lowStockThreshInp && s.low_stock_threshold != null) lowStockThreshInp.value = s.low_stock_threshold;
+        if (scannerSoundSel && s.scanner_sound != null) scannerSoundSel.value = s.scanner_sound;
+        if (chkLowStockEmail) chkLowStockEmail.checked = s.low_stock_alert_enabled === '1';
+        if (lowStockEmailsInp && s.low_stock_alert_emails != null) lowStockEmailsInp.value = s.low_stock_alert_emails;
+        if (chkDispatchEmail) chkDispatchEmail.checked = s.dispatch_alert_enabled === '1';
+        if (dispatchEmailsInp && s.dispatch_alert_emails != null) dispatchEmailsInp.value = s.dispatch_alert_emails;
+      }).catch(() => {});
+    }
+
+    const btnSaveAlerts = document.getElementById('setBtnSaveAlerts');
+    if (btnSaveAlerts) {
+      btnSaveAlerts.addEventListener('click', async () => {
+        const threshold = (lowStockThreshInp ? lowStockThreshInp.value.trim() : '5') || '5';
+        const sound = scannerSoundSel ? scannerSoundSel.value : 'beep';
+        const lowStockEnabled = (chkLowStockEmail && chkLowStockEmail.checked) ? '1' : '0';
+        const lowStockEmails = (lowStockEmailsInp ? lowStockEmailsInp.value.trim() : '');
+        const dispatchEnabled = (chkDispatchEmail && chkDispatchEmail.checked) ? '1' : '0';
+        const dispatchEmails = (dispatchEmailsInp ? dispatchEmailsInp.value.trim() : '');
+
+        try {
+          await window.Api.put('/auth/app-settings', {
+            settings: {
+              low_stock_threshold: threshold,
+              scanner_sound: sound,
+              low_stock_alert_enabled: lowStockEnabled,
+              low_stock_alert_emails: lowStockEmails,
+              dispatch_alert_enabled: dispatchEnabled,
+              dispatch_alert_emails: dispatchEmails
+            }
+          });
+
+          localStorage.setItem('egs_scanner_sound', sound);
+          if (window.showToast) window.showToast('Alerts & scanner configuration saved!');
+        } catch (e) {
+          window.openModal('Save Failed', `<p style="color:var(--red);">${(e && e.message) || 'Could not save alert settings.'}</p>`);
+        }
+      });
     }
   }
 

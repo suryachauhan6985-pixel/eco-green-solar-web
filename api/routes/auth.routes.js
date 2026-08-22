@@ -507,6 +507,9 @@ module.exports = function registerAuthRoutes(app, deps) {
     // Only allow known keys
     const clean = {};
     if (merged.theme === 'dark' || merged.theme === 'light' || merged.theme === 'gray') clean.theme = merged.theme;
+    if (merged.compact_tables != null) clean.compact_tables = !!merged.compact_tables;
+    if (merged.smooth_animations != null) clean.smooth_animations = !!merged.smooth_animations;
+    if (merged.scanner_sound) clean.scanner_sound = String(merged.scanner_sound).slice(0, 30);
     await pool.query(`UPDATE users SET preferences_json=? WHERE username=?`, [JSON.stringify(clean), req.user.username]);
     res.json({ success: true, preferences: clean });
   }));
@@ -632,7 +635,7 @@ module.exports = function registerAuthRoutes(app, deps) {
     });
   }));
 
-  // App-wide settings (challan sequence etc.) — Admin / SuperAdmin only for write
+  // App-wide settings (challan sequence, low stock thresholds, dispatch email alerts)
   app.get('/api/auth/app-settings', route(async (req, res) => {
     if (!req.user) return res.status(401).json({ error: 'Please log in.' });
     const [rows] = await pool.query(`SELECT setting_key, setting_value FROM app_settings`);
@@ -643,19 +646,29 @@ module.exports = function registerAuthRoutes(app, deps) {
     if (settings.challan_suffix == null) settings.challan_suffix = '';
     if (settings.challan_next == null) settings.challan_next = '1';
     if (settings.challan_pad == null) settings.challan_pad = '3';
+    if (settings.low_stock_threshold == null) settings.low_stock_threshold = '5';
+    if (settings.low_stock_alert_enabled == null) settings.low_stock_alert_enabled = '1';
+    if (settings.low_stock_alert_emails == null) settings.low_stock_alert_emails = '';
+    if (settings.dispatch_alert_enabled == null) settings.dispatch_alert_enabled = '0';
+    if (settings.dispatch_alert_emails == null) settings.dispatch_alert_emails = '';
+    if (settings.scanner_sound == null) settings.scanner_sound = 'beep';
     res.json({ settings });
   }));
 
   app.put('/api/auth/app-settings', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     if (!req.user) return res.status(401).json({ error: 'Please log in.' });
     const body = (req.body && req.body.settings) ? req.body.settings : (req.body || {});
-    const allowed = ['challan_prefix', 'challan_suffix', 'challan_next', 'challan_pad'];
+    const allowed = [
+      'challan_prefix', 'challan_suffix', 'challan_next', 'challan_pad',
+      'low_stock_threshold', 'low_stock_alert_enabled', 'low_stock_alert_emails',
+      'dispatch_alert_enabled', 'dispatch_alert_emails', 'scanner_sound'
+    ];
     for (const key of allowed) {
       if (body[key] == null) continue;
       let val = String(body[key]).trim();
-      if (key === 'challan_next') {
+      if (key === 'challan_next' || key === 'low_stock_threshold') {
         const n = parseInt(val, 10);
-        if (!Number.isFinite(n) || n < 1) return res.status(400).json({ error: 'Challan next number must be a positive integer.' });
+        if (!Number.isFinite(n) || n < 1) return res.status(400).json({ error: `${key} must be a positive integer.` });
         val = String(n);
       }
       if (key === 'challan_pad') {
@@ -665,6 +678,7 @@ module.exports = function registerAuthRoutes(app, deps) {
       }
       if (key === 'challan_prefix' && val.length > 30) return res.status(400).json({ error: 'Prefix too long (max 30 chars).' });
       if (key === 'challan_suffix' && val.length > 30) return res.status(400).json({ error: 'Suffix too long (max 30 chars).' });
+      if (val.length > 500) return res.status(400).json({ error: 'Setting value too long.' });
       await pool.query(
         `INSERT INTO app_settings (setting_key, setting_value, updated_by) VALUES (?, ?, ?)
          ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value), updated_by=VALUES(updated_by)`,
