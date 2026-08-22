@@ -525,8 +525,12 @@ html[data-theme="light"] .otp-boxes .otp-box{
 .profile-account-row.current{background:rgba(59,142,208,.12);}
 .pa-avatar{
   width:32px;height:32px;border-radius:50%;
-  background:var(--blue); color:#fff; display:flex; align-items:center; justify-content:center;
+  background:var(--avatar-bg, var(--blue)) !important;
+  color:var(--avatar-txt, #fff) !important;
+  border:1.5px solid var(--avatar-border, var(--blue)) !important;
+  display:flex; align-items:center; justify-content:center;
   font-weight:800; font-size:13px; flex-shrink:0;
+  transition:all .22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .pa-meta{display:flex; flex-direction:column; min-width:0; flex:1;}
 .pa-name{font-weight:700; font-size:12.5px;}
@@ -553,13 +557,13 @@ html[data-theme="light"] .otp-boxes .otp-box{
 .sess-actions{flex-shrink:0;}
 
 .profile-theme-row{
-  display:flex; gap:6px; padding:6px 12px 10px;
+  display:flex; flex-wrap:wrap; gap:6px; padding:6px 12px 10px;
 }
 .profile-theme-row .theme-btn{
-  flex:1; padding:8px 6px; font-size:11px;
+  flex:1 1 auto; min-width:64px; padding:8px 8px; font-size:11px;
   border-radius:8px; border:1px solid var(--border-light);
   background:var(--nav-btn-bg); color:var(--txt);
-  display:inline-flex; align-items:center; justify-content:center; gap:4px;
+  display:inline-flex; align-items:center; justify-content:center; gap:5px;
 }
 .profile-theme-row .theme-btn.active{
   background:var(--blue); border-color:var(--blue); color:#fff;

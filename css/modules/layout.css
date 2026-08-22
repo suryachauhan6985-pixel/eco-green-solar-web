@@ -74,9 +74,13 @@ html[data-theme="light"] .brand-logo-img{
   display:flex; align-items:center; gap:10px;
 }
 .avatar{
-  width:40px;height:40px;border-radius:50%; background:linear-gradient(135deg, var(--gold), var(--gold-dim)); color:#1A1A1A;
-  display:flex;align-items:center;justify-content:center; font-weight:800; border:2px solid var(--gold-dim);
-  flex-shrink:0; box-shadow:0 2px 10px rgba(212,175,55,.3);
+  width:40px;height:40px;border-radius:50%;
+  background:var(--avatar-bg, linear-gradient(135deg, #D4AF37, #B6952C)) !important;
+  color:var(--avatar-txt, #1A1A1A) !important;
+  border:2px solid var(--avatar-border, #D4AF37) !important;
+  display:flex;align-items:center;justify-content:center; font-weight:800;
+  flex-shrink:0; box-shadow:0 2px 10px rgba(0,0,0,.35);
+  transition:all .22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .profile-box .role{color:var(--gold); font-size:12px; font-weight:700;}
 .profile-box .user{color:var(--txt-muted); font-size:10.5px;}

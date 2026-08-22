@@ -2616,13 +2616,40 @@ window.attachColumnFilters = function (table) {
             </div>
           </div>
 
-          <!-- 5. Dashboard Widgets Launcher -->
+          <!-- 5. Live Appearance Preview Banner -->
+          <div class="settings-card" style="margin-top:16px; background:linear-gradient(145deg, rgba(255,255,255,0.03), rgba(0,0,0,0.25)); border:1px solid var(--border-light);">
+            <div class="settings-card-title"><i class="fa-solid fa-eye" style="color:var(--gold);"></i> Live Appearance Preview</div>
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; padding:12px 14px; background:var(--panel-alt); border-radius:12px; border:1px solid var(--border);">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div id="setPreviewAvatarCircle" class="avatar" style="width:44px; height:44px; font-size:16px;">${(currentUsername[0] || 'U').toUpperCase()}</div>
+                <div>
+                  <div id="setPreviewUserName" style="font-weight:700; font-size:14px; color:var(--txt);">@${currentUsername}</div>
+                  <div style="font-size:11.5px; color:var(--txt-muted); display:flex; align-items:center; gap:6px; margin-top:2px;">
+                    <span id="setPreviewRolePill" class="pill pill-gold">${currentRole}</span>
+                    <span id="setPreviewFontLabel" style="font-style:italic;">Font: Segoe UI</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span id="setPreviewThemeBadge" class="pill pill-blue"><i class="fa-solid fa-moon"></i> Midnight Dark</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. Dashboard Widgets Launcher -->
           <div class="settings-card" style="margin-top:16px;">
             <div class="settings-card-title"><i class="fa-solid fa-sliders" style="color:var(--blue);"></i> Dashboard Widgets &amp; Metrics</div>
             <p style="margin:0 0 14px; font-size:12.5px; color:var(--txt-muted);">
               Choose which metric cards, solar generation summaries, and tables appear on your ERP Dashboard. You can also re-enable hidden sections anytime from here.
             </p>
             <button type="button" class="btn btn-blue" id="btnOpenDashCustomizerFromSettings"><i class="fa-solid fa-sliders"></i> Customize Dashboard Widgets</button>
+          </div>
+
+          <!-- 7. Save Appearance Action Bar -->
+          <div class="actions-row" style="margin-top:18px; justify-content:flex-end; border-top:1px solid var(--border-light); padding-top:14px;">
+            <button type="button" class="btn btn-green" id="btnSaveAppearanceSettings" style="padding:11px 24px; font-size:13.5px; font-weight:700; box-shadow:0 4px 14px rgba(46,204,113,0.3);">
+              <i class="fa-solid fa-floppy-disk"></i> Save Appearance Preferences
+            </button>
           </div>
         </div>
 
@@ -3147,32 +3174,146 @@ window.attachColumnFilters = function (table) {
     }
 
     // -------------------------------------------------------------
-    // 4. Appearance Tab Dynamic Toggling & Preferences Save
+    // 4. Appearance Tab Interactive Preview & Explicit Save Action
     // -------------------------------------------------------------
+    let selectedTheme = activeTheme;
+    let selectedFont = activeFont;
+    let selectedAvatar = activeAvatar;
+
+    const themeBtns = document.querySelectorAll('#tab-theme [data-theme-set]');
+    const fontBtns = document.querySelectorAll('#tab-theme [data-font-set]');
+    const avatarBtns = document.querySelectorAll('#tab-theme [data-avatar-set]');
+
+    const previewAvatar = document.getElementById('setPreviewAvatarCircle');
+    const previewFontLabel = document.getElementById('setPreviewFontLabel');
+    const previewThemeBadge = document.getElementById('setPreviewThemeBadge');
+    const previewUserName = document.getElementById('setPreviewUserName');
+
+    function updateAppearancePreview() {
+      // 1. Theme preview
+      if (previewThemeBadge) {
+        const themeLabels = {
+          'dark': '<i class="fa-solid fa-moon"></i> Midnight Dark',
+          'gray': '<i class="fa-solid fa-circle-half-stroke"></i> Charcoal Slate',
+          'light': '<i class="fa-solid fa-sun"></i> Cloud Light',
+          'emerald': '<i class="fa-solid fa-leaf" style="color:#2ecc71;"></i> Solar Emerald',
+          'ocean': '<i class="fa-solid fa-water" style="color:#38bdf8;"></i> Deep Ocean'
+        };
+        previewThemeBadge.innerHTML = themeLabels[selectedTheme] || selectedTheme;
+      }
+      themeBtns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-theme-set') === selectedTheme));
+
+      // 2. Font preview
+      const fontLabels = {
+        'segoe': 'Segoe UI (System)',
+        'inter': 'Inter Modern',
+        'roboto': 'Roboto Corporate',
+        'jakarta': 'Plus Jakarta Sans',
+        'outfit': 'Outfit Tech',
+        'jetbrains': 'JetBrains Mono'
+      };
+      if (previewFontLabel) previewFontLabel.textContent = `Font: ${fontLabels[selectedFont] || selectedFont}`;
+      if (previewUserName && window.FONTS_PALETTE && window.FONTS_PALETTE[selectedFont]) {
+        previewUserName.style.fontFamily = window.FONTS_PALETTE[selectedFont];
+      }
+      fontBtns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-font-set') === selectedFont));
+
+      // 3. Avatar color preview
+      const palette = (window.AVATAR_PALETTE && window.AVATAR_PALETTE[selectedAvatar]) || {
+        bg: 'linear-gradient(135deg, #D4AF37, #B6952C)',
+        txt: '#111111',
+        border: '#D4AF37'
+      };
+      if (previewAvatar) {
+        previewAvatar.style.setProperty('background', palette.bg, 'important');
+        previewAvatar.style.setProperty('color', palette.txt, 'important');
+        previewAvatar.style.setProperty('border-color', palette.border, 'important');
+      }
+      avatarBtns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-avatar-set') === selectedAvatar));
+    }
+
+    themeBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedTheme = btn.getAttribute('data-theme-set');
+        if (window.setAppTheme) window.setAppTheme(selectedTheme, { skipServer: true });
+        updateAppearancePreview();
+      });
+    });
+
+    fontBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedFont = btn.getAttribute('data-font-set');
+        if (window.setAppFont) window.setAppFont(selectedFont, { skipServer: true });
+        updateAppearancePreview();
+      });
+    });
+
+    avatarBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedAvatar = btn.getAttribute('data-avatar-set');
+        if (window.setAppAvatarColor) window.setAppAvatarColor(selectedAvatar, { skipServer: true });
+        updateAppearancePreview();
+      });
+    });
+
+    updateAppearancePreview();
+
     const chkAnimations = document.getElementById('setCheckAnimations');
     const chkCompact = document.getElementById('setCheckCompactTables');
 
-    function handleDisplayPrefChange() {
-      const isSmooth = chkAnimations ? chkAnimations.checked : true;
-      const isCompact = chkCompact ? chkCompact.checked : false;
+    // Explicit "Save Appearance Preferences" Button
+    const btnSaveAppearance = document.getElementById('btnSaveAppearanceSettings');
+    if (btnSaveAppearance) {
+      btnSaveAppearance.addEventListener('click', async () => {
+        try {
+          btnSaveAppearance.disabled = true;
+          btnSaveAppearance.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
 
-      if (window.applyUserPreferences) {
-        window.applyUserPreferences({
-          smooth_animations: isSmooth,
-          compact_tables: isCompact
-        });
-      }
+          // Apply & Persist Theme, Font, Avatar
+          if (window.setAppTheme) window.setAppTheme(selectedTheme);
+          if (window.setAppFont) window.setAppFont(selectedFont);
+          if (window.setAppAvatarColor) window.setAppAvatarColor(selectedAvatar);
 
-      if (window.Api) {
-        window.Api.put('/auth/preferences', {
-          smooth_animations: isSmooth,
-          compact_tables: isCompact
-        }).catch(() => {});
-      }
+          const isSmooth = chkAnimations ? chkAnimations.checked : true;
+          const isCompact = chkCompact ? chkCompact.checked : false;
+
+          if (window.applyUserPreferences) {
+            window.applyUserPreferences({
+              smooth_animations: isSmooth,
+              compact_tables: isCompact
+            });
+          }
+
+          if (window.Api) {
+            await window.Api.put('/auth/preferences', {
+              theme: selectedTheme,
+              font_family: selectedFont,
+              avatar_color: selectedAvatar,
+              smooth_animations: isSmooth,
+              compact_tables: isCompact
+            });
+          }
+
+          if (window.showSuccess) {
+            window.showSuccess('Appearance Settings Saved', 'Your theme, typography, avatar badge color, and display preferences have been saved and applied successfully across all devices.');
+          } else if (window.openModal) {
+            window.openModal('Appearance Saved', '<p style="color:var(--green); font-weight:700;"><i class="fa-solid fa-circle-check"></i> Appearance preferences saved successfully!</p>');
+          }
+        } catch (err) {
+          if (window.showError) {
+            window.showError('Save Failed', (err && err.message) || 'Could not save appearance preferences.');
+          } else {
+            window.openModal('Save Failed', `<p style="color:var(--red);">${(err && err.message) || 'Could not save appearance preferences.'}</p>`);
+          }
+        } finally {
+          btnSaveAppearance.disabled = false;
+          btnSaveAppearance.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Appearance Preferences';
+        }
+      });
     }
-
-    if (chkAnimations) chkAnimations.addEventListener('change', handleDisplayPrefChange);
-    if (chkCompact) chkCompact.addEventListener('change', handleDisplayPrefChange);
 
     const btnOpenDashCust = document.getElementById('btnOpenDashCustomizerFromSettings');
     if (btnOpenDashCust) {
@@ -3420,11 +3561,13 @@ window.attachColumnFilters = function (table) {
       <div class="profile-accounts">${accountRows || '<p class="note" style="padding:8px 12px;margin:0;">No saved accounts yet</p>'}</div>
       <button type="button" class="profile-menu-item" id="profileAddAccount"><i class="fa-solid fa-user-plus"></i> Add account</button>
       <div class="profile-menu-divider"></div>
-      <div class="profile-menu-section-label">Theme</div>
+      <div class="profile-menu-section-label">Workspace Theme</div>
       <div class="profile-theme-row">
         <button type="button" class="theme-btn" data-theme-set="dark" title="Dark"><i class="fa-solid fa-moon"></i> Dark</button>
         <button type="button" class="theme-btn" data-theme-set="gray" title="Gray"><i class="fa-solid fa-circle-half-stroke"></i> Gray</button>
         <button type="button" class="theme-btn" data-theme-set="light" title="Light"><i class="fa-solid fa-sun"></i> Light</button>
+        <button type="button" class="theme-btn" data-theme-set="emerald" title="Emerald"><i class="fa-solid fa-leaf" style="color:#2ecc71;"></i> Emerald</button>
+        <button type="button" class="theme-btn" data-theme-set="ocean" title="Ocean"><i class="fa-solid fa-water" style="color:#38bdf8;"></i> Ocean</button>
       </div>
       <div class="profile-menu-divider"></div>
       <button type="button" class="profile-menu-item" id="profileSettings"><i class="fa-solid fa-gear"></i> System Settings</button>

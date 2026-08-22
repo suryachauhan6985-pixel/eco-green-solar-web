@@ -98,6 +98,13 @@
       btn.classList.toggle('active', btn.getAttribute('data-avatar-set') === key);
     });
 
+    // Direct DOM element update for instant visual feedback on desktop & mobile
+    document.querySelectorAll('.avatar, .pa-avatar, .mobile-profile-avatar').forEach((el) => {
+      el.style.setProperty('background', pal.bg, 'important');
+      el.style.setProperty('color', pal.txt, 'important');
+      el.style.setProperty('border-color', pal.border, 'important');
+    });
+
     if (!opts || !opts.skipServer) {
       try {
         if (window.currentAuthToken && window.Api && window.Api.put) {
