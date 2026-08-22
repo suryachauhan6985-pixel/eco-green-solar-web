@@ -71,6 +71,7 @@ async function ensureAuthOtpSchema(pool) {
   try {
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(150) NULL`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified TINYINT(1) NOT NULL DEFAULT 1`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at DATETIME DEFAULT CURRENT_TIMESTAMP`);
     await pool.query(`CREATE TABLE IF NOT EXISTS otp_codes (username VARCHAR(100) PRIMARY KEY, otp VARCHAR(10) NOT NULL, expires_at DATETIME NOT NULL, attempts INT NOT NULL DEFAULT 0)`);
   } catch (e) { console.warn('[Auth/OTP schema] Could not ensure email column / otp_codes table:', e.message); }
 }

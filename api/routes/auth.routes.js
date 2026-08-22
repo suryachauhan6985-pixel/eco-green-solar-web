@@ -515,7 +515,7 @@ module.exports = function registerAuthRoutes(app, deps) {
   app.get('/api/auth/profile', route(async (req, res) => {
     if (!req.user) return res.status(401).json({ error: 'Please log in.' });
     const [[user]] = await pool.query(
-      `SELECT username, role, email, is_verified, created_at FROM users WHERE username = ?`,
+      `SELECT username, role, email, is_verified FROM users WHERE username = ?`,
       [req.user.username]
     );
     if (!user) return res.status(404).json({ error: 'User profile not found.' });
@@ -524,7 +524,6 @@ module.exports = function registerAuthRoutes(app, deps) {
       role: user.role,
       email: user.email || '',
       isVerified: !!user.is_verified,
-      createdAt: user.created_at || null,
     });
   }));
 
