@@ -1,19 +1,19 @@
-const CACHE_NAME = 'eco-green-solar-erp-v103';
+const CACHE_NAME = 'eco-green-solar-erp-v104';
 
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/css/style.css?v=85',
-  '/css/modules/base.css?v=85',
-  '/css/modules/layout.css?v=85',
-  '/css/modules/components.css?v=85',
-  '/css/modules/dashboard.css?v=85',
-  '/css/modules/responsive.css?v=85',
-  '/css/modules/party-ledger.css?v=85',
-  '/css/modules/auth.css?v=85',
-  '/css/modules/bom.css?v=85',
-  '/css/modules/scan-sheet.css?v=85',
+  '/css/style.css?v=86',
+  '/css/modules/base.css?v=86',
+  '/css/modules/layout.css?v=86',
+  '/css/modules/components.css?v=86',
+  '/css/modules/dashboard.css?v=86',
+  '/css/modules/responsive.css?v=86',
+  '/css/modules/party-ledger.css?v=86',
+  '/css/modules/auth.css?v=86',
+  '/css/modules/bom.css?v=86',
+  '/css/modules/scan-sheet.css?v=86',
   '/assets/icon.ico',
   '/assets/icons/icon-192.png?v=2',
   '/assets/icons/icon-512.png?v=2',
@@ -24,7 +24,7 @@ const APP_SHELL = [
   '/js/data/store.js?v=3',
   '/js/data/auth-store.js?v=7',
   '/js/data/sheets-store.js?v=4',
-  '/js/pages/dashboard.js?v=8',
+  '/js/pages/dashboard.js?v=9',
   '/js/pages/scansheet.js?v=25',
   '/js/pages/masters.js?v=10',
   '/js/pages/purchase.js?v=7',
@@ -47,8 +47,8 @@ const APP_SHELL = [
   '/js/pages/bom-serial-modal.js?v=4',
   '/js/pages/bom-dispatch.js?v=14',
   '/js/pages/bom.js?v=32',
-  '/js/app.js?v=40',
-  '/js/theme.js?v=2'
+  '/js/app.js?v=41',
+  '/js/theme.js?v=3'
 ];
 
 self.addEventListener('install', (event) => {

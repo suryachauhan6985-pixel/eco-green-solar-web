@@ -2145,10 +2145,12 @@ window.attachColumnFilters = function (table) {
           <i class="fa-solid fa-chevron-down"></i>
         </button>
         <div class="egs-set-panel" id="egsSetThemePanel" style="display:none;">
-          <div class="profile-theme-row" style="padding:8px 0;">
+          <div class="profile-theme-row" style="padding:8px 0; gap:8px;">
             <button type="button" class="theme-btn" data-theme-set="dark"><i class="fa-solid fa-moon"></i> Dark</button>
             <button type="button" class="theme-btn" data-theme-set="gray"><i class="fa-solid fa-circle-half-stroke"></i> Gray</button>
             <button type="button" class="theme-btn" data-theme-set="light"><i class="fa-solid fa-sun"></i> Light</button>
+            <button type="button" class="theme-btn" data-theme-set="emerald"><i class="fa-solid fa-leaf" style="color:#2ecc71;"></i> Emerald</button>
+            <button type="button" class="theme-btn" data-theme-set="ocean"><i class="fa-solid fa-water" style="color:#38bdf8;"></i> Ocean</button>
           </div>
         </div>
       </div>`;
@@ -2337,6 +2339,8 @@ window.attachColumnFilters = function (table) {
   function openAppSettingsPanel(defaultTabId) {
     closeProfileMenu();
     const activeTheme = (typeof window.getAppTheme === 'function') ? window.getAppTheme() : 'dark';
+    const activeFont = (typeof window.getAppFont === 'function') ? window.getAppFont() : 'segoe';
+    const activeAvatar = (typeof window.getAppAvatarColor === 'function') ? window.getAppAvatarColor() : 'gold';
     const currentRole = window.currentUserRole || 'User';
     const isAdmin = currentRole === 'SuperAdmin' || currentRole === 'Admin';
     const currentUsername = window.currentUsername || 'user';
@@ -2536,16 +2540,63 @@ window.attachColumnFilters = function (table) {
 
         <!-- 4. Appearance Tab -->
         <div class="settings-panel" id="tab-theme">
+          <!-- 1. 5 High-Contrast Enterprise Themes -->
           <div class="settings-card">
-            <div class="settings-card-title"><i class="fa-solid fa-circle-half-stroke" style="color:var(--gold);"></i> Theme &amp; Color Mode</div>
-            <p class="note" style="margin:0 0 12px 0;">Select your preferred workspace color theme.</p>
-            <div class="profile-theme-row" style="max-width:320px;">
-              <button type="button" class="theme-btn${activeTheme === 'dark' ? ' active' : ''}" data-theme-set="dark" title="Dark"><i class="fa-solid fa-moon"></i> Dark</button>
-              <button type="button" class="theme-btn${activeTheme === 'gray' ? ' active' : ''}" data-theme-set="gray" title="Gray"><i class="fa-solid fa-circle-half-stroke"></i> Gray</button>
-              <button type="button" class="theme-btn${activeTheme === 'light' ? ' active' : ''}" data-theme-set="light" title="Light"><i class="fa-solid fa-sun"></i> Light</button>
+            <div class="settings-card-title"><i class="fa-solid fa-circle-half-stroke" style="color:var(--gold);"></i> Workspace Themes (5 High-Contrast Presets)</div>
+            <p class="note" style="margin:0 0 12px 0;">Select your preferred high-contrast workspace color theme (tested for zero glare &amp; crisp AAA readability).</p>
+            <div class="profile-theme-row">
+              <button type="button" class="theme-btn${activeTheme === 'dark' ? ' active' : ''}" data-theme-set="dark" title="Midnight Dark"><i class="fa-solid fa-moon"></i> Midnight Dark</button>
+              <button type="button" class="theme-btn${activeTheme === 'gray' ? ' active' : ''}" data-theme-set="gray" title="Charcoal Slate"><i class="fa-solid fa-circle-half-stroke"></i> Charcoal Slate</button>
+              <button type="button" class="theme-btn${activeTheme === 'light' ? ' active' : ''}" data-theme-set="light" title="Cloud Light"><i class="fa-solid fa-sun"></i> Cloud Light</button>
+              <button type="button" class="theme-btn${activeTheme === 'emerald' ? ' active' : ''}" data-theme-set="emerald" title="Solar Emerald"><i class="fa-solid fa-leaf" style="color:#2ecc71;"></i> Solar Emerald</button>
+              <button type="button" class="theme-btn${activeTheme === 'ocean' ? ' active' : ''}" data-theme-set="ocean" title="Deep Ocean"><i class="fa-solid fa-water" style="color:#38bdf8;"></i> Deep Ocean</button>
             </div>
           </div>
-          <div class="settings-card">
+
+          <!-- 2. Official Enterprise Typography & Font Family -->
+          <div class="settings-card" style="margin-top:16px;">
+            <div class="settings-card-title"><i class="fa-solid fa-font" style="color:var(--blue);"></i> System Typography &amp; Font Family</div>
+            <p class="note" style="margin:0 0 12px 0;">Select an official, high-legibility enterprise typeface (no cursive, only clean professional fonts).</p>
+            <div class="font-selector-grid">
+              <button type="button" class="theme-btn${activeFont === 'segoe' ? ' active' : ''}" data-font-set="segoe" style="font-family:'Segoe UI', system-ui, sans-serif; justify-content:flex-start; padding:10px 14px;">
+                <i class="fa-solid fa-font" style="font-size:12px;"></i> Segoe UI (System)
+              </button>
+              <button type="button" class="theme-btn${activeFont === 'inter' ? ' active' : ''}" data-font-set="inter" style="font-family:'Inter', sans-serif; justify-content:flex-start; padding:10px 14px;">
+                <i class="fa-solid fa-font" style="font-size:12px;"></i> Inter Modern
+              </button>
+              <button type="button" class="theme-btn${activeFont === 'roboto' ? ' active' : ''}" data-font-set="roboto" style="font-family:'Roboto', sans-serif; justify-content:flex-start; padding:10px 14px;">
+                <i class="fa-solid fa-font" style="font-size:12px;"></i> Roboto Corporate
+              </button>
+              <button type="button" class="theme-btn${activeFont === 'jakarta' ? ' active' : ''}" data-font-set="jakarta" style="font-family:'Plus Jakarta Sans', sans-serif; justify-content:flex-start; padding:10px 14px;">
+                <i class="fa-solid fa-font" style="font-size:12px;"></i> Plus Jakarta
+              </button>
+              <button type="button" class="theme-btn${activeFont === 'outfit' ? ' active' : ''}" data-font-set="outfit" style="font-family:'Outfit', sans-serif; justify-content:flex-start; padding:10px 14px;">
+                <i class="fa-solid fa-font" style="font-size:12px;"></i> Outfit Tech
+              </button>
+              <button type="button" class="theme-btn${activeFont === 'jetbrains' ? ' active' : ''}" data-font-set="jetbrains" style="font-family:'JetBrains Mono', monospace; justify-content:flex-start; padding:10px 14px;">
+                <i class="fa-solid fa-terminal" style="font-size:12px;"></i> JetBrains Mono
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. Avatar Circle / Background Color Customizer -->
+          <div class="settings-card" style="margin-top:16px;">
+            <div class="settings-card-title"><i class="fa-solid fa-circle-user" style="color:var(--gold);"></i> User Avatar Circle Accent Color</div>
+            <p class="note" style="margin:0 0 12px 0;">Customize the background badge and border color of your profile avatar across the sidebar and headers.</p>
+            <div class="avatar-palette-row">
+              <button type="button" class="avatar-color-btn${activeAvatar === 'gold' ? ' active' : ''}" data-avatar-set="gold" title="Solar Gold" style="background:linear-gradient(135deg, #D4AF37, #B6952C); color:#111; border:2px solid #D4AF37;">A</button>
+              <button type="button" class="avatar-color-btn${activeAvatar === 'blue' ? ' active' : ''}" data-avatar-set="blue" title="Royal Blue" style="background:linear-gradient(135deg, #3B8ED0, #2563EB); color:#fff; border:2px solid #3B8ED0;">A</button>
+              <button type="button" class="avatar-color-btn${activeAvatar === 'emerald' ? ' active' : ''}" data-avatar-set="emerald" title="Emerald Green" style="background:linear-gradient(135deg, #2ECC71, #27AE60); color:#fff; border:2px solid #2ECC71;">A</button>
+              <button type="button" class="avatar-color-btn${activeAvatar === 'purple' ? ' active' : ''}" data-avatar-set="purple" title="Purple Violet" style="background:linear-gradient(135deg, #9B59B6, #8E44AD); color:#fff; border:2px solid #9B59B6;">A</button>
+              <button type="button" class="avatar-color-btn${activeAvatar === 'crimson' ? ' active' : ''}" data-avatar-set="crimson" title="Crimson Red" style="background:linear-gradient(135deg, #E74C3C, #C0392B); color:#fff; border:2px solid #E74C3C;">A</button>
+              <button type="button" class="avatar-color-btn${activeAvatar === 'cyan' ? ' active' : ''}" data-avatar-set="cyan" title="Cyan Teal" style="background:linear-gradient(135deg, #00C0EF, #0097A7); color:#fff; border:2px solid #00C0EF;">A</button>
+              <button type="button" class="avatar-color-btn${activeAvatar === 'amber' ? ' active' : ''}" data-avatar-set="amber" title="Sunset Amber" style="background:linear-gradient(135deg, #F39C12, #E67E22); color:#fff; border:2px solid #F39C12;">A</button>
+              <button type="button" class="avatar-color-btn${activeAvatar === 'slate' ? ' active' : ''}" data-avatar-set="slate" title="Slate Titanium" style="background:linear-gradient(135deg, #64748B, #475569); color:#fff; border:2px solid #64748B;">A</button>
+            </div>
+          </div>
+
+          <!-- 4. Display Density & Animation -->
+          <div class="settings-card" style="margin-top:16px;">
             <div class="settings-card-title"><i class="fa-solid fa-table-cells" style="color:var(--blue);"></i> Display Density &amp; Animation</div>
             <div style="display:flex; flex-direction:column; gap:14px; margin-top:12px;">
               <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
@@ -2565,6 +2616,7 @@ window.attachColumnFilters = function (table) {
             </div>
           </div>
 
+          <!-- 5. Dashboard Widgets Launcher -->
           <div class="settings-card" style="margin-top:16px;">
             <div class="settings-card-title"><i class="fa-solid fa-sliders" style="color:var(--blue);"></i> Dashboard Widgets &amp; Metrics</div>
             <p style="margin:0 0 14px; font-size:12.5px; color:var(--txt-muted);">

@@ -204,11 +204,6 @@ window.PAGES.dashboard = {
           </div>
         </div>
       </div>
-
-      <!-- Floating Customize Trigger (Guarantees permanent accessibility under all conditions) -->
-      <button type="button" class="dash-floating-customize-btn" id="dashFloatingCustomizeBtn" title="Customize Dashboard Metrics &amp; Layout">
-        <i class="fa-solid fa-sliders"></i> <span>Customize Layout</span>
-      </button>
     </div>`,
   init() {
     function getCategoryIcon(cat) {
@@ -523,11 +518,6 @@ window.PAGES.dashboard = {
     const customizeBtn = document.getElementById('dashCustomizeBtn');
     if (customizeBtn) {
       customizeBtn.addEventListener('click', openCustomizerModal);
-    }
-
-    const floatCustBtn = document.getElementById('dashFloatingCustomizeBtn');
-    if (floatCustBtn) {
-      floatCustBtn.addEventListener('click', openCustomizerModal);
     }
 
     // Live Network Users Session Tracker

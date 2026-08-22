@@ -14,20 +14,52 @@
 <link rel="icon" href="assets/icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="icon" href="assets/icons/icon-512.png" sizes="512x512" type="image/png">
 <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <script>
-/* Apply saved theme BEFORE CSS paints to avoid flash of wrong theme */
+/* Apply saved theme, font and avatar BEFORE CSS paints to avoid flash */
 (function(){
   try {
+    var allowedThemes = ['dark', 'gray', 'light', 'emerald', 'ocean'];
     var t = localStorage.getItem('egs-theme') || 'dark';
-    if (t !== 'light' && t !== 'gray' && t !== 'dark') t = 'dark';
+    if (!allowedThemes.includes(t)) t = 'dark';
     document.documentElement.setAttribute('data-theme', t);
+
+    var fontMap = {
+      'segoe': "'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif",
+      'inter': "'Inter', system-ui, -apple-system, sans-serif",
+      'roboto': "'Roboto', system-ui, -apple-system, sans-serif",
+      'jakarta': "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
+      'outfit': "'Outfit', system-ui, -apple-system, sans-serif",
+      'jetbrains': "'JetBrains Mono', monospace"
+    };
+    var f = localStorage.getItem('egs-font') || 'segoe';
+    if (fontMap[f]) document.documentElement.style.setProperty('--font-main', fontMap[f]);
+
+    var avatarPalette = {
+      'gold': { bg: 'linear-gradient(135deg, #D4AF37, #B6952C)', txt: '#111111', border: '#D4AF37' },
+      'blue': { bg: 'linear-gradient(135deg, #3B8ED0, #2563EB)', txt: '#FFFFFF', border: '#3B8ED0' },
+      'emerald': { bg: 'linear-gradient(135deg, #2ECC71, #27AE60)', txt: '#FFFFFF', border: '#2ECC71' },
+      'purple': { bg: 'linear-gradient(135deg, #9B59B6, #8E44AD)', txt: '#FFFFFF', border: '#9B59B6' },
+      'crimson': { bg: 'linear-gradient(135deg, #E74C3C, #C0392B)', txt: '#FFFFFF', border: '#E74C3C' },
+      'cyan': { bg: 'linear-gradient(135deg, #00C0EF, #0097A7)', txt: '#FFFFFF', border: '#00C0EF' },
+      'amber': { bg: 'linear-gradient(135deg, #F39C12, #E67E22)', txt: '#FFFFFF', border: '#F39C12' },
+      'slate': { bg: 'linear-gradient(135deg, #64748B, #475569)', txt: '#FFFFFF', border: '#64748B' }
+    };
+    var a = localStorage.getItem('egs-avatar') || 'gold';
+    if (avatarPalette[a]) {
+      document.documentElement.style.setProperty('--avatar-bg', avatarPalette[a].bg);
+      document.documentElement.style.setProperty('--avatar-txt', avatarPalette[a].txt);
+      document.documentElement.style.setProperty('--avatar-border', avatarPalette[a].border);
+    }
   } catch (e) {
     document.documentElement.setAttribute('data-theme', 'dark');
   }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=85">
+<link rel="stylesheet" href="css/style.css?v=86">
 <!-- Barcode/QR camera scanning (Sheets feature) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <!-- XLSX parsing for Sheets "Import CSV/XLSX" (CSV import needs no library) -->
@@ -148,7 +180,7 @@
 <!-- Sheets (Scan To Sheet) feature: offline localStorage layer, loaded before its page module -->
 <script src="js/data/sheets-store.js?v=4"></script>
 <!-- Each page's markup + data lives in its own file, like dashboard.py / masters.py in the desktop app -->
-<script src="js/pages/dashboard.js?v=8"></script>
+<script src="js/pages/dashboard.js?v=9"></script>
 <script src="js/pages/scansheet.js?v=25"></script>
 <script src="js/pages/masters.js?v=10"></script>
 <script src="js/pages/purchase.js?v=7"></script>
@@ -176,7 +208,7 @@
 <script src="js/pages/bom-dispatch.js?v=14"></script>
 <script src="js/pages/bom.js?v=32"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
-<script src="js/app.js?v=40"></script>
+<script src="js/app.js?v=41"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -202,6 +234,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script src="js/theme.js?v=2"></script>
+<script src="js/theme.js?v=3"></script>
 </body>
 </html>

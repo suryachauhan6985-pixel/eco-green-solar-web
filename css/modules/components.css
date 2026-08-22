@@ -1038,4 +1038,85 @@ html[data-theme="light"] .settings-email-input {
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
+/* Settings Appearance: Theme, Typography & Avatar Palette Customizers */
+.profile-theme-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.theme-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: var(--input-bg);
+  color: var(--txt);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.theme-btn:hover {
+  background: var(--panel-alt);
+  border-color: var(--blue);
+  color: var(--blue);
+  transform: translateY(-1px);
+}
+
+.theme-btn.active {
+  background: rgba(59, 142, 208, 0.18);
+  border-color: var(--blue);
+  color: var(--blue);
+  box-shadow: 0 0 12px rgba(59, 142, 208, 0.25);
+  font-weight: 700;
+}
+
+.font-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.avatar-palette-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.avatar-color-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+  border: none;
+  outline: none;
+}
+
+.avatar-color-btn:hover {
+  transform: scale(1.15);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+}
+
+.avatar-color-btn.active {
+  outline: 3px solid var(--txt);
+  outline-offset: 3px;
+  transform: scale(1.15);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.4);
+}
+
 

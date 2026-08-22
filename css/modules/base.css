@@ -1,9 +1,10 @@
-/* =====================================================================
-   Theme tokens
-   - Default (:root) = Dark
-   - html[data-theme="light"] / "gray" override the same variables
-   - Prefer var(--*) everywhere so no white-on-white / low-contrast text
-   ===================================================================== */
+:root{
+  --font-main: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+  --avatar-bg: linear-gradient(135deg, #D4AF37, #B6952C);
+  --avatar-txt: #111111;
+  --avatar-border: #D4AF37;
+}
+
 :root,
 html[data-theme="dark"]{
   --bg:#111111;
@@ -91,11 +92,67 @@ html[data-theme="gray"]{
   color-scheme:dark;
 }
 
+html[data-theme="emerald"]{
+  --bg:#0C1A15;
+  --nav:#12251E;
+  --input-bg:#1A362C;
+  --panel:#152B23;
+  --panel-alt:#10221C;
+  --card:#173027;
+  --table-bg:#0F211B;
+  --table-header:#1B382E;
+  --nav-btn-bg:#1A362C;
+  --txt:#F2FAF6;
+  --txt-muted:#A4C6B8;
+  --txt-label:#D2E8DE;
+  --border:#264E40;
+  --border-light:#386F5C;
+  --gold:#F1C40F;
+  --gold-dim:#CBA309;
+  --blue:#38BDF8;
+  --blue-hover:#0EA5E9;
+  --green:#2ECC71;
+  --red:#F87171;
+  --orange:#FBBF24;
+  --purple:#A78BFA;
+  --shadow:0 8px 24px rgba(0,0,0,.45);
+  --overlay-bg:rgba(12,26,21,0.75);
+  color-scheme:dark;
+}
+
+html[data-theme="ocean"]{
+  --bg:#0B1320;
+  --nav:#111D31;
+  --input-bg:#1A2B47;
+  --panel:#14233C;
+  --panel-alt:#0E192C;
+  --card:#162742;
+  --table-bg:#0D1728;
+  --table-header:#1B2F4F;
+  --nav-btn-bg:#1A2B47;
+  --txt:#F0F6FC;
+  --txt-muted:#9DB4D2;
+  --txt-label:#CBDCF0;
+  --border:#263F66;
+  --border-light:#395A8F;
+  --gold:#F59E0B;
+  --gold-dim:#D97706;
+  --blue:#38BDF8;
+  --blue-hover:#0EA5E9;
+  --green:#34D399;
+  --red:#F87171;
+  --orange:#FB923C;
+  --purple:#C084FC;
+  --shadow:0 8px 24px rgba(0,0,0,.45);
+  --overlay-bg:rgba(11,19,32,0.75);
+  color-scheme:dark;
+}
+
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
 body{
   background:var(--bg); color:var(--txt);
-  font-family:'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+  font-family:var(--font-main);
   -webkit-font-smoothing:antialiased;
 }
 a{color:inherit;text-decoration:none;}
