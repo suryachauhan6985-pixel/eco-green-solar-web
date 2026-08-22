@@ -882,3 +882,97 @@ html[data-theme="light"] kbd.egs-kbd {
   box-shadow: 0 2px 0 rgba(15, 23, 42, 0.15);
 }
 
+/* =====================================================================
+   MODERN HOVER TOOLTIPS & INFO BUTTONS (.info-btn, .egs-tooltip)
+   ===================================================================== */
+.info-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-light);
+  color: var(--txt-muted);
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+  margin-left: 6px;
+  position: relative;
+  outline: none;
+}
+.info-btn i {
+  color: inherit !important;
+  transition: transform 0.22s ease;
+  pointer-events: none;
+}
+.info-btn:hover, .info-btn:focus-visible {
+  color: var(--blue) !important;
+  border-color: var(--blue);
+  background: rgba(59, 142, 208, 0.15);
+  box-shadow: 0 0 12px rgba(59, 142, 208, 0.28);
+  transform: scale(1.1);
+}
+.info-btn:hover i {
+  transform: scale(1.08);
+}
+
+.egs-tooltip {
+  position: fixed;
+  z-index: 999999;
+  background: #1e2025;
+  color: #f1f3f5;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  max-width: 340px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px) scale(0.96);
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  word-break: break-word;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+html[data-theme="light"] .egs-tooltip {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18), 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+.egs-tooltip.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.egs-tooltip::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: inherit;
+  border: inherit;
+  border-right: none;
+  border-bottom: none;
+  transform: rotate(45deg);
+}
+.egs-tooltip.arrow-bottom::after {
+  bottom: -5px;
+  left: calc(var(--arrow-x, 50%) - 4px);
+  border-top: none;
+  border-left: none;
+  border-right: 1px solid inherit;
+  border-bottom: 1px solid inherit;
+}
+.egs-tooltip.arrow-top::after {
+  top: -5px;
+  left: calc(var(--arrow-x, 50%) - 4px);
+}
+
+

@@ -465,12 +465,105 @@ window.focusInvalidField = function focusInvalidField(el) {
     return window.showPopup({ type: 'info', title: title || 'Information', message: message || '', timer: timer });
   };
 
-  // ---------- Info buttons (project-wide) ----------
+  // ---------- Modern Hover Tooltips & Info Buttons (project-wide) ----------
+  let activeTooltipEl = null;
+  let tooltipHideTimeout = null;
+
+  function getTooltipContainer() {
+    let el = document.getElementById('egsGlobalTooltip');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'egsGlobalTooltip';
+      el.className = 'egs-tooltip';
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  function hideTooltip() {
+    if (activeTooltipEl) {
+      activeTooltipEl.classList.remove('show');
+      activeTooltipEl = null;
+    }
+  }
+
+  function showTooltipFor(target) {
+    if (!target) return;
+    const msg = target.dataset.info || target.dataset.tooltip || target.getAttribute('title');
+    if (!msg) return;
+
+    // Suppress native browser title tooltip while custom tooltip is active
+    if (target.getAttribute('title')) {
+      target.dataset.tooltip = target.getAttribute('title');
+      target.removeAttribute('title');
+    }
+
+    if (tooltipHideTimeout) clearTimeout(tooltipHideTimeout);
+
+    const tooltip = getTooltipContainer();
+    tooltip.innerHTML = `<i class="fa-solid fa-circle-info" style="color:var(--blue); margin-right:5px;"></i>${msg}`;
+    tooltip.className = 'egs-tooltip';
+
+    // Position tooltip relative to target
+    const rect = target.getBoundingClientRect();
+    const tooltipWidth = Math.min(340, Math.max(160, msg.length * 7 + 40));
+    tooltip.style.width = 'max-content';
+    tooltip.style.maxWidth = `${tooltipWidth}px`;
+
+    // Render offscreen first to measure height
+    tooltip.style.left = '-9999px';
+    tooltip.style.top = '-9999px';
+    tooltip.classList.add('show');
+    const tipRect = tooltip.getBoundingClientRect();
+
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const placeAbove = spaceAbove >= tipRect.height + 12 || spaceAbove > spaceBelow;
+
+    let top = placeAbove ? (rect.top - tipRect.height - 8) : (rect.bottom + 8);
+    let left = rect.left + (rect.width / 2) - (tipRect.width / 2);
+
+    // Viewport horizontal bounds clamp
+    const minLeft = 10;
+    const maxLeft = window.innerWidth - tipRect.width - 10;
+    const clampedLeft = Math.max(minLeft, Math.min(maxLeft, left));
+
+    // Arrow positioning
+    const arrowX = rect.left + (rect.width / 2) - clampedLeft;
+    tooltip.style.setProperty('--arrow-x', `${Math.max(12, Math.min(tipRect.width - 12, arrowX))}px`);
+
+    tooltip.className = `egs-tooltip ${placeAbove ? 'arrow-bottom' : 'arrow-top'} show`;
+    tooltip.style.left = `${clampedLeft}px`;
+    tooltip.style.top = `${top}px`;
+    activeTooltipEl = tooltip;
+  }
+
+  document.addEventListener('mouseover', (e) => {
+    const target = e.target.closest('.info-btn, [data-info], [data-tooltip]');
+    if (target) showTooltipFor(target);
+  });
+
+  document.addEventListener('mouseout', (e) => {
+    const target = e.target.closest('.info-btn, [data-info], [data-tooltip]');
+    if (target) {
+      if (tooltipHideTimeout) clearTimeout(tooltipHideTimeout);
+      tooltipHideTimeout = setTimeout(hideTooltip, 60);
+    }
+  });
+
+  document.addEventListener('focusin', (e) => {
+    const target = e.target.closest('.info-btn, [data-info], [data-tooltip]');
+    if (target) showTooltipFor(target);
+  });
+
+  document.addEventListener('focusout', () => hideTooltip());
+  window.addEventListener('scroll', () => hideTooltip(), true);
+
   document.addEventListener('click', (e) => {
     const infoBtn = e.target.closest('.info-btn');
     if (!infoBtn) return;
     e.stopPropagation();
-    const msg = infoBtn.dataset.info;
+    const msg = infoBtn.dataset.info || infoBtn.dataset.tooltip;
     if (msg && window.showToast) window.showToast(msg, 'info', 5000);
   });
 

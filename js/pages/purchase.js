@@ -1188,56 +1188,61 @@ window.PAGES.purchase = {
       }).join('');
 
       const modalContent = `
-        <div style="min-width:320px; max-width:860px; width:100%;">
-          <div class="form-grid cols-2" style="margin-bottom:12px; gap:12px;">
+        <div style="width:100%; min-width:100%;">
+          <div class="form-grid cols-2" style="margin-bottom:16px; gap:16px; background:rgba(255,255,255,0.02); border:1px solid var(--border-light); border-radius:12px; padding:14px 18px;">
             <div class="field">
-              <label style="font-weight:700; margin-bottom:4px;">Select BOM Kit Template <span class="req">*</span></label>
-              <select id="purKitSelectModal" style="height:38px;">${kitOptions}</select>
+              <label style="font-weight:700; margin-bottom:6px; font-size:12.5px; color:var(--txt);"><i class="fa-solid fa-layer-group" style="color:var(--blue); margin-right:6px;"></i>Select BOM Kit Template <span class="req">*</span></label>
+              <select id="purKitSelectModal" style="height:40px; font-size:13.5px; font-weight:600;">${kitOptions}</select>
             </div>
             <div class="field">
-              <label style="font-weight:700; margin-bottom:4px;">Base Multiplier (Set All Quantities)</label>
-              <input type="number" id="purKitMultiplierModal" value="1" min="1" step="1" style="height:38px;">
+              <label style="font-weight:700; margin-bottom:6px; font-size:12.5px; color:var(--txt);"><i class="fa-solid fa-calculator" style="color:var(--gold); margin-right:6px;"></i>Base Multiplier (Set All Quantities)</label>
+              <input type="number" id="purKitMultiplierModal" value="1" min="1" step="1" style="height:40px; font-size:14px; font-weight:700; color:var(--gold);" placeholder="1">
             </div>
           </div>
 
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin:14px 0 8px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-weight:700; font-size:13.5px; color:var(--gold);"><i class="fa-solid fa-list-check"></i> Kit Items &amp; Quantities</span>
-              <span id="purKitSelectedBadge" style="font-size:11px; padding:2px 8px; border-radius:999px; background:rgba(34,197,94,0.15); color:var(--green); font-weight:700;">0 selected</span>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin:16px 0 10px; padding:0 4px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-weight:800; font-size:14px; color:var(--gold); display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-list-check"></i> Kit Items &amp; Quantities</span>
+              <span id="purKitSelectedBadge" style="font-size:11.5px; padding:3px 10px; border-radius:999px; background:rgba(34,197,94,0.15); color:var(--green); font-weight:700; border:1px solid rgba(34,197,94,0.3);">0 selected</span>
             </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <input type="text" id="purKitSearchInput" placeholder="🔍 Filter items..." style="height:30px; width:170px; font-size:12px; padding:4px 8px; border-radius:6px;">
-              <button type="button" class="btn btn-ghost btn-sm" id="purKitSelectAllBtn" style="padding:3px 8px; font-size:11.5px;"><i class="fa-solid fa-check-double"></i> All</button>
-              <button type="button" class="btn btn-ghost btn-sm" id="purKitDeselectAllBtn" style="padding:3px 8px; font-size:11.5px;">None</button>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="position:relative; width:240px;">
+                <input type="text" id="purKitSearchInput" placeholder="🔍 Search kit items..." style="height:34px; width:100%; font-size:12.5px; padding:6px 12px; border-radius:8px;">
+              </div>
+              <button type="button" class="btn btn-ghost btn-sm" id="purKitSelectAllBtn" style="padding:6px 12px; font-size:12px; font-weight:700;"><i class="fa-solid fa-check-double"></i> Select All</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="purKitDeselectAllBtn" style="padding:6px 12px; font-size:12px; font-weight:700;">Deselect All</button>
             </div>
           </div>
 
-          <div class="table-wrap" style="max-height:380px; overflow-y:auto; margin-bottom:16px; border:1px solid var(--border-light); border-radius:8px; background:var(--card-bg);">
+          <div class="table-wrap" style="max-height:calc(75vh - 230px); min-height:300px; overflow-y:auto; margin-bottom:18px; border:1px solid var(--border); border-radius:10px; background:var(--card);">
             <table style="width:100%; border-collapse:collapse;" id="purKitPreviewTable">
               <thead>
-                <tr style="background:rgba(255,255,255,0.03); position:sticky; top:0; z-index:2;">
-                  <th style="width:36px; text-align:center; padding:8px 6px; border-bottom:1px solid var(--border);"><input type="checkbox" id="purKitMasterCheckbox" checked></th>
-                  <th style="text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); font-size:12px;">Category</th>
-                  <th style="text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); font-size:12px;">Item Name</th>
-                  <th style="text-align:center; width:90px; padding:8px 6px; border-bottom:1px solid var(--border); font-size:12px;">Qty / Kit</th>
-                  <th style="text-align:center; width:120px; padding:8px 10px; border-bottom:1px solid var(--border); font-size:12px; color:var(--green);">Inward Qty</th>
+                <tr style="background:var(--table-header); position:sticky; top:0; z-index:2;">
+                  <th style="width:48px; text-align:center; padding:10px 8px; border-bottom:1px solid var(--border);"><input type="checkbox" id="purKitMasterCheckbox" checked style="cursor:pointer; width:16px; height:16px;"></th>
+                  <th style="width:200px; text-align:left; padding:10px 14px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:700;">Category</th>
+                  <th style="text-align:left; padding:10px 14px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:700;">Item Name &amp; Specifications</th>
+                  <th style="width:110px; text-align:center; padding:10px 10px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:700;">Qty / Kit</th>
+                  <th style="width:140px; text-align:center; padding:10px 14px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:700; color:var(--green);">Inward Qty</th>
                 </tr>
               </thead>
               <tbody id="purKitPreviewTbody"></tbody>
             </table>
           </div>
 
-          <div class="actions-row" style="justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div style="font-size:12px; color:var(--txt-muted);"><i class="fa-solid fa-circle-info"></i> You can independently edit each item's quantity above.</div>
-            <div style="display:flex; gap:8px;">
-              <button type="button" class="btn btn-green" id="purKitConfirmImportBtn"><i class="fa-solid fa-file-import"></i> Import Selected Items into Purchase</button>
-              <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+          <div class="actions-row" style="justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding-top:4px;">
+            <div style="font-size:12.5px; color:var(--txt-muted); display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-circle-info" style="color:var(--blue); font-size:14px;"></i>
+              <span>You can modify individual quantities directly in the table before importing.</span>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button type="button" class="btn btn-ghost" onclick="closeModal()" style="min-width:100px;">Cancel</button>
+              <button type="button" class="btn btn-green" id="purKitConfirmImportBtn" style="padding:10px 20px; font-size:13.5px;"><i class="fa-solid fa-file-import"></i> Import Selected Items into Purchase</button>
             </div>
           </div>
         </div>
       `;
 
-      window.openModal('Inward from BOM Kit Template', modalContent);
+      window.openModal('Inward from BOM Kit Template', modalContent, { size: 'xl' });
 
       const selectEl = document.getElementById('purKitSelectModal');
       const multEl = document.getElementById('purKitMultiplierModal');
