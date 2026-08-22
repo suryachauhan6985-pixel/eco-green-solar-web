@@ -217,7 +217,6 @@ html[data-theme="light"] .brand-logo-img{
   pointer-events: none;
   opacity: 0;
   transform: translateZ(0);
-  transition: width 0.3s cubic-bezier(0.1, 0.9, 0.2, 1), opacity 0.2s ease;
 }
 html[data-theme="emerald"] .egs-top-progress {
   background: linear-gradient(90deg, #10B981 0%, #2ECC71 50%, #A7F3D0 85%, #FFFFFF 100%);
@@ -230,15 +229,6 @@ html[data-theme="ocean"] .egs-top-progress {
 html[data-theme="light"] .egs-top-progress {
   background: linear-gradient(90deg, #D97706 0%, #F59E0B 50%, #D4AF37 85%, #B45309 100%);
   box-shadow: 0 0 8px rgba(217, 119, 6, 0.8);
-}
-.egs-top-progress.active {
-  opacity: 1;
-  width: 78%;
-}
-.egs-top-progress.done {
-  width: 100%;
-  opacity: 0;
-  transition: width 0.12s ease-out, opacity 0.35s ease 0.12s;
 }
 
 /* Hardware-Accelerated High Performance Containers */

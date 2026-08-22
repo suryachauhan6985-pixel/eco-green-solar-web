@@ -28,34 +28,98 @@
 //   in yet", which is normal and not an error to react to.
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// GLOBAL LOADING INDICATORS — Sleek Top Progress Bar + Action Loader
-// Gives instant feedback for every API call without jarring screen flashes.
+// GLOBAL LOADING INDICATORS — Unidirectional Top Progress Bar + Action Loader
+// Progresses strictly forward (0 -> 100% -> fade out). Never bounces back.
 // ---------------------------------------------------------------------------
 let __egsLoaderCount = 0;
 let __egsLoaderTimer = null;
-let __egsTopBarEl = null;
 
-function ensureTopProgressBar() {
-  if (__egsTopBarEl) return __egsTopBarEl;
-  __egsTopBarEl = document.getElementById('egsTopProgressBar');
-  if (!__egsTopBarEl) {
-    __egsTopBarEl = document.createElement('div');
-    __egsTopBarEl.id = 'egsTopProgressBar';
-    __egsTopBarEl.className = 'egs-top-progress';
-    document.body.appendChild(__egsTopBarEl);
+const topProgress = {
+  el: null,
+  percent: 0,
+  trickleTimer: null,
+  resetTimer: null,
+
+  init() {
+    if (this.el) return this.el;
+    this.el = document.getElementById('egsTopProgressBar');
+    if (!this.el) {
+      this.el = document.createElement('div');
+      this.el.id = 'egsTopProgressBar';
+      this.el.className = 'egs-top-progress';
+      document.body.appendChild(this.el);
+    }
+    return this.el;
+  },
+
+  start() {
+    this.init();
+    if (this.resetTimer) {
+      clearTimeout(this.resetTimer);
+      this.resetTimer = null;
+    }
+
+    if (this.percent === 0 || this.percent >= 100) {
+      this.percent = 0;
+      this.el.style.transition = 'none';
+      this.el.style.width = '0%';
+      this.el.style.opacity = '1';
+      void this.el.offsetWidth; // flush layout
+    }
+
+    this.set(Math.max(this.percent, 38));
+
+    if (!this.trickleTimer) {
+      this.trickleTimer = setInterval(() => {
+        if (this.percent < 88) {
+          const step = (88 - this.percent) * 0.18;
+          this.set(this.percent + step);
+        }
+      }, 160);
+    }
+  },
+
+  set(pct) {
+    this.init();
+    // Strictly unidirectional forward progression
+    if (pct < this.percent && this.percent < 100) return;
+    this.percent = Math.min(100, Math.max(0, pct));
+    this.el.style.transition = 'width 0.24s cubic-bezier(0.1, 0.85, 0.25, 1), opacity 0.25s ease';
+    this.el.style.width = `${this.percent}%`;
+    this.el.style.opacity = '1';
+  },
+
+  done() {
+    if (!this.el) return;
+    if (this.trickleTimer) {
+      clearInterval(this.trickleTimer);
+      this.trickleTimer = null;
+    }
+    this.set(100);
+
+    if (this.resetTimer) clearTimeout(this.resetTimer);
+    this.resetTimer = setTimeout(() => {
+      if (this.el) {
+        this.el.style.transition = 'opacity 0.25s ease';
+        this.el.style.opacity = '0';
+        setTimeout(() => {
+          if (this.el && this.percent >= 100) {
+            this.percent = 0;
+            this.el.style.transition = 'none';
+            this.el.style.width = '0%';
+          }
+        }, 260);
+      }
+      this.resetTimer = null;
+    }, 120);
   }
-  return __egsTopBarEl;
-}
+};
 
 window.showLoader = function showLoader(title, sub) {
   __egsLoaderCount++;
   
-  // 1. Instant Top Micro-Progress Bar (Zero perceived latency)
-  const topBar = ensureTopProgressBar();
-  if (topBar) {
-    topBar.classList.remove('done');
-    topBar.classList.add('active');
-  }
+  // 1. Unidirectional Top Micro-Progress Bar (Instant, strictly forward)
+  topProgress.start();
 
   // 2. Full-Screen Overlay (for long requests or explicit titled actions)
   const el = document.getElementById('loaderOverlay');
@@ -108,14 +172,7 @@ window.hideLoader = function hideLoader(force) {
       const textWrap = el.querySelector('.loader-text-wrap');
       if (textWrap) textWrap.innerHTML = '';
     }
-    const topBar = ensureTopProgressBar();
-    if (topBar) {
-      topBar.classList.remove('active');
-      topBar.classList.add('done');
-      setTimeout(() => {
-        if (__egsLoaderCount === 0) topBar.classList.remove('done');
-      }, 400);
-    }
+    topProgress.done();
   }
 };
 
