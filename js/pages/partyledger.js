@@ -33,8 +33,8 @@ window.PAGES.partyledger = {
         </div>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <button class="btn btn-green" id="btnCreateLedger" style="padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-plus"></i> Create New Ledger</button>
-          <button class="btn btn-ghost" id="btnImportLedgers" style="background:#1F7A4D; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-file-import"></i> Upload Excel</button>
-          <button class="btn btn-ghost" id="btnDownloadTemplate" style="background:#4B6584; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-download"></i> Download Template</button>
+          <button class="btn btn-green" id="btnImportLedgers" style="background:#10b981; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-file-import"></i> Upload Excel</button>
+          <button class="btn btn-blue" id="btnDownloadTemplate" style="background:#3b82f6; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-download"></i> Download Template</button>
           <button class="btn btn-ghost" id="btnRefreshParties" style="padding:6px 12px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-rotate"></i> Refresh</button>
           <input type="file" id="plImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
         </div>
@@ -310,7 +310,7 @@ window.PAGES.partyledger = {
             <span class="p-tag ${tagClass}">${p.type}</span>
           </td>
           <td>
-            <span style="color:var(--txt-muted);">${p.address && p.address !== '-' ? p.address : '-'}</span>
+            <span class="pl-address-txt">${p.address && p.address !== '-' ? p.address : '<span style="color:var(--txt-muted);">-</span>'}</span>
           </td>
           <td>
             ${p.mobile && p.mobile !== '-' ? `<span style="color:var(--blue); font-weight:600;"><i class="fa-solid fa-phone" style="font-size:10px; margin-right:4px;"></i>${p.mobile}</span>` : '<span style="color:var(--txt-muted);">-</span>'}

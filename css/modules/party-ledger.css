@@ -218,15 +218,31 @@ html[data-theme="light"] .pl-table tbody tr.kbd-active {
   white-space: nowrap;
 }
 
-/* Green Buttons & Action Icons text color fix */
+/* Address Text - Dark high contrast font */
+.pl-address-txt {
+  color: var(--txt);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+
+html[data-theme="light"] .pl-address-txt {
+  color: #0f172a !important;
+  font-weight: 600;
+}
+
+/* Action Buttons & Icons text color fix */
 .btn-green,
 .btn-green *,
+.btn-blue,
+.btn-blue *,
 .btn-table-stmt,
 .btn-table-stmt *,
 #btnCreateLedger,
 #btnCreateLedger *,
 #btnImportLedgers,
 #btnImportLedgers *,
+#btnDownloadTemplate,
+#btnDownloadTemplate *,
 #btnOpenStatement,
 #btnOpenStatement * {
   color: #ffffff !important;
