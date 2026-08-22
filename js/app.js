@@ -487,7 +487,7 @@ window.checkPermissionsOnboarding = function () {
 // =====================================================================
 // IOS & ANDROID PWA INSTALL APPLICATION GUIDE
 // =====================================================================
-window.openAppInstallGuide = function () {
+window.openAppInstallGuide = async function () {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
@@ -496,16 +496,19 @@ window.openAppInstallGuide = function () {
     return;
   }
 
-  // If deferred prompt exists on Android / Chrome:
+  // 1. Direct Native PWA installation prompt trigger:
   if (window.__egsDeferredInstallPrompt) {
-    window.__egsDeferredInstallPrompt.prompt();
-    window.__egsDeferredInstallPrompt.userChoice.then((choice) => {
-      if (choice.outcome === 'accepted') {
-        if (window.showToast) window.showToast('Installing Eco Green Solar ERP...', 'success');
+    try {
+      window.__egsDeferredInstallPrompt.prompt();
+      const choice = await window.__egsDeferredInstallPrompt.userChoice;
+      if (choice && choice.outcome === 'accepted') {
+        if (window.showToast) window.showToast('Installing Eco Green Solar ERP on your device...', 'success');
+        window.__egsDeferredInstallPrompt = null;
       }
-      window.__egsDeferredInstallPrompt = null;
-    });
-    return;
+      return;
+    } catch (e) {
+      console.warn('Install prompt error:', e);
+    }
   }
 
   if (document.getElementById('egsInstallModal')) return;
@@ -514,11 +517,11 @@ window.openAppInstallGuide = function () {
     <div class="egs-onboard-overlay" id="egsInstallModal" onclick="if(event.target===this) this.remove();">
       <div class="egs-onboard-card">
         <div class="egs-onboard-header">
-          <div class="egs-onboard-logo" style="background:linear-gradient(135deg, #1A1A1A, #333); border-color:var(--gold);">
-            <img src="assets/icons/icon-192.png" style="width:48px; height:48px; border-radius:12px;" alt="Logo">
+          <div class="egs-onboard-logo" style="background:transparent; border:none; width:auto; height:auto;">
+            <img src="assets/icons/icon-192.png" style="width:58px; height:58px; border-radius:14px; box-shadow:0 4px 16px rgba(0,0,0,0.4);" alt="Logo">
           </div>
           <h3 class="egs-onboard-title">Install Eco Green Solar ERP</h3>
-          <p class="egs-onboard-sub">Install this Enterprise Application onto your device Home Screen for native app performance, full-screen UI and zero address bar.</p>
+          <p class="egs-onboard-sub">Install this Enterprise Application onto your device for native app performance, full-screen UI and zero address bar.</p>
         </div>
 
         ${isIOS ? `
@@ -544,17 +547,20 @@ window.openAppInstallGuide = function () {
         ` : `
         <div class="egs-ios-guide">
           <strong style="color:var(--blue); font-size:14px; display:flex; align-items:center; gap:8px;">
-            <i class="fa-brands fa-chrome" style="font-size:18px;"></i> Android / Windows / macOS PWA Install
+            <i class="fa-solid fa-download" style="font-size:16px;"></i> Direct Browser Installation
           </strong>
-          <p style="font-size:12.5px; color:var(--txt-muted); margin:8px 0 0; line-height:1.5;">
-            Click the <strong>Install</strong> icon in the browser address bar or use Chrome/Edge menu <strong>(⋮) ➔ "Install Eco Green Solar ERP"</strong> to install as a standalone native desktop/mobile app.
+          <p style="font-size:12.5px; color:var(--txt-muted); margin:8px 0 12px; line-height:1.5;">
+            Click the <strong>Install icon <i class="fa-solid fa-arrow-up-right-from-square"></i> in your browser's address bar</strong> or click the button below to launch the official installer:
           </p>
+          <button type="button" class="btn btn-blue" id="btnModalTriggerPrompt" style="width:100%; font-weight:700; padding:10px;">
+            <i class="fa-solid fa-download"></i> Click to Open Install Prompt
+          </button>
         </div>
         `}
 
         <div class="actions-row" style="margin-top:18px; justify-content:flex-end;">
-          <button type="button" class="btn btn-blue" onclick="document.getElementById('egsInstallModal').remove();">
-            <i class="fa-solid fa-check"></i> Got It
+          <button type="button" class="btn btn-ghost" onclick="document.getElementById('egsInstallModal').remove();">
+            Close
           </button>
         </div>
       </div>
@@ -562,6 +568,23 @@ window.openAppInstallGuide = function () {
   `;
 
   document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  const triggerBtn = document.getElementById('btnModalTriggerPrompt');
+  if (triggerBtn) {
+    triggerBtn.addEventListener('click', async () => {
+      if (window.__egsDeferredInstallPrompt) {
+        window.__egsDeferredInstallPrompt.prompt();
+        const choice = await window.__egsDeferredInstallPrompt.userChoice;
+        if (choice && choice.outcome === 'accepted') {
+          if (window.showToast) window.showToast('Installing Eco Green Solar ERP...', 'success');
+          const m = document.getElementById('egsInstallModal');
+          if (m) m.remove();
+        }
+      } else {
+        if (window.showToast) window.showToast('Please click the Install / App icon in your browser address bar at the top right.', 'info', 4000);
+      }
+    });
+  }
 };
 
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -3200,19 +3223,17 @@ window.attachColumnFilters = function (table) {
           <div class="settings-card egs-about-hero-clean">
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
               <div style="display:flex; align-items:center; gap:14px;">
-                <div class="egs-about-icon-badge">
-                  <i class="fa-solid fa-solar-panel"></i>
-                </div>
+                <img src="assets/icons/icon-192.png" style="width:52px; height:52px; border-radius:12px; box-shadow:0 4px 14px rgba(0,0,0,0.35); flex-shrink:0;" alt="Eco Green Solar Logo">
                 <div>
-                  <div style="font-size:17px; font-weight:800; color:var(--txt); letter-spacing:-0.01em;">Eco Green Solar ERP</div>
+                  <div style="font-size:17px; font-weight:700; color:var(--txt); letter-spacing:-0.01em;">Eco Green Solar ERP</div>
                   <div style="font-size:12.5px; color:var(--txt-muted); margin-top:2px;">Enterprise Operations &amp; Inventory Suite</div>
                   <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
-                    <span class="pill pill-gold" style="font-size:11px; font-weight:700; padding:2px 10px;">v1.10.0 Enterprise</span>
-                    <span class="pill pill-green" style="font-size:11px; font-weight:700; padding:2px 10px;">Build 111 (Live)</span>
+                    <span class="pill pill-gold" style="font-size:11px; padding:2px 10px;">v1.10.0 Enterprise</span>
+                    <span class="pill pill-green" style="font-size:11px; padding:2px 10px;">Build 112 (Live)</span>
                   </div>
                 </div>
               </div>
-              <button type="button" class="btn btn-blue" id="btnAboutCheckUpdate" style="padding:9px 18px; font-size:13px; font-weight:700;">
+              <button type="button" class="btn btn-blue" id="btnAboutCheckUpdate" style="padding:9px 18px; font-size:13px;">
                 <i class="fa-solid fa-arrows-rotate"></i> Check for Updates
               </button>
             </div>
@@ -3226,7 +3247,7 @@ window.attachColumnFilters = function (table) {
             <div class="egs-about-specs-table">
               <div class="egs-about-spec-row">
                 <div class="egs-spec-key"><i class="fa-solid fa-code-branch"></i> Release Track</div>
-                <div class="egs-spec-val" style="color:var(--gold); font-weight:700;">v1.10.0 Enterprise Monolith</div>
+                <div class="egs-spec-val" style="color:var(--gold);">v1.10.0 Enterprise Monolith</div>
               </div>
               <div class="egs-about-spec-row">
                 <div class="egs-spec-key"><i class="fa-solid fa-server"></i> Backend Engine</div>
@@ -3238,11 +3259,11 @@ window.attachColumnFilters = function (table) {
               </div>
               <div class="egs-about-spec-row">
                 <div class="egs-spec-key"><i class="fa-solid fa-bolt"></i> Memory &amp; Cache</div>
-                <div class="egs-spec-val" style="color:var(--green);"><i class="fa-solid fa-circle-check"></i> L1 RAM + L2 In-Memory Fast-Path</div>
+                <div class="egs-spec-val" style="color:var(--green);"><i class="fa-solid fa-circle-check" style="font-size:11px;"></i> L1 RAM + L2 In-Memory Fast-Path</div>
               </div>
               <div class="egs-about-spec-row">
                 <div class="egs-spec-key"><i class="fa-solid fa-hard-drive"></i> PWA &amp; Offline Engine</div>
-                <div class="egs-spec-val">Service Worker v111 + IndexedDB Sync</div>
+                <div class="egs-spec-val">Service Worker v112 + IndexedDB Sync</div>
               </div>
               <div class="egs-about-spec-row">
                 <div class="egs-spec-key"><i class="fa-solid fa-shield-halved"></i> Security &amp; Network</div>
@@ -3254,7 +3275,7 @@ window.attachColumnFilters = function (table) {
               </div>
               <div class="egs-about-spec-row">
                 <div class="egs-spec-key"><i class="fa-solid fa-user-tie"></i> Lead Developer</div>
-                <div class="egs-spec-val" style="color:var(--gold); font-weight:700;">Sumit Chauhan</div>
+                <div class="egs-spec-val" style="color:var(--gold);">Sumit Chauhan</div>
               </div>
             </div>
           </div>
