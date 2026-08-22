@@ -204,3 +204,41 @@ html[data-theme="light"] .brand-logo-img{
   animation: offlinePulse 2s infinite;
 }
 
+/* ---------- Sleek Top-Edge Loading Bar (YouTube / GitHub style) ---------- */
+.egs-top-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3.5px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--gold, #D4AF37), #2ecc71, #38bdf8);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.8), 0 0 6px rgba(56, 189, 248, 0.8);
+  z-index: 999999;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateZ(0);
+  transition: width 0.3s cubic-bezier(0.1, 0.9, 0.2, 1), opacity 0.25s ease;
+}
+.egs-top-progress.active {
+  opacity: 1;
+  width: 78%;
+}
+.egs-top-progress.done {
+  width: 100%;
+  opacity: 0;
+  transition: width 0.12s ease-out, opacity 0.35s ease 0.12s;
+}
+
+/* Hardware-Accelerated High Performance Containers */
+#content {
+  contain: layout style;
+  transform: translateZ(0);
+}
+.table-wrap {
+  contain: layout style paint;
+}
+.btn:active {
+  transform: scale(0.97) !important;
+  transition: transform 0.05s ease !important;
+}
+

@@ -26,18 +26,59 @@ async function parseApiResponse(res, path) {
   return data;
 }
 
+// High-Speed Client In-Memory API Cache
+// Drops repeated dropdown and master read queries to 0ms during tab navigation
+const clientApiCache = new Map();
+const CLIENT_CACHE_TTL_MS = 25000; // 25s TTL for ultra-fast tab switches
+
+function getCachedApiResponse(path) {
+  const item = clientApiCache.get(path);
+  if (!item) return null;
+  if (Date.now() > item.expiry) {
+    clientApiCache.delete(path);
+    return null;
+  }
+  return item.data;
+}
+
+function setCachedApiResponse(path, data, ttlMs = CLIENT_CACHE_TTL_MS) {
+  clientApiCache.set(path, {
+    data,
+    expiry: Date.now() + ttlMs
+  });
+}
+
+function clearClientApiCache() {
+  clientApiCache.clear();
+}
+window.clearClientApiCache = clearClientApiCache;
+
 window.Api = {
   async get(path, opts) {
-    // opts.silent = true → skip the global full-screen loader overlay for
-    // this call (see js/app.js's fetch wrapper). Use this for background
-    // polling (e.g. live session refresh) so it doesn't flash the loader
-    // every few seconds; leave it off for normal user-initiated loads.
+    // Check if endpoint is eligible for instant in-memory read (Masters & settings)
+    const isCacheEligible = path.startsWith('/masters/') || path.startsWith('/auth/app-settings');
+    const bypassCache = opts && (opts.bypassCache || opts.fresh);
+
+    if (isCacheEligible && !bypassCache) {
+      const cached = getCachedApiResponse(path);
+      if (cached !== null && cached !== undefined) {
+        // Return cloned copy instantly (0ms)
+        return JSON.parse(JSON.stringify(cached));
+      }
+    }
+
     const init = { method: 'GET' };
     if (opts && opts.silent) init.egsSilent = true;
     const res = await fetch(`${window.API_BASE}${path}`, init);
-    return parseApiResponse(res, path);
+    const data = await parseApiResponse(res, path);
+
+    if (isCacheEligible) {
+      setCachedApiResponse(path, data);
+    }
+    return data;
   },
   async post(path, body) {
+    clearClientApiCache();
     const res = await fetch(`${window.API_BASE}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -46,6 +87,7 @@ window.Api = {
     return parseApiResponse(res, path);
   },
   async put(path, body) {
+    clearClientApiCache();
     const res = await fetch(`${window.API_BASE}${path}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -54,6 +96,7 @@ window.Api = {
     return parseApiResponse(res, path);
   },
   async delete(path, body) {
+    clearClientApiCache();
     const res = await fetch(`${window.API_BASE}${path}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },

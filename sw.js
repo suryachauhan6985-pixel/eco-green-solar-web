@@ -1,26 +1,26 @@
-const CACHE_NAME = 'eco-green-solar-erp-v105';
+const CACHE_NAME = 'eco-green-solar-erp-v106';
 
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/css/style.css?v=87',
-  '/css/modules/base.css?v=87',
-  '/css/modules/layout.css?v=87',
-  '/css/modules/components.css?v=87',
-  '/css/modules/dashboard.css?v=87',
-  '/css/modules/responsive.css?v=87',
-  '/css/modules/party-ledger.css?v=87',
-  '/css/modules/auth.css?v=87',
-  '/css/modules/bom.css?v=87',
-  '/css/modules/scan-sheet.css?v=87',
+  '/css/style.css?v=88',
+  '/css/modules/base.css?v=88',
+  '/css/modules/layout.css?v=88',
+  '/css/modules/components.css?v=88',
+  '/css/modules/dashboard.css?v=88',
+  '/css/modules/responsive.css?v=88',
+  '/css/modules/party-ledger.css?v=88',
+  '/css/modules/auth.css?v=88',
+  '/css/modules/bom.css?v=88',
+  '/css/modules/scan-sheet.css?v=88',
   '/assets/icon.ico',
   '/assets/icons/icon-192.png?v=2',
   '/assets/icons/icon-512.png?v=2',
   '/assets/icons/icon-1024.png?v=2',
   '/assets/logo.png',
   '/assets/challan_logo.png',
-  '/js/data/api.js?v=4',
+  '/js/data/api.js?v=5',
   '/js/data/store.js?v=3',
   '/js/data/auth-store.js?v=7',
   '/js/data/sheets-store.js?v=4',
@@ -47,7 +47,7 @@ const APP_SHELL = [
   '/js/pages/bom-serial-modal.js?v=4',
   '/js/pages/bom-dispatch.js?v=14',
   '/js/pages/bom.js?v=32',
-  '/js/app.js?v=42',
+  '/js/app.js?v=43',
   '/js/theme.js?v=4'
 ];
 

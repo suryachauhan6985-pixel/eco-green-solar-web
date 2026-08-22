@@ -28,17 +28,36 @@
 //   in yet", which is normal and not an error to react to.
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// GLOBAL LOADING OVERLAY — window.showLoader() / window.hideLoader().
-// Uses a counter + intelligent debounce so that fast cascading API calls
-// (e.g. dropdown cascades on Purchase/Sales/Masters) never flash the
-// full-screen overlay for a fraction of a second. Long-running requests
-// (> 200ms) or explicit actions with titles (Backup, Dispatch, etc.) show smoothly.
+// GLOBAL LOADING INDICATORS — Sleek Top Progress Bar + Action Loader
+// Gives instant feedback for every API call without jarring screen flashes.
 // ---------------------------------------------------------------------------
 let __egsLoaderCount = 0;
 let __egsLoaderTimer = null;
+let __egsTopBarEl = null;
+
+function ensureTopProgressBar() {
+  if (__egsTopBarEl) return __egsTopBarEl;
+  __egsTopBarEl = document.getElementById('egsTopProgressBar');
+  if (!__egsTopBarEl) {
+    __egsTopBarEl = document.createElement('div');
+    __egsTopBarEl.id = 'egsTopProgressBar';
+    __egsTopBarEl.className = 'egs-top-progress';
+    document.body.appendChild(__egsTopBarEl);
+  }
+  return __egsTopBarEl;
+}
 
 window.showLoader = function showLoader(title, sub) {
   __egsLoaderCount++;
+  
+  // 1. Instant Top Micro-Progress Bar (Zero perceived latency)
+  const topBar = ensureTopProgressBar();
+  if (topBar) {
+    topBar.classList.remove('done');
+    topBar.classList.add('active');
+  }
+
+  // 2. Full-Screen Overlay (for long requests or explicit titled actions)
   const el = document.getElementById('loaderOverlay');
   if (!el) return;
 
@@ -55,7 +74,6 @@ window.showLoader = function showLoader(title, sub) {
       ${sub ? `<div class="loader-sub">${sub}</div>` : ''}
     `;
     textWrap.style.display = 'flex';
-    // User-initiated action with title: show immediately
     if (__egsLoaderTimer) { clearTimeout(__egsLoaderTimer); __egsLoaderTimer = null; }
     el.classList.add('active');
     return;
@@ -64,15 +82,14 @@ window.showLoader = function showLoader(title, sub) {
     textWrap.style.display = 'none';
   }
 
-  // Fast background / cascading API calls (< 200ms) will finish before this fires,
-  // preventing rapid blinking and strobe flickering during page loads.
+  // Fast background API calls (< 250ms) finish without showing the blocking dark overlay
   if (!__egsLoaderTimer && !el.classList.contains('active')) {
     __egsLoaderTimer = setTimeout(() => {
       if (__egsLoaderCount > 0) {
         el.classList.add('active');
       }
       __egsLoaderTimer = null;
-    }, 200);
+    }, 250);
   }
 };
 
@@ -90,6 +107,14 @@ window.hideLoader = function hideLoader(force) {
       el.classList.remove('active');
       const textWrap = el.querySelector('.loader-text-wrap');
       if (textWrap) textWrap.innerHTML = '';
+    }
+    const topBar = ensureTopProgressBar();
+    if (topBar) {
+      topBar.classList.remove('active');
+      topBar.classList.add('done');
+      setTimeout(() => {
+        if (__egsLoaderCount === 0) topBar.classList.remove('done');
+      }, 400);
     }
   }
 };
@@ -829,11 +854,15 @@ window.attachColumnFilters = function (table) {
   window.addEventListener('resize', closeMenu);
 };
 
+  let searchDebounceRaf = null;
   searchInputs.forEach((input) => {
     input.addEventListener('input', () => {
       currentSearchQuery = input.value;
       searchInputs.forEach((other) => { if (other !== input) other.value = input.value; });
-      applyGlobalTableSearch(currentSearchQuery);
+      if (searchDebounceRaf) cancelAnimationFrame(searchDebounceRaf);
+      searchDebounceRaf = requestAnimationFrame(() => {
+        applyGlobalTableSearch(currentSearchQuery);
+      });
     });
   });
 
@@ -3644,7 +3673,7 @@ window.attachColumnFilters = function (table) {
   }
   document.addEventListener('click', closeProfileMenu);
 
-  // Build sidebar buttons from the registered pages
+  // Build sidebar buttons from the registered pages with Hover Pre-fetching
   NAV_ORDER.forEach((id) => {
     const page = window.PAGES[id];
     if (!page) return;
@@ -3653,6 +3682,18 @@ window.attachColumnFilters = function (table) {
     btn.dataset.tab = id;
     btn.innerHTML = `<i class="fa-solid ${page.icon}"></i> <span>${page.name}</span>`;
     btn.onclick = () => go(id);
+
+    // Hover Pre-fetching: Warms up API caches before user even finishes clicking
+    btn.addEventListener('mouseenter', () => {
+      if (!window.Api || !window.currentAuthToken) return;
+      if (['masters', 'purchase', 'sales', 'bom', 'stockassign'].includes(id)) {
+        window.Api.get('/masters/categories', { silent: true }).catch(() => {});
+        window.Api.get('/masters/brands', { silent: true }).catch(() => {});
+        window.Api.get('/masters/items', { silent: true }).catch(() => {});
+        window.Api.get('/masters/warehouses', { silent: true }).catch(() => {});
+      }
+    }, { passive: true });
+
     navScroll.appendChild(btn);
   });
 
