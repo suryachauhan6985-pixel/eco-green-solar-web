@@ -16,9 +16,11 @@ function createBomTrackRegisterModule(ctx) {
       document.body.classList.remove('no-scroll');
     }
     if (ctx.registerCloseBtn) ctx.registerCloseBtn.addEventListener('click', closeRegisterModal);
+    let regMouseDownTarget = null;
     if (ctx.registerOverlay) {
+      ctx.registerOverlay.addEventListener('mousedown', (e) => { regMouseDownTarget = e.target; });
       ctx.registerOverlay.addEventListener('click', (e) => {
-        if (e.target === ctx.registerOverlay) ctx.closeRegisterModal();
+        if (e.target === ctx.registerOverlay && regMouseDownTarget === ctx.registerOverlay) ctx.closeRegisterModal();
       });
     }
 

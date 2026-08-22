@@ -456,7 +456,13 @@ window.PAGES.partyledger = {
     });
     document.getElementById('lfCancel').addEventListener('click', closeLedgerForm);
     document.getElementById('closeLedgerForm').addEventListener('click', closeLedgerForm);
-    lfOverlay.addEventListener('click', closeLedgerForm);
+    let lfMouseDownTarget = null;
+    if (lfOverlay) {
+      lfOverlay.addEventListener('mousedown', (e) => { lfMouseDownTarget = e.target; });
+      lfOverlay.addEventListener('click', (e) => {
+        if (e.target === lfOverlay && lfMouseDownTarget === lfOverlay) closeLedgerForm();
+      });
+    }
 
     document.getElementById('lfSave').addEventListener('click', async () => {
       const name = document.getElementById('lfName').value.trim();
@@ -678,7 +684,13 @@ window.PAGES.partyledger = {
     if (btnDeleteVoucher) btnDeleteVoucher.addEventListener('click', () => {
       if (stRef) deleteVoucher(stRef.movement, stRef.key);
     });
-    stOverlay.addEventListener('click', closeStatement);
+    let stMouseDownTarget = null;
+    if (stOverlay) {
+      stOverlay.addEventListener('mousedown', (e) => { stMouseDownTarget = e.target; });
+      stOverlay.addEventListener('click', (e) => {
+        if (e.target === stOverlay && stMouseDownTarget === stOverlay) closeStatement();
+      });
+    }
     document.getElementById('btnExportStatement').addEventListener('click', () => {
       if (!selected || !selectedRows.length) { window.openModal('No Data', '<p>No records found to export.</p>'); return; }
       const header = ['Movement', 'Date', 'Serial No', 'Item', 'Category', 'Ref/Invoice No', 'Warehouse', 'Status'];

@@ -2300,8 +2300,18 @@ window.attachColumnFilters = function (table) {
     }
     overlay.classList.add('show');
   };
+
+  let modalMouseDownTarget = null;
+  document.addEventListener('mousedown', (e) => {
+    modalMouseDownTarget = e.target;
+  }, true);
+
   window.closeModal = function (event, skipCallback) {
-    if (event && event.target !== event.currentTarget) return;
+    if (event) {
+      if (event.target !== event.currentTarget) return;
+      // Prevent accidental close when selecting text inside textarea/inputs and releasing mouse on backdrop
+      if (modalMouseDownTarget && modalMouseDownTarget !== event.currentTarget) return;
+    }
     const overlay = document.getElementById('modalOverlay');
     overlay.classList.remove('show');
     overlay.classList.remove('modal-fullscreen');
