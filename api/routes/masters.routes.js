@@ -1,14 +1,17 @@
 module.exports = function registerMastersRoutes(app, deps) {
-  const { pool, route, requireRole, hashPassword } = deps;
+  const { pool, route, requireRole, hashPassword, masterCache } = deps;
   const VALID_ROLES = ['User', 'Admin', 'SuperAdmin'];
 
   // ---------------------------------------------------------------------------
-  // MASTER MANAGEMENT SYSTEM ENDPOINTS
+  // MASTER MANAGEMENT SYSTEM ENDPOINTS (ACCELERATED WITH IN-MEMORY FAST-PATH)
   // ---------------------------------------------------------------------------
 
   // Categories
   app.get('/api/masters/categories', route(async (req, res) => {
+    const cached = masterCache && masterCache.get('categories');
+    if (cached) return res.json(cached);
     const [rows] = await pool.query(`SELECT c.id, c.name, COALESCE(c.watt_mandatory,0) AS watt_mandatory, COALESCE(c.serial_mandatory,0) AS serial_mandatory, (SELECT COUNT(*) FROM items i WHERE i.category = c.name) AS item_count FROM categories c ORDER BY c.name ASC`);
+    if (masterCache) masterCache.set('categories', rows);
     res.json(rows);
   }));
 
@@ -16,6 +19,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     const { name, watt_mandatory, serial_mandatory } = req.body;
     if (!name) return res.status(400).json({ error: 'Category name required' });
     await pool.query(`INSERT INTO categories (name, watt_mandatory, serial_mandatory) VALUES (?, ?, ?)`, [name, watt_mandatory ? 1 : 0, serial_mandatory ? 1 : 0]);
+    if (masterCache) { masterCache.del('categories'); masterCache.del('items'); }
     res.json({ success: true });
   }));
 
@@ -24,6 +28,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     const { name } = req.params;
     const { watt_mandatory } = req.body;
     await pool.query(`UPDATE categories SET watt_mandatory = ? WHERE name = ?`, [watt_mandatory ? 1 : 0, name]);
+    if (masterCache) { masterCache.del('categories'); masterCache.del('items'); }
     res.json({ success: true });
   }));
 
@@ -32,6 +37,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     const { name } = req.params;
     const { serial_mandatory } = req.body;
     await pool.query(`UPDATE categories SET serial_mandatory = ? WHERE name = ?`, [serial_mandatory ? 1 : 0, name]);
+    if (masterCache) { masterCache.del('categories'); masterCache.del('items'); }
     res.json({ success: true });
   }));
 
@@ -53,6 +59,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     await pool.query(`DELETE FROM items WHERE category = ?`, [name]);
     const [result] = await pool.query(`DELETE FROM categories WHERE name = ?`, [name]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Category not found.' });
+    if (masterCache) { masterCache.del('categories'); masterCache.del('items'); masterCache.del('brands'); }
     res.json({ success: true });
   }));
 
@@ -61,14 +68,20 @@ module.exports = function registerMastersRoutes(app, deps) {
   // ---------------------------------------------------------------------------
   app.get('/api/masters/subtypes/:category', route(async (req, res) => {
     const { category } = req.params;
+    const cacheKey = `subtypes:${String(category).toLowerCase()}`;
+    const cached = masterCache && masterCache.get(cacheKey);
+    if (cached) return res.json(cached);
     const [rows] = await pool.query(`SELECT subtype_name FROM subtypes WHERE category_name = ? ORDER BY subtype_name ASC`, [category]);
-    res.json(rows.map(r => r.subtype_name));
+    const mapped = rows.map(r => r.subtype_name);
+    if (masterCache) masterCache.set(cacheKey, mapped);
+    res.json(mapped);
   }));
 
   app.post('/api/masters/subtypes', route(async (req, res) => {
     const { category_name, subtype_name } = req.body;
     if (!category_name || !subtype_name) return res.status(400).json({ error: 'Category and subtype name required' });
     await pool.query(`INSERT INTO subtypes (category_name, subtype_name) VALUES (?, ?)`, [category_name, subtype_name]);
+    if (masterCache) masterCache.delPrefix('subtypes:');
     res.json({ success: true });
   }));
 
@@ -76,6 +89,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     const { category_name, old_name, new_name } = req.body;
     const [result] = await pool.query(`UPDATE subtypes SET subtype_name = ? WHERE category_name = ? AND subtype_name = ?`, [new_name, category_name, old_name]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Original subtype not found.' });
+    if (masterCache) masterCache.delPrefix('subtypes:');
     res.json({ success: true });
   }));
 
@@ -83,6 +97,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     const { category_name, subtype_name } = req.body;
     const [result] = await pool.query(`DELETE FROM subtypes WHERE category_name = ? AND subtype_name = ?`, [category_name, subtype_name]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Subtype not found.' });
+    if (masterCache) masterCache.delPrefix('subtypes:');
     res.json({ success: true });
   }));
 
@@ -90,14 +105,19 @@ module.exports = function registerMastersRoutes(app, deps) {
   // UNITS (UOM) MASTER — previously hardcoded on the frontend
   // ---------------------------------------------------------------------------
   app.get('/api/masters/units', route(async (req, res) => {
+    const cached = masterCache && masterCache.get('units');
+    if (cached) return res.json(cached);
     const [rows] = await pool.query(`SELECT name FROM units ORDER BY name ASC`);
-    res.json(rows.map(r => r.name));
+    const mapped = rows.map(r => r.name);
+    if (masterCache) masterCache.set('units', mapped);
+    res.json(mapped);
   }));
 
   app.post('/api/masters/units', route(async (req, res) => {
     const { name } = req.body;
     if (!name) return res.status(400).json({ error: 'Unit name required' });
     await pool.query(`INSERT INTO units (name) VALUES (?)`, [name]);
+    if (masterCache) { masterCache.del('units'); masterCache.del('items'); }
     res.json({ success: true });
   }));
 
@@ -106,6 +126,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     const [result] = await pool.query(`UPDATE units SET name = ? WHERE name = ?`, [new_name, old_name]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Original unit not found.' });
     await pool.query(`UPDATE items SET uom = ? WHERE uom = ?`, [new_name, old_name]);
+    if (masterCache) { masterCache.del('units'); masterCache.del('items'); }
     res.json({ success: true });
   }));
 
@@ -115,6 +136,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     if (cnt > 0) return res.status(400).json({ error: `Cannot delete '${name}': ${cnt} item(s) using this unit.` });
     const [result] = await pool.query(`DELETE FROM units WHERE name = ?`, [name]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Unit not found.' });
+    if (masterCache) { masterCache.del('units'); masterCache.del('items'); }
     res.json({ success: true });
   }));
 
@@ -125,6 +147,8 @@ module.exports = function registerMastersRoutes(app, deps) {
   // COALESCE(item override, category default) — so old callers that only
   // look at watt/category still work unchanged.
   app.get('/api/masters/items', route(async (req, res) => {
+    const cached = masterCache && masterCache.get('items');
+    if (cached) return res.json(cached);
     const [rows] = await pool.query(`
       SELECT i.id, i.name, i.brand_name, i.watt, i.watt_unit, i.solar_type, i.category, i.uom, i.minimum_stock,
              i.model, i.watt_mandatory, i.serial_mandatory,
@@ -134,6 +158,7 @@ module.exports = function registerMastersRoutes(app, deps) {
       LEFT JOIN categories c ON c.name = i.category
       ORDER BY i.category ASC, i.brand_name ASC
     `);
+    if (masterCache) masterCache.set('items', rows);
     res.json(rows);
   }));
 
@@ -214,6 +239,7 @@ module.exports = function registerMastersRoutes(app, deps) {
       INSERT INTO items (name, brand_name, watt, watt_unit, solar_type, category, uom, minimum_stock, model, watt_mandatory, serial_mandatory) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [name || `${brand_name} ${watt || model || ''}`.trim(), brand_name, watt || 0, normalizeWattUnit(watt_unit), solar_type || '-', category, uom || 'Nos', minimum_stock || 0, model ? String(model).trim() : null, wattOverride, serialOverride]);
+    if (masterCache) { masterCache.del('items'); masterCache.del('categories'); masterCache.del('brands'); }
     res.json({ success: true });
   }));
 
@@ -229,13 +255,11 @@ module.exports = function registerMastersRoutes(app, deps) {
       SET name = ?, brand_name = ?, watt = ?, watt_unit = ?, solar_type = ?, category = ?, uom = ?, minimum_stock = ?, model = ?, watt_mandatory = ?, serial_mandatory = ?
       WHERE id = ?
     `, [name || `${brand_name} ${watt || model || ''}`.trim(), brand_name, watt || 0, normalizeWattUnit(watt_unit), solar_type || '-', category, uom || 'Nos', minimum_stock || 0, model ? String(model).trim() : null, wattOverride, serialOverride, id]);
+    if (masterCache) { masterCache.del('items'); masterCache.del('categories'); masterCache.del('brands'); }
     res.json({ success: true });
   }));
 
-  // Item: delete a single registered item — blocked if any stock_ledger
-  // row (purchased or dispatched) still references it, so a delete can
-  // never silently erase real purchase/sale/stock history. Same guarded
-  // pattern as Units/Warehouses delete above.
+  // Item: delete a single registered item
   app.delete('/api/masters/items/:id', route(async (req, res) => {
     const { id } = req.params;
     const [[{ cnt }]] = await pool.query(`SELECT COUNT(*) AS cnt FROM stock_ledger WHERE item_id = ?`, [id]);
@@ -244,18 +268,23 @@ module.exports = function registerMastersRoutes(app, deps) {
     }
     const [result] = await pool.query(`DELETE FROM items WHERE id = ?`, [id]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Item not found.' });
+    if (masterCache) { masterCache.del('items'); masterCache.del('categories'); masterCache.del('brands'); }
     res.json({ success: true });
   }));
 
   // Warehouses
   app.get('/api/masters/warehouses', route(async (req, res) => {
+    const cached = masterCache && masterCache.get('warehouses');
+    if (cached) return res.json(cached);
     const [rows] = await pool.query(`SELECT w.id, w.name, w.location, (SELECT COUNT(*) FROM stock_ledger sl WHERE sl.warehouse = w.name) AS items_stored FROM warehouses w ORDER BY w.name ASC`);
+    if (masterCache) masterCache.set('warehouses', rows);
     res.json(rows);
   }));
 
   app.post('/api/masters/warehouses', route(async (req, res) => {
     const { name, location } = req.body;
     await pool.query(`INSERT INTO warehouses (name, location) VALUES (?, ?)`, [name, location || '']);
+    if (masterCache) masterCache.del('warehouses');
     res.json({ success: true });
   }));
 
@@ -264,6 +293,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     const [result] = await pool.query(`UPDATE warehouses SET name = ? WHERE name = ?`, [new_name, old_name]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Original warehouse not found.' });
     await pool.query(`UPDATE stock_ledger SET warehouse = ? WHERE warehouse = ?`, [new_name, old_name]);
+    if (masterCache) masterCache.del('warehouses');
     res.json({ success: true });
   }));
 
@@ -273,11 +303,14 @@ module.exports = function registerMastersRoutes(app, deps) {
     if (cnt > 0) return res.status(400).json({ error: `Cannot delete '${name}': ${cnt} stock record(s) tagged with this warehouse.` });
     const [result] = await pool.query(`DELETE FROM warehouses WHERE name = ?`, [name]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Warehouse not found.' });
+    if (masterCache) masterCache.del('warehouses');
     res.json({ success: true });
   }));
 
-  // Dummy placeholder for user registry matching system sessions
+  // Brands
   app.get('/api/masters/brands', route(async (req, res) => {
+    const cached = masterCache && masterCache.get('brands');
+    if (cached) return res.json(cached);
     const [rows] = await pool.query(`
       SELECT brand_name, COUNT(*) AS item_count
       FROM items
@@ -285,6 +318,7 @@ module.exports = function registerMastersRoutes(app, deps) {
       GROUP BY brand_name
       ORDER BY brand_name ASC
     `);
+    if (masterCache) masterCache.set('brands', rows);
     res.json(rows);
   }));
 

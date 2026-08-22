@@ -11,9 +11,11 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
+const compression = require('compression');
 const { corsMiddleware } = require('./config/cors');
 const { pool } = require('./db/pool');
 const { ensureStartupSchema } = require('./db/schema');
+const { masterCache } = require('./utils/cache');
 const { authenticateToken, issueToken, requireRole, setAuthPool } = require('./middleware/auth.middleware');
 const { globalLimiter, mutationLimiter, exportLimiter, loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter } = require('./middleware/rateLimiters');
 const { hashPassword, verifyPassword } = require('./services/passwords');
@@ -53,14 +55,22 @@ app.set('trust proxy', 1);
 // Disable server fingerprinting
 app.disable('x-powered-by');
 
-// HTTP Security Headers Middleware
+// 1. High-Performance Gzip / Deflate Compression Middleware
+// Compresses JSON API payloads and static assets by 70-80% for instant mobile load times
+app.use(compression({
+  threshold: 1024, // Only compress responses above 1KB
+  level: 6 // Optimal balance between compression ratio and CPU usage
+}));
+
+// 2. HTTP Security Headers Middleware
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(self), geolocation=(), microphone=()');
   if (process.env.NODE_ENV === 'production') {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
   next();
 });
@@ -74,13 +84,30 @@ app.use('/api/', mutationLimiter);
 // Parse JSON payloads (20mb for bulk uploads/serials)
 app.use(express.json({ limit: '20mb' }));
 app.use(authenticateToken);
-app.use(express.static(path.join(__dirname, '..')));
+
+// 3. Static Asset Edge & Browser Caching
+app.use(express.static(path.join(__dirname, '..'), {
+  maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0,
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    if (filePath.endsWith('.html') || filePath.endsWith('sw.js') || filePath.endsWith('manifest.webmanifest')) {
+      // Revalidate HTML, Service Worker, and Manifest immediately so deploys reflect without cache delay
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    } else if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff2|woff|ttf|webp)$/i)) {
+      // 1-year immutable edge/browser cache for versioned static assets (?v=...)
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+}));
 
 setAuthPool(pool);
 
 const deps = {
   pool,
   route,
+  masterCache,
   requireRole,
   issueToken,
   hashPassword,
