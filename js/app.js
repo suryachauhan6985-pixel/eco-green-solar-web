@@ -3159,34 +3159,36 @@ window.attachColumnFilters = function (table) {
         <!-- Privacy Policy & Legal Terms Tab -->
         <div class="settings-panel" id="tab-privacy">
           <div class="settings-card">
-            <div class="settings-card-title"><i class="fa-solid fa-shield-halved" style="color:var(--gold);"></i> Enterprise Privacy Policy &amp; Data Security</div>
-            <p style="margin:0 0 12px; font-size:12.5px; color:var(--txt-muted);">
-              Official security terms, data privacy practices, and compliance standards governing Eco Green Solar ERP.
+            <div class="settings-card-title">
+              <span style="display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-shield-halved" style="color:var(--blue);"></i> Enterprise Privacy Policy &amp; Data Security</span>
+            </div>
+            <p style="margin:0 0 14px; font-size:12.5px; color:var(--txt-muted);">
+              Official security terms, data privacy practices, and enterprise compliance standards governing Eco Green Solar ERP.
             </p>
 
             <div class="egs-legal-doc">
               <div class="egs-legal-section">
-                <div class="egs-legal-h4"><i class="fa-solid fa-lock"></i> 1. Enterprise Data Encryption &amp; Security</div>
+                <div class="egs-legal-h4">1. Enterprise Data Encryption &amp; Security</div>
                 <p>All communication between your browser or device and the Eco Green Solar ERP Cloud is protected using 256-bit TLS/SSL encryption and HSTS headers. Sensitive authentication credentials, including passwords and PINs, are irreversibly salted and hashed with bcrypt. User access tokens are cryptographically signed with short-lived expiration.</p>
               </div>
 
               <div class="egs-legal-section">
-                <div class="egs-legal-h4"><i class="fa-solid fa-users-viewfinder"></i> 2. Role-Based Access Control &amp; Audit Logs</div>
+                <div class="egs-legal-h4">2. Role-Based Access Control &amp; Audit Logs</div>
                 <p>System features, pricing, stock ledgers, and BOM dispatches are strictly compartmentalized based on your assigned user role (SuperAdmin, Admin, User). All sensitive transactional actions, master deletions, and batch modifications are permanently logged with user ID, timestamp, and client IP metadata for enterprise accountability.</p>
               </div>
 
               <div class="egs-legal-section">
-                <div class="egs-legal-h4"><i class="fa-solid fa-server"></i> 3. Offline Cache &amp; Device Storage Privacy</div>
+                <div class="egs-legal-h4">3. Offline Cache &amp; Device Storage Privacy</div>
                 <p>When operating in Offline-First mode, scanned serial numbers and pending dispatch records are stored locally within your device's sandboxed IndexedDB and encrypted local storage. This data is strictly private to this device and automatically synchronizes with the central database upon internet restoration.</p>
               </div>
 
               <div class="egs-legal-section">
-                <div class="egs-legal-h4"><i class="fa-solid fa-bell"></i> 4. Push Notifications &amp; Alert Telemetry</div>
+                <div class="egs-legal-h4">4. Push Notifications &amp; Alert Telemetry</div>
                 <p>Device notification tokens and camera permissions are utilized exclusively for physical barcode scanning and real-time operational notifications (e.g. low stock alerts, dispatch generation). No private browsing history, audio recordings, or personal data is collected or transmitted.</p>
               </div>
 
               <div class="egs-legal-section">
-                <div class="egs-legal-h4"><i class="fa-solid fa-database"></i> 5. Data Ownership &amp; Confidentiality</div>
+                <div class="egs-legal-h4">5. Data Ownership &amp; Confidentiality</div>
                 <p>All inventory records, serial scan ledgers, party accounts, and customer details remain the exclusive proprietary property of Eco Green Solar Pvt. Ltd. No third-party data tracking, advertising pixels, or external analytics SDKs are incorporated into this platform.</p>
               </div>
             </div>
@@ -3195,55 +3197,64 @@ window.attachColumnFilters = function (table) {
 
         <!-- About ERP & Live Version Tab -->
         <div class="settings-panel" id="tab-about">
-          <div class="settings-about-hero egs-about-hero">
-            <div style="display:flex; align-items:center; gap:16px;">
-              <img src="assets/icons/icon-192.png" style="width:58px; height:58px; border-radius:14px; box-shadow:0 4px 16px rgba(0,0,0,0.4);" alt="Logo">
-              <div>
-                <div style="font-size:18px; font-weight:800; color:var(--txt);">Eco Green Solar ERP</div>
-                <div style="font-size:12.5px; color:var(--txt-muted); margin-top:2px;">Enterprise Operations &amp; Inventory Management Platform</div>
-                <div style="display:flex; align-items:center; gap:6px; margin-top:6px;">
-                  <span class="pill pill-gold" style="font-size:11px; font-weight:700;">Version 1.10.0</span>
-                  <span class="pill pill-green" style="font-size:11px; font-weight:700;">Build 110 (Live)</span>
+          <div class="settings-card egs-about-hero-clean">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+              <div style="display:flex; align-items:center; gap:14px;">
+                <div class="egs-about-icon-badge">
+                  <i class="fa-solid fa-solar-panel"></i>
+                </div>
+                <div>
+                  <div style="font-size:17px; font-weight:800; color:var(--txt); letter-spacing:-0.01em;">Eco Green Solar ERP</div>
+                  <div style="font-size:12.5px; color:var(--txt-muted); margin-top:2px;">Enterprise Operations &amp; Inventory Suite</div>
+                  <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
+                    <span class="pill pill-gold" style="font-size:11px; font-weight:700; padding:2px 10px;">v1.10.0 Enterprise</span>
+                    <span class="pill pill-green" style="font-size:11px; font-weight:700; padding:2px 10px;">Build 111 (Live)</span>
+                  </div>
                 </div>
               </div>
+              <button type="button" class="btn btn-blue" id="btnAboutCheckUpdate" style="padding:9px 18px; font-size:13px; font-weight:700;">
+                <i class="fa-solid fa-arrows-rotate"></i> Check for Updates
+              </button>
             </div>
-            <button type="button" class="btn btn-blue" id="btnAboutCheckUpdate"><i class="fa-solid fa-arrows-rotate"></i> Check for Updates</button>
           </div>
 
           <div class="settings-card">
-            <div class="settings-card-title"><i class="fa-solid fa-microchip" style="color:var(--blue);"></i> System Specifications &amp; Architecture</div>
-            <div class="egs-spec-grid">
-              <div class="egs-spec-box">
-                <div class="egs-spec-label">System Release</div>
-                <div class="egs-spec-val" style="color:var(--gold);">v1.10.0 Enterprise</div>
+            <div class="settings-card-title">
+              <span style="display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-sliders" style="color:var(--blue);"></i> System Specifications &amp; Environment</span>
+            </div>
+            
+            <div class="egs-about-specs-table">
+              <div class="egs-about-spec-row">
+                <div class="egs-spec-key"><i class="fa-solid fa-code-branch"></i> Release Track</div>
+                <div class="egs-spec-val" style="color:var(--gold); font-weight:700;">v1.10.0 Enterprise Monolith</div>
               </div>
-              <div class="egs-spec-box">
-                <div class="egs-spec-label">Engine Architecture</div>
-                <div class="egs-spec-val">Node.js 20+ Monolith</div>
+              <div class="egs-about-spec-row">
+                <div class="egs-spec-key"><i class="fa-solid fa-server"></i> Backend Engine</div>
+                <div class="egs-spec-val">Node.js 20+ High-Performance Monolith</div>
               </div>
-              <div class="egs-spec-box">
-                <div class="egs-spec-label">Database Cluster</div>
-                <div class="egs-spec-val">MySQL 8.0 Pool (10 Conn)</div>
+              <div class="egs-about-spec-row">
+                <div class="egs-spec-key"><i class="fa-solid fa-database"></i> Database Cluster</div>
+                <div class="egs-spec-val">MySQL 8.0 Concurrency Pool (10 Conn)</div>
               </div>
-              <div class="egs-spec-box">
-                <div class="egs-spec-label">Fast-Path Caching</div>
-                <div class="egs-spec-val" style="color:var(--green);">L1 RAM + L2 In-Memory</div>
+              <div class="egs-about-spec-row">
+                <div class="egs-spec-key"><i class="fa-solid fa-bolt"></i> Memory &amp; Cache</div>
+                <div class="egs-spec-val" style="color:var(--green);"><i class="fa-solid fa-circle-check"></i> L1 RAM + L2 In-Memory Fast-Path</div>
               </div>
-              <div class="egs-spec-box">
-                <div class="egs-spec-label">Offline PWA Engine</div>
-                <div class="egs-spec-val">Service Worker v110</div>
+              <div class="egs-about-spec-row">
+                <div class="egs-spec-key"><i class="fa-solid fa-hard-drive"></i> PWA &amp; Offline Engine</div>
+                <div class="egs-spec-val">Service Worker v111 + IndexedDB Sync</div>
               </div>
-              <div class="egs-spec-box">
-                <div class="egs-spec-label">Network Transport</div>
-                <div class="egs-spec-val">Gzip + HTTP/2 SSL</div>
+              <div class="egs-about-spec-row">
+                <div class="egs-spec-key"><i class="fa-solid fa-shield-halved"></i> Security &amp; Network</div>
+                <div class="egs-spec-val">TLS 1.3 / SSL Encryption + Gzip Transport</div>
               </div>
-              <div class="egs-spec-box">
-                <div class="egs-spec-label">Organization</div>
+              <div class="egs-about-spec-row">
+                <div class="egs-spec-key"><i class="fa-solid fa-building"></i> Organization</div>
                 <div class="egs-spec-val">Eco Green Solar Pvt. Ltd.</div>
               </div>
-              <div class="egs-spec-box">
-                <div class="egs-spec-label">Lead Developer</div>
-                <div class="egs-spec-val" style="color:var(--gold);">Sumit Chauhan</div>
+              <div class="egs-about-spec-row">
+                <div class="egs-spec-key"><i class="fa-solid fa-user-tie"></i> Lead Developer</div>
+                <div class="egs-spec-val" style="color:var(--gold); font-weight:700;">Sumit Chauhan</div>
               </div>
             </div>
           </div>
