@@ -3358,6 +3358,9 @@ window.attachColumnFilters = function (table) {
             <p style="margin:0; font-size:13px; color:var(--txt-muted);">
               1-click XML ledger sync directly into Tally Prime and Busy Accounting software.
             </p>
+          </div>
+        </div>
+
         <!-- ERP Mode & Feature Switches Tab -->
         <div class="settings-panel" id="tab-erp-mode">
           <!-- Card 1: ERP Core Operating Mode -->
@@ -5235,9 +5238,8 @@ window.attachColumnFilters = function (table) {
               typeFilter.dispatchEvent(new Event('change'));
             }
           }
-          if (opts.action === 'create') {
-            const btn = document.getElementById('btnCreateLedger');
-            if (btn) btn.click();
+          if (typeof window.setPartyLedgerMode === 'function') {
+            window.setPartyLedgerMode(opts.action || 'display');
           }
         }
 

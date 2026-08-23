@@ -27,7 +27,7 @@ window.PAGES.partyledger = {
       <!-- HEADER & TOP ACTION TOOLBAR -->
       <div class="pl-header-toolbar">
         <div style="display:flex; align-items:center; gap:10px;">
-          <h3 style="margin:0; font-size:16px; font-weight:800; color:var(--purple); display:flex; align-items:center; gap:8px;">
+          <h3 id="plDirectoryPanelTitle" style="margin:0; font-size:16px; font-weight:800; color:var(--purple); display:flex; align-items:center; gap:8px;">
             <i class="fa-solid fa-folder-tree"></i> Registered &amp; Transaction Ledgers Directory
           </h3>
         </div>
@@ -1645,5 +1645,22 @@ window.PAGES.partyledger = {
       else if (stMonth !== null) stMonth = null;
       renderLevel();
     }
+
+    window.setPartyLedgerMode = function(mode) {
+      window.CURRENT_PARTY_LEDGER_MODE = mode || 'display';
+      const titleEl = document.getElementById('plDirectoryPanelTitle');
+      document.body.classList.toggle('pl-mode-display', mode === 'display');
+      document.body.classList.toggle('pl-mode-create', mode === 'create');
+      document.body.classList.toggle('pl-mode-alter', mode === 'alter');
+
+      if (mode === 'create') {
+        if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-plus-circle" style="color:var(--green);"></i> Party Ledger — Create &amp; Import Studio';
+        if (typeof openForm === 'function') openForm();
+      } else if (mode === 'alter') {
+        if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-pen-to-square" style="color:var(--gold);"></i> Party Ledger — Alter &amp; Modify Ledgers';
+      } else {
+        if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-book-open" style="color:var(--purple);"></i> Party Account Statements &amp; Ledger Directory';
+      }
+    };
   },
 };

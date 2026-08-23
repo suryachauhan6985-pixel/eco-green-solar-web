@@ -533,3 +533,20 @@ html.no-scroll, body.no-scroll, html.egs-modal-locked, body.egs-modal-locked{ove
   outline-offset:-2px;
   background:rgba(59,142,208,.12) !important;
 }
+
+/* ---- Party Ledger Mode Switching: Display / Create / Alter ---- */
+body.pl-mode-display #btnCreateLedger,
+body.pl-mode-display #btnImportLedgers,
+body.pl-mode-display #btnDownloadTemplate,
+body.pl-mode-display #btnEditLedger,
+body.pl-mode-display #btnRegisterLedger,
+body.pl-mode-display #btnDeleteLedger,
+body.pl-mode-display .btn-table-edit,
+body.pl-mode-display .btn-table-reg,
+body.pl-mode-display .btn-table-del {
+  display: none !important;
+}
+
+body.pl-mode-alter #btnCreateLedger {
+  display: none !important;
+}
