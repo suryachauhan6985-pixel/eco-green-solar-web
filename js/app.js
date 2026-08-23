@@ -4686,11 +4686,11 @@ window.attachColumnFilters = function (table) {
       icon: 'fa-folder-open',
       items: [
         { name: 'Party Master & Ledgers', hotkey: 'L', icon: 'fa-address-book', page: 'partyledger' },
-        { name: 'Customer & Supplier Info', hotkey: 'C', icon: 'fa-users', page: 'masters', tab: 'tab-party' },
-        { name: 'Item & Product Master', hotkey: 'I', icon: 'fa-cubes', page: 'masters', tab: 'tab-items' },
-        { name: 'Category & Group Info', hotkey: 'G', icon: 'fa-layer-group', page: 'masters', tab: 'tab-categories' },
-        { name: 'Warehouse / Godown Info', hotkey: 'W', icon: 'fa-warehouse', page: 'masters', tab: 'tab-warehouses', requires: 'warehouse' },
-        { name: 'Brand Master', hotkey: 'B', icon: 'fa-tags', page: 'masters', tab: 'tab-brands' }
+        { name: 'Customer & Supplier Info', hotkey: 'C', icon: 'fa-users', page: 'partyledger', filter: 'Customer' },
+        { name: 'Item & Product Master', hotkey: 'I', icon: 'fa-cubes', page: 'masters', sub: 'item-reg' },
+        { name: 'Category & Group Info', hotkey: 'G', icon: 'fa-layer-group', page: 'masters', sub: 'category' },
+        { name: 'Warehouse / Godown Info', hotkey: 'W', icon: 'fa-warehouse', page: 'masters', sub: 'warehouse', requires: 'warehouse' },
+        { name: 'Brand Master', hotkey: 'B', icon: 'fa-tags', page: 'masters', sub: 'brand' }
       ]
     },
     {
@@ -4703,7 +4703,7 @@ window.attachColumnFilters = function (table) {
       items: [
         { name: 'Purchase Inward (Stock In)', hotkey: 'P', icon: 'fa-truck-ramp-box', page: 'purchase' },
         { name: 'Project Sales & Dispatch', hotkey: 'S', icon: 'fa-handshake', page: 'sales' },
-        { name: 'BOM Kit Assembly & Challan', hotkey: 'B', icon: 'fa-boxes-packing', page: 'bom', requires: 'bom' },
+        { name: 'BOM Kit Assembly & Challan', hotkey: 'B', icon: 'fa-boxes-packing', page: 'bom', action: 'create', requires: 'bom' },
         { name: 'Stock Allocation & Journal', hotkey: 'A', icon: 'fa-tag', page: 'stockassign', requires: 'stock' },
         { name: 'Sales Return & Damage', hotkey: 'R', icon: 'fa-arrow-rotate-left', page: 'returns' },
         { name: 'Serial Number Scan Sheet', hotkey: 'C', icon: 'fa-barcode', page: 'scansheet', requires: 'serial' }
@@ -4739,7 +4739,7 @@ window.attachColumnFilters = function (table) {
           nestedItems: [
             { name: 'Master Inventory Report', hotkey: 'M', icon: 'fa-clipboard-list', page: 'reports', requires: 'stock' },
             { name: 'Low Stock Alert', hotkey: 'L', icon: 'fa-triangle-exclamation', page: 'lowstock', requires: 'stock' },
-            { name: 'BOM Track Register', hotkey: 'B', icon: 'fa-route', page: 'bom', tab: 'tab-track', requires: 'bom' }
+            { name: 'BOM Track Register', hotkey: 'B', icon: 'fa-route', page: 'bom', action: 'track', requires: 'bom' }
           ]
         }
       ]
@@ -4752,9 +4752,9 @@ window.attachColumnFilters = function (table) {
       hotkey: 'U',
       icon: 'fa-gear',
       items: [
-        { name: 'ERP Mode & Feature Controls', hotkey: 'S', icon: 'fa-sliders', action: 'openSettings', tab: 'tab-erp-mode' },
-        { name: 'Master Catalog', hotkey: 'M', icon: 'fa-cube', page: 'masters' },
-        { name: 'User Accounts & Roles', hotkey: 'U', icon: 'fa-users-gear', action: 'openSettings', tab: 'tab-users' },
+        { name: 'ERP Mode & Feature Controls', hotkey: 'S', icon: 'fa-sliders', action: 'openSettings', sub: 'tab-erp-mode' },
+        { name: 'Master Catalog', hotkey: 'M', icon: 'fa-cube', page: 'masters', sub: 'item-reg' },
+        { name: 'User Accounts & Roles', hotkey: 'U', icon: 'fa-users-gear', action: 'openSettings', sub: 'tab-users' },
         { name: 'Backup & Restore', hotkey: 'B', icon: 'fa-cloud-arrow-up', page: 'backup' }
       ]
     }
@@ -4894,7 +4894,7 @@ window.attachColumnFilters = function (table) {
           if (!shouldShowNavItem(sub)) return;
           const subLabelHtml = formatHkLabel(sub.name, sub.hotkey);
           nestedRows += `
-            <div class="egs-flyout-item tier2-item" data-page="${sub.page || ''}" data-tab="${sub.tab || ''}" data-hotkey="${sub.hotkey || ''}">
+            <div class="egs-flyout-item tier2-item" data-page="${sub.page || ''}" data-sub="${sub.sub || sub.tab || ''}" data-action="${sub.action || ''}" data-filter="${sub.filter || ''}" data-hotkey="${sub.hotkey || ''}">
               <span class="item-text"><i class="fa-solid ${sub.icon}" style="color:var(--blue); font-size:12px;"></i> <span>${subLabelHtml}</span></span>
             </div>
           `;
@@ -4912,7 +4912,7 @@ window.attachColumnFilters = function (table) {
         `;
       } else {
         itemsHtml += `
-          <div class="egs-flyout-item tier1-item" data-page="${item.page || ''}" data-tab="${item.tab || ''}" data-action="${item.action || ''}" data-hotkey="${item.hotkey || ''}">
+          <div class="egs-flyout-item tier1-item" data-page="${item.page || ''}" data-sub="${item.sub || item.tab || ''}" data-action="${item.action || ''}" data-filter="${item.filter || ''}" data-hotkey="${item.hotkey || ''}">
             <span class="item-text"><i class="fa-solid ${item.icon}" style="color:var(--blue); font-size:12px;"></i> <span>${itemLabelHtml}</span></span>
           </div>
         `;
@@ -4954,14 +4954,15 @@ window.attachColumnFilters = function (table) {
         }
         e.stopPropagation();
         const page = row.dataset.page;
-        const tab = row.dataset.tab;
+        const sub = row.dataset.sub;
         const action = row.dataset.action;
+        const filter = row.dataset.filter;
 
         closeAllFlyouts();
         if (action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
-          window.openSystemSettingsModal(tab || 'tab-erp-mode');
+          window.openSystemSettingsModal(sub || 'tab-erp-mode');
         } else if (page) {
-          go(page, { tab });
+          go(page, { sub, action, filter });
         }
       });
     });
@@ -4982,9 +4983,11 @@ window.attachColumnFilters = function (table) {
       subRow.addEventListener('click', (e) => {
         e.stopPropagation();
         const page = subRow.dataset.page;
-        const tab = subRow.dataset.tab;
+        const sub = subRow.dataset.sub;
+        const action = subRow.dataset.action;
+        const filter = subRow.dataset.filter;
         closeAllFlyouts();
-        if (page) go(page, { tab });
+        if (page) go(page, { sub, action, filter });
       });
     });
 
@@ -5093,11 +5096,44 @@ window.attachColumnFilters = function (table) {
       }
     }
 
-    if (opts.tab) {
+    if (opts.tab || opts.sub || opts.action || opts.filter) {
       setTimeout(() => {
-        const subTabBtn = document.querySelector(`[data-tab="${opts.tab}"]`);
-        if (subTabBtn) subTabBtn.click();
-      }, 60);
+        const subKey = opts.sub || opts.tab;
+        if (subKey) {
+          const subTabBtn = document.querySelector(
+            `#mastersSubtabs [data-sub="${subKey}"], .subtabs [data-sub="${subKey}"], [data-tab="${subKey}"], #${subKey}`
+          );
+          if (subTabBtn) {
+            subTabBtn.click();
+          }
+        }
+
+        // BOM specific view switching
+        if (id === 'bom') {
+          if (opts.action === 'create' || opts.tab === 'create') {
+            const btn = document.getElementById('bomHomeBtnCreate');
+            if (btn) btn.click();
+          } else if (opts.action === 'track' || opts.tab === 'track') {
+            const btn = document.getElementById('bomHomeBtnTrack');
+            if (btn) btn.click();
+          } else if (opts.action === 'register' || opts.tab === 'register') {
+            const btn = document.getElementById('bomHomeBtnRegister');
+            if (btn) btn.click();
+          } else if (opts.action === 'challan' || opts.tab === 'challan') {
+            const btn = document.getElementById('bomHomeBtnChallanReg');
+            if (btn) btn.click();
+          }
+        }
+
+        // Party Ledger filter switching
+        if (id === 'partyledger' && opts.filter) {
+          const typeFilter = document.getElementById('plTypeFilter');
+          if (typeFilter) {
+            typeFilter.value = opts.filter;
+            typeFilter.dispatchEvent(new Event('change'));
+          }
+        }
+      }, 70);
     }
 
     if (typeof applyGlobalTableSearch === 'function') {
@@ -5112,7 +5148,8 @@ window.attachColumnFilters = function (table) {
     }, 400);
 
     try {
-      const newHash = opts.tab ? `#${id}:${opts.tab}` : `#${id}`;
+      const subParam = opts.sub || opts.tab || opts.action;
+      const newHash = subParam ? `#${id}:${subParam}` : `#${id}`;
       if (window.location.hash !== newHash) {
         history.replaceState(null, '', newHash);
       }
