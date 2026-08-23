@@ -2731,6 +2731,131 @@ window.attachColumnFilters = function (table) {
     }
   }
 
+  function getKeyboardShortcutsContentHtml() {
+    return `
+      <div style="display:flex; flex-direction:column; gap:16px; font-size:13px;">
+        <!-- Top Summary Banner -->
+        <div style="background:rgba(30, 58, 138, 0.15); border:1px solid rgba(59, 130, 246, 0.3); border-radius:10px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <div>
+            <strong style="color:var(--blue); font-size:14px;"><i class="fa-solid fa-keyboard"></i> Enterprise ERP Keyboard Fast-Lane</strong>
+            <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">Operate the entire ERP seamlessly without a mouse using single-key hotkeys, cascading menus, and voucher function keys.</div>
+          </div>
+          <span class="pill pill-gold" style="font-weight:700;">Press F1 Anytime</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(310px, 1fr)); gap:14px;">
+          
+          <!-- 1. Gateway & Sidebar Top-Level Hotkeys -->
+          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
+            <h4 style="margin:0 0 10px; color:var(--gold); display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-compass"></i> Gateway &amp; Main Navigation
+            </h4>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Gateway / Dashboard</span><kbd class="egs-kbd">G</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Accounts Info Group</span><kbd class="egs-kbd">A</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Transaction Entry Group</span><kbd class="egs-kbd">T</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Display / Print Books</span><kbd class="egs-kbd">D</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Utilities &amp; Setup Group</span><kbd class="egs-kbd">U</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt-muted); font-size:12px;">Flyout Menu Navigation</span><div><kbd class="egs-kbd">↑</kbd> <kbd class="egs-kbd">↓</kbd> <kbd class="egs-kbd">→</kbd> <kbd class="egs-kbd">←</kbd></div></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt-muted); font-size:12px;">Select / Execute Item</span><kbd class="egs-kbd">Enter</kbd></div>
+            </div>
+          </div>
+
+          <!-- 2. Accounts Info Hotkeys -->
+          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
+            <h4 style="margin:0 0 10px; color:var(--blue); display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-folder-open"></i> Accounts Info Hotkeys (Press A)
+            </h4>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Ledger Info Submenu</span><kbd class="egs-kbd">L</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ Create Ledger</span><kbd class="egs-kbd">C</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ Display Ledger Register</span><kbd class="egs-kbd">D</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ Alter / Edit Ledger</span><kbd class="egs-kbd">A</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Item / Product Info (Create/Disp/Alt)</span><kbd class="egs-kbd">I</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Group / Category Info</span><kbd class="egs-kbd">G</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Unit of Measure (UOM)</span><kbd class="egs-kbd">U</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Warehouse / Godown Info</span><kbd class="egs-kbd">W</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Brand Directory</span><kbd class="egs-kbd">B</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Customer &amp; Supplier Master</span><kbd class="egs-kbd">C</kbd></div>
+            </div>
+          </div>
+
+          <!-- 3. Transaction Entry Hotkeys -->
+          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
+            <h4 style="margin:0 0 10px; color:#22c55e; display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-receipt"></i> Transaction Entry Hotkeys (Press T)
+            </h4>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Purchase Inward (Stock In)</span><kbd class="egs-kbd">P</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Project Sales &amp; Dispatch</span><kbd class="egs-kbd">S</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">BOM Kit Assembly &amp; Delivery</span><kbd class="egs-kbd">B</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Custom Challan Generator</span><kbd class="egs-kbd">C</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Stock Allocation &amp; Assignment</span><kbd class="egs-kbd">A</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Return / Damage Voucher</span><kbd class="egs-kbd">M</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Barcode Scan Sheet</span><kbd class="egs-kbd">N</kbd></div>
+            </div>
+          </div>
+
+          <!-- 4. Accounting Vouchers Function Keys -->
+          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
+            <h4 style="margin:0 0 10px; color:#f59e0b; display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-money-bill-transfer"></i> Accounting Voucher Keys
+            </h4>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Payment Voucher Entry</span><kbd class="egs-kbd">F5</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Receipt Voucher Entry</span><kbd class="egs-kbd">F6</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Journal Voucher (Adjustments)</span><kbd class="egs-kbd">F7</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Debit Note (Purchase Return)</span><kbd class="egs-kbd">Alt + F5</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Credit Note (Sales Return)</span><kbd class="egs-kbd">Alt + F6</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Accounting Vouchers Studio</span><kbd class="egs-kbd">V</kbd></div>
+            </div>
+          </div>
+
+          <!-- 5. Display & Print Books Hotkeys -->
+          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
+            <h4 style="margin:0 0 10px; color:#a855f7; display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-chart-pie"></i> Display / Print Hotkeys (Press D)
+            </h4>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Account Books &amp; Statements</span><kbd class="egs-kbd">A</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ Party Ledger Register</span><kbd class="egs-kbd">L</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ Purchase Register</span><kbd class="egs-kbd">P</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ Sale Register</span><kbd class="egs-kbd">S</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ Trial Balance Statement</span><kbd class="egs-kbd">T</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ Profit &amp; Loss Account</span><kbd class="egs-kbd">O</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ Balance Sheet</span><kbd class="egs-kbd">B</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ Day Book</span><kbd class="egs-kbd">D</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Stock Books &amp; Registers</span><kbd class="egs-kbd">S</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ Inventory Master Report</span><kbd class="egs-kbd">M</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ Low Stock Alert Register</span><kbd class="egs-kbd">L</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ BOM Dispatch Register</span><kbd class="egs-kbd">B</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ Challan Register</span><kbd class="egs-kbd">C</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-left:14px;"><span style="color:var(--txt-muted); font-size:12px;">↳ Track Order Register</span><kbd class="egs-kbd">T</kbd></div>
+            </div>
+          </div>
+
+          <!-- 6. Universal ERP Actions & Quick Keys -->
+          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
+            <h4 style="margin:0 0 10px; color:var(--txt); display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-bolt"></i> Universal ERP Actions
+            </h4>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Universal Quick Search</span><kbd class="egs-kbd">Ctrl + K</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Active Page Table Search</span><kbd class="egs-kbd">/</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Step-by-Step Back / Unfocus</span><kbd class="egs-kbd">Esc</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Next Field / Confirm Form</span><kbd class="egs-kbd">Enter</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Previous Form Field</span><kbd class="egs-kbd">Shift + Enter</kbd></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Save Voucher / Submit</span><div><kbd class="egs-kbd">Ctrl + Enter</kbd> or <kbd class="egs-kbd">Ctrl + S</kbd></div></div>
+              <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--txt);">Shortcuts Reference Guide</span><kbd class="egs-kbd">F1</kbd></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    `;
+  }
+  window.getKeyboardShortcutsContentHtml = getKeyboardShortcutsContentHtml;
+
   function openAppSettingsPanel(defaultTabId) {
     closeProfileMenu();
     const activeTheme = (typeof window.getAppTheme === 'function') ? window.getAppTheme() : 'dark';
@@ -2749,6 +2874,7 @@ window.attachColumnFilters = function (table) {
       <div class="settings-layout">
         <div class="settings-tabs">
           <button type="button" class="settings-tab-btn" data-tab="tab-profile"><i class="fa-solid fa-user-gear"></i> My Profile &amp; Security</button>
+          <button type="button" class="settings-tab-btn" data-tab="tab-shortcuts"><i class="fa-solid fa-keyboard"></i> Shortcuts &amp; Hotkeys</button>
           ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-erp-mode"><i class="fa-solid fa-sliders"></i> ERP Mode &amp; Features</button>' : ''}
           ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-users"><i class="fa-solid fa-users-gear"></i> User Accounts</button>' : ''}
           <button type="button" class="settings-tab-btn" data-tab="tab-challan"><i class="fa-solid fa-file-invoice"></i> Challan &amp; Print</button>
@@ -2850,6 +2976,20 @@ window.attachColumnFilters = function (table) {
             <div id="setProfileSessionsList" class="sess-list" style="max-height:220px; overflow-y:auto;">
               <div style="text-align:center; padding:14px; color:var(--txt-muted); font-size:12.5px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading active devices...</div>
             </div>
+          </div>
+        </div>
+
+        <!-- Shortcuts & Hotkeys Reference Tab -->
+        <div class="settings-panel" id="tab-shortcuts">
+          <div class="settings-card">
+            <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+              <span style="display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-keyboard" style="color:var(--gold);"></i> Keyboard Shortcuts &amp; Hotkeys Guide</span>
+              <span class="pill pill-gold" style="font-size:11px; padding:2px 8px; font-weight:700;">Press F1 Anywhere</span>
+            </div>
+            <p style="margin:0 0 14px 0; font-size:12.5px; color:var(--txt-muted);">
+              Operate the entire ERP system effortlessly with fast single-letter hotkeys, cascading multi-tier navigation, and double-entry voucher function keys.
+            </p>
+            ${getKeyboardShortcutsContentHtml()}
           </div>
         </div>
 
@@ -5765,69 +5905,11 @@ window.attachColumnFilters = function (table) {
 
   window.showKeyboardShortcutsModal = function () {
     const html = `
-      <div style="display:flex; flex-direction:column; gap:16px; font-size:13px; max-height:calc(80vh - 120px); overflow-y:auto; padding-right:4px;">
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(290px, 1fr)); gap:14px;">
-          
-          <!-- Module & Tab Navigation -->
-          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
-            <h4 style="margin:0 0 10px; color:var(--blue); display:flex; align-items:center; gap:8px;">
-              <i class="fa-solid fa-compass"></i> All 14 Modules &amp; Tabs
-            </h4>
-            <div style="display:flex; flex-direction:column; gap:7px;">
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Dashboard</span><kbd class="egs-kbd">Alt + 1</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Scan Sheets</span><kbd class="egs-kbd">Alt + 2</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Masters / Item Profiler</span><kbd class="egs-kbd">Alt + 3</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Purchase Inward</span><kbd class="egs-kbd">Alt + 4</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Project Sales</span><div><kbd class="egs-kbd">Alt + 5</kbd> or <kbd class="egs-kbd">Alt + S</kbd></div></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Stock Assign</span><kbd class="egs-kbd">Alt + 6</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Purchase Register</span><div><kbd class="egs-kbd">Alt + 7</kbd> or <kbd class="egs-kbd">Alt + U</kbd></div></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Sale Register</span><kbd class="egs-kbd">Alt + 8</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Party Ledger</span><div><kbd class="egs-kbd">Alt + 9</kbd> or <kbd class="egs-kbd">Alt + P</kbd></div></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Master Reports</span><kbd class="egs-kbd">Alt + R</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Return &amp; Damage</span><kbd class="egs-kbd">Alt + D</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Low Stock Alert</span><kbd class="egs-kbd">Alt + L</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Backup &amp; Restore</span><kbd class="egs-kbd">Alt + B</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">BOM Kit Builder</span><div><kbd class="egs-kbd">Alt + 0</kbd> or <kbd class="egs-kbd">Alt + M</kbd></div></div>
-            </div>
-          </div>
-
-          <!-- Party Ledger & Directory Table -->
-          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
-            <h4 style="margin:0 0 10px; color:var(--purple); display:flex; align-items:center; gap:8px;">
-              <i class="fa-solid fa-address-book"></i> Party Ledger &amp; Statements
-            </h4>
-            <div style="display:flex; flex-direction:column; gap:7px;">
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Switch Search &amp; Table</span><kbd class="egs-kbd">Tab</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Navigate Table Rows</span><div><kbd class="egs-kbd">↑</kbd> <kbd class="egs-kbd">↓</kbd></div></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Open Statement Modal</span><div><kbd class="egs-kbd">Enter</kbd> or <kbd class="egs-kbd">Space</kbd></div></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Create New Ledger</span><div><kbd class="egs-kbd">Insert</kbd> or <kbd class="egs-kbd">Alt + C</kbd></div></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Edit Selected Ledger</span><div><kbd class="egs-kbd">F2</kbd> or <kbd class="egs-kbd">Ctrl + E</kbd></div></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Delete Ledger</span><kbd class="egs-kbd">Delete</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Drill-Down in Statement</span><kbd class="egs-kbd">Enter</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Back in Statement</span><div><kbd class="egs-kbd">Backspace</kbd> or <kbd class="egs-kbd">Esc</kbd></div></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Export Statement CSV</span><kbd class="egs-kbd">Ctrl + E</kbd></div>
-            </div>
-          </div>
-
-          <!-- Common Global & Form Actions -->
-          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px; grid-column: 1 / -1;">
-            <h4 style="margin:0 0 10px; color:var(--green); display:flex; align-items:center; gap:8px;">
-              <i class="fa-solid fa-bolt"></i> Universal ERP Actions
-            </h4>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px;">
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Universal Quick Search</span><kbd class="egs-kbd">Ctrl + K</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Active Page Search</span><kbd class="egs-kbd">/</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Close Window / Dismiss</span><kbd class="egs-kbd">Esc</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Next Form Field</span><kbd class="egs-kbd">Enter</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Previous Form Field</span><kbd class="egs-kbd">Shift + Enter</kbd></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Save / Submit Form</span><div><kbd class="egs-kbd">Ctrl + Enter</kbd> or <kbd class="egs-kbd">Ctrl + S</kbd></div></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--txt-muted);">Shortcuts Reference Help</span><kbd class="egs-kbd">F1</kbd></div>
-            </div>
-          </div>
-        </div>
+      <div style="max-height:calc(85vh - 120px); overflow-y:auto; padding-right:4px;">
+        ${getKeyboardShortcutsContentHtml()}
       </div>
     `;
-    window.openModal('⌨️ Keyboard Shortcuts & Quick Navigation', html, { size: 'large' });
+    window.openModal('⌨️ Keyboard Shortcuts & Quick Navigation Guide', html, { size: 'large' });
   };
 
   document.addEventListener('keydown', (e) => {
@@ -6502,231 +6584,4 @@ window.attachColumnFilters = function (table) {
     } catch (e) {}
   }
   loadGlobalErpConfig();
-
-  // 2. Gateway of ERP / Cascading Flyout Menu Builder
-  function createGatewayMenuDOM() {
-    let wrap = document.getElementById('egsGatewayMenuWrap');
-    if (wrap) return wrap;
-
-    wrap = document.createElement('div');
-    wrap.id = 'egsGatewayMenuWrap';
-    wrap.className = 'egs-gateway-menu-wrap';
-    wrap.style.display = 'none';
-    wrap.innerHTML = `
-      <div class="egs-gateway-backdrop" id="egsGatewayBackdrop"></div>
-      <div class="egs-gateway-modal" id="egsGatewayModal" role="dialog" aria-modal="true">
-        <div class="egs-gateway-head">
-          <div class="egs-gateway-title"><i class="fa-solid fa-layer-group" style="color:var(--gold);"></i> <span>Gateway of ERP &bull; Main Menu</span></div>
-          <div class="egs-gateway-actions">
-            <span class="egs-gateway-hint"><kbd>Alt+M</kbd> / <kbd>Esc</kbd></span>
-            <button type="button" class="btn btn-ghost egs-gateway-close-btn" id="btnGatewayClose"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-        </div>
-
-        <div class="egs-cascading-container">
-          <!-- Tier 1: Main Menu -->
-          <div class="egs-cascading-tier" id="cascadingTier1">
-            <div class="egs-tier-head">Main Menu</div>
-            <div class="egs-tier-list">
-              <div class="egs-menu-item active" data-target="sub-accounts">
-                <span class="m-txt"><i class="fa-solid fa-folder-open" style="color:var(--gold);"></i> Accounts Info</span>
-                <i class="fa-solid fa-chevron-right m-arrow"></i>
-              </div>
-              <div class="egs-menu-item" data-target="sub-transactions">
-                <span class="m-txt"><i class="fa-solid fa-receipt" style="color:#2ecc71;"></i> Transaction Entry</span>
-                <i class="fa-solid fa-chevron-right m-arrow"></i>
-              </div>
-              <div class="egs-menu-item" data-target="sub-display">
-                <span class="m-txt"><i class="fa-solid fa-chart-pie" style="color:var(--blue);"></i> Display / Print</span>
-                <i class="fa-solid fa-chevron-right m-arrow"></i>
-              </div>
-              <div class="egs-menu-item" data-target="sub-utilities">
-                <span class="m-txt"><i class="fa-solid fa-gear" style="color:#a855f7;"></i> Utilities &amp; Setup</span>
-                <i class="fa-solid fa-chevron-right m-arrow"></i>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tier 2: Sub Menu -->
-          <div class="egs-cascading-tier" id="cascadingTier2">
-            <!-- Sub: Accounts Info -->
-            <div class="egs-tier-subpanel" id="sub-accounts">
-              <div class="egs-tier-head">Accounts Info</div>
-              <div class="egs-tier-list">
-                <div class="egs-menu-leaf" data-go="partyledger"><i class="fa-solid fa-address-book" style="color:var(--gold);"></i> Party Master &amp; Ledgers</div>
-                <div class="egs-menu-leaf" data-go="masters" data-tab="tab-party"><i class="fa-solid fa-users" style="color:var(--blue);"></i> Customer &amp; Supplier Master</div>
-                <div class="egs-menu-leaf" data-go="partyledger"><i class="fa-solid fa-money-check-dollar" style="color:#2ecc71;"></i> Ledger Statements</div>
-              </div>
-            </div>
-
-            <!-- Sub: Transaction Entry -->
-            <div class="egs-tier-subpanel" id="sub-transactions" style="display:none;">
-              <div class="egs-tier-head">Transaction Entry (Vouchers)</div>
-              <div class="egs-tier-list">
-                <div class="egs-menu-leaf" data-go="purchase"><i class="fa-solid fa-truck-ramp-box" style="color:#2ecc71;"></i> Purchase Inward (Stock In)</div>
-                <div class="egs-menu-leaf" data-go="sales"><i class="fa-solid fa-handshake" style="color:var(--blue);"></i> Project Sales &amp; Dispatch (Outward)</div>
-                <div class="egs-menu-leaf" data-go="bom"><i class="fa-solid fa-boxes-packing" style="color:var(--gold);"></i> BOM Kit Assembly &amp; Challan</div>
-                <div class="egs-menu-leaf" data-go="stockassign"><i class="fa-solid fa-tag" style="color:#eab308;"></i> Stock Allocation &amp; Assignment</div>
-                <div class="egs-menu-leaf" data-go="returns"><i class="fa-solid fa-arrow-rotate-left" style="color:var(--red);"></i> Sales Returns &amp; Damage Write-off</div>
-              </div>
-            </div>
-
-            <!-- Sub: Display / Print -->
-            <div class="egs-tier-subpanel" id="sub-display" style="display:none;">
-              <div class="egs-tier-head">Display / Print</div>
-              <div class="egs-tier-list">
-                <div class="egs-menu-branch active" data-subtarget="sub-acc-books">
-                  <span class="m-txt"><i class="fa-solid fa-book" style="color:var(--gold);"></i> Account Books</span>
-                  <i class="fa-solid fa-chevron-right m-arrow"></i>
-                </div>
-                <div class="egs-menu-branch" data-subtarget="sub-stock-books">
-                  <span class="m-txt"><i class="fa-solid fa-boxes-stacked" style="color:#2ecc71;"></i> Stock Books &amp; Reports</span>
-                  <i class="fa-solid fa-chevron-right m-arrow"></i>
-                </div>
-              </div>
-            </div>
-
-            <!-- Sub: Utilities & Setup -->
-            <div class="egs-tier-subpanel" id="sub-utilities" style="display:none;">
-              <div class="egs-tier-head">Utilities &amp; Setup</div>
-              <div class="egs-tier-list">
-                <div class="egs-menu-leaf" data-action="openSettings" data-tab="tab-erp-mode"><i class="fa-solid fa-sliders" style="color:var(--gold);"></i> ERP Operating Modes &amp; Switches</div>
-                <div class="egs-menu-leaf" data-go="masters"><i class="fa-solid fa-cube" style="color:var(--blue);"></i> Master Catalog &amp; Categories</div>
-                <div class="egs-menu-leaf" data-action="openSettings" data-tab="tab-users"><i class="fa-solid fa-users-gear" style="color:#2ecc71;"></i> User Accounts &amp; Permissions</div>
-                <div class="egs-menu-leaf" data-go="backup"><i class="fa-solid fa-cloud-arrow-up" style="color:#a855f7;"></i> Backup &amp; Disaster Recovery</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tier 3: Sub-Branch (Account Books vs Stock Books) -->
-          <div class="egs-cascading-tier" id="cascadingTier3">
-            <div class="egs-tier-subpanel" id="sub-acc-books">
-              <div class="egs-tier-head">A/c Books &amp; Registers</div>
-              <div class="egs-tier-list">
-                <div class="egs-menu-leaf" data-go="partyledger"><i class="fa-solid fa-address-book" style="color:var(--gold);"></i> Party Account Statement</div>
-                <div class="egs-menu-leaf" data-go="purchaseregister"><i class="fa-solid fa-cart-shopping" style="color:#2ecc71;"></i> Purchase Register</div>
-                <div class="egs-menu-leaf" data-go="saleregister"><i class="fa-solid fa-money-bill-transfer" style="color:var(--blue);"></i> Sale Register</div>
-              </div>
-            </div>
-
-            <div class="egs-tier-subpanel" id="sub-stock-books" style="display:none;">
-              <div class="egs-tier-head">Stock Books &amp; Reports</div>
-              <div class="egs-tier-list">
-                <div class="egs-menu-leaf" data-go="reports"><i class="fa-solid fa-clipboard-list" style="color:var(--blue);"></i> Master Inventory Report</div>
-                <div class="egs-menu-leaf" data-go="lowstock"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red);"></i> Low Stock Alert Summary</div>
-                <div class="egs-menu-leaf" data-go="scansheet"><i class="fa-solid fa-barcode" style="color:var(--gold);"></i> Serial Number Scan Sheets</div>
-                <div class="egs-menu-leaf" data-go="bom" data-tab="tab-track"><i class="fa-solid fa-route" style="color:#2ecc71;"></i> BOM Track &amp; Dispatch Register</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(wrap);
-
-    // Event listeners
-    const backdrop = wrap.querySelector('#egsGatewayBackdrop');
-    const closeBtn = wrap.querySelector('#btnGatewayClose');
-    if (backdrop) backdrop.addEventListener('click', closeGatewayMenu);
-    if (closeBtn) closeBtn.addEventListener('click', closeGatewayMenu);
-
-    // Tier 1 Click/Hover
-    const tier1Items = wrap.querySelectorAll('#cascadingTier1 .egs-menu-item');
-    tier1Items.forEach((item) => {
-      const targetId = item.dataset.target;
-      const activate = () => {
-        tier1Items.forEach((i) => i.classList.toggle('active', i === item));
-        wrap.querySelectorAll('#cascadingTier2 .egs-tier-subpanel').forEach((panel) => {
-          panel.style.display = panel.id === targetId ? 'flex' : 'none';
-        });
-        const tier3 = wrap.querySelector('#cascadingTier3');
-        if (tier3) {
-          tier3.style.display = (targetId === 'sub-display') ? 'flex' : 'none';
-        }
-      };
-      item.addEventListener('mouseenter', activate);
-      item.addEventListener('click', activate);
-    });
-
-    // Tier 2 Branch Click/Hover
-    const tier2Branches = wrap.querySelectorAll('#cascadingTier2 .egs-menu-branch');
-    tier2Branches.forEach((branch) => {
-      const targetId = branch.dataset.subtarget;
-      const activate = () => {
-        tier2Branches.forEach((b) => b.classList.toggle('active', b === branch));
-        wrap.querySelectorAll('#cascadingTier3 .egs-tier-subpanel').forEach((panel) => {
-          panel.style.display = panel.id === targetId ? 'flex' : 'none';
-        });
-      };
-      branch.addEventListener('mouseenter', activate);
-      branch.addEventListener('click', activate);
-    });
-
-    // Leaves Navigation
-    wrap.querySelectorAll('.egs-menu-leaf').forEach((leaf) => {
-      leaf.addEventListener('click', () => {
-        closeGatewayMenu();
-        const page = leaf.dataset.go;
-        const tab = leaf.dataset.tab;
-        const action = leaf.dataset.action;
-
-        if (action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
-          window.openSystemSettingsModal(tab || 'tab-erp-mode');
-        } else if (page && typeof window.go === 'function') {
-          window.go(page);
-          if (tab) {
-            setTimeout(() => {
-              const tb = document.querySelector(`[data-tab="${tab}"]`);
-              if (tb) tb.click();
-            }, 100);
-          }
-        }
-      });
-    });
-
-    return wrap;
-  }
-
-  function openGatewayMenu() {
-    const wrap = createGatewayMenuDOM();
-    wrap.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeGatewayMenu() {
-    const wrap = document.getElementById('egsGatewayMenuWrap');
-    if (wrap) {
-      wrap.style.display = 'none';
-      document.body.style.overflow = '';
-    }
-  }
-
-  window.openGatewayMenu = openGatewayMenu;
-  window.closeGatewayMenu = closeGatewayMenu;
-
-  // Keyboard shortcut Alt+M or F1 or Escape
-  document.addEventListener('keydown', (e) => {
-    if ((e.altKey && (e.key === 'm' || e.key === 'M')) || e.key === 'F1') {
-      e.preventDefault();
-      const wrap = document.getElementById('egsGatewayMenuWrap');
-      if (wrap && wrap.style.display !== 'none') {
-        closeGatewayMenu();
-      } else {
-        openGatewayMenu();
-      }
-    } else if (e.key === 'Escape') {
-      const wrap = document.getElementById('egsGatewayMenuWrap');
-      if (wrap && wrap.style.display !== 'none') {
-        closeGatewayMenu();
-      }
-    }
-  });
-
-  // Topbar and Mobile button listeners
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('#btnTopbarGatewayMenu') || e.target.closest('#btnMobileGatewayMenu')) {
-      e.preventDefault();
-      openGatewayMenu();
-    }
-  });
 })();
