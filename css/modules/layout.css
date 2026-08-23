@@ -26,15 +26,15 @@
   transform:scale(1.02);
 }
 .brand-logo-img{
-  height:40px; width:100%; max-width:185px; object-fit:contain;
+  height:44px; width:100%; max-width:190px; object-fit:contain;
   display:block;
-  transition:filter .2s ease;
+  transition:all .2s ease;
 }
 html[data-theme="dark"] .brand-logo-img{
-  filter: brightness(1.55) contrast(1.1) drop-shadow(0 2px 10px rgba(34,197,94,0.22));
+  filter: brightness(1.7) contrast(1.15) drop-shadow(0 2px 12px rgba(34,197,94,0.3));
 }
 html[data-theme="light"] .brand-logo-img{
-  filter: none;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15));
 }
 .brand-badge-pill{
   display:inline-flex; align-items:center; gap:6px;
@@ -96,10 +96,10 @@ html[data-theme="light"] .brand-logo-img{
 .mobile-search{
   width:100%; min-width:0;
 }
-.mobile-topbar .brand{border:none; padding:0; margin:0; flex-direction:row;}
-.mobile-topbar .brand-inner{flex-direction:row; gap:8px; width:auto;}
+.mobile-topbar .brand{border:none; padding:0; margin:0; flex-direction:row; justify-content:center;}
+.mobile-topbar .brand-inner{flex-direction:row; gap:8px; width:auto; align-items:center;}
 .mobile-topbar .brand-card{padding:2px 4px; width:auto; background:transparent;}
-.mobile-topbar .brand-logo-img{height:28px; max-width:125px;}
+.mobile-topbar .brand-logo-img{height:36px; max-width:160px; object-fit:contain;}
 .hamburger{
   background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt);
   width:38px;height:38px;border-radius:8px; display:flex;align-items:center;justify-content:center; font-size:16px;

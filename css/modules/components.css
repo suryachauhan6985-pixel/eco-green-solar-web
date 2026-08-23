@@ -121,7 +121,7 @@
 /* Global quick-search (topbar): rows jo current search text match nahi karti unhe hide karta hai */
 tbody tr.search-hide{display:none !important;}
 table{border-collapse:collapse; width:100%; min-width:640px; background:var(--table-bg); font-size:12.5px;}
-thead th{background:var(--table-header); color:var(--blue); padding:10px 12px; text-align:left; font-weight:700; white-space:nowrap; border-bottom:1px solid var(--border); position:sticky; top:0;}
+thead th{background:var(--table-header); color:var(--blue); padding:10px 12px; text-align:left; font-weight:700; white-space:nowrap; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:20 !important;}
 thead th i{margin-left:6px; color:var(--txt-muted); font-size:10px; cursor:pointer;}
 
 /* ---------- Excel-style column header filters ----------

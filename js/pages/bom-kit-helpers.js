@@ -626,9 +626,9 @@ function bomRenderScreenItemRowHtml(sec, si, it, ii, opts) {
   // it can never be typed over/edited — only the numeric qty itself is.
   const itemUnit = (it.name && bomItemMasterMeta[it.name] && bomItemMasterMeta[it.name].unit) || '';
   const qtyCell = itemUnit
-    ? `<div class="bom-qty-field-wrap" style="position:relative;">
-         <input type="text" class="bom-field-input bom-qty-has-unit" data-sec="${si}" data-idx="${ii}" data-field="qty" value="${bomEscAttr(it.qty)}" style="width:100%; padding-right:44px; box-sizing:border-box;" ${isAdmin ? '' : 'disabled title="Set by whoever created this BOM — not editable here."'}>
-         <span class="bom-qty-unit-suffix" title="Unit set in Item Master — not editable here" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); pointer-events:none; opacity:0.65; font-size:12px;">${bomEsc(itemUnit)}</span>
+    ? `<div class="bom-qty-field-wrap">
+         <input type="text" class="bom-field-input bom-qty-has-unit" data-sec="${si}" data-idx="${ii}" data-field="qty" value="${bomEscAttr(it.qty)}" ${isAdmin ? '' : 'disabled title="Set by whoever created this BOM — not editable here."'}>
+         <span class="bom-qty-unit-suffix" title="Unit set in Item Master: ${bomEsc(itemUnit)}">${bomEsc(itemUnit)}</span>
        </div>`
     : `<input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="qty" value="${bomEscAttr(it.qty)}" ${isAdmin ? '' : 'disabled title="Set by whoever created this BOM — not editable here."'}>`;
   const mappedCat = (typeof bomGetItemChallanCategory === 'function') ? bomGetItemChallanCategory(it, sec) : null;
@@ -644,8 +644,8 @@ function bomRenderScreenItemRowHtml(sec, si, it, ii, opts) {
 
   const dispatchQtyCell = isAdmin ? '' : (
     isFullyDispatched
-      ? `<td><input type="number" min="0" class="bom-field-input bom-field-dispatchqty" data-sec="${si}" data-idx="${ii}" data-field="dispatchQty" value="0" disabled style="opacity:0.6; cursor:not-allowed; text-align:center;" title="0 pending (already dispatched in earlier trip)"></td>`
-      : `<td><input type="number" min="0" class="bom-field-input bom-field-dispatchqty" data-sec="${si}" data-idx="${ii}" data-field="dispatchQty" value="${bomEscAttr(it.dispatchQty)}" title="How many of this item you are dispatching right now (can be less than Quantity for a partial dispatch)."></td>`
+      ? `<td class="bom-col-dispatch"><input type="number" min="0" class="bom-field-input bom-field-dispatchqty" data-sec="${si}" data-idx="${ii}" data-field="dispatchQty" value="0" disabled style="opacity:0.6; cursor:not-allowed; text-align:center;" title="0 pending (already dispatched in earlier trip)"></td>`
+      : `<td class="bom-col-dispatch"><input type="number" min="0" class="bom-field-input bom-field-dispatchqty" data-sec="${si}" data-idx="${ii}" data-field="dispatchQty" value="${bomEscAttr(it.dispatchQty)}" title="How many of this item you are dispatching right now (can be less than Quantity for a partial dispatch)."></td>`
   );
 
   const checkCell = isFullyDispatched
@@ -656,20 +656,20 @@ function bomRenderScreenItemRowHtml(sec, si, it, ii, opts) {
 
   return `
       <tr data-row-sec="${si}" data-row-idx="${ii}" ${rowStyle}>
-        <td><input type="text" class="bom-field-input bom-field-sr" data-sec="${si}" data-idx="${ii}" data-field="sr" value="${bomEscAttr(it.sr)}"></td>
-        <td>${nameCell}</td>
-        <td>${modelCell}</td>
-        <td>${qtyCell}</td>
+        <td class="bom-col-sr"><input type="text" class="bom-field-input bom-field-sr" data-sec="${si}" data-idx="${ii}" data-field="sr" value="${bomEscAttr(it.sr)}"></td>
+        <td class="bom-col-name">${nameCell}</td>
+        <td class="bom-col-model">${modelCell}</td>
+        <td class="bom-col-qty">${qtyCell}</td>
         ${dispatchQtyCell}
-        <td class="bom-serial-cell">${serialCell}</td>
-        <td class="bom-map-cell" style="text-align:center;">${mapBadge}</td>
-        <td style="white-space:nowrap;">
+        <td class="bom-col-serial bom-serial-cell">${serialCell}</td>
+        <td class="bom-col-map bom-map-cell" style="text-align:center;">${mapBadge}</td>
+        <td class="bom-col-remarks" style="white-space:nowrap;">
           <input type="text" class="bom-field-input" data-sec="${si}" data-idx="${ii}" data-field="remarks" value="${bomEscAttr(it.remarks)}" style="width:calc(100% - ${isAdmin ? '60px' : '0px'}); display:inline-block;">
           ${isAdmin ? `
           <button type="button" class="btn btn-ghost bom-mini-btn" data-insert-after-sec="${si}" data-insert-after-idx="${ii}" title="Insert item below"><i class="fa-solid fa-plus"></i></button>
           <button type="button" class="btn btn-red bom-mini-btn" data-remove-sec="${si}" data-remove-idx="${ii}" title="Remove item"><i class="fa-solid fa-xmark"></i></button>` : ''}
         </td>
-        <td class="bom-check-cell">
+        <td class="bom-col-check bom-check-cell">
           ${checkCell}
         </td>
       </tr>`;
@@ -699,7 +699,19 @@ function bomRenderScreenItemsHtml(state, opts) {
   return `
     <div class="table-wrap">
       <table class="bom-items-form-table">
-        <thead><tr><th>Sr No.</th><th>Item Name</th><th>Model</th><th>Quantity</th>${isAdmin ? '' : '<th>Dispatch Qty</th>'}<th>Serial No.</th><th>Challan Mapping</th><th>Remarks</th><th>Check</th></tr></thead>
+        <thead>
+          <tr>
+            <th class="bom-col-sr">Sr No.</th>
+            <th class="bom-col-name">Item Name</th>
+            <th class="bom-col-model">Model</th>
+            <th class="bom-col-qty">Quantity</th>
+            ${isAdmin ? '' : '<th class="bom-col-dispatch">Dispatch Qty</th>'}
+            <th class="bom-col-serial">Serial No.</th>
+            <th class="bom-col-map">Challan Mapping</th>
+            <th class="bom-col-remarks">Remarks</th>
+            <th class="bom-col-check">Check</th>
+          </tr>
+        </thead>
         <tbody>${rows}</tbody>
       </table>
     </div>

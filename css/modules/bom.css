@@ -19,12 +19,14 @@
 .bom-print-only.bom-measuring{display:block; position:fixed; top:0; left:-99999px; visibility:visible;}
 
 /* Challan Mapping Badge in on-screen Kit Items Table */
-.bom-map-cell { text-align:center; white-space:nowrap; vertical-align:middle; }
+.bom-map-cell { text-align:center; white-space:nowrap; vertical-align:middle; min-width:145px; }
 .bom-challan-map-badge {
-  display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:6px;
-  font-size:11px; line-height:1.3; text-decoration:none; cursor:pointer;
+  display:inline-flex; align-items:center; gap:5px; padding:4px 9px; border-radius:6px;
+  font-size:11.5px; line-height:1.3; text-decoration:none; cursor:pointer;
   transition:all 0.2s ease; border:1px solid transparent; user-select:none;
+  position:relative; z-index:1; white-space:nowrap;
 }
+.bom-challan-map-badge i { pointer-events:none; }
 .bom-challan-map-badge.mapped {
   background:rgba(46, 204, 113, 0.12); color:var(--green, #2ecc71); border-color:rgba(46, 204, 113, 0.3);
 }
@@ -419,15 +421,102 @@ td.bom-challan-footer-caption{
 /* ON-SCREEN "Kit Items" fields: real inputs/select, auto-filled from the
    chosen kit but fully editable — user changes only the cell(s) they need
    to, everything else keeps its auto-filled value. */
-.bom-items-form-table th, .bom-items-form-table td{padding:5px 6px;}
-.bom-items-form-table .bom-field-input{
-  width:100%; box-sizing:border-box; background:var(--input-bg);
-  border:1px solid var(--border-light); color:var(--txt);
-  border-radius:5px; padding:6px 8px; font-size:12px; outline:none;
+.bom-items-form-table {
+  width: 100%;
+  min-width: 1060px !important;
+  border-collapse: collapse;
 }
-.bom-items-form-table .bom-field-input:focus{border-color:var(--blue);}
-.bom-items-form-table .bom-field-sr{width:56px; text-align:center; padding-left:4px; padding-right:4px;}
-.bom-items-form-table select.bom-field-input{cursor:pointer;}
+.bom-items-form-table thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 25 !important;
+  background: var(--table-header, #151922) !important;
+  padding: 10px 8px;
+  font-size: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  white-space: nowrap;
+}
+.bom-items-form-table th, .bom-items-form-table td {
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+.bom-items-form-table .bom-field-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--input-bg);
+  border: 1px solid var(--border-light);
+  color: var(--txt);
+  border-radius: 6px;
+  padding: 7px 9px;
+  font-size: 12.5px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.bom-items-form-table .bom-field-input:focus {
+  border-color: var(--blue);
+}
+.bom-items-form-table .bom-field-sr {
+  width: 56px;
+  text-align: center;
+  padding-left: 4px;
+  padding-right: 4px;
+  font-weight: 700;
+}
+.bom-items-form-table select.bom-field-input {
+  cursor: pointer;
+  background-position: right 8px center;
+}
+
+/* Explicit column minimum widths for flawless horizontal scrolling on mobile & desktop */
+.bom-items-form-table .bom-col-sr { width: 58px; min-width: 58px; max-width: 65px; text-align: center; }
+.bom-items-form-table .bom-col-name { width: 230px; min-width: 230px; }
+.bom-items-form-table .bom-col-model { width: 165px; min-width: 165px; }
+.bom-items-form-table .bom-col-qty { width: 130px; min-width: 130px; }
+.bom-items-form-table .bom-col-dispatch { width: 105px; min-width: 105px; text-align: center; }
+.bom-items-form-table .bom-col-serial { width: 125px; min-width: 125px; text-align: center; }
+.bom-items-form-table .bom-col-map { width: 155px; min-width: 155px; text-align: center; }
+.bom-items-form-table .bom-col-remarks { width: 170px; min-width: 170px; }
+.bom-items-form-table .bom-col-check { width: 65px; min-width: 65px; text-align: center; }
+
+/* Qty field wrapper with internal UOM badge */
+.bom-qty-field-wrap {
+  position: relative;
+  width: 100%;
+  min-width: 110px;
+  display: flex;
+  align-items: center;
+  z-index: 1;
+}
+.bom-qty-field-wrap input.bom-qty-has-unit {
+  padding-right: 50px !important;
+  font-weight: 700;
+  width: 100%;
+}
+.bom-qty-unit-suffix {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--txt-muted);
+  background: var(--panel-alt);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  line-height: 1.1;
+  z-index: 2;
+  user-select: none;
+}
+
+/* Category section divider row */
+.bom-screen-cat td {
+  background: var(--panel-alt) !important;
+  position: relative;
+  z-index: 2;
+  padding: 8px 10px;
+}
 
 /* "Convert into Challan" Qty input (type="number") — browsers render native
    number-input chrome (spin buttons, autofill) using the page's default
