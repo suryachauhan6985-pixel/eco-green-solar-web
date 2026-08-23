@@ -465,7 +465,7 @@ function bomTodayLocalDateStr() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-// Live RTO Vehicle Validation Helpers for Challan Modals
+// Live RTO Vehicle Validation Helpers for Challan Modals (Debounced & Prefix-Memoized)
 function bomWireChallanVehicleValidation() {
   const v1 = document.getElementById('bomChallanModalVehicleNo');
   const f1 = document.getElementById('bomChallanVehicleFeedback1');
@@ -474,18 +474,45 @@ function bomWireChallanVehicleValidation() {
 
   function attach(input, feedback) {
     if (!input || !feedback) return;
-    function update() {
-      const val = input.value.trim();
-      if (!val) {
+
+    let debounceTimer = null;
+    let lastRtoKey = '';
+    let lastValidState = false;
+
+    function getRtoKey(raw) {
+      if (!raw) return '';
+      const trimmed = raw.trim().toUpperCase();
+      const norm = trimmed.replace(/[^A-Z0-9]/g, '');
+      if (!norm) return '';
+      if (/^\d{2}BH/i.test(norm) || /^BH/i.test(norm)) return 'BH';
+
+      const delim = trimmed.match(/^([A-Z]{2})[\s\-./]+(\d+)/);
+      if (delim) {
+        const st = delim[1];
+        const num = delim[2];
+        return num.length === 1 ? st + '0' + num : st + num;
+      }
+      const single = norm.match(/^([A-Z]{2})(\d)[A-Z]/);
+      if (single) return single[1] + '0' + single[2];
+
+      const three = norm.match(/^([A-Z]{2})(\d{3,})([A-Z]+|$)/);
+      if (three) return three[1] + three[2];
+
+      const two = norm.match(/^([A-Z]{2})(\d{1,2})/);
+      if (two) {
+        const st = two[1];
+        const num = two[2];
+        return num.length === 1 ? st + '0' + num : st + num;
+      }
+      return norm.slice(0, 4);
+    }
+
+    function renderFeedback(res) {
+      if (!res) {
         feedback.innerHTML = '';
         feedback.className = 'vehicle-rto-feedback';
         return;
       }
-      if (!window.VehicleValidator) {
-        feedback.innerHTML = '';
-        return;
-      }
-      const res = window.VehicleValidator.validate(val);
       if (res.valid) {
         feedback.className = 'vehicle-rto-feedback valid';
         feedback.innerHTML = `
@@ -504,9 +531,77 @@ function bomWireChallanVehicleValidation() {
         `;
       }
     }
-    input.addEventListener('input', update);
-    input.addEventListener('blur', update);
-    update();
+
+    function handleInput() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const val = input.value.trim();
+        if (!val) {
+          lastRtoKey = '';
+          lastValidState = false;
+          renderFeedback(null);
+          return;
+        }
+
+        const norm = val.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const rtoKey = getRtoKey(val);
+
+        // While actively typing: if length is under minimum (min 3-4 chars), keep feedback clean
+        const isBharat = /^\d{2}BH/i.test(norm) || /^BH/i.test(norm);
+        const hasDelim = /^([A-Z]{2})[\s\-./]+(\d+)/i.test(val);
+        const minLengthMet = isBharat ? (norm.length >= 4) : (hasDelim || norm.length >= 4);
+
+        if (!minLengthMet) {
+          if (!lastValidState) {
+            lastRtoKey = '';
+            renderFeedback(null);
+          }
+          return;
+        }
+
+        // OPTIMIZATION: If RTO key is ALREADY validated as valid and hasn't changed, skip re-evaluating & re-rendering!
+        if (rtoKey && rtoKey === lastRtoKey && lastValidState === true) {
+          return; // Zero overhead, already valid
+        }
+
+        if (!window.VehicleValidator) {
+          renderFeedback(null);
+          return;
+        }
+
+        // Run validation once for this RTO key
+        const res = window.VehicleValidator.validate(val);
+        lastRtoKey = rtoKey;
+        lastValidState = res.valid;
+        renderFeedback(res);
+      }, 100);
+    }
+
+    function handleBlur() {
+      clearTimeout(debounceTimer);
+      const val = input.value.trim();
+      if (!val) {
+        lastRtoKey = '';
+        lastValidState = false;
+        renderFeedback(null);
+        return;
+      }
+      if (!window.VehicleValidator) return;
+
+      const rtoKey = getRtoKey(val);
+      if (rtoKey && rtoKey === lastRtoKey && lastValidState === true) {
+        return;
+      }
+
+      const res = window.VehicleValidator.validate(val);
+      lastRtoKey = rtoKey;
+      lastValidState = res.valid;
+      renderFeedback(res);
+    }
+
+    input.addEventListener('input', handleInput);
+    input.addEventListener('blur', handleBlur);
+    handleBlur(); // check initial pre-filled value
   }
 
   attach(v1, f1);
