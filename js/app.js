@@ -2813,12 +2813,13 @@ window.attachColumnFilters = function (table) {
         <!-- 2. User Accounts Management Tab (Admin / SuperAdmin) -->
         ${isAdmin ? `
         <div class="settings-panel" id="tab-users">
-          <div class="grid-2">
-            <div class="panel" style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
-              <h4 style="margin:0 0 10px; color:var(--gold); display:flex; align-items:center; gap:8px;">
-                <i class="fa-solid fa-user-plus"></i> Create / Update Account
-              </h4>
-              <div class="form-grid">
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <!-- Top: Create / Update Account Form -->
+            <div class="settings-card" style="margin-bottom:0;">
+              <div class="settings-card-title">
+                <span style="display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-user-plus" style="color:var(--blue);"></i> Create / Update User Account</span>
+              </div>
+              <div class="form-grid" style="margin-top:12px;">
                 <div class="field"><label>Username <span class="req">*</span></label><input id="setMngUname" placeholder="e.g. amit" autocomplete="off"></div>
                 <div class="field"><label>Password / PIN <span class="req">*</span></label><input type="password" id="setMngPass" placeholder="••••••••"></div>
                 <div class="field"><label>Email (for OTP Login) <span class="req">*</span></label><input type="email" id="setMngEmail" placeholder="e.g. amit@example.com"></div>
@@ -2826,18 +2827,19 @@ window.attachColumnFilters = function (table) {
                   <select id="setMngRole"><option value="User">User</option><option value="Admin">Admin</option><option value="SuperAdmin">SuperAdmin</option></select>
                 </div>
               </div>
-              <div class="actions-row" style="margin-top:12px; flex-wrap:wrap; gap:8px;">
+              <div class="actions-row" style="margin-top:14px; flex-wrap:wrap; gap:10px;">
                 <button type="button" class="btn btn-blue" id="setBtnAddUser"><i class="fa-solid fa-user-plus"></i> Add User</button>
-                <button type="button" class="btn btn-gold" id="setBtnUpdatePass"><i class="fa-solid fa-key"></i> Update Pass</button>
-                <button type="button" class="btn btn-ghost" id="setBtnUpdateEmail"><i class="fa-solid fa-envelope"></i> Update Email</button>
+                <button type="button" class="btn btn-ghost" id="setBtnUpdatePass"><i class="fa-solid fa-key" style="color:var(--blue);"></i> Update Pass</button>
+                <button type="button" class="btn btn-ghost" id="setBtnUpdateEmail"><i class="fa-solid fa-envelope" style="color:var(--blue);"></i> Update Email</button>
               </div>
             </div>
 
-            <div class="panel" style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
-              <h4 style="margin:0 0 10px; color:var(--blue); display:flex; align-items:center; gap:8px;">
-                <i class="fa-solid fa-users"></i> Access Control Ledger
-              </h4>
-              <div class="table-wrap" style="max-height:280px; overflow-y:auto;">
+            <!-- Bottom: Access Control Ledger Table -->
+            <div class="settings-card" style="margin-bottom:0;">
+              <div class="settings-card-title">
+                <span style="display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-users" style="color:var(--blue);"></i> Access Control Ledger</span>
+              </div>
+              <div class="table-wrap" style="max-height:260px; overflow-y:auto; margin-top:10px;">
                 <table>
                   <thead><tr><th>Username</th><th>Email</th><th>Role</th></tr></thead>
                   <tbody id="setUsersLedgerBody"><tr><td colspan="3" class="pl-empty-hint"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
@@ -3265,11 +3267,13 @@ window.attachColumnFilters = function (table) {
         <div class="settings-panel" id="tab-about">
           <div class="settings-card egs-about-hero-clean">
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
-              <div style="display:flex; align-items:center; gap:14px;">
-                <img src="assets/logo.png" style="height:42px; max-width:180px; object-fit:contain; flex-shrink:0;" alt="Eco Green Solar Logo">
+              <div style="display:flex; align-items:center; gap:16px;">
+                <div style="width:58px; height:58px; min-width:58px; border-radius:50%; background:#ffffff; display:flex; align-items:center; justify-content:center; padding:6px; box-shadow:0 4px 16px rgba(0,0,0,0.3); flex-shrink:0;">
+                  <img src="assets/icons/icon-192.png" style="width:100%; height:100%; object-fit:contain; border-radius:50%;" alt="Eco Green Solar Logo">
+                </div>
                 <div>
-                  <div style="font-size:16px; font-weight:700; color:var(--txt); letter-spacing:-0.01em;">Eco Green Solar ERP</div>
-                  <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">Enterprise Operations &amp; Inventory Suite</div>
+                  <div style="font-size:16.5px; font-weight:800; color:var(--txt); letter-spacing:-0.01em;">Eco Green Solar ERP</div>
+                  <div style="font-size:12.5px; color:var(--txt-muted); margin-top:2px;">Enterprise Operations &amp; Inventory Suite</div>
                   <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
                     <span class="pill pill-gold" style="font-size:11px; padding:2px 10px;">v1.10.0 Enterprise</span>
                     <span class="pill pill-green" style="font-size:11px; padding:2px 10px;">Build 112 (Live)</span>
