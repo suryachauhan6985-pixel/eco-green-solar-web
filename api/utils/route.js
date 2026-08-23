@@ -22,7 +22,8 @@ function route(handler) {
       // If error is an explicit business message thrown with status (e.g. invalid input), preserve it.
       // If error is an internal database exception / syntax error, shield the client from database internals.
       if (isDbInternalError(e)) {
-        res.status(500).json({ error: 'A database error occurred. Please verify your data and try again.' });
+        const detail = e.sqlMessage || e.message || 'A database error occurred.';
+        res.status(500).json({ error: detail });
       } else {
         const clientMsg = (e && typeof e.message === 'string' && e.message.length < 300)
           ? e.message
