@@ -357,7 +357,7 @@ module.exports = function registerChallanRoutes(app, deps) {
         model: g.model,
         qty: g.qty,
         unit: g.unit,
-        description: g.serials.length ? `Serials: ${g.serials.slice(0, 4).join(', ')}${g.serials.length > 4 ? ` (+${g.serials.length - 4} more)` : ''}` : ''
+        description: ''
       }));
 
       return {
