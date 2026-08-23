@@ -1,7 +1,15 @@
 /* =================== RESPONSIVE =================== */
 @media (max-width: 900px){
-  .sidebar{transform:translateX(-100%);}
-  .sidebar.open{transform:translateX(0);}
+  .sidebar{
+    transform:translateX(-100%);
+    width:260px; min-width:260px;
+    padding:16px 12px;
+    box-sizing:border-box;
+  }
+  .sidebar.open{
+    transform:translateX(0);
+    box-shadow:8px 0 32px rgba(0,0,0,0.35);
+  }
   .overlay.show{display:block;}
   .mobile-topbar{display:flex;}
   .main{margin-left:0;}

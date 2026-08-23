@@ -505,15 +505,31 @@ html[data-theme="light"] .erp-sidebar-btn {
   color: #0F172A;
   border-color: #CBD5E1;
 }
-html[data-theme="light"] .erp-sidebar-btn:hover,
-html[data-theme="light"] .erp-sidebar-btn.selected,
-html[data-theme="light"] .erp-sidebar-btn.flyout-open {
-  background: #E2E8F0 !important;
+html[data-theme="light"] .erp-sidebar-btn .btn-label i {
+  color: #2563EB;
+}
+html[data-theme="light"] .erp-sidebar-btn.active,
+html[data-theme="light"] .nav-btn.active {
+  background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+  border-color: #2563EB !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
+}
+html[data-theme="light"] .erp-sidebar-btn.active i,
+html[data-theme="light"] .erp-sidebar-btn.active .erp-hk-char,
+html[data-theme="light"] .nav-btn.active i {
+  color: #FFFFFF !important;
+  text-decoration-color: #FFFFFF !important;
+}
+html[data-theme="light"] .erp-sidebar-btn:hover:not(.active),
+html[data-theme="light"] .erp-sidebar-btn.selected:not(.active),
+html[data-theme="light"] .erp-sidebar-btn.flyout-open:not(.active) {
+  background: #EFF6FF !important;
   border-color: #2563EB !important;
   color: #1E40AF !important;
 }
-html[data-theme="light"] .erp-sidebar-btn:hover i,
-html[data-theme="light"] .erp-sidebar-btn.selected i {
+html[data-theme="light"] .erp-sidebar-btn:hover:not(.active) i,
+html[data-theme="light"] .erp-sidebar-btn.selected:not(.active) i {
   color: #1E40AF !important;
 }
 html[data-theme="light"] .egs-flyout-box,
