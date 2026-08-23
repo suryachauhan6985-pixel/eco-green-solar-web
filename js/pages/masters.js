@@ -6,12 +6,12 @@ window.PAGES.masters = {
   icon: "fa-database",
   sub: "Manage items registration, warehouses & property restrictions",
   html: `
-    <div class="page-head">
-      <i class="fa-solid fa-database" style="color:var(--blue);"></i>
-      <h2>Masters & Product Catalog Control</h2>
+    <div class="page-head" id="mastersPageHead">
+      <i class="fa-solid fa-boxes-stacked" style="color:var(--blue);" id="mastersPageHeadIcon"></i>
+      <h2 id="mastersPageHeadTitle">Item &amp; Product Master</h2>
     </div>
 
-    <div class="subtabs" id="mastersSubtabs">
+    <div class="subtabs" id="mastersSubtabs" style="display:none;">
       <button class="subtab active" data-sub="item-reg"><i class="fa-solid fa-boxes-stacked"></i> Item Master</button>
       <button class="subtab" data-sub="category"><i class="fa-solid fa-tags"></i> Category & Subtypes</button>
       <button class="subtab" data-sub="brand"><i class="fa-solid fa-trademark"></i> Brand Directory</button>
@@ -316,6 +316,15 @@ window.PAGES.masters = {
     }
 
     // Responsive Subtabs routing engine
+    const MASTER_SUB_INFO = {
+      'item-reg': { title: 'Item & Product Master', sub: 'Item classification, specifications & inventory rules', icon: 'fa-boxes-stacked' },
+      'category': { title: 'Category & Subtypes Master', sub: 'Manage product categories, wattage & serial rules', icon: 'fa-tags' },
+      'brand': { title: 'Brand Directory Master', sub: 'Registered manufacturer and supplier brand names', icon: 'fa-trademark' },
+      'warehouse': { title: 'Warehouse & Godown Master', sub: 'Storage godowns and dispatch hubs', icon: 'fa-warehouse' },
+      'uom': { title: 'Units of Measure (UOM) Master', sub: 'Standard measurement units (Nos, Kg, Meters, Tagara, etc.)', icon: 'fa-ruler-combined' },
+      'users': { title: 'User Authorization Master', sub: 'System access privileges and credentials', icon: 'fa-user-shield' }
+    };
+
     const tabs = document.querySelectorAll("#mastersSubtabs .subtab");
     const panels = document.querySelectorAll(".subtab-panel");
     tabs.forEach((tab) => {
@@ -327,6 +336,18 @@ window.PAGES.masters = {
           `.subtab-panel[data-panel="${tab.dataset.sub}"]`,
         );
         if (target) target.classList.add("active");
+
+        const info = MASTER_SUB_INFO[tab.dataset.sub];
+        if (info) {
+          const pt = document.getElementById('pageTitle');
+          const ps = document.getElementById('pageSub');
+          const mpt = document.getElementById('mastersPageHeadTitle');
+          const mpi = document.getElementById('mastersPageHeadIcon');
+          if (pt) pt.textContent = info.title;
+          if (ps) ps.textContent = info.sub;
+          if (mpt) mpt.textContent = info.title;
+          if (mpi && info.icon) mpi.className = `fa-solid ${info.icon}`;
+        }
       });
     });
 

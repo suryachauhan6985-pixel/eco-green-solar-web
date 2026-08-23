@@ -4685,12 +4685,85 @@ window.attachColumnFilters = function (table) {
       hotkey: 'A',
       icon: 'fa-folder-open',
       items: [
-        { name: 'Party Master & Ledgers', hotkey: 'L', icon: 'fa-address-book', page: 'partyledger' },
-        { name: 'Customer & Supplier Info', hotkey: 'C', icon: 'fa-users', page: 'partyledger', filter: 'Customer' },
-        { name: 'Item & Product Master', hotkey: 'I', icon: 'fa-cubes', page: 'masters', sub: 'item-reg' },
-        { name: 'Category & Group Info', hotkey: 'G', icon: 'fa-layer-group', page: 'masters', sub: 'category' },
-        { name: 'Warehouse / Godown Info', hotkey: 'W', icon: 'fa-warehouse', page: 'masters', sub: 'warehouse', requires: 'warehouse' },
-        { name: 'Brand Master', hotkey: 'B', icon: 'fa-tags', page: 'masters', sub: 'brand' }
+        {
+          name: 'Ledger Info',
+          hotkey: 'L',
+          icon: 'fa-address-book',
+          hasNested: true,
+          nestedTitle: 'Ledger Info',
+          nestedItems: [
+            { name: 'Create', hotkey: 'C', icon: 'fa-plus', page: 'partyledger', action: 'create' },
+            { name: 'Display', hotkey: 'D', icon: 'fa-eye', page: 'partyledger', action: 'display' },
+            { name: 'Alter', hotkey: 'A', icon: 'fa-pen-to-square', page: 'partyledger', action: 'alter' }
+          ]
+        },
+        {
+          name: 'Item / Product Info',
+          hotkey: 'I',
+          icon: 'fa-cubes',
+          hasNested: true,
+          nestedTitle: 'Item / Product Info',
+          nestedItems: [
+            { name: 'Create', hotkey: 'C', icon: 'fa-plus', page: 'masters', sub: 'item-reg', action: 'create' },
+            { name: 'Display', hotkey: 'D', icon: 'fa-eye', page: 'masters', sub: 'item-reg', action: 'display' },
+            { name: 'Alter', hotkey: 'A', icon: 'fa-pen-to-square', page: 'masters', sub: 'item-reg', action: 'alter' }
+          ]
+        },
+        {
+          name: 'Group / Category Info',
+          hotkey: 'G',
+          icon: 'fa-layer-group',
+          hasNested: true,
+          nestedTitle: 'Category Info',
+          nestedItems: [
+            { name: 'Create', hotkey: 'C', icon: 'fa-plus', page: 'masters', sub: 'category', action: 'create' },
+            { name: 'Display / Alter', hotkey: 'D', icon: 'fa-list-check', page: 'masters', sub: 'category', action: 'display' }
+          ]
+        },
+        {
+          name: 'Unit of Measure (UOM)',
+          hotkey: 'U',
+          icon: 'fa-ruler-combined',
+          hasNested: true,
+          nestedTitle: 'UOM Info',
+          nestedItems: [
+            { name: 'Create', hotkey: 'C', icon: 'fa-plus', page: 'masters', sub: 'uom', action: 'create' },
+            { name: 'Display / Alter', hotkey: 'D', icon: 'fa-list-check', page: 'masters', sub: 'uom', action: 'display' }
+          ]
+        },
+        {
+          name: 'Warehouse / Godown Info',
+          hotkey: 'W',
+          icon: 'fa-warehouse',
+          requires: 'warehouse',
+          hasNested: true,
+          nestedTitle: 'Warehouse Info',
+          nestedItems: [
+            { name: 'Create', hotkey: 'C', icon: 'fa-plus', page: 'masters', sub: 'warehouse', action: 'create' },
+            { name: 'Display / Alter', hotkey: 'D', icon: 'fa-list-check', page: 'masters', sub: 'warehouse', action: 'display' }
+          ]
+        },
+        {
+          name: 'Brand Directory',
+          hotkey: 'B',
+          icon: 'fa-tags',
+          hasNested: true,
+          nestedTitle: 'Brand Directory',
+          nestedItems: [
+            { name: 'Display / Alter', hotkey: 'D', icon: 'fa-list-check', page: 'masters', sub: 'brand', action: 'display' }
+          ]
+        },
+        {
+          name: 'Customer & Supplier Directory',
+          hotkey: 'C',
+          icon: 'fa-users',
+          hasNested: true,
+          nestedTitle: 'Parties Directory',
+          nestedItems: [
+            { name: 'Customer Directory', hotkey: 'C', icon: 'fa-hand-holding-dollar', page: 'partyledger', filter: 'Customer' },
+            { name: 'Supplier Directory', hotkey: 'S', icon: 'fa-truck-ramp-box', page: 'partyledger', filter: 'Supplier' }
+          ]
+        }
       ]
     },
     {
@@ -4753,7 +4826,6 @@ window.attachColumnFilters = function (table) {
       icon: 'fa-gear',
       items: [
         { name: 'ERP Mode & Feature Controls', hotkey: 'S', icon: 'fa-sliders', action: 'openSettings', sub: 'tab-erp-mode' },
-        { name: 'Master Catalog', hotkey: 'M', icon: 'fa-cube', page: 'masters', sub: 'item-reg' },
         { name: 'User Accounts & Roles', hotkey: 'U', icon: 'fa-users-gear', action: 'openSettings', sub: 'tab-users' },
         { name: 'Backup & Restore', hotkey: 'B', icon: 'fa-cloud-arrow-up', page: 'backup' }
       ]
@@ -4894,7 +4966,7 @@ window.attachColumnFilters = function (table) {
           if (!shouldShowNavItem(sub)) return;
           const subLabelHtml = formatHkLabel(sub.name, sub.hotkey);
           nestedRows += `
-            <div class="egs-flyout-item tier2-item" data-page="${sub.page || ''}" data-sub="${sub.sub || sub.tab || ''}" data-action="${sub.action || ''}" data-filter="${sub.filter || ''}" data-hotkey="${sub.hotkey || ''}">
+            <div class="egs-flyout-item tier2-item" data-page="${sub.page || ''}" data-sub="${sub.sub || sub.tab || ''}" data-action="${sub.action || ''}" data-filter="${sub.filter || ''}" data-group-id="${grp.id}" data-hotkey="${sub.hotkey || ''}">
               <span class="item-text"><i class="fa-solid ${sub.icon}" style="color:var(--blue); font-size:12px;"></i> <span>${subLabelHtml}</span></span>
             </div>
           `;
@@ -4912,7 +4984,7 @@ window.attachColumnFilters = function (table) {
         `;
       } else {
         itemsHtml += `
-          <div class="egs-flyout-item tier1-item" data-page="${item.page || ''}" data-sub="${item.sub || item.tab || ''}" data-action="${item.action || ''}" data-filter="${item.filter || ''}" data-hotkey="${item.hotkey || ''}">
+          <div class="egs-flyout-item tier1-item" data-page="${item.page || ''}" data-sub="${item.sub || item.tab || ''}" data-action="${item.action || ''}" data-filter="${item.filter || ''}" data-group-id="${grp.id}" data-hotkey="${item.hotkey || ''}">
             <span class="item-text"><i class="fa-solid ${item.icon}" style="color:var(--blue); font-size:12px;"></i> <span>${itemLabelHtml}</span></span>
           </div>
         `;
@@ -4957,12 +5029,13 @@ window.attachColumnFilters = function (table) {
         const sub = row.dataset.sub;
         const action = row.dataset.action;
         const filter = row.dataset.filter;
+        const groupId = row.dataset.groupId;
 
         closeAllFlyouts();
         if (action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
           window.openSystemSettingsModal(sub || 'tab-erp-mode');
         } else if (page) {
-          go(page, { sub, action, filter });
+          go(page, { sub, action, filter, groupId });
         }
       });
     });
@@ -4986,8 +5059,9 @@ window.attachColumnFilters = function (table) {
         const sub = subRow.dataset.sub;
         const action = subRow.dataset.action;
         const filter = subRow.dataset.filter;
+        const groupId = subRow.dataset.groupId;
         closeAllFlyouts();
-        if (page) go(page, { sub, action, filter });
+        if (page) go(page, { sub, action, filter, groupId });
       });
     });
 
@@ -5056,6 +5130,12 @@ window.attachColumnFilters = function (table) {
 
     closeAllFlyouts();
 
+    // Prevent redundant reload spam if key is held down
+    if (window.CURRENT_PAGE_ID === id && !opts.sub && !opts.tab && !opts.action && !opts.filter && !opts.force) {
+      return;
+    }
+    window.CURRENT_PAGE_ID = id;
+
     const contentEl = document.getElementById('content') || content;
     const pageTitleEl = document.getElementById('pageTitle') || pageTitle;
     const pageSubEl = document.getElementById('pageSub') || pageSub;
@@ -5071,15 +5151,28 @@ window.attachColumnFilters = function (table) {
     if (pageSubEl) pageSubEl.textContent = page.sub || '';
     if (window.topbarExtra) window.topbarExtra.innerHTML = '';
 
-    // Mark active sidebar parent group or single item
+    // Mark active sidebar parent group or single item strictly
     document.querySelectorAll('.erp-sidebar-btn').forEach((b) => {
-      let isMatch = (b.dataset.tab === id);
-      if (!isMatch && b.dataset.groupId) {
+      let isMatch = false;
+      if (opts.groupId && b.dataset.groupId) {
+        isMatch = (b.dataset.groupId === opts.groupId);
+      } else if (b.dataset.tab === id) {
+        isMatch = true;
+      } else if (b.dataset.groupId) {
         const grp = ERP_NAV_GROUPS.find((g) => g.id === b.dataset.groupId);
         if (grp && grp.items) {
           isMatch = grp.items.some((item) => {
-            if (item.page === id) return true;
-            if (item.nestedItems && item.nestedItems.some((sub) => sub.page === id)) return true;
+            if (item.page === id) {
+              if (opts.sub && item.sub) return item.sub === opts.sub;
+              return true;
+            }
+            if (item.nestedItems && item.nestedItems.some((sub) => {
+              if (sub.page === id) {
+                if (opts.sub && sub.sub) return sub.sub === opts.sub;
+                return true;
+              }
+              return false;
+            })) return true;
             return false;
           });
         }
@@ -5125,12 +5218,45 @@ window.attachColumnFilters = function (table) {
           }
         }
 
-        // Party Ledger filter switching
-        if (id === 'partyledger' && opts.filter) {
-          const typeFilter = document.getElementById('plTypeFilter');
-          if (typeFilter) {
-            typeFilter.value = opts.filter;
-            typeFilter.dispatchEvent(new Event('change'));
+        // Party Ledger filter & action switching
+        if (id === 'partyledger') {
+          if (opts.filter) {
+            const typeFilter = document.getElementById('plTypeFilter');
+            if (typeFilter) {
+              typeFilter.value = opts.filter;
+              typeFilter.dispatchEvent(new Event('change'));
+            }
+          }
+          if (opts.action === 'create') {
+            const btn = document.getElementById('btnCreateLedger');
+            if (btn) btn.click();
+          } else if (opts.action === 'display' || opts.action === 'alter') {
+            const search = document.getElementById('plSearch');
+            if (search) search.focus();
+          }
+        }
+
+        // Masters actions switching
+        if (id === 'masters') {
+          if (opts.action === 'create') {
+            if (subKey === 'item-reg') {
+              const brandInp = document.getElementById('mItemBrandInput') || document.getElementById('mItemCatDropdown');
+              if (brandInp) brandInp.focus();
+            } else if (subKey === 'category') {
+              const catInp = document.getElementById('mInputCatName');
+              if (catInp) catInp.focus();
+            } else if (subKey === 'uom') {
+              const uomInp = document.getElementById('mInputUomName');
+              if (uomInp) uomInp.focus();
+            } else if (subKey === 'warehouse') {
+              const whInp = document.getElementById('mInputWhName');
+              if (whInp) whInp.focus();
+            }
+          } else if (opts.action === 'display' || opts.action === 'alter') {
+            if (subKey === 'item-reg') {
+              const itemSearch = document.getElementById('mItemSearchInput');
+              if (itemSearch) itemSearch.focus();
+            }
           }
         }
       }, 70);
@@ -5164,6 +5290,7 @@ window.attachColumnFilters = function (table) {
   // SHREE SAVA / TALLY KEYBOARD HOTKEY & ARROW ROUTER
   // =========================================================================
   function handleAccountingKeyboard(e) {
+    if (e.repeat) return false;
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     const isTyping = tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable);
     if (isTyping) return false;
