@@ -2719,8 +2719,9 @@ window.attachColumnFilters = function (table) {
           <button type="button" class="settings-tab-btn" data-tab="tab-roadmap"><i class="fa-solid fa-rocket"></i> Cloud Roadmap</button>
         </div>
 
-        <!-- 1. My Profile & Security Tab -->
-        <div class="settings-panel" id="tab-profile">
+        <div class="settings-content-wrap">
+          <!-- 1. My Profile & Security Tab -->
+          <div class="settings-panel" id="tab-profile">
           <div class="settings-card">
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border-light);">
               <div style="display:flex; align-items:center; gap:12px;">
@@ -3358,17 +3359,20 @@ window.attachColumnFilters = function (table) {
             </p>
           </div>
         </div>
+        </div>
       </div>
     `;
 
-    window.openModal('⚙️ System & ERP Settings', settingsHtml, { size: 'large' });
+    window.openModal('⚙️ System & ERP Settings', settingsHtml, { size: 'large', modalClass: 'settings-modal-box' });
 
     // Wire Settings Tabs
     const tabBtns = document.querySelectorAll('.settings-tab-btn');
     const panels = document.querySelectorAll('.settings-panel');
+    const contentWrap = document.querySelector('.settings-content-wrap');
     function activateTab(tabId) {
       tabBtns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === tabId));
       panels.forEach((p) => p.classList.toggle('active', p.id === tabId));
+      if (contentWrap) contentWrap.scrollTop = 0;
     }
     tabBtns.forEach((btn) => {
       btn.addEventListener('click', () => activateTab(btn.getAttribute('data-tab')));
@@ -4824,7 +4828,7 @@ window.attachColumnFilters = function (table) {
 
     // If wheel is inside any modal dialog, settings panel, legal doc or drawer, let it scroll naturally!
     const insideModalCard = e.target.closest(
-      '.modal-box, .modal-card, .confirm-card, .egs-popup-card, .egs-onboard-card, .settings-panel, .settings-tabs, .sess-list, .egs-legal-doc, #statementOverlay .modal-box, #ledgerFormOverlay .modal-box, .sidebar'
+      '.modal-box, .modal-card, .confirm-card, .egs-popup-card, .egs-onboard-card, .settings-layout, .settings-content-wrap, .settings-panel, .settings-tabs, .sess-list, .egs-legal-doc, #statementOverlay .modal-box, #ledgerFormOverlay .modal-box, .sidebar'
     );
     if (!insideModalCard) {
       // Scrolled on empty backdrop/overlay outside the card
@@ -4835,7 +4839,7 @@ window.attachColumnFilters = function (table) {
   document.addEventListener('touchmove', (e) => {
     if (!document.body.classList.contains('egs-modal-locked') && !document.body.classList.contains('no-scroll')) return;
     const insideModalCard = e.target.closest(
-      '.modal-box, .modal-card, .confirm-card, .egs-popup-card, .egs-onboard-card, .settings-panel, .settings-tabs, .sess-list, .egs-legal-doc, #statementOverlay .modal-box, #ledgerFormOverlay .modal-box, .sidebar'
+      '.modal-box, .modal-card, .confirm-card, .egs-popup-card, .egs-onboard-card, .settings-layout, .settings-content-wrap, .settings-panel, .settings-tabs, .sess-list, .egs-legal-doc, #statementOverlay .modal-box, #ledgerFormOverlay .modal-box, .sidebar'
     );
     if (!insideModalCard) {
       e.preventDefault();
@@ -4869,7 +4873,8 @@ window.attachColumnFilters = function (table) {
       overlay.classList.remove('modal-fullscreen');
     }
     if (box) {
-      box.classList.remove('modal-box-wide', 'modal-box-xl');
+      box.classList.remove('modal-box-wide', 'modal-box-xl', 'settings-modal-box');
+      if (opts.modalClass) box.classList.add(opts.modalClass);
       if (opts.size === 'xl') {
         box.classList.add('modal-box-xl');
       } else if (opts.size === 'large' || opts.size === 'wide' || opts.wide) {

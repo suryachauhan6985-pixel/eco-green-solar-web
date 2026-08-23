@@ -328,47 +328,70 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
 .modal-close:hover{color:#fff; background:var(--red); border-color:var(--red); transform:rotate(90deg);}
 .modal-body{padding:20px 22px; overscroll-behavior:contain !important;}
 
-/* ---------- Settings Modal & Tabs ---------- */
-.settings-layout {
-  display: flex;
-  gap: 20px;
-  min-height: 440px;
-  overscroll-behavior: contain !important;
-}
-@media (max-width: 768px) {
-  .settings-layout {
-    flex-direction: column;
-    min-height: auto;
-  }
-}
-.settings-tabs {
-  width: 210px;
-  min-width: 210px;
+/* ---------- Settings Modal & Fixed-Tabs Shell ---------- */
+.modal-box.settings-modal-box,
+.modal-box:has(.settings-layout) {
+  height: min(650px, 86vh);
+  max-height: 86vh;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  border-right: 1px solid var(--border);
-  padding-right: 14px;
-  overscroll-behavior: contain !important;
+  overflow: hidden !important;
+  padding: 0;
 }
-@media (max-width: 768px) {
-  .settings-tabs {
-    width: 100%;
-    min-width: auto;
-    flex-direction: row;
-    overflow-x: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    padding-right: 0;
-    padding-bottom: 10px;
-  }
+.modal-box.settings-modal-box .modal-head,
+.modal-box:has(.settings-layout) .modal-head {
+  flex: 0 0 auto;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-box.settings-modal-box .modal-body,
+.modal-box:has(.settings-layout) .modal-body {
+  flex: 1 1 auto;
+  overflow: hidden !important;
+  padding: 0 !important;
+  display: flex;
+  min-height: 0;
+  height: 100%;
+}
+.settings-layout {
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  gap: 0;
+}
+.settings-tabs {
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+  flex: 0 0 220px;
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px 12px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overscroll-behavior: contain !important;
+  background: rgba(0, 0, 0, 0.08);
+}
+.settings-content-wrap {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 22px;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch;
 }
 .settings-tab-btn {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
-  border-radius: 10px;
+  padding: 9px 12px;
+  border-radius: 9px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--txt-muted);
@@ -395,10 +418,8 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
   font-weight: 700;
 }
 .settings-panel {
-  flex: 1;
   display: none;
-  animation: egsFadeIn 0.2s ease-out;
-  overscroll-behavior: contain !important;
+  animation: egsFadeIn 0.18s ease-out;
 }
 .settings-panel.active {
   display: block;
@@ -409,6 +430,34 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
   border-radius: 12px;
   padding: 14px 16px;
   margin-bottom: 12px;
+}
+
+@media (max-width: 768px) {
+  .modal-box.settings-modal-box,
+  .modal-box:has(.settings-layout) {
+    height: 90vh;
+    max-height: 90vh;
+  }
+  .settings-layout {
+    flex-direction: column;
+  }
+  .settings-tabs {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    flex: 0 0 auto;
+    height: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .settings-content-wrap {
+    padding: 14px 16px;
+  }
 }
 .settings-card-title {
   font-size: 13.5px;
