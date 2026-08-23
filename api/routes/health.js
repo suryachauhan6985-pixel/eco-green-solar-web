@@ -69,6 +69,36 @@ module.exports = function registerHealthRoutes(app, deps) {
 
       const [[{ totalItems }]] = await pool.query(`SELECT COUNT(*) AS totalItems FROM items`);
 
+      // Real-time Solar & ERP Daily Operations Pulse
+      const todayISO = new Date().toISOString().slice(0, 10);
+      let [[opsToday]] = await pool.query(`
+        SELECT
+          COALESCE(SUM(CASE WHEN purchase_date = ? THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS today_inward_qty,
+          COUNT(DISTINCT CASE WHEN purchase_date = ? THEN purchase_invoice ELSE NULL END) AS today_inward_invoices,
+          COALESCE(SUM(CASE WHEN (sales_date = ? OR chalan_date = ?) THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS today_dispatch_qty,
+          COUNT(DISTINCT CASE WHEN (sales_date = ? OR chalan_date = ?) THEN chalan_no ELSE NULL END) AS today_dispatch_challans,
+          COALESCE(SUM(CASE WHEN status='Available' AND (category LIKE '%SOLAR%' OR category LIKE '%PANEL%') THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS solar_panels_count
+        FROM stock_ledger
+      `, [todayISO, todayISO, todayISO, todayISO, todayISO, todayISO]).catch(() => [[{
+        today_inward_qty: 0,
+        today_inward_invoices: 0,
+        today_dispatch_qty: 0,
+        today_dispatch_challans: 0,
+        solar_panels_count: 0
+      }]]);
+
+      let warehousesCount = 1;
+      try {
+        const [[wh]] = await pool.query(`SELECT COUNT(DISTINCT warehouse) AS cnt FROM stock_ledger WHERE warehouse IS NOT NULL AND warehouse <> ''`);
+        warehousesCount = wh?.cnt || 1;
+      } catch (e) {}
+
+      let totalVouchers = 0;
+      try {
+        const [[vc]] = await pool.query(`SELECT COUNT(*) AS cnt FROM vouchers`);
+        totalVouchers = vc?.cnt || 0;
+      } catch (e) {}
+
       return {
         available: totals.available,
         assigned: totals.assigned,
@@ -77,11 +107,18 @@ module.exports = function registerHealthRoutes(app, deps) {
         solarKw: parseFloat(Number(totals.solar_kw || 0).toFixed(2)),
         invertersCount: Number(totals.inverters_count || 0),
         batteriesCount: Number(totals.batteries_count || 0),
+        solarPanelsCount: Number(opsToday?.solar_panels_count || 0),
+        todayInwardQty: Number(opsToday?.today_inward_qty || 0),
+        todayInwardInvoices: Number(opsToday?.today_inward_invoices || 0),
+        todayDispatchQty: Number(opsToday?.today_dispatch_qty || 0),
+        todayDispatchChallans: Number(opsToday?.today_dispatch_challans || 0),
+        warehousesCount: Number(warehousesCount || 1),
+        totalVouchers: Number(totalVouchers || 0),
         lowStockCount,
         totalItems,
         categorySnapshot,
       };
-    }, 20000);
+    }, 15000);
 
     res.json(data);
   }));

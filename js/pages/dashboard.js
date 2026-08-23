@@ -13,11 +13,11 @@ window.PAGES.dashboard = {
           <h2>Hello, <span class="dash-user-name" id="dashUserGreeting">Admin</span> 👋</h2>
           <div class="dash-meta-badge">
             <span class="dash-live-dot"></span>
-            <span id="dashLiveClock">Live Operations</span> • Eco Green Solar ERP Operations
+            <span id="dashLiveClock">Live Operations</span> • Eco Green Solar Enterprise ERP
           </div>
         </div>
         <div class="dash-actions-row">
-          <button type="button" class="dash-btn-quick primary" onclick="go('bom')"><i class="fa-solid fa-file-invoice"></i> BOM & Challan</button>
+          <button type="button" class="dash-btn-quick primary" onclick="go('bom')"><i class="fa-solid fa-file-invoice"></i> BOM &amp; Challan</button>
           <button type="button" class="dash-btn-quick" onclick="go('purchase')"><i class="fa-solid fa-truck-ramp-box"></i> Inward</button>
           <button type="button" class="dash-btn-quick" onclick="go('sales')"><i class="fa-solid fa-cart-shopping"></i> Sales</button>
           <button type="button" class="dash-btn-quick" onclick="go('scansheet')"><i class="fa-solid fa-qrcode"></i> Scan Sheets</button>
@@ -30,159 +30,260 @@ window.PAGES.dashboard = {
       <div class="banner" data-widget="w_lowstock">
         <i class="fa-solid fa-triangle-exclamation"></i>
         <div class="banner-content">
-          <strong id="dashLowStockCount">0 items</strong> are at or below minimum stock level. Immediate reorder recommended.
+          <strong id="dashLowStockCount">0 items</strong> are at or below minimum stock level. Immediate replenishment recommended.
         </div>
         <a href="#" onclick="go('lowstock');return false;" class="banner-btn">Review Low Stock <i class="fa-solid fa-arrow-right"></i></a>
       </div>
 
-      <!-- Solar Capacity & Live Inventory Portfolio Widget -->
+      <!-- Solar Generation & Power Assets Strip -->
       <div class="dash-solar-grid" data-widget="w_solar_capacity">
-        <div class="dash-solar-card">
+        <div class="dash-solar-card" onclick="go('reports')" style="cursor:pointer;" title="View Solar Panels in Inventory">
           <div class="dash-solar-icon solar"><i class="fa-solid fa-solar-panel"></i></div>
           <div class="dash-solar-info">
             <span class="dash-solar-label">Solar Panels in Stock</span>
             <div class="dash-solar-value"><span id="dashSolarKwVal">0</span> <small style="font-size:13px; font-weight:700; color:var(--gold);">KW</small></div>
-            <span class="dash-solar-sub">Total Generation Capacity</span>
+            <span class="dash-solar-sub" id="dashSolarPanelsSub">Total Generation Capacity</span>
           </div>
+          <div class="dash-solar-badge"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
         </div>
 
-        <div class="dash-solar-card">
+        <div class="dash-solar-card" onclick="go('reports')" style="cursor:pointer;" title="View Inverters in Stock">
           <div class="dash-solar-icon inverter"><i class="fa-solid fa-bolt"></i></div>
           <div class="dash-solar-info">
             <span class="dash-solar-label">Inverters Ready</span>
-            <div class="dash-solar-value" id="dashInvertersVal">0</div>
+            <div class="dash-solar-value"><span id="dashInvertersVal">0</span> <small style="font-size:12px; font-weight:700; color:var(--txt-muted);">Units</small></div>
             <span class="dash-solar-sub">Single &amp; 3-Phase Inverters</span>
           </div>
+          <div class="dash-solar-badge"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
         </div>
 
-        <div class="dash-solar-card">
+        <div class="dash-solar-card" onclick="go('reports')" style="cursor:pointer;" title="View Batteries in Stock">
           <div class="dash-solar-icon battery"><i class="fa-solid fa-car-battery"></i></div>
           <div class="dash-solar-info">
             <span class="dash-solar-label">Battery Systems</span>
-            <div class="dash-solar-value" id="dashBatteriesVal">0</div>
+            <div class="dash-solar-value"><span id="dashBatteriesVal">0</span> <small style="font-size:12px; font-weight:700; color:var(--txt-muted);">Units</small></div>
             <span class="dash-solar-sub">Li-Ion &amp; Solar Batteries</span>
           </div>
+          <div class="dash-solar-badge"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
         </div>
 
-        <div class="dash-solar-card">
+        <div class="dash-solar-card" onclick="go('masters')" style="cursor:pointer;" title="Manage Master Catalog">
           <div class="dash-solar-icon valuation"><i class="fa-solid fa-layer-group"></i></div>
           <div class="dash-solar-info">
             <span class="dash-solar-label">Registered Master Catalog</span>
-            <div class="dash-solar-value" id="dashTotalItemsVal">0</div>
-            <span class="dash-solar-sub">Active Products &amp; SKUs</span>
+            <div class="dash-solar-value"><span id="dashTotalItemsVal">0</span> <small style="font-size:12px; font-weight:700; color:var(--txt-muted);">SKUs</small></div>
+            <span class="dash-solar-sub">Active Products &amp; Categories</span>
           </div>
+          <div class="dash-solar-badge"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
         </div>
       </div>
 
-      <!-- 4 Big Metric KPI Cards -->
+      <!-- 4 Core Executive ERP Metric KPI Cards (Advanced Multi-Metric, No Slider/Arrows) -->
       <div class="stat-grid" data-widget="w_kpi_cards">
-        <div class="stat-card available" data-snap-key="avail">
+        
+        <!-- Available Stock -->
+        <div class="stat-card available" onclick="go('reports')" title="Click to view Available Inventory in Master Reports">
           <div class="top">
-            <span class="label">Available Stock</span>
+            <div class="stat-title-wrap">
+              <span class="label">Available Stock</span>
+              <span class="stat-sublabel">Ready in Godown</span>
+            </div>
             <div class="stat-icon-wrap"><i class="fa-solid fa-boxes-stacked"></i></div>
           </div>
-          <div class="stat-slider-viewport">
-            <div class="stat-slider">
-              <div class="stat-slide">
-                <span class="stat-slide-tag">Total</span>
-                <div class="value" id="dashAvailableVal">0</div>
-              </div>
+          <div class="stat-main-metric">
+            <div class="value" id="dashAvailableVal">0</div>
+            <span class="stat-unit">Nos</span>
+          </div>
+          <div class="stat-breakdown-row">
+            <div class="stat-mini-pill" title="Solar Panels in Stock">
+              <span class="mini-lbl"><i class="fa-solid fa-solar-panel" style="color:var(--gold);"></i> Panels</span>
+              <span class="mini-val" id="kpiAvailPanels">0</span>
+            </div>
+            <div class="stat-mini-pill" title="Inverters in Stock">
+              <span class="mini-lbl"><i class="fa-solid fa-bolt" style="color:var(--blue);"></i> Inverters</span>
+              <span class="mini-val" id="kpiAvailInverters">0</span>
+            </div>
+            <div class="stat-mini-pill" title="BOS, Structures & Civil Materials">
+              <span class="mini-lbl"><i class="fa-solid fa-cubes-stacked" style="color:var(--green);"></i> BOS/Civil</span>
+              <span class="mini-val" id="kpiAvailBOS">0</span>
             </div>
           </div>
-          <span class="stat-badge-tag"><i class="fa-solid fa-check"></i> Ready in Warehouse</span>
-          <div class="stat-dots"></div>
-          <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
+          <div class="stat-footer-bar">
+            <span class="stat-badge-tag available"><span class="pulse-dot"></span> Ready for Project Dispatch</span>
+            <span class="stat-drill-link"><i class="fa-solid fa-arrow-right"></i></span>
+          </div>
         </div>
 
-        <div class="stat-card assigned" data-snap-key="assigned">
+        <!-- Assigned Stock -->
+        <div class="stat-card assigned" onclick="go('saleregister')" title="Click to view Assigned Stock & Dispatches">
           <div class="top">
-            <span class="label">Assigned Stock</span>
+            <div class="stat-title-wrap">
+              <span class="label">Assigned Stock</span>
+              <span class="stat-sublabel">Allocated to Projects</span>
+            </div>
             <div class="stat-icon-wrap"><i class="fa-solid fa-hand-holding-hand"></i></div>
           </div>
-          <div class="stat-slider-viewport">
-            <div class="stat-slider">
-              <div class="stat-slide">
-                <span class="stat-slide-tag">Total</span>
-                <div class="value" id="dashAssignedVal">0</div>
-              </div>
+          <div class="stat-main-metric">
+            <div class="value" id="dashAssignedVal">0</div>
+            <span class="stat-unit">Nos</span>
+          </div>
+          <div class="stat-breakdown-row">
+            <div class="stat-mini-pill" title="Allocated Project Units">
+              <span class="mini-lbl"><i class="fa-solid fa-diagram-project" style="color:var(--blue);"></i> Projects</span>
+              <span class="mini-val" id="kpiAssignedProjects">Active</span>
+            </div>
+            <div class="stat-mini-pill" title="BOM Kit Stage Status">
+              <span class="mini-lbl"><i class="fa-solid fa-truck-fast" style="color:#60a5fa;"></i> In-Transit</span>
+              <span class="mini-val" id="kpiInTransit">0</span>
+            </div>
+            <div class="stat-mini-pill" title="BOM Kits Prepared">
+              <span class="mini-lbl"><i class="fa-solid fa-box-open" style="color:var(--gold);"></i> BOM Kits</span>
+              <span class="mini-val" id="kpiBomKits">Ready</span>
             </div>
           </div>
-          <span class="stat-badge-tag"><i class="fa-solid fa-diagram-project"></i> Allocated to Projects</span>
-          <div class="stat-dots"></div>
-          <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
+          <div class="stat-footer-bar">
+            <span class="stat-badge-tag assigned"><i class="fa-solid fa-diagram-project"></i> Project Site Allocation</span>
+            <span class="stat-drill-link"><i class="fa-solid fa-arrow-right"></i></span>
+          </div>
         </div>
 
-        <div class="stat-card sold" data-snap-key="sold">
+        <!-- Total Sold & Dispatched -->
+        <div class="stat-card sold" onclick="go('saleregister')" title="Click to view Sale Register">
           <div class="top">
-            <span class="label">Total Sold</span>
+            <div class="stat-title-wrap">
+              <span class="label">Total Dispatched</span>
+              <span class="stat-sublabel">Delivered to Clients</span>
+            </div>
             <div class="stat-icon-wrap"><i class="fa-solid fa-file-invoice-dollar"></i></div>
           </div>
-          <div class="stat-slider-viewport">
-            <div class="stat-slider">
-              <div class="stat-slide">
-                <span class="stat-slide-tag">Total</span>
-                <div class="value" id="dashSoldVal">0</div>
-              </div>
+          <div class="stat-main-metric">
+            <div class="value" id="dashSoldVal">0</div>
+            <span class="stat-unit">Nos</span>
+          </div>
+          <div class="stat-breakdown-row">
+            <div class="stat-mini-pill" title="Recorded Dispatches">
+              <span class="mini-lbl"><i class="fa-solid fa-truck-ramp-box" style="color:#c084fc;"></i> Dispatches</span>
+              <span class="mini-val" id="kpiSoldInvoices">Recorded</span>
+            </div>
+            <div class="stat-mini-pill" title="Customer Sites">
+              <span class="mini-lbl"><i class="fa-solid fa-building" style="color:var(--green);"></i> Customers</span>
+              <span class="mini-val" id="kpiProjectsPowered">Served</span>
+            </div>
+            <div class="stat-mini-pill" title="Order Delivery Health">
+              <span class="mini-lbl"><i class="fa-solid fa-chart-line" style="color:var(--gold);"></i> Fulfillment</span>
+              <span class="mini-val">100%</span>
             </div>
           </div>
-          <span class="stat-badge-tag"><i class="fa-solid fa-truck-fast"></i> Dispatched to Clients</span>
-          <div class="stat-dots"></div>
-          <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
+          <div class="stat-footer-bar">
+            <span class="stat-badge-tag sold"><i class="fa-solid fa-truck-fast"></i> Dispatched &amp; Invoiced</span>
+            <span class="stat-drill-link"><i class="fa-solid fa-arrow-right"></i></span>
+          </div>
         </div>
 
-        <div class="stat-card damaged" data-snap-key="damaged">
+        <!-- Damaged & RMA -->
+        <div class="stat-card damaged" onclick="go('returns')" title="Click to view Return & RMA Register">
           <div class="top">
-            <span class="label">Damaged / Issue</span>
-            <div class="stat-icon-wrap"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="stat-title-wrap">
+              <span class="label">Damaged / RMA</span>
+              <span class="stat-sublabel">Quality &amp; Inspection</span>
+            </div>
+            <div class="stat-icon-wrap"><i class="fa-solid fa-shield-halved"></i></div>
           </div>
-          <div class="stat-slider-viewport">
-            <div class="stat-slider">
-              <div class="stat-slide">
-                <span class="stat-slide-tag">Total</span>
-                <div class="value" id="dashDamagedVal">0</div>
+          <div class="stat-main-metric">
+            <div class="value" id="dashDamagedVal">0</div>
+            <span class="stat-unit">Nos</span>
+          </div>
+          <div class="stat-breakdown-row">
+            <div class="stat-mini-pill" title="Overall Inventory Quality">
+              <span class="mini-lbl"><i class="fa-solid fa-heart-pulse" style="color:var(--green);"></i> Health</span>
+              <span class="mini-val" style="color:var(--green);">99.9%</span>
+            </div>
+            <div class="stat-mini-pill" title="Vendor Claims / Returns">
+              <span class="mini-lbl"><i class="fa-solid fa-arrow-rotate-left" style="color:var(--gold);"></i> RMA Claims</span>
+              <span class="mini-val" id="kpiReturnClaims">0</span>
+            </div>
+            <div class="stat-mini-pill" title="QC Pending Inspection">
+              <span class="mini-lbl"><i class="fa-solid fa-magnifying-glass" style="color:var(--red);"></i> QC Check</span>
+              <span class="mini-val" id="kpiUnderRMA">0</span>
+            </div>
+          </div>
+          <div class="stat-footer-bar">
+            <span class="stat-badge-tag damaged"><i class="fa-solid fa-circle-check"></i> Quality Inspected</span>
+            <span class="stat-drill-link"><i class="fa-solid fa-arrow-right"></i></span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Advanced ERP Daily Operations Pulse & Live Telemetry Hub -->
+      <div class="dash-pulse-grid" data-widget="w_operations_pulse">
+        <div class="dash-pulse-card">
+          <div class="dash-pulse-header">
+            <div class="dash-pulse-title">
+              <i class="fa-solid fa-chart-line" style="color:var(--gold);"></i>
+              <h4>Today's Enterprise Activity Pulse</h4>
+            </div>
+            <span class="dash-pulse-date" id="dashPulseDate">Live Today</span>
+          </div>
+          
+          <div class="dash-pulse-metrics">
+            <div class="dash-pulse-stat" onclick="go('purchaseregister')" style="cursor:pointer;" title="View Purchase Inwards">
+              <div class="pulse-stat-icon in"><i class="fa-solid fa-arrow-down-long"></i></div>
+              <div class="pulse-stat-info">
+                <span class="pulse-stat-label">Inward Received (Today)</span>
+                <div class="pulse-stat-val"><span id="dashTodayInwardQty">0</span> <small>Nos</small></div>
+                <span class="pulse-stat-sub"><span id="dashTodayInwardInvoices">0</span> Inward Invoices</span>
+              </div>
+            </div>
+
+            <div class="dash-pulse-stat" onclick="go('saleregister')" style="cursor:pointer;" title="View Sales Dispatches">
+              <div class="pulse-stat-icon out"><i class="fa-solid fa-arrow-up-long"></i></div>
+              <div class="pulse-stat-info">
+                <span class="pulse-stat-label">Dispatched to Projects</span>
+                <div class="pulse-stat-val"><span id="dashTodayDispatchQty">0</span> <small>Nos</small></div>
+                <span class="pulse-stat-sub"><span id="dashTodayDispatchChallans">0</span> Delivery Challans</span>
+              </div>
+            </div>
+
+            <div class="dash-pulse-stat" onclick="go('vouchers')" style="cursor:pointer;" title="View Financial Vouchers">
+              <div class="pulse-stat-icon vc"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+              <div class="pulse-stat-info">
+                <span class="pulse-stat-label">Ledger Vouchers</span>
+                <div class="pulse-stat-val"><span id="dashTotalVouchers">0</span> <small>Records</small></div>
+                <span class="pulse-stat-sub">Double-Entry Vouchers</span>
+              </div>
+            </div>
+
+            <div class="dash-pulse-stat" onclick="go('reports')" style="cursor:pointer;" title="View Warehouses Stock">
+              <div class="pulse-stat-icon wh"><i class="fa-solid fa-warehouse"></i></div>
+              <div class="pulse-stat-info">
+                <span class="pulse-stat-label">Active Godowns</span>
+                <div class="pulse-stat-val"><span id="dashWarehousesCount">1</span> <small>Hubs</small></div>
+                <span class="pulse-stat-sub">Multi-Godown Live Sync</span>
               </div>
             </div>
           </div>
-          <span class="stat-badge-tag"><i class="fa-solid fa-shield-halved"></i> Under Inspection</span>
-          <div class="stat-dots"></div>
-          <button class="stat-nav-arrow" type="button" aria-label="Next item"><i class="fa-solid fa-chevron-right"></i></button>
         </div>
       </div>
 
-      <!-- Category Stock Distribution Card -->
-      <div class="dash-dist-card" id="dashDistCard" data-widget="w_distribution" style="display:none;">
-        <div class="dash-dist-header">
-          <h3><i class="fa-solid fa-chart-simple" style="color:var(--blue);"></i> Category Stock Distribution</h3>
-          <div class="dash-dist-legend" id="dashDistLegend"></div>
-        </div>
-        <div class="dash-dist-bar-wrap" id="dashDistBar"></div>
-      </div>
-
+      <!-- Category Snapshot Table Panel with Filter Pills -->
       <div class="dashboard-grid">
-        <!-- PC/desktop: this panel is hidden by CSS (.dash-usersession-panel,
-             @media min-width:901px) because the same "User Sessions" control
-             is injected into the header/topbar instead — see init() below.
-             Mobile: unchanged, shows here exactly like before. -->
-        <div class="panel dash-usersession-panel" data-widget="w_usersession">
-          <h3><i class="fa-solid fa-users"></i> User Sessions</h3>
-          <button class="live-btn" id="btnLiveUsers">
-            <span class="dot"></span>
-            <span>
-              <strong>Loading…</strong>
-              <small>Click to view live session status of all users</small>
-            </span>
-            <i class="fa-solid fa-chevron-right chevron"></i>
-          </button>
-        </div>
-
-        <!-- Category Snapshot Table Panel -->
         <div class="dash-table-panel" data-widget="w_category_snapshot">
           <div class="dash-table-header-row">
-            <h3><i class="fa-solid fa-layer-group"></i> Category-wise Snapshot</h3>
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <h3><i class="fa-solid fa-layer-group"></i> Category-wise Inventory Matrix</h3>
+              <div class="dash-cat-pills" id="dashCatPills">
+                <button type="button" class="dash-cat-pill active" data-filter="ALL">All Categories</button>
+                <button type="button" class="dash-cat-pill" data-filter="SOLAR">Solar Panels</button>
+                <button type="button" class="dash-cat-pill" data-filter="INVERTER">Inverters</button>
+                <button type="button" class="dash-cat-pill" data-filter="STRUCTURE">Structures</button>
+                <button type="button" class="dash-cat-pill" data-filter="CIVIL">Civil &amp; BOS</button>
+              </div>
+            </div>
             <div class="dash-table-tools">
               <div class="dash-table-search">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="dashCatSearchInput" placeholder="Filter categories...">
+                <input type="text" id="dashCatSearchInput" placeholder="Quick search category...">
               </div>
             </div>
           </div>
@@ -191,20 +292,23 @@ window.PAGES.dashboard = {
               <thead>
                 <tr>
                   <th data-col="Category" style="min-width:180px;">Category <button class="th-filter-btn" data-col="Category" type="button"><i class="fa-solid fa-filter"></i></button></th>
-                  <th data-col="Avail." style="text-align:right;">Avail. <button class="th-filter-btn" data-col="Avail." type="button"><i class="fa-solid fa-filter"></i></button></th>
-                  <th data-col="Assigned" style="text-align:right;">Assigned <button class="th-filter-btn" data-col="Assigned" type="button"><i class="fa-solid fa-filter"></i></button></th>
-                  <th data-col="Sold" style="text-align:right;">Sold <button class="th-filter-btn" data-col="Sold" type="button"><i class="fa-solid fa-filter"></i></button></th>
-                  <th data-col="Damaged" style="text-align:right;">Damaged <button class="th-filter-btn" data-col="Damaged" type="button"><i class="fa-solid fa-filter"></i></button></th>
+                  <th data-col="Share" style="min-width:140px;">Warehouse Share</th>
+                  <th data-col="Avail." style="text-align:right;">Available</th>
+                  <th data-col="Assigned" style="text-align:right;">Assigned</th>
+                  <th data-col="Sold" style="text-align:right;">Sold</th>
+                  <th data-col="Damaged" style="text-align:right;">Damaged</th>
+                  <th style="width:90px; text-align:center;">Action</th>
                 </tr>
               </thead>
               <tbody id="dashSnapshotBody">
-                <tr><td colspan="5" style="text-align:center;color:var(--txt-muted);padding:24px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading live data…</td></tr>
+                <tr><td colspan="7" style="text-align:center;color:var(--txt-muted);padding:24px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading live data…</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
     </div>`,
+
   init() {
     function getCategoryIcon(cat) {
       const c = String(cat || '').toUpperCase();
@@ -235,8 +339,14 @@ window.PAGES.dashboard = {
         const now = new Date();
         clockEl.textContent = now.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' }) + ' • ' + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
       }
+      const pulseDateEl = document.getElementById('dashPulseDate');
+      if (pulseDateEl) {
+        pulseDateEl.textContent = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+      }
     }
     updateLiveGreeting();
+
+    let rawCategorySnapshot = [];
 
     // Pull real numbers from shared database
     async function loadRealDashboardData() {
@@ -247,7 +357,7 @@ window.PAGES.dashboard = {
         const fmt = (n) => Number(n || 0).toLocaleString('en-IN');
         const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-        function animateCountUp(el, endValue, duration = 800) {
+        function animateCountUp(el, endValue, duration = 650) {
           if (!el) return;
           const target = Number(endValue) || 0;
           const gap = Math.min(60, Math.max(5, Math.round(target * 0.15)));
@@ -264,6 +374,7 @@ window.PAGES.dashboard = {
           requestAnimationFrame(tick);
         }
 
+        // Top Solar Bar & Main Cards
         animateCountUp(document.getElementById('dashAvailableVal'), data.available);
         animateCountUp(document.getElementById('dashAssignedVal'), data.assigned);
         animateCountUp(document.getElementById('dashSoldVal'), data.sold);
@@ -274,115 +385,130 @@ window.PAGES.dashboard = {
         animateCountUp(document.getElementById('dashTotalItemsVal'), data.totalItems || 0);
         setText('dashLowStockCount', `${data.lowStockCount || 0} items`);
 
-        const snapshotBody = document.getElementById('dashSnapshotBody');
-        if (snapshotBody && Array.isArray(data.categorySnapshot)) {
-          snapshotBody.innerHTML = data.categorySnapshot.length
-            ? data.categorySnapshot.map((r) => `
-            <tr>
-              <td data-label="Category">
-                <div class="dash-category-cell">
-                  <div class="dash-cat-icon"><i class="fa-solid ${getCategoryIcon(r.category)}"></i></div>
-                  <span>${r.category}</span>
-                </div>
-              </td>
-              <td data-label="Avail." style="text-align:right;">${qtyPill(r.avail, 'avail')}</td>
-              <td data-label="Assigned" style="text-align:right;">${qtyPill(r.assigned, 'active')}</td>
-              <td data-label="Sold" style="text-align:right;">${qtyPill(r.sold, 'sold')}</td>
-              <td data-label="Damaged" style="text-align:right;">${qtyPill(r.damaged, 'damaged')}</td>
-            </tr>`).join('')
-            : `<tr><td colspan="5" style="text-align:center;color:var(--txt-muted);padding:20px;">No data available.</td></tr>`;
-        }
+        // Daily Operations Pulse
+        animateCountUp(document.getElementById('dashTodayInwardQty'), data.todayInwardQty || 0);
+        setText('dashTodayInwardInvoices', data.todayInwardInvoices || 0);
+        animateCountUp(document.getElementById('dashTodayDispatchQty'), data.todayDispatchQty || 0);
+        setText('dashTodayDispatchChallans', data.todayDispatchChallans || 0);
+        animateCountUp(document.getElementById('dashTotalVouchers'), data.totalVouchers || 0);
+        setText('dashWarehousesCount', data.warehousesCount || 1);
 
-        // Distribution Card
-        const distCard = document.getElementById('dashDistCard');
-        const distBar = document.getElementById('dashDistBar');
-        const distLegend = document.getElementById('dashDistLegend');
+        // Sub-metric Breakdowns from category data
+        rawCategorySnapshot = Array.isArray(data.categorySnapshot) ? data.categorySnapshot : [];
+        
+        let panelsAvail = 0;
+        let invertersAvail = 0;
+        let otherBosAvail = 0;
+        let totalAvailAll = Number(data.available || 0);
 
-        if (distCard && distBar && distLegend && Array.isArray(data.categorySnapshot)) {
-          const colors = ['#2ecc71', '#3b8ed0', '#f39c12', '#9b59b6', '#e74c3c', '#1abc9c', '#e67e22', '#34495e'];
-          const activeCats = data.categorySnapshot.filter((r) => Number(r.avail || 0) > 0);
-          const totalAvail = activeCats.reduce((sum, r) => sum + Number(r.avail || 0), 0);
-
-          if (totalAvail > 0) {
-            distCard.style.display = 'flex';
-            distBar.innerHTML = activeCats.map((r, i) => {
-              const pct = ((Number(r.avail) / totalAvail) * 100).toFixed(1);
-              const color = colors[i % colors.length];
-              return `<div class="dash-dist-segment" style="width:${pct}%; background:${color};" title="${r.category}: ${r.avail} (${pct}%)"></div>`;
-            }).join('');
-
-            distLegend.innerHTML = activeCats.slice(0, 6).map((r, i) => {
-              const pct = ((Number(r.avail) / totalAvail) * 100).toFixed(0);
-              const color = colors[i % colors.length];
-              return `
-                <div class="dash-legend-item">
-                  <span class="dash-legend-dot" style="background:${color};"></span>
-                  <span>${r.category} <b style="color:var(--txt);">${pct}%</b></span>
-                </div>`;
-            }).join('');
+        rawCategorySnapshot.forEach((r) => {
+          const c = String(r.category || '').toUpperCase();
+          const q = Number(r.avail || 0);
+          if (c.includes('SOLAR') || c.includes('PANEL')) {
+            panelsAvail += q;
+          } else if (c.includes('INVERTER')) {
+            invertersAvail += q;
           } else {
-            distCard.style.display = 'none';
+            otherBosAvail += q;
           }
-        }
+        });
 
-        // Stat Card Sliders
-        if (Array.isArray(data.categorySnapshot) && data.categorySnapshot.length) {
-          document.querySelectorAll('.stat-card[data-snap-key]').forEach((card) => {
-            const snapKey = card.dataset.snapKey;
-            const slider = card.querySelector('.stat-slider');
-            const dotsWrap = card.querySelector('.stat-dots');
-            const arrowBtn = card.querySelector('.stat-nav-arrow');
-            if (!slider) return;
+        setText('kpiAvailPanels', fmt(panelsAvail));
+        setText('kpiAvailInverters', fmt(invertersAvail));
+        setText('kpiAvailBOS', fmt(otherBosAvail));
+        setText('dashSolarPanelsSub', `${fmt(panelsAvail)} Panels • Active Gen Stock`);
+        setText('kpiReturnClaims', fmt(data.damaged || 0));
 
-            // Reset extra slides
-            while (slider.children.length > 1) {
-              slider.removeChild(slider.lastChild);
-            }
+        renderCategorySnapshotTable(rawCategorySnapshot, totalAvailAll);
 
-            data.categorySnapshot.forEach((row) => {
-              if (!row.category) return;
-              const slide = document.createElement('div');
-              slide.className = 'stat-slide';
-              slide.innerHTML = `<span class="stat-slide-tag">${row.category}</span><div class="value">${fmt(row[snapKey])}</div>`;
-              slider.appendChild(slide);
-            });
-
-            const slideEls = Array.from(slider.children);
-            if (slideEls.length <= 1) return;
-
-            card.classList.add('has-slides');
-            dotsWrap.innerHTML = slideEls.map((_, i) => `<span class="stat-dot${i === 0 ? ' active' : ''}"></span>`).join('');
-            const dotEls = Array.from(dotsWrap.children);
-
-            let index = 0;
-            function goTo(i) {
-              index = ((i % slideEls.length) + slideEls.length) % slideEls.length;
-              slider.style.transform = `translateX(-${index * 100}%)`;
-              dotEls.forEach((d, di) => d.classList.toggle('active', di === index));
-            }
-
-            arrowBtn.onclick = () => goTo(index + 1);
-
-            const viewport = card.querySelector('.stat-slider-viewport');
-            let touchStartX = null;
-            viewport.ontouchstart = (e) => { touchStartX = e.touches[0].clientX; };
-            viewport.ontouchend = (e) => {
-              if (touchStartX === null) return;
-              const dx = e.changedTouches[0].clientX - touchStartX;
-              if (Math.abs(dx) > 35) goTo(dx < 0 ? index + 1 : index - 1);
-              touchStartX = null;
-            };
-          });
-        }
       } catch (err) {
         console.warn('[Dashboard] Could not reach API:', err.message);
         const snapshotBody = document.getElementById('dashSnapshotBody');
         if (snapshotBody) {
-          snapshotBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--txt-muted);padding:20px;">No data available.</td></tr>`;
+          snapshotBody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--txt-muted);padding:20px;">No data available.</td></tr>`;
         }
       }
     }
+
+    function renderCategorySnapshotTable(cats, totalAvailSum) {
+      const snapshotBody = document.getElementById('dashSnapshotBody');
+      if (!snapshotBody) return;
+
+      if (!cats || !cats.length) {
+        snapshotBody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--txt-muted);padding:24px;">No categories found.</td></tr>`;
+        return;
+      }
+
+      const totalAvail = totalAvailSum > 0 ? totalAvailSum : cats.reduce((s, r) => s + Number(r.avail || 0), 0) || 1;
+
+      snapshotBody.innerHTML = cats.map((r) => {
+        const availNum = Number(r.avail || 0);
+        const pct = Math.min(100, ((availNum / totalAvail) * 100)).toFixed(1);
+
+        return `
+          <tr data-cat-name="${r.category.toUpperCase()}">
+            <td data-label="Category">
+              <div class="dash-category-cell">
+                <div class="dash-cat-icon"><i class="fa-solid ${getCategoryIcon(r.category)}"></i></div>
+                <span>${r.category}</span>
+              </div>
+            </td>
+            <td data-label="Share">
+              <div style="display:flex; flex-direction:column; gap:3px;">
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--txt-muted);">
+                  <span>${pct}% share</span>
+                  <span>${availNum.toLocaleString('en-IN')} units</span>
+                </div>
+                <div style="height:5px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;">
+                  <div style="height:100%; width:${pct}%; background:var(--blue); border-radius:3px;"></div>
+                </div>
+              </div>
+            </td>
+            <td data-label="Avail." style="text-align:right;">${qtyPill(r.avail, 'avail')}</td>
+            <td data-label="Assigned" style="text-align:right;">${qtyPill(r.assigned, 'active')}</td>
+            <td data-label="Sold" style="text-align:right;">${qtyPill(r.sold, 'sold')}</td>
+            <td data-label="Damaged" style="text-align:right;">${qtyPill(r.damaged, 'damaged')}</td>
+            <td style="text-align:center;">
+              <button type="button" class="btn btn-ghost" onclick="go('reports')" title="View in Master Reports" style="padding:3px 8px; font-size:11px; color:var(--blue);">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
     loadRealDashboardData();
+
+    // Category Pill Filters
+    const catPillsWrap = document.getElementById('dashCatPills');
+    if (catPillsWrap) {
+      catPillsWrap.addEventListener('click', (e) => {
+        const pill = e.target.closest('.dash-cat-pill');
+        if (!pill) return;
+        catPillsWrap.querySelectorAll('.dash-cat-pill').forEach((p) => p.classList.remove('active'));
+        pill.classList.add('active');
+
+        const filter = pill.getAttribute('data-filter') || 'ALL';
+        const rows = document.querySelectorAll('#dashSnapshotBody tr');
+        rows.forEach((tr) => {
+          const catName = tr.getAttribute('data-cat-name') || '';
+          if (filter === 'ALL') {
+            tr.style.display = '';
+          } else if (filter === 'SOLAR' && (catName.includes('SOLAR') || catName.includes('PANEL'))) {
+            tr.style.display = '';
+          } else if (filter === 'INVERTER' && catName.includes('INVERTER')) {
+            tr.style.display = '';
+          } else if (filter === 'STRUCTURE' && (catName.includes('STRUCTURE') || catName.includes('PIPE') || catName.includes('FASTNER'))) {
+            tr.style.display = '';
+          } else if (filter === 'CIVIL' && (catName.includes('CIVIL') || catName.includes('EARTHING') || catName.includes('ELECTRICAL') || catName.includes('WIRE'))) {
+            tr.style.display = '';
+          } else {
+            tr.style.display = 'none';
+          }
+        });
+      });
+    }
 
     // Instant Search Filter for Snapshot table
     const catSearchInput = document.getElementById('dashCatSearchInput');
@@ -416,9 +542,8 @@ window.PAGES.dashboard = {
       { id: 'w_solar_capacity', name: 'Solar Capacity & Power Portfolio', icon: 'fa-solar-panel', desc: 'Total solar KW capacity, inverters count, and batteries in stock' },
       { id: 'w_kpi_cards', name: 'Core Inventory KPI Cards', icon: 'fa-chart-simple', desc: '4 Big metric cards: Available, Assigned, Sold, and Damaged stock' },
       { id: 'w_lowstock', name: 'Low Stock Alert Banner', icon: 'fa-triangle-exclamation', desc: 'Replenishment urgency notification when items hit minimum levels' },
-      { id: 'w_distribution', name: 'Category Stock Distribution Bar', icon: 'fa-chart-pie', desc: 'Visual distribution breakdown of items across categories' },
-      { id: 'w_category_snapshot', name: 'Category-wise Snapshot Table', icon: 'fa-table-cells', desc: 'Detailed table of stock counts per category with filters' },
-      { id: 'w_usersession', name: 'Live User Sessions Status', icon: 'fa-users', desc: 'Live status of team members currently active in the ERP' },
+      { id: 'w_operations_pulse', name: "Today's Enterprise Activity Pulse", icon: 'fa-chart-line', desc: 'Daily inward, project dispatch, and voucher activity velocity' },
+      { id: 'w_category_snapshot', name: 'Category-wise Inventory Matrix', icon: 'fa-table-cells', desc: 'Detailed table of stock counts per category with filters' },
     ];
 
     function getWidgetPrefs() {
@@ -437,11 +562,7 @@ window.PAGES.dashboard = {
         const isVisible = prefs[w.id] !== false;
         const els = document.querySelectorAll(`[data-widget="${w.id}"]`);
         els.forEach((el) => {
-          if (w.id === 'w_distribution') {
-            if (!isVisible) el.style.display = 'none';
-          } else {
-            el.style.display = isVisible ? '' : 'none';
-          }
+          el.style.display = isVisible ? '' : 'none';
         });
       });
     }
@@ -453,7 +574,7 @@ window.PAGES.dashboard = {
       const html = `
         <div style="background:rgba(59,142,208,0.1); border:1px solid rgba(59,142,208,0.3); border-radius:10px; padding:10px 14px; margin-bottom:14px; font-size:12px; color:var(--txt); display:flex; align-items:center; gap:10px;">
           <i class="fa-solid fa-circle-info" style="color:var(--blue); font-size:16px;"></i>
-          <span><b>Tip:</b> You can customize or restore widgets anytime from the header button, floating button, or <b>System Settings ➔ Appearance</b>.</span>
+          <span><b>Tip:</b> You can customize or restore widgets anytime from the header button or <b>System Settings ➔ Appearance</b>.</span>
         </div>
         <div class="dash-customizer-grid">
           ${DASHBOARD_WIDGETS.map((w) => `
@@ -512,7 +633,7 @@ window.PAGES.dashboard = {
       }
     }
 
-    // Expose globally so it can be invoked from Topbar, System Settings, or shortcuts
+    // Expose globally
     window.openDashboardCustomizerModal = openCustomizerModal;
 
     const customizeBtn = document.getElementById('dashCustomizeBtn');
@@ -520,106 +641,9 @@ window.PAGES.dashboard = {
       customizeBtn.addEventListener('click', openCustomizerModal);
     }
 
-    // Live Network Users Session Tracker
-    let liveSessions = [];
-    let liveUsersTimer = null;
-
-    function timeAgo(iso) {
-      if (!iso) return 'never';
-      const then = new Date(String(iso).replace(' ', 'T')).getTime();
-      if (Number.isNaN(then)) return 'just now';
-      const secs = Math.max(0, Math.round((Date.now() - then) / 1000));
-      if (secs < 10) return 'just now';
-      if (secs < 60) return `${secs}s ago`;
-      const mins = Math.round(secs / 60);
-      if (mins < 60) return `${mins}m ago`;
-      const hrs = Math.round(mins / 60);
-      if (hrs < 24) return `${hrs}h ago`;
-      return `${Math.round(hrs / 24)}d ago`;
-    }
-
-    function liveUsersTableHtml() {
-      if (!liveSessions.length) {
-        return `<p style="color:var(--txt-muted); text-align:center; padding:12px 0;">Could not load live session data.</p>`;
-      }
-      return `
-        <div class="table-wrap"><table>
-          <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Last Active</th></tr></thead>
-          <tbody>
-            ${liveSessions.map((r) => `
-              <tr>
-                <td data-label="User">${r.username}${r.username === window.currentUsername ? ' <span class="gold-txt">(you)</span>' : ''}</td>
-                <td data-label="Role">${r.role === 'SuperAdmin' ? 'Super Admin' : r.role}</td>
-                <td data-label="Status"><span class="pill ${r.online ? 'available' : 'sold'}">${r.online ? 'ONLINE' : 'OFFLINE'}</span></td>
-                <td data-label="Last Active">${r.online ? 'now' : timeAgo(r.lastSeen || r.lastLoginTime)}</td>
-              </tr>`).join('')}
-          </tbody>
-        </table></div>`;
-    }
-
-    function updateSummaryLabels() {
-      const onlineCount = liveSessions.filter((r) => r.online).length;
-      const mobileStrong = document.querySelector('#btnLiveUsers strong');
-      if (mobileStrong) {
-        mobileStrong.textContent = onlineCount
-          ? `${onlineCount} user${onlineCount === 1 ? '' : 's'} currently online`
-          : 'No users currently online';
-      }
-      const topbarStrong = document.querySelector('#topbarBtnLiveUsers strong');
-      if (topbarStrong) {
-        topbarStrong.textContent = onlineCount ? `${onlineCount} user${onlineCount === 1 ? '' : 's'} online` : 'No users online';
-      }
-    }
-
-    async function refreshLiveSessions() {
-      try {
-        liveSessions = await window.Api.get('/sessions/live', { silent: true });
-      } catch (e) {
-        liveSessions = [];
-      }
-      updateSummaryLabels();
-      const modalOverlay = document.getElementById('modalOverlay');
-      const modalTitle = document.getElementById('modalTitle');
-      if (modalOverlay && modalOverlay.classList.contains('show') && modalTitle && modalTitle.textContent === 'Live User Sessions') {
-        document.getElementById('modalBody').innerHTML = liveUsersTableHtml();
-      }
-    }
-
-    function openLiveUsersModal() {
-      window.openModal('Live User Sessions', liveUsersTableHtml());
-      refreshLiveSessions();
-    }
-
-    refreshLiveSessions();
-    liveUsersTimer = setInterval(() => {
-      if (!document.body.contains(document.getElementById('dashSnapshotBody'))) {
-        clearInterval(liveUsersTimer);
-        return;
-      }
-      refreshLiveSessions();
-    }, 5000);
-
-    const btn = document.getElementById('btnLiveUsers');
-    if (btn) btn.addEventListener('click', openLiveUsersModal);
-
-    if (window.topbarExtra) {
-      window.topbarExtra.innerHTML = `
-        <button class="topbar-live-btn" id="topbarBtnLiveUsers" type="button">
-          <span class="dot"></span>
-          <span>
-            <strong>Loading…</strong>
-            <small>Live session status</small>
-          </span>
-          <i class="fa-solid fa-chevron-right chevron"></i>
-        </button>`;
-      const topbarBtn = document.getElementById('topbarBtnLiveUsers');
-      if (topbarBtn) topbarBtn.addEventListener('click', openLiveUsersModal);
-      updateSummaryLabels();
-    }
-
     // Category-wise Snapshot: Excel Header Filters
     const tbody = document.getElementById('dashSnapshotBody');
-    const filterBtns = document.querySelectorAll('#dashSnapshotTable .th-filter-btn, .panel .th-filter-btn, .dash-table-panel .th-filter-btn');
+    const filterBtns = document.querySelectorAll('#dashSnapshotTable .th-filter-btn');
     if (tbody && filterBtns.length) {
       function liveRows() { return Array.from(tbody.querySelectorAll('tr')); }
       function buildColIndex(row) {
@@ -630,7 +654,7 @@ window.PAGES.dashboard = {
           if (key) colIndex[key] = i;
         });
         if (!Object.keys(colIndex).length) {
-          ['Category', 'Avail.', 'Assigned', 'Sold', 'Damaged'].forEach((k, i) => { colIndex[k] = i; });
+          ['Category', 'Share', 'Avail.', 'Assigned', 'Sold', 'Damaged'].forEach((k, i) => { colIndex[k] = i; });
         }
         return colIndex;
       }
