@@ -3563,6 +3563,8 @@ window.attachColumnFilters = function (table) {
               1-click XML ledger sync directly into Tally Prime and Busy Accounting software.
             </p>
           </div>
+        </div>
+
         <!-- Performance & System Telemetry Tab -->
         ${isAdmin ? `
         <div class="settings-panel" id="tab-perf">
@@ -3726,8 +3728,6 @@ window.attachColumnFilters = function (table) {
     tabBtns.forEach((btn) => {
       btn.addEventListener('click', () => activateTab(btn.getAttribute('data-tab')));
     });
-    activateTab(initialTab);
-
     // Performance & Telemetry Handlers
     async function loadPerformanceTelemetry() {
       const container = document.getElementById('perfTelemetryContainer');
@@ -3826,6 +3826,8 @@ window.attachColumnFilters = function (table) {
         }
       });
     }
+
+    activateTab(initialTab);
 
     // Wire Theme buttons inside Settings
     const modalBox = document.querySelector('#modalOverlay .modal-box');
