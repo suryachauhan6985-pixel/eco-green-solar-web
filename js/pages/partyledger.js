@@ -1158,8 +1158,16 @@ window.PAGES.partyledger = {
     if (stmtVoucherPrintBtn) {
       stmtVoucherPrintBtn.addEventListener('click', () => {
         if (stRef && stRef.key && stRef.key !== '-') {
+          const matched = selectedRows.filter((r) => r.movement === stRef.movement && r.ref_key === stRef.key);
+          const chNo = (matched[0] && matched[0].chalan_no && matched[0].chalan_no !== '-') ? matched[0].chalan_no : stRef.key;
           if (typeof window.printChallanByNo === 'function') {
-            window.printChallanByNo(stRef.key);
+            window.printChallanByNo(chNo, {
+              rows: matched,
+              partyName: selected ? selected.partyName : '',
+              address: selected ? selected.address : '',
+              mobile: selected ? selected.mobile : '',
+              date: stDate
+            });
           }
         }
       });
@@ -1465,7 +1473,13 @@ window.PAGES.partyledger = {
             e.stopPropagation();
             const chNo = (g.first && g.first.chalan_no && g.first.chalan_no !== '-') ? g.first.chalan_no : g.ref;
             if (typeof window.printChallanByNo === 'function') {
-              window.printChallanByNo(chNo);
+              window.printChallanByNo(chNo, {
+                rows: g.rows,
+                partyName: selected ? selected.partyName : '',
+                address: selected ? selected.address : '',
+                mobile: selected ? selected.mobile : '',
+                date: stDate
+              });
             }
             return;
           }

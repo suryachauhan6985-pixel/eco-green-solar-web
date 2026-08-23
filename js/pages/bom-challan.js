@@ -1010,6 +1010,36 @@ function bomRenderDirectChallanPrintSheetHtml(challanData) {
     }));
   }
 
+  // Fallback: If rawItems is still empty but ledgerRows/rows were provided
+  if (!rawItems.length && (Array.isArray(challanData.ledgerRows) || Array.isArray(challanData.rows))) {
+    const srcRows = challanData.ledgerRows || challanData.rows || [];
+    const grouped = {};
+    srcRows.forEach((r) => {
+      const name = r.item_name || r.name || r.category || 'Item';
+      const model = r.model || (r.watt ? `${r.watt}W` : '');
+      const key = `${name}|${model}`;
+      if (!grouped[key]) {
+        grouped[key] = {
+          name: name,
+          model: model,
+          qty: 0,
+          unit: r.unit || (r.category === 'Wire Box' ? 'Mtr' : 'Nos'),
+          serials: []
+        };
+      }
+      grouped[key].qty += Number(r.quantity || r.qty || 1);
+      if (r.serial_no && r.serial_no !== '-') grouped[key].serials.push(r.serial_no);
+    });
+
+    rawItems = Object.values(grouped).map((g) => ({
+      name: g.name,
+      model: g.model,
+      qty: g.qty,
+      unit: g.unit,
+      description: g.serials.length ? `Serials: ${g.serials.slice(0, 4).join(', ')}${g.serials.length > 4 ? ` (+${g.serials.length - 4} more)` : ''}` : ''
+    }));
+  }
+
   const rowsHtml = [];
   let displaySr = 0;
   let physicalRows = 0;
@@ -1619,14 +1649,41 @@ window.openChallanFromSalesData = async function(salesData) {
 };
 
 // Global helper to print any Challan by its Number from anywhere (Ledger, Register, etc.)
-window.printChallanByNo = async function(challanNo) {
+window.printChallanByNo = async function(challanNo, fallbackContext) {
   if (!challanNo || challanNo === '-') {
     window.openModal('Notice', '<p>No Challan Number attached to this entry.</p>');
     return;
   }
   try {
-    const challanData = await window.Api.get(`/challan/by-no/${encodeURIComponent(challanNo)}`, { silent: true });
-    if (!challanData) throw new Error(`Could not find record for Challan #${challanNo}.`);
+    let challanData = null;
+    try {
+      challanData = await window.Api.get(`/challan/by-no/${encodeURIComponent(challanNo)}`, { silent: true });
+    } catch (e) {
+      // ignore not found
+    }
+
+    const hasItems = challanData && (
+      (Array.isArray(challanData.items) && challanData.items.length > 0) ||
+      (challanData.items && typeof challanData.items === 'object' && Object.keys(challanData.items).length > 0 && Object.values(challanData.items).some(v => v && (v.qty > 0 || (v.desc && String(v.desc).trim())))) ||
+      (Array.isArray(challanData.lines) && challanData.lines.length > 0)
+    );
+
+    if (!challanData || !hasItems) {
+      const ctx = fallbackContext || {};
+      const rows = ctx.rows || ctx.matched || [];
+      const first = rows[0] || {};
+      challanData = {
+        challanNo: challanNo,
+        challanDate: (challanData && (challanData.challan_date || challanData.challanDate)) || first.date || ctx.date || new Date().toISOString().slice(0, 10),
+        customerName: (challanData && (challanData.customer_name || challanData.customerName)) || ctx.customerName || ctx.partyName || first.customer_name || '-',
+        orderNo: (challanData && (challanData.order_no || challanData.orderNo)) || first.order_no || ctx.orderNo || '',
+        city: (challanData && challanData.city) || ctx.city || ctx.address || first.address || '',
+        vehicleNo: (challanData && (challanData.vehicle_no || challanData.vehicleNo)) || ctx.vehicleNo || '',
+        capacityKw: (challanData && (challanData.capacity_kw || challanData.capacityKw)) || ctx.capacityKw || '',
+        ledgerRows: rows
+      };
+    }
+
     window.printChallanDirectly(challanData);
   } catch (err) {
     window.openModal('Print Failed', `<p>${(err && err.message) || 'Could not load Challan for printing.'}</p>`);

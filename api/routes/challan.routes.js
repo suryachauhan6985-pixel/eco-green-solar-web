@@ -307,13 +307,83 @@ module.exports = function registerChallanRoutes(app, deps) {
     res.json({ success: true });
   }));
 
-  app.get('/api/challan/by-no/:challanNo', route(async (req, res) => {
+  async function getChallanByNoRecord(challanNo) {
     const [[row]] = await pool.query(
       `SELECT * FROM bom_challans WHERE challan_no = ? ORDER BY id DESC LIMIT 1`,
-      [req.params.challanNo]
+      [challanNo]
     );
-    if (!row) return res.status(404).json({ error: 'Challan not found.' });
-    res.json({ ...row, items: JSON.parse(row.items_json || '{}') });
+    if (row) {
+      let items = {};
+      try { items = JSON.parse(row.items_json || '{}'); } catch(e) {}
+      const hasItems = (Array.isArray(items) && items.length > 0) ||
+                       (items && typeof items === 'object' && Object.keys(items).length > 0 && Object.values(items).some(v => v && (v.qty > 0 || (v.desc && String(v.desc).trim()))));
+      if (hasItems) {
+        return { ...row, items };
+      }
+    }
+
+    // Fallback: Check stock_ledger where chalan_no = ? OR order_no = ? OR sales_invoice = ?
+    const [ledgerRows] = await pool.query(
+      `SELECT item_name, category, brand_name, watt, solar_type, model, quantity, serial_no,
+              customer_name, order_no, chalan_no, chalan_date, sales_date, warehouse
+       FROM stock_ledger
+       WHERE chalan_no = ? OR order_no = ? OR sales_invoice = ?
+       ORDER BY id ASC`,
+      [challanNo, challanNo, challanNo]
+    );
+
+    if (ledgerRows && ledgerRows.length > 0) {
+      const first = ledgerRows[0];
+      const grouped = {};
+      ledgerRows.forEach((r) => {
+        const name = r.item_name || r.category || 'Item';
+        const model = r.model || (r.watt ? `${r.watt}W` : '');
+        const key = `${name}|${model}`;
+        if (!grouped[key]) {
+          grouped[key] = {
+            name: name,
+            model: model,
+            qty: 0,
+            unit: r.category === 'Wire Box' ? 'Mtr' : 'Nos',
+            serials: []
+          };
+        }
+        grouped[key].qty += Number(r.quantity || 1);
+        if (r.serial_no && r.serial_no !== '-') grouped[key].serials.push(r.serial_no);
+      });
+
+      const itemsList = Object.values(grouped).map((g) => ({
+        name: g.name,
+        model: g.model,
+        qty: g.qty,
+        unit: g.unit,
+        description: g.serials.length ? `Serials: ${g.serials.slice(0, 4).join(', ')}${g.serials.length > 4 ? ` (+${g.serials.length - 4} more)` : ''}` : ''
+      }));
+
+      return {
+        id: row ? row.id : null,
+        challan_no: (row && row.challan_no) || challanNo,
+        challan_date: (row && row.challan_date) || first.chalan_date || first.sales_date || '',
+        order_no: (row && row.order_no) || first.order_no || '',
+        customer_name: (row && row.customer_name) || first.customer_name || '',
+        vehicle_no: (row && row.vehicle_no) || '',
+        capacity_kw: (row && row.capacity_kw) || '',
+        city: (row && row.city) || '',
+        items: itemsList
+      };
+    }
+
+    if (row) {
+      return { ...row, items: JSON.parse(row.items_json || '{}') };
+    }
+
+    return null;
+  }
+
+  app.get('/api/challan/by-no/:challanNo', route(async (req, res) => {
+    const record = await getChallanByNoRecord(req.params.challanNo);
+    if (!record) return res.status(404).json({ error: 'Challan not found.' });
+    res.json(record);
   }));
 
   app.get('/api/challan/by-no/:challanNo/pdf', route(async (req, res) => {
@@ -326,18 +396,14 @@ module.exports = function registerChallanRoutes(app, deps) {
       return res.send(cached);
     }
 
-    const [[row]] = await pool.query(
-      `SELECT * FROM bom_challans WHERE challan_no = ? ORDER BY id DESC LIMIT 1`,
-      [req.params.challanNo]
-    );
-    if (!row) return res.status(404).json({ error: 'Challan not found.' });
-    const record = { ...row, items: JSON.parse(row.items_json || '{}') };
+    const record = await getChallanByNoRecord(req.params.challanNo);
+    if (!record) return res.status(404).json({ error: 'Challan not found.' });
     const { pdfBuffer, cleanup } = await fillTemplateAndConvertToPdf(record);
     try {
       setCachedPdf(cKey, pdfBuffer);
-      if (row.id) setCachedPdf(`id_${row.id}`, pdfBuffer);
+      if (record.id) setCachedPdf(`id_${record.id}`, pdfBuffer);
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="Challan_${row.challan_no}.pdf"`);
+      res.setHeader('Content-Disposition', `inline; filename="Challan_${record.challan_no}.pdf"`);
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
       res.send(pdfBuffer);
     } finally {
