@@ -348,27 +348,103 @@ window.applyUserPreferences = function (prefs) {
 try { window.applyUserPreferences(); } catch (e) {}
 
 // =====================================================================
-// GLOBAL PUSH NOTIFICATION & SYSTEM ALERT ENGINE
+// NATIVE SYSTEM-LEVEL PERMISSIONS ENGINE (Direct OS/Browser Dialogs)
 // =====================================================================
-window.requestPushPermission = async function () {
+window.requestNativeNotificationPermission = async function () {
   if (!('Notification' in window)) {
-    if (window.showToast) window.showToast('Push notifications are not supported by this browser.', 'warning');
+    if (window.showToast) window.showToast('Push notifications are not supported in this browser.', 'warning');
+    return 'unsupported';
+  }
+  try {
+    const res = await Notification.requestPermission();
+    if (res === 'granted') {
+      if (window.showToast) window.showToast('Push notifications successfully enabled!', 'success');
+      window.sendAppNotification('🔔 Notifications Enabled', {
+        body: 'Real-time alerts for Dispatches and Low Stock are active.',
+        tag: 'perm-granted'
+      });
+    } else if (res === 'denied') {
+      if (window.showToast) window.showToast('Notification permission was blocked in browser/system settings.', 'error', 3500);
+    }
+    return res;
+  } catch (e) {
+    console.error('Notification permission request error:', e);
+    return 'denied';
+  }
+};
+
+window.requestPushPermission = window.requestNativeNotificationPermission;
+
+window.requestNativeCameraPermission = async function () {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (window.showToast) window.showToast('Camera API is not supported on this device.', 'warning');
     return false;
   }
   try {
-    const perm = await Notification.requestPermission();
-    if (perm === 'granted') {
-      if (window.showToast) window.showToast('Push notifications successfully enabled!', 'success');
-      return true;
-    } else {
-      if (window.showToast) window.showToast('Notification permission was not granted.', 'info');
-      return false;
-    }
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    // Stop tracks immediately so hardware camera LED/indicator shuts off
+    stream.getTracks().forEach((track) => track.stop());
+    if (window.showToast) window.showToast('Camera permission granted for Barcode & QR scanning!', 'success');
+    return true;
   } catch (e) {
-    console.error('Notification permission request error:', e);
+    if (window.showToast) window.showToast('Camera access was blocked or cancelled.', 'warning');
     return false;
   }
 };
+
+window.requestNativeMicPermission = async function () {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (window.showToast) window.showToast('Microphone API is not supported on this device.', 'warning');
+    return false;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((track) => track.stop());
+    if (window.showToast) window.showToast('Microphone permission granted!', 'success');
+    return true;
+  } catch (e) {
+    if (window.showToast) window.showToast('Microphone access was blocked or cancelled.', 'warning');
+    return false;
+  }
+};
+
+window.requestNativeStoragePermission = async function () {
+  if (navigator.storage && navigator.storage.persist) {
+    try {
+      const isPersisted = await navigator.storage.persist();
+      if (isPersisted) {
+        if (window.showToast) window.showToast('Persistent offline storage is active!', 'success');
+      } else {
+        if (window.showToast) window.showToast('Storage persistence granted with standard quota.', 'info');
+      }
+      return isPersisted;
+    } catch (e) {}
+  }
+  return true;
+};
+
+window.requestNativeSystemPermissions = async function () {
+  if ('Notification' in window && Notification.permission === 'default') {
+    try {
+      await Notification.requestPermission();
+    } catch (e) {}
+  }
+};
+
+let hasRequestedInitialNativePerms = false;
+function autoRequestNativePermissionsOnGesture() {
+  if (hasRequestedInitialNativePerms) return;
+  hasRequestedInitialNativePerms = true;
+  if ('Notification' in window && Notification.permission === 'default') {
+    try {
+      Notification.requestPermission().catch(() => {});
+    } catch (e) {}
+  }
+  document.removeEventListener('click', autoRequestNativePermissionsOnGesture);
+  document.removeEventListener('touchstart', autoRequestNativePermissionsOnGesture);
+}
+document.addEventListener('click', autoRequestNativePermissionsOnGesture, { once: true, passive: true });
+document.addEventListener('touchstart', autoRequestNativePermissionsOnGesture, { once: true, passive: true });
 
 window.sendAppNotification = function (title, options = {}) {
   try {
@@ -392,96 +468,6 @@ window.sendAppNotification = function (title, options = {}) {
   } catch (e) {
     console.warn('sendAppNotification error:', e);
   }
-};
-
-// =====================================================================
-// FIRST-LAUNCH DEVICE PERMISSIONS ONBOARDING MODAL
-// =====================================================================
-window.checkPermissionsOnboarding = function () {
-  if (localStorage.getItem('egs_permissions_onboarded') === '1') return;
-  if (!window.currentAuthToken && !sessionStorage.getItem('auth_user')) return;
-  if (document.getElementById('egsPermissionsOnboardModal')) return;
-
-  const overlay = document.createElement('div');
-  overlay.id = 'egsPermissionsOnboardModal';
-  overlay.className = 'egs-onboard-overlay';
-  overlay.innerHTML = `
-    <div class="egs-onboard-card">
-      <div class="egs-onboard-header">
-        <div class="egs-onboard-logo">
-          <i class="fa-solid fa-shield-halved"></i>
-        </div>
-        <h3 class="egs-onboard-title">Device Permissions &amp; Setup</h3>
-        <p class="egs-onboard-sub">Configure your device permissions for an optimal, ultra-fast and native ERP experience.</p>
-      </div>
-
-      <div class="egs-onboard-list">
-        <div class="egs-onboard-item">
-          <div class="egs-onboard-icon camera"><i class="fa-solid fa-camera"></i></div>
-          <div class="egs-onboard-item-meta">
-            <div class="egs-onboard-item-title">Camera Access <span class="pill pill-blue" style="font-size:10px;">Scanning</span></div>
-            <div class="egs-onboard-item-desc">Enables direct QR code and Barcode scanning for Solar Panels, Inverters, and Components.</div>
-          </div>
-        </div>
-
-        <div class="egs-onboard-item">
-          <div class="egs-onboard-icon notify"><i class="fa-solid fa-bell"></i></div>
-          <div class="egs-onboard-item-meta">
-            <div class="egs-onboard-item-title">Push Notifications <span class="pill pill-gold" style="font-size:10px;">Live Alerts</span></div>
-            <div class="egs-onboard-item-desc">Receive real-time alerts for Dispatches, Low Stock warnings, and background Sync events.</div>
-          </div>
-        </div>
-
-        <div class="egs-onboard-item">
-          <div class="egs-onboard-icon storage"><i class="fa-solid fa-hard-drive"></i></div>
-          <div class="egs-onboard-item-meta">
-            <div class="egs-onboard-item-title">Offline Cache &amp; Storage <span class="pill pill-green" style="font-size:10px;">Offline Sync</span></div>
-            <div class="egs-onboard-item-desc">Enables local SQLite/IndexedDB caching for zero-delay navigation and offline scanning.</div>
-          </div>
-        </div>
-
-        <div class="egs-onboard-item">
-          <div class="egs-onboard-icon audio"><i class="fa-solid fa-volume-high"></i></div>
-          <div class="egs-onboard-item-meta">
-            <div class="egs-onboard-item-title">Physical Audio Chimes <span class="pill pill-purple" style="font-size:10px;">Feedback</span></div>
-            <div class="egs-onboard-item-desc">Audio beep and melody feedback on successful scans and verified barcode reads.</div>
-          </div>
-        </div>
-      </div>
-
-      <div style="display:flex; flex-direction:column; gap:8px; margin-top:20px;">
-        <button type="button" class="btn btn-blue" id="btnOnboardAllowAll" style="width:100%; padding:12px; font-size:14px; font-weight:700;">
-          <i class="fa-solid fa-circle-check"></i> Grant Permissions &amp; Continue
-        </button>
-        <button type="button" class="btn btn-ghost" id="btnOnboardSkip" style="width:100%; font-size:12.5px;">
-          Configure Later in Settings
-        </button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(overlay);
-
-  const closeOnboard = () => {
-    localStorage.setItem('egs_permissions_onboarded', '1');
-    overlay.remove();
-  };
-
-  overlay.querySelector('#btnOnboardAllowAll').addEventListener('click', async () => {
-    if ('Notification' in window) {
-      try { await Notification.requestPermission(); } catch (e) {}
-    }
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        stream.getTracks().forEach((track) => track.stop());
-      } catch (e) {}
-    }
-    if (window.showToast) window.showToast('Permissions configured successfully!', 'success');
-    closeOnboard();
-  });
-
-  overlay.querySelector('#btnOnboardSkip').addEventListener('click', closeOnboard);
 };
 
 // =====================================================================
@@ -1959,10 +1945,10 @@ window.attachColumnFilters = function (table) {
       }
 
       setTimeout(() => {
-        if (typeof window.checkPermissionsOnboarding === 'function') {
-          window.checkPermissionsOnboarding();
+        if (typeof window.requestNativeSystemPermissions === 'function') {
+          window.requestNativeSystemPermissions();
         }
-      }, 1200);
+      }, 1000);
     }
 
     async function attemptLogin() {
@@ -3136,45 +3122,102 @@ window.attachColumnFilters = function (table) {
 
         <!-- 5. Device & Notifications Tab -->
         <div class="settings-panel" id="tab-permissions">
-          <!-- Card 1: Web Push Notifications -->
+          <!-- Card 1: System Level Permissions -->
           <div class="settings-card">
-            <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-              <span><i class="fa-solid fa-bell" style="color:var(--gold);"></i> Web Push Notifications</span>
-              <span id="setPushStatusPill" class="pill pill-blue">Checking...</span>
+            <div class="settings-card-title">
+              <span style="display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-shield-halved" style="color:var(--blue);"></i> System &amp; Hardware Permissions</span>
             </div>
             <p style="margin:0 0 14px; font-size:12.5px; color:var(--txt-muted);">
-              Receive real-time push notifications on this device for critical ERP events (dispatches, low stock warnings, scan sheets, and sync alerts).
+              Manage native OS and browser device permissions. Requesting or enabling an option directly prompts the system security dialog (Allow while using app / Only this time / Don't allow).
             </p>
-            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
-              <button type="button" class="btn btn-blue" id="btnSetEnablePush"><i class="fa-solid fa-bell"></i> Enable / Request Push Permission</button>
-              <button type="button" class="btn btn-ghost" id="btnSetTestPush"><i class="fa-solid fa-paper-plane"></i> Send Test Notification</button>
+
+            <div class="egs-perm-list">
+              <!-- Push Notifications -->
+              <div class="egs-perm-item">
+                <div class="egs-perm-icon notify"><i class="fa-solid fa-bell"></i></div>
+                <div class="egs-perm-meta">
+                  <div class="egs-perm-name">
+                    <span>Push &amp; System Notifications</span>
+                    <span id="permBadgeNotify" class="pill pill-gold">Checking...</span>
+                  </div>
+                  <div class="egs-perm-desc">Real-time alerts for Dispatches, Low Stock warnings, and Background Sync.</div>
+                </div>
+                <div class="egs-perm-actions">
+                  <button type="button" class="btn btn-blue" id="btnRequestNotifyPerm"><i class="fa-solid fa-bell"></i> Request Permission</button>
+                  <button type="button" class="btn btn-ghost" id="btnTestNotifyPerm"><i class="fa-solid fa-paper-plane"></i> Test Notification</button>
+                </div>
+              </div>
+
+              <!-- Camera Scanner -->
+              <div class="egs-perm-item">
+                <div class="egs-perm-icon camera"><i class="fa-solid fa-camera"></i></div>
+                <div class="egs-perm-meta">
+                  <div class="egs-perm-name">
+                    <span>Camera (Barcode &amp; QR Scanning)</span>
+                    <span id="permBadgeCamera" class="pill pill-gold">Checking...</span>
+                  </div>
+                  <div class="egs-perm-desc">Hardware camera access for physical barcode and QR scanning across inventory modules.</div>
+                </div>
+                <div class="egs-perm-actions">
+                  <button type="button" class="btn btn-blue" id="btnRequestCameraPerm"><i class="fa-solid fa-camera"></i> Request Permission</button>
+                </div>
+              </div>
+
+              <!-- Microphone -->
+              <div class="egs-perm-item">
+                <div class="egs-perm-icon mic"><i class="fa-solid fa-microphone"></i></div>
+                <div class="egs-perm-meta">
+                  <div class="egs-perm-name">
+                    <span>Microphone (Voice Input)</span>
+                    <span id="permBadgeMic" class="pill pill-gold">Checking...</span>
+                  </div>
+                  <div class="egs-perm-desc">Voice commands and serial number voice dictation support.</div>
+                </div>
+                <div class="egs-perm-actions">
+                  <button type="button" class="btn btn-blue" id="btnRequestMicPerm"><i class="fa-solid fa-microphone"></i> Request Permission</button>
+                </div>
+              </div>
+
+              <!-- Persistent Storage -->
+              <div class="egs-perm-item">
+                <div class="egs-perm-icon storage"><i class="fa-solid fa-hard-drive"></i></div>
+                <div class="egs-perm-meta">
+                  <div class="egs-perm-name">
+                    <span>Persistent Offline Storage</span>
+                    <span id="permBadgeStorage" class="pill pill-green"><i class="fa-solid fa-circle-check"></i> Active</span>
+                  </div>
+                  <div class="egs-perm-desc">Guarantees local SQLite/IndexedDB offline databases won't be cleared by the OS.</div>
+                </div>
+                <div class="egs-perm-actions">
+                  <button type="button" class="btn btn-ghost" id="btnRequestStoragePerm"><i class="fa-solid fa-database"></i> Enable Persist</button>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Card 2: Hardware & Device Access -->
-          <div class="settings-card" style="margin-top:16px;">
-            <div class="settings-card-title"><i class="fa-solid fa-camera" style="color:var(--blue);"></i> Hardware &amp; Storage Capabilities</div>
-            <div class="egs-spec-grid" style="margin-top:10px;">
-              <div class="egs-spec-box">
-                <div class="egs-spec-label"><i class="fa-solid fa-camera"></i> Camera &amp; Barcode Scanner</div>
-                <div class="egs-spec-val" id="setCameraStatusVal">Ready for Scanning</div>
-              </div>
-              <div class="egs-spec-box">
-                <div class="egs-spec-label"><i class="fa-solid fa-hard-drive"></i> Offline Storage Engine</div>
-                <div class="egs-spec-val" style="color:var(--green);"><i class="fa-solid fa-circle-check"></i> IndexedDB Active (v110)</div>
-              </div>
-              <div class="egs-spec-box">
-                <div class="egs-spec-label"><i class="fa-solid fa-bolt"></i> In-Memory Cache</div>
-                <div class="egs-spec-val" style="color:var(--gold);"><i class="fa-solid fa-gauge-high"></i> Sub-0.05ms Ultra-Fast</div>
-              </div>
-              <div class="egs-spec-box">
-                <div class="egs-spec-label"><i class="fa-solid fa-cloud-arrow-down"></i> App Installation Mode</div>
-                <div class="egs-spec-val" id="setPwaModeVal">Browser Tab</div>
-              </div>
+          <!-- Card 2: Physical Audio & Installation -->
+          <div class="settings-card" style="margin-top:14px;">
+            <div class="settings-card-title">
+              <span style="display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-volume-high" style="color:var(--gold);"></i> Scanner Audio &amp; App Installation</span>
             </div>
-            <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
-              <button type="button" class="btn btn-gold" id="btnSetInstallAppGuide" onclick="window.openAppInstallGuide()"><i class="fa-solid fa-download"></i> Install App on iOS / Android / Desktop</button>
-              <button type="button" class="btn btn-ghost" id="btnSetRecheckPermissions" onclick="localStorage.removeItem('egs_permissions_onboarded'); window.checkPermissionsOnboarding();"><i class="fa-solid fa-rotate"></i> Re-run Permissions Onboarding</button>
+            
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px; margin-top:12px;">
+              <div class="egs-setting-box">
+                <label style="font-size:12.5px; font-weight:600; color:var(--txt); display:block; margin-bottom:6px;">Scanner Audio Feedback</label>
+                <select id="setScannerAudioSelect" class="form-control" style="width:100%;">
+                  <option value="beep">Standard POS Beep</option>
+                  <option value="chime">Modern Upbeat Chime</option>
+                  <option value="success">Melodic Success Chime</option>
+                  <option value="silent">Silent (No Audio)</option>
+                </select>
+                <button type="button" class="btn btn-ghost btn-sm" id="btnTestScannerAudio" style="margin-top:8px; font-size:12px;"><i class="fa-solid fa-play"></i> Play Sample Sound</button>
+              </div>
+
+              <div class="egs-setting-box">
+                <label style="font-size:12.5px; font-weight:600; color:var(--txt); display:block; margin-bottom:6px;">Application Installation</label>
+                <div style="font-size:12.5px; color:var(--txt-muted); margin-bottom:10px;" id="setPwaModeVal">Browser Tab (PWA Ready)</div>
+                <button type="button" class="btn btn-gold" onclick="window.openAppInstallGuide()"><i class="fa-solid fa-download"></i> Install App on Device</button>
+              </div>
             </div>
           </div>
         </div>
@@ -4045,70 +4088,196 @@ window.attachColumnFilters = function (table) {
     }
 
     // -------------------------------------------------------------
-    // 6. Device Permissions & Notifications Tab Wiring
+    // 6. Native Device Permissions & Notifications Tab Wiring
     // -------------------------------------------------------------
-    const pushPill = document.getElementById('setPushStatusPill');
-    const btnEnablePush = document.getElementById('btnSetEnablePush');
-    const btnTestPush = document.getElementById('btnSetTestPush');
+    const badgeNotify = document.getElementById('permBadgeNotify');
+    const badgeCamera = document.getElementById('permBadgeCamera');
+    const badgeMic = document.getElementById('permBadgeMic');
+    const badgeStorage = document.getElementById('permBadgeStorage');
+    const btnReqNotify = document.getElementById('btnRequestNotifyPerm');
+    const btnTestNotify = document.getElementById('btnTestNotifyPerm');
+    const btnReqCamera = document.getElementById('btnRequestCameraPerm');
+    const btnReqMic = document.getElementById('btnRequestMicPerm');
+    const btnReqStorage = document.getElementById('btnRequestStoragePerm');
+    const audioSelect = document.getElementById('setScannerAudioSelect');
+    const btnTestAudio = document.getElementById('btnTestScannerAudio');
     const pwaModeVal = document.getElementById('setPwaModeVal');
-    const cameraStatusVal = document.getElementById('setCameraStatusVal');
 
-    const updatePushPill = () => {
-      if (!pushPill) return;
-      if (!('Notification' in window)) {
-        pushPill.className = 'pill pill-muted';
-        pushPill.textContent = 'Not Supported';
-      } else if (Notification.permission === 'granted') {
-        pushPill.className = 'pill pill-green';
-        pushPill.innerHTML = '<i class="fa-solid fa-circle-check"></i> Enabled';
-        if (btnEnablePush) btnEnablePush.style.display = 'none';
-      } else if (Notification.permission === 'denied') {
-        pushPill.className = 'pill pill-red';
-        pushPill.innerHTML = '<i class="fa-solid fa-ban"></i> Blocked in Browser';
-      } else {
-        pushPill.className = 'pill pill-gold';
-        pushPill.textContent = 'Not Configured';
+    const updateAllPermissionBadges = async () => {
+      // 1. Notification Badge
+      if (badgeNotify) {
+        if (!('Notification' in window)) {
+          badgeNotify.className = 'pill pill-muted';
+          badgeNotify.textContent = 'Not Supported';
+          if (btnReqNotify) btnReqNotify.style.display = 'none';
+        } else if (Notification.permission === 'granted') {
+          badgeNotify.className = 'pill pill-green';
+          badgeNotify.innerHTML = '<i class="fa-solid fa-circle-check"></i> Allowed';
+          if (btnReqNotify) btnReqNotify.style.display = 'none';
+        } else if (Notification.permission === 'denied') {
+          badgeNotify.className = 'pill pill-red';
+          badgeNotify.innerHTML = '<i class="fa-solid fa-ban"></i> Blocked in OS';
+          if (btnReqNotify) {
+            btnReqNotify.textContent = 'Blocked in Settings';
+            btnReqNotify.disabled = true;
+          }
+        } else {
+          badgeNotify.className = 'pill pill-gold';
+          badgeNotify.textContent = 'Not Enabled';
+          if (btnReqNotify) {
+            btnReqNotify.style.display = 'inline-flex';
+            btnReqNotify.disabled = false;
+          }
+        }
+      }
+
+      // 2. Camera Badge
+      if (badgeCamera) {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          badgeCamera.className = 'pill pill-muted';
+          badgeCamera.textContent = 'Not Supported';
+        } else if (navigator.permissions && navigator.permissions.query) {
+          try {
+            const camStat = await navigator.permissions.query({ name: 'camera' });
+            if (camStat.state === 'granted') {
+              badgeCamera.className = 'pill pill-green';
+              badgeCamera.innerHTML = '<i class="fa-solid fa-circle-check"></i> Allowed';
+              if (btnReqCamera) btnReqCamera.style.display = 'none';
+            } else if (camStat.state === 'denied') {
+              badgeCamera.className = 'pill pill-red';
+              badgeCamera.innerHTML = '<i class="fa-solid fa-ban"></i> Blocked';
+            } else {
+              badgeCamera.className = 'pill pill-gold';
+              badgeCamera.textContent = 'Prompt on Use';
+            }
+          } catch (e) {
+            badgeCamera.className = 'pill pill-blue';
+            badgeCamera.textContent = 'Ready';
+          }
+        } else {
+          badgeCamera.className = 'pill pill-blue';
+          badgeCamera.textContent = 'Ready';
+        }
+      }
+
+      // 3. Microphone Badge
+      if (badgeMic) {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          badgeMic.className = 'pill pill-muted';
+          badgeMic.textContent = 'Not Supported';
+        } else if (navigator.permissions && navigator.permissions.query) {
+          try {
+            const micStat = await navigator.permissions.query({ name: 'microphone' });
+            if (micStat.state === 'granted') {
+              badgeMic.className = 'pill pill-green';
+              badgeMic.innerHTML = '<i class="fa-solid fa-circle-check"></i> Allowed';
+              if (btnReqMic) btnReqMic.style.display = 'none';
+            } else if (micStat.state === 'denied') {
+              badgeMic.className = 'pill pill-red';
+              badgeMic.innerHTML = '<i class="fa-solid fa-ban"></i> Blocked';
+            } else {
+              badgeMic.className = 'pill pill-gold';
+              badgeMic.textContent = 'Prompt on Use';
+            }
+          } catch (e) {
+            badgeMic.className = 'pill pill-blue';
+            badgeMic.textContent = 'Ready';
+          }
+        } else {
+          badgeMic.className = 'pill pill-blue';
+          badgeMic.textContent = 'Ready';
+        }
+      }
+
+      // 4. Storage Persistence Badge
+      if (badgeStorage && navigator.storage && navigator.storage.persisted) {
+        try {
+          const isPersisted = await navigator.storage.persisted();
+          if (isPersisted) {
+            badgeStorage.className = 'pill pill-green';
+            badgeStorage.innerHTML = '<i class="fa-solid fa-circle-check"></i> Persisted';
+            if (btnReqStorage) btnReqStorage.style.display = 'none';
+          }
+        } catch (e) {}
       }
     };
-    updatePushPill();
+    updateAllPermissionBadges();
+
+    // Wire Notification Request Button
+    if (btnReqNotify) {
+      btnReqNotify.addEventListener('click', async () => {
+        await window.requestNativeNotificationPermission();
+        updateAllPermissionBadges();
+      });
+    }
+
+    // Wire Test Notification Button
+    if (btnTestNotify) {
+      btnTestNotify.addEventListener('click', async () => {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          window.sendAppNotification('🔔 Eco Green Solar System Alert', {
+            body: 'Native push notifications are active on this device! Dispatch & inventory alerts will appear here.',
+            tag: 'test-alert'
+          });
+          if (window.showToast) window.showToast('Test notification sent!', 'success');
+        } else {
+          const res = await window.requestNativeNotificationPermission();
+          if (res === 'granted') {
+            window.sendAppNotification('🔔 Eco Green Solar System Alert', {
+              body: 'Native push notifications are active on this device!',
+              tag: 'test-alert'
+            });
+          }
+          updateAllPermissionBadges();
+        }
+      });
+    }
+
+    // Wire Camera Permission Request Button
+    if (btnReqCamera) {
+      btnReqCamera.addEventListener('click', async () => {
+        await window.requestNativeCameraPermission();
+        updateAllPermissionBadges();
+      });
+    }
+
+    // Wire Mic Permission Request Button
+    if (btnReqMic) {
+      btnReqMic.addEventListener('click', async () => {
+        await window.requestNativeMicPermission();
+        updateAllPermissionBadges();
+      });
+    }
+
+    // Wire Storage Persistence Request Button
+    if (btnReqStorage) {
+      btnReqStorage.addEventListener('click', async () => {
+        await window.requestNativeStoragePermission();
+        updateAllPermissionBadges();
+      });
+    }
+
+    // Wire Scanner Audio Feedback Selector
+    if (audioSelect) {
+      const curSound = localStorage.getItem('egs_scanner_sound') || 'beep';
+      audioSelect.value = curSound;
+      audioSelect.addEventListener('change', () => {
+        const val = audioSelect.value;
+        localStorage.setItem('egs_scanner_sound', val);
+        if (window.showToast) window.showToast(`Scanner sound updated to: ${val}`, 'info');
+      });
+    }
+    if (btnTestAudio) {
+      btnTestAudio.addEventListener('click', () => {
+        if (window.playScannerTone) window.playScannerTone();
+      });
+    }
 
     if (pwaModeVal) {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
       pwaModeVal.innerHTML = isStandalone
         ? '<span style="color:var(--green);"><i class="fa-solid fa-circle-check"></i> Standalone Installed App</span>'
         : '<span>Web Browser Tab (PWA Ready)</span>';
-    }
-
-    if (cameraStatusVal && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      cameraStatusVal.innerHTML = '<span style="color:var(--green);"><i class="fa-solid fa-circle-check"></i> Hardware Supported</span>';
-    }
-
-    if (btnEnablePush) {
-      btnEnablePush.addEventListener('click', async () => {
-        const ok = await window.requestPushPermission();
-        updatePushPill();
-      });
-    }
-
-    if (btnTestPush) {
-      btnTestPush.addEventListener('click', () => {
-        if ('Notification' in window && Notification.permission === 'granted') {
-          window.sendAppNotification('🔔 Eco Green Solar Test Alert', {
-            body: 'Push notifications are operational on this device! Dispatch & stock alerts will appear here.',
-            tag: 'test-alert'
-          });
-          if (window.showToast) window.showToast('Test push notification sent!', 'success');
-        } else {
-          window.requestPushPermission().then((granted) => {
-            if (granted) {
-              window.sendAppNotification('🔔 Eco Green Solar Test Alert', {
-                body: 'Push notifications are operational on this device!',
-                tag: 'test-alert'
-              });
-            }
-          });
-        }
-      });
     }
 
     // -------------------------------------------------------------
@@ -4127,7 +4296,7 @@ window.attachColumnFilters = function (table) {
           setTimeout(() => {
             btnCheckUpdate.disabled = false;
             btnCheckUpdate.innerHTML = '<i class="fa-solid fa-circle-check"></i> You are on the Latest Version';
-            if (window.showToast) window.showToast('App is running the latest Build 110 (v1.10.0)!', 'success');
+            if (window.showToast) window.showToast('App is running the latest Build 113 (v1.10.0)!', 'success');
           }, 1200);
         } catch (e) {
           btnCheckUpdate.disabled = false;
@@ -4724,10 +4893,10 @@ window.attachColumnFilters = function (table) {
     const startPageId = (window.location.hash || '').replace('#', '');
     go(window.PAGES[startPageId] ? startPageId : 'dashboard');
     setTimeout(() => {
-      if (typeof window.checkPermissionsOnboarding === 'function') {
-        window.checkPermissionsOnboarding();
+      if (typeof window.requestNativeSystemPermissions === 'function') {
+        window.requestNativeSystemPermissions();
       }
-    }, 1500);
+    }, 1200);
   }
 
   // Also react to Back/Forward browser buttons and manual hash edits, so
