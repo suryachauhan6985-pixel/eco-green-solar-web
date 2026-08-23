@@ -97,17 +97,11 @@ window.PAGES.dashboard = {
               <div class="stat-icon-wrap"><i class="fa-solid fa-boxes-stacked"></i></div>
             </div>
           </div>
-          <div class="stat-viewport" id="viewport-avail">
-            <div class="stat-main-metric">
-              <div class="value" id="val-avail">0</div>
-              <span class="stat-unit">Nos</span>
-            </div>
-            <div class="stat-category-badge-wrap">
-              <span class="stat-category-badge" id="tag-avail">
-                <i class="fa-solid fa-layer-group"></i> Total All Stock
-              </span>
-              <span class="stat-pct-badge" id="pct-avail">100% Volume</span>
-            </div>
+          <div class="stat-slider-viewport" id="viewport-avail">
+            <div class="stat-slider-track" id="track-avail"></div>
+            <button type="button" class="stat-side-arrow" data-card="avail" title="Next Category" onclick="event.stopPropagation();">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
           </div>
           <div class="stat-chips-bar" id="chips-avail" onclick="event.stopPropagation();"></div>
           <div class="stat-footer-bar">
@@ -132,17 +126,11 @@ window.PAGES.dashboard = {
               <div class="stat-icon-wrap"><i class="fa-solid fa-hand-holding-hand"></i></div>
             </div>
           </div>
-          <div class="stat-viewport" id="viewport-assigned">
-            <div class="stat-main-metric">
-              <div class="value" id="val-assigned">0</div>
-              <span class="stat-unit">Nos</span>
-            </div>
-            <div class="stat-category-badge-wrap">
-              <span class="stat-category-badge" id="tag-assigned">
-                <i class="fa-solid fa-layer-group"></i> Total All Stock
-              </span>
-              <span class="stat-pct-badge" id="pct-assigned">100% Volume</span>
-            </div>
+          <div class="stat-slider-viewport" id="viewport-assigned">
+            <div class="stat-slider-track" id="track-assigned"></div>
+            <button type="button" class="stat-side-arrow" data-card="assigned" title="Next Category" onclick="event.stopPropagation();">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
           </div>
           <div class="stat-chips-bar" id="chips-assigned" onclick="event.stopPropagation();"></div>
           <div class="stat-footer-bar">
@@ -167,17 +155,11 @@ window.PAGES.dashboard = {
               <div class="stat-icon-wrap"><i class="fa-solid fa-file-invoice-dollar"></i></div>
             </div>
           </div>
-          <div class="stat-viewport" id="viewport-sold">
-            <div class="stat-main-metric">
-              <div class="value" id="val-sold">0</div>
-              <span class="stat-unit">Nos</span>
-            </div>
-            <div class="stat-category-badge-wrap">
-              <span class="stat-category-badge" id="tag-sold">
-                <i class="fa-solid fa-layer-group"></i> Total All Stock
-              </span>
-              <span class="stat-pct-badge" id="pct-sold">100% Volume</span>
-            </div>
+          <div class="stat-slider-viewport" id="viewport-sold">
+            <div class="stat-slider-track" id="track-sold"></div>
+            <button type="button" class="stat-side-arrow" data-card="sold" title="Next Category" onclick="event.stopPropagation();">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
           </div>
           <div class="stat-chips-bar" id="chips-sold" onclick="event.stopPropagation();"></div>
           <div class="stat-footer-bar">
@@ -202,17 +184,11 @@ window.PAGES.dashboard = {
               <div class="stat-icon-wrap"><i class="fa-solid fa-shield-halved"></i></div>
             </div>
           </div>
-          <div class="stat-viewport" id="viewport-damaged">
-            <div class="stat-main-metric">
-              <div class="value" id="val-damaged">0</div>
-              <span class="stat-unit">Nos</span>
-            </div>
-            <div class="stat-category-badge-wrap">
-              <span class="stat-category-badge" id="tag-damaged">
-                <i class="fa-solid fa-layer-group"></i> Total All Stock
-              </span>
-              <span class="stat-pct-badge" id="pct-damaged">100% Volume</span>
-            </div>
+          <div class="stat-slider-viewport" id="viewport-damaged">
+            <div class="stat-slider-track" id="track-damaged"></div>
+            <button type="button" class="stat-side-arrow" data-card="damaged" title="Next Category" onclick="event.stopPropagation();">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
           </div>
           <div class="stat-chips-bar" id="chips-damaged" onclick="event.stopPropagation();"></div>
           <div class="stat-footer-bar">
@@ -393,22 +369,27 @@ window.PAGES.dashboard = {
       cardState[cardKey] = newIndex;
       const slide = slides[newIndex];
 
-      const valEl = document.getElementById(`val-${cardKey}`);
-      const lblEl = document.getElementById(`lbl-${cardKey}-ctx`);
-      const tagEl = document.getElementById(`tag-${cardKey}`);
-      const pctEl = document.getElementById(`pct-${cardKey}`);
-      const idxEl = document.getElementById(`idx-${cardKey}`);
+      // 1. Physically translate the track with smooth CSS cubic-bezier transition
+      const trackEl = document.getElementById(`track-${cardKey}`);
+      if (trackEl) {
+        trackEl.style.transform = `translateX(-${newIndex * 100}%)`;
+      }
 
+      // 2. Smooth count-up animation on the active slide's number
+      const valEl = document.getElementById(`val-${cardKey}-${newIndex}`);
       if (valEl) {
-        if (animate) animateCountUp(valEl, slide.count, 400);
+        if (animate) animateCountUp(valEl, slide.count, 420);
         else valEl.textContent = formatNumber(slide.count);
       }
+
+      // 3. Update contextual subtitle and stepper counter
+      const lblEl = document.getElementById(`lbl-${cardKey}-ctx`);
       if (lblEl) lblEl.textContent = slide.sub;
-      if (tagEl) tagEl.innerHTML = `<i class="fa-solid ${slide.icon}"></i> ${slide.name}`;
-      if (pctEl) pctEl.textContent = slide.pct;
+
+      const idxEl = document.getElementById(`idx-${cardKey}`);
       if (idxEl) idxEl.textContent = `${newIndex + 1} / ${slides.length}`;
 
-      // Update active chip
+      // 4. Update and center active chip in bottom chip bar
       const chipsBar = document.getElementById(`chips-${cardKey}`);
       if (chipsBar) {
         chipsBar.querySelectorAll('.stat-chip').forEach((chip, i) => {
@@ -448,11 +429,30 @@ window.PAGES.dashboard = {
       cardSlides[cardKey] = slides;
       cardState[cardKey] = 0;
 
-      // Render horizontal chips
+      // Populate Sliding Track with Individual Slides
+      const trackEl = document.getElementById(`track-${cardKey}`);
+      if (trackEl) {
+        trackEl.innerHTML = slides.map((s, idx) => `
+          <div class="stat-slide" data-slide-index="${idx}">
+            <div class="stat-main-metric">
+              <div class="value" id="val-${cardKey}-${idx}">0</div>
+              <span class="stat-unit">Nos</span>
+            </div>
+            <div class="stat-category-badge-wrap">
+              <span class="stat-category-badge">
+                <i class="fa-solid ${s.icon}"></i> ${s.name}
+              </span>
+              <span class="stat-pct-badge">${s.pct}</span>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render Horizontal Interactive Chips Bar
       const chipsBar = document.getElementById(`chips-${cardKey}`);
       if (chipsBar) {
         chipsBar.innerHTML = slides.map((s, idx) => `
-          <button type="button" class="stat-chip${idx === 0 ? ' active' : ''}" data-card="${cardKey}" data-index="${idx}" title="${s.name}: ${s.count}">
+          <button type="button" class="stat-chip${idx === 0 ? ' active' : ''}" data-card="${cardKey}" data-index="${idx}" title="${s.name}: ${formatNumber(s.count)}">
             <i class="fa-solid ${s.icon}"></i>
             <span>${idx === 0 ? 'All' : s.name}</span>
             <span class="stat-chip-count">${s.count > 0 ? formatNumber(s.count) : '0'}</span>
@@ -468,9 +468,18 @@ window.PAGES.dashboard = {
         });
       }
 
-      // Hook Stepper Prev/Next Buttons
       const cardEl = document.getElementById(`card-${cardKey}`);
       if (cardEl) {
+        // Redesigned Floating Side Navigation Arrow
+        const sideArrow = cardEl.querySelector('.stat-side-arrow');
+        if (sideArrow) {
+          sideArrow.onclick = (e) => {
+            e.stopPropagation();
+            goToSlide(cardKey, cardState[cardKey] + 1, true);
+          };
+        }
+
+        // Stepper Prev/Next Buttons
         const prevBtn = cardEl.querySelector('.stat-step-btn.prev');
         const nextBtn = cardEl.querySelector('.stat-step-btn.next');
 
@@ -487,22 +496,32 @@ window.PAGES.dashboard = {
           };
         }
 
-        // Touch Swipe
+        // Fluid Touch Swipe Gestures for Mobile
         const viewport = document.getElementById(`viewport-${cardKey}`);
         if (viewport) {
-          let touchStartX = null;
-          viewport.ontouchstart = (e) => { touchStartX = e.touches[0].clientX; };
-          viewport.ontouchend = (e) => {
-            if (touchStartX === null) return;
+          let touchStartX = 0;
+          let touchStartY = 0;
+          let isTouchActive = false;
+
+          viewport.addEventListener('touchstart', (e) => {
+            if (!e.touches || !e.touches[0]) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            isTouchActive = true;
+          }, { passive: true });
+
+          viewport.addEventListener('touchend', (e) => {
+            if (!isTouchActive || !e.changedTouches || !e.changedTouches[0]) return;
+            isTouchActive = false;
             const dx = e.changedTouches[0].clientX - touchStartX;
-            if (Math.abs(dx) > 30) {
+            const dy = e.changedTouches[0].clientY - touchStartY;
+            if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) {
               goToSlide(cardKey, dx < 0 ? cardState[cardKey] + 1 : cardState[cardKey] - 1, true);
             }
-            touchStartX = null;
-          };
+          }, { passive: true });
         }
 
-        // Card Click Jump
+        // Card Click Drilldown
         cardEl.onclick = () => {
           const cfg = KPI_CONFIGS[cardKey];
           if (cfg && cfg.targetPage) {

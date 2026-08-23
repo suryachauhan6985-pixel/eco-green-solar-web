@@ -216,10 +216,10 @@
   transition: all 0.25s ease;
 }
 
-.dash-shell .stat-card.available::before { background: linear-gradient(90deg, #2ecc71, #10b981); }
-.dash-shell .stat-card.assigned::before { background: linear-gradient(90deg, #3b8ed0, #60a5fa); }
-.dash-shell .stat-card.sold::before { background: linear-gradient(90deg, #9b59b6, #c084fc); }
-.dash-shell .stat-card.damaged::before { background: linear-gradient(90deg, #f39c12, #fbbf24); }
+.dash-shell .stat-card.available::before { background: linear-gradient(90deg, #10b981, #34d399); }
+.dash-shell .stat-card.assigned::before { background: linear-gradient(90deg, #0ea5e9, #38bdf8); }
+.dash-shell .stat-card.sold::before { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+.dash-shell .stat-card.damaged::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 
 .dash-shell .stat-card:hover {
   transform: translateY(-4px);
@@ -325,35 +325,54 @@
 }
 
 .dash-shell .stat-card.available .stat-icon-wrap {
-  background: rgba(46, 204, 113, 0.15);
-  color: #2ecc71;
-  box-shadow: 0 0 12px rgba(46, 204, 113, 0.2);
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
 }
 
 .dash-shell .stat-card.assigned .stat-icon-wrap {
-  background: rgba(59, 142, 208, 0.15);
-  color: #3b8ed0;
-  box-shadow: 0 0 12px rgba(59, 142, 208, 0.2);
+  background: rgba(14, 165, 233, 0.15);
+  color: #0ea5e9;
+  box-shadow: 0 0 12px rgba(14, 165, 233, 0.2);
 }
 
 .dash-shell .stat-card.sold .stat-icon-wrap {
-  background: rgba(155, 89, 182, 0.15);
-  color: #c084fc;
-  box-shadow: 0 0 12px rgba(155, 89, 182, 0.2);
+  background: rgba(37, 99, 235, 0.15);
+  color: #38bdf8;
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.2);
 }
 
 .dash-shell .stat-card.damaged .stat-icon-wrap {
-  background: rgba(243, 156, 18, 0.15);
-  color: #f39c12;
-  box-shadow: 0 0 12px rgba(243, 156, 18, 0.2);
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
 }
 
-/* Viewport with Animated Number & Badges */
-.dash-shell .stat-viewport {
+/* =====================================================================
+   SMOOTH HORIZONTAL SLIDER VIEWPORT & TRACK
+   ===================================================================== */
+.dash-shell .stat-slider-viewport {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  padding: 2px 0;
+}
+
+.dash-shell .stat-slider-track {
+  display: flex;
+  width: 100%;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.dash-shell .stat-slide {
+  flex: 0 0 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 4px 0;
+  box-sizing: border-box;
 }
 
 .dash-shell .stat-main-metric {
@@ -369,7 +388,6 @@
   color: var(--txt);
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
 .dash-shell .stat-unit {
@@ -410,6 +428,40 @@
   color: var(--txt-muted);
 }
 
+/* Redesigned Floating Side Navigation Arrow */
+.dash-shell .stat-side-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--txt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 5;
+}
+
+.dash-shell .stat-card:hover .stat-side-arrow {
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.dash-shell .stat-card.available .stat-side-arrow:hover { background: #10b981; border-color: #10b981; color: #fff; box-shadow: 0 0 14px rgba(16, 185, 129, 0.5); }
+.dash-shell .stat-card.assigned .stat-side-arrow:hover { background: #0ea5e9; border-color: #0ea5e9; color: #fff; box-shadow: 0 0 14px rgba(14, 165, 233, 0.5); }
+.dash-shell .stat-card.sold .stat-side-arrow:hover { background: #2563eb; border-color: #2563eb; color: #fff; box-shadow: 0 0 14px rgba(37, 99, 235, 0.5); }
+.dash-shell .stat-card.damaged .stat-side-arrow:hover { background: #f59e0b; border-color: #f59e0b; color: #fff; box-shadow: 0 0 14px rgba(245, 158, 11, 0.5); }
+
 /* Interactive Horizontal Category Chips Bar */
 .dash-shell .stat-chips-bar {
   display: flex;
@@ -448,35 +500,35 @@
 }
 
 .dash-shell .stat-card.available .stat-chip.active {
-  background: rgba(46, 204, 113, 0.2);
-  border-color: #2ecc71;
-  color: #2ecc71;
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #10b981;
   font-weight: 700;
-  box-shadow: 0 0 8px rgba(46, 204, 113, 0.25);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.25);
 }
 
 .dash-shell .stat-card.assigned .stat-chip.active {
-  background: rgba(59, 142, 208, 0.2);
-  border-color: #3b8ed0;
-  color: #60a5fa;
+  background: rgba(14, 165, 233, 0.2);
+  border-color: #0ea5e9;
+  color: #38bdf8;
   font-weight: 700;
-  box-shadow: 0 0 8px rgba(59, 142, 208, 0.25);
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.25);
 }
 
 .dash-shell .stat-card.sold .stat-chip.active {
-  background: rgba(155, 89, 182, 0.2);
-  border-color: #9b59b6;
-  color: #c084fc;
+  background: rgba(37, 99, 235, 0.2);
+  border-color: #2563eb;
+  color: #60a5fa;
   font-weight: 700;
-  box-shadow: 0 0 8px rgba(155, 89, 182, 0.25);
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.25);
 }
 
 .dash-shell .stat-card.damaged .stat-chip.active {
-  background: rgba(243, 156, 18, 0.2);
-  border-color: #f39c12;
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
   color: #fbbf24;
   font-weight: 700;
-  box-shadow: 0 0 8px rgba(243, 156, 18, 0.25);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.25);
 }
 
 .dash-shell .stat-chip-count {
@@ -506,10 +558,10 @@
   width: fit-content;
 }
 
-.dash-shell .stat-badge-tag.available { background: rgba(46, 204, 113, 0.12); color: #2ecc71; }
-.dash-shell .stat-badge-tag.assigned { background: rgba(59, 142, 208, 0.12); color: #60a5fa; }
-.dash-shell .stat-badge-tag.sold { background: rgba(155, 89, 182, 0.12); color: #c084fc; }
-.dash-shell .stat-badge-tag.damaged { background: rgba(243, 156, 18, 0.12); color: #fbbf24; }
+.dash-shell .stat-badge-tag.available { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+.dash-shell .stat-badge-tag.assigned { background: rgba(14, 165, 233, 0.12); color: #38bdf8; }
+.dash-shell .stat-badge-tag.sold { background: rgba(37, 99, 235, 0.12); color: #60a5fa; }
+.dash-shell .stat-badge-tag.damaged { background: rgba(245, 158, 11, 0.12); color: #fbbf24; }
 
 .dash-shell .pulse-dot {
   width: 6px;
@@ -621,7 +673,7 @@
 
 .pulse-stat-icon.in { background: rgba(46, 204, 113, 0.15); color: #2ecc71; }
 .pulse-stat-icon.out { background: rgba(59, 142, 208, 0.15); color: #3b8ed0; }
-.pulse-stat-icon.challan { background: rgba(155, 89, 182, 0.15); color: #9b59b6; }
+.pulse-stat-icon.challan { background: rgba(14, 165, 233, 0.15); color: #0284c7; }
 .pulse-stat-icon.wh { background: rgba(243, 156, 18, 0.15); color: #f39c12; }
 
 .pulse-stat-info {
@@ -852,9 +904,9 @@ html[data-theme="light"] .dash-qty-pill.active {
 }
 
 html[data-theme="light"] .dash-qty-pill.sold {
-  background: #f3e8ff;
-  color: #7e22ce;
-  border: 1px solid #d8b4fe;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
 }
 
 html[data-theme="light"] .dash-qty-pill.damaged {
