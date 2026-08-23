@@ -47,7 +47,7 @@ window.PAGES.dashboard = {
       </div>
 
       <!-- ===================================================================
-           VIEW 1: EXECUTIVE CARDS VIEW CONTAINER
+           VIEW 1: EXECUTIVE CARDS VIEW (WITH SLIDING CATEGORY CAROUSEL)
            =================================================================== -->
       <div id="dashCardsView" class="dash-view-container active">
         <!-- Solar Generation & Power Assets Strip -->
@@ -93,99 +93,113 @@ window.PAGES.dashboard = {
           </div>
         </div>
 
-        <!-- 4 Clean, High-Impact Executive KPI Cards -->
+        <!-- 4 Core Executive ERP Metric KPI Cards with Fluid Category Carousel -->
         <div class="stat-grid" data-widget="w_kpi_cards">
-          <!-- Card 1: Available Stock -->
-          <div class="stat-card available" onclick="go('reports')">
+          
+          <!-- Available Stock Card -->
+          <div class="stat-card available" id="card-avail" data-kpi-key="avail">
             <div class="stat-card-header">
               <div class="stat-title-wrap">
                 <span class="label">Available Stock</span>
-                <span class="stat-sublabel">All Godown Inventory</span>
+                <span class="stat-sublabel" id="lbl-avail-ctx">All Godown Inventory</span>
               </div>
-              <div class="stat-icon-wrap"><i class="fa-solid fa-boxes-stacked"></i></div>
+              <div class="stat-header-controls">
+                <div class="stat-stepper-pill" onclick="event.stopPropagation();">
+                  <button type="button" class="stat-step-btn prev" data-card="avail" title="Previous Category"><i class="fa-solid fa-chevron-left"></i></button>
+                  <span class="stat-step-index" id="idx-avail">1 / 1</span>
+                  <button type="button" class="stat-step-btn next" data-card="avail" title="Next Category"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                <div class="stat-icon-wrap"><i class="fa-solid fa-boxes-stacked"></i></div>
+              </div>
             </div>
-            <div class="stat-card-hero">
-              <div class="value" id="cardAvailVal">0</div>
-              <span class="stat-unit">NOS</span>
+            <div class="stat-slider-viewport" id="viewport-avail">
+              <div class="stat-slider-track" id="track-avail"></div>
             </div>
-            <div class="stat-card-progress">
-              <div class="stat-prog-fill avail" id="cardAvailProg" style="width: 100%;"></div>
-            </div>
-            <div class="stat-quick-badges" id="cardAvailChips"></div>
+            <div class="stat-chips-bar" id="chips-avail" onclick="event.stopPropagation();"></div>
             <div class="stat-footer-bar">
               <span class="stat-badge-tag available"><span class="pulse-dot"></span> Ready for Project Dispatch</span>
-              <span class="stat-drill-link">View Report <i class="fa-solid fa-arrow-right"></i></span>
+              <span class="stat-drill-link" onclick="go('reports'); event.stopPropagation();">View Report <i class="fa-solid fa-arrow-right"></i></span>
             </div>
           </div>
 
-          <!-- Card 2: Assigned Stock -->
-          <div class="stat-card assigned" onclick="go('saleregister')">
+          <!-- Assigned Stock Card -->
+          <div class="stat-card assigned" id="card-assigned" data-kpi-key="assigned">
             <div class="stat-card-header">
               <div class="stat-title-wrap">
                 <span class="label">Assigned Stock</span>
-                <span class="stat-sublabel">Allocated to Projects</span>
+                <span class="stat-sublabel" id="lbl-assigned-ctx">Allocated to Projects</span>
               </div>
-              <div class="stat-icon-wrap"><i class="fa-solid fa-hand-holding-hand"></i></div>
+              <div class="stat-header-controls">
+                <div class="stat-stepper-pill" onclick="event.stopPropagation();">
+                  <button type="button" class="stat-step-btn prev" data-card="assigned" title="Previous Category"><i class="fa-solid fa-chevron-left"></i></button>
+                  <span class="stat-step-index" id="idx-assigned">1 / 1</span>
+                  <button type="button" class="stat-step-btn next" data-card="assigned" title="Next Category"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                <div class="stat-icon-wrap"><i class="fa-solid fa-hand-holding-hand"></i></div>
+              </div>
             </div>
-            <div class="stat-card-hero">
-              <div class="value" id="cardAssignedVal">0</div>
-              <span class="stat-unit">NOS</span>
+            <div class="stat-slider-viewport" id="viewport-assigned">
+              <div class="stat-slider-track" id="track-assigned"></div>
             </div>
-            <div class="stat-card-progress">
-              <div class="stat-prog-fill assigned" id="cardAssignedProg" style="width: 0%;"></div>
-            </div>
-            <div class="stat-quick-badges" id="cardAssignedChips"></div>
+            <div class="stat-chips-bar" id="chips-assigned" onclick="event.stopPropagation();"></div>
             <div class="stat-footer-bar">
               <span class="stat-badge-tag assigned"><i class="fa-solid fa-diagram-project"></i> Project Site Allocation</span>
-              <span class="stat-drill-link">View Register <i class="fa-solid fa-arrow-right"></i></span>
+              <span class="stat-drill-link" onclick="go('saleregister'); event.stopPropagation();">View Register <i class="fa-solid fa-arrow-right"></i></span>
             </div>
           </div>
 
-          <!-- Card 3: Total Dispatched -->
-          <div class="stat-card sold" onclick="go('saleregister')">
+          <!-- Total Dispatched Card -->
+          <div class="stat-card sold" id="card-sold" data-kpi-key="sold">
             <div class="stat-card-header">
               <div class="stat-title-wrap">
                 <span class="label">Total Dispatched</span>
-                <span class="stat-sublabel">Delivered to Clients</span>
+                <span class="stat-sublabel" id="lbl-sold-ctx">Delivered to Clients</span>
               </div>
-              <div class="stat-icon-wrap"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+              <div class="stat-header-controls">
+                <div class="stat-stepper-pill" onclick="event.stopPropagation();">
+                  <button type="button" class="stat-step-btn prev" data-card="sold" title="Previous Category"><i class="fa-solid fa-chevron-left"></i></button>
+                  <span class="stat-step-index" id="idx-sold">1 / 1</span>
+                  <button type="button" class="stat-step-btn next" data-card="sold" title="Next Category"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                <div class="stat-icon-wrap"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+              </div>
             </div>
-            <div class="stat-card-hero">
-              <div class="value" id="cardSoldVal">0</div>
-              <span class="stat-unit">NOS</span>
+            <div class="stat-slider-viewport" id="viewport-sold">
+              <div class="stat-slider-track" id="track-sold"></div>
             </div>
-            <div class="stat-card-progress">
-              <div class="stat-prog-fill sold" id="cardSoldProg" style="width: 15%;"></div>
-            </div>
-            <div class="stat-quick-badges" id="cardSoldChips"></div>
+            <div class="stat-chips-bar" id="chips-sold" onclick="event.stopPropagation();"></div>
             <div class="stat-footer-bar">
               <span class="stat-badge-tag sold"><i class="fa-solid fa-truck-fast"></i> Dispatched &amp; Invoiced</span>
-              <span class="stat-drill-link">View Register <i class="fa-solid fa-arrow-right"></i></span>
+              <span class="stat-drill-link" onclick="go('saleregister'); event.stopPropagation();">View Register <i class="fa-solid fa-arrow-right"></i></span>
             </div>
           </div>
 
-          <!-- Card 4: Damaged / RMA -->
-          <div class="stat-card damaged" onclick="go('returns')">
+          <!-- Damaged & RMA Card -->
+          <div class="stat-card damaged" id="card-damaged" data-kpi-key="damaged">
             <div class="stat-card-header">
               <div class="stat-title-wrap">
                 <span class="label">Damaged / RMA</span>
-                <span class="stat-sublabel">Quality &amp; Inspection</span>
+                <span class="stat-sublabel" id="lbl-damaged-ctx">Quality &amp; Inspection</span>
               </div>
-              <div class="stat-icon-wrap"><i class="fa-solid fa-shield-halved"></i></div>
+              <div class="stat-header-controls">
+                <div class="stat-stepper-pill" onclick="event.stopPropagation();">
+                  <button type="button" class="stat-step-btn prev" data-card="damaged" title="Previous Category"><i class="fa-solid fa-chevron-left"></i></button>
+                  <span class="stat-step-index" id="idx-damaged">1 / 1</span>
+                  <button type="button" class="stat-step-btn next" data-card="damaged" title="Next Category"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                <div class="stat-icon-wrap"><i class="fa-solid fa-shield-halved"></i></div>
+              </div>
             </div>
-            <div class="stat-card-hero">
-              <div class="value" id="cardDamagedVal">0</div>
-              <span class="stat-unit">NOS</span>
+            <div class="stat-slider-viewport" id="viewport-damaged">
+              <div class="stat-slider-track" id="track-damaged"></div>
             </div>
-            <div class="stat-card-progress">
-              <div class="stat-prog-fill damaged" id="cardDamagedProg" style="width: 0%;"></div>
-            </div>
-            <div class="stat-quick-badges" id="cardDamagedChips"></div>
+            <div class="stat-chips-bar" id="chips-damaged" onclick="event.stopPropagation();"></div>
             <div class="stat-footer-bar">
-              <span class="stat-badge-tag damaged"><i class="fa-solid fa-circle-check"></i> 100% Quality Inspected</span>
-              <span class="stat-drill-link">View Returns <i class="fa-solid fa-arrow-right"></i></span>
+              <span class="stat-badge-tag damaged"><i class="fa-solid fa-circle-check"></i> Quality Inspected</span>
+              <span class="stat-drill-link" onclick="go('returns'); event.stopPropagation();">View Returns <i class="fa-solid fa-arrow-right"></i></span>
             </div>
           </div>
+
         </div>
       </div>
 
@@ -411,13 +425,13 @@ window.PAGES.dashboard = {
 
     function getCategoryColor(cat, idx) {
       const c = String(cat || '').toUpperCase();
-      if (c.includes('CIVIL')) return '#10b981'; // Emerald
-      if (c.includes('SOLAR') || c.includes('PANEL')) return '#f59e0b'; // Amber
-      if (c.includes('INVERTER')) return '#3b82f6'; // Blue
-      if (c.includes('EARTHING')) return '#06b6d4'; // Cyan
-      if (c.includes('STRUCTURE')) return '#8b5cf6'; // Purple
-      if (c.includes('BATTERY')) return '#ec4899'; // Pink
-      if (c.includes('WIRE') || c.includes('ELECTRICAL')) return '#eab308'; // Yellow
+      if (c.includes('CIVIL')) return '#10b981';
+      if (c.includes('SOLAR') || c.includes('PANEL')) return '#f59e0b';
+      if (c.includes('INVERTER')) return '#3b82f6';
+      if (c.includes('EARTHING')) return '#06b6d4';
+      if (c.includes('STRUCTURE')) return '#8b5cf6';
+      if (c.includes('BATTERY')) return '#ec4899';
+      if (c.includes('WIRE') || c.includes('ELECTRICAL')) return '#eab308';
       const palette = ['#38bdf8', '#34d399', '#f472b6', '#a78bfa', '#fb923c', '#4ade80'];
       return palette[idx % palette.length];
     }
@@ -445,11 +459,22 @@ window.PAGES.dashboard = {
     }
     updateLiveGreeting();
 
+    const KPI_CONFIGS = {
+      avail: { targetPage: 'reports', defaultSub: 'All Godown Inventory' },
+      assigned: { targetPage: 'saleregister', defaultSub: 'Allocated to Projects' },
+      sold: { targetPage: 'saleregister', defaultSub: 'Delivered to Clients' },
+      damaged: { targetPage: 'returns', defaultSub: 'Quality & Inspection' }
+    };
+
+    const cardSlides = { avail: [], assigned: [], sold: [], damaged: [] };
+    const cardState = { avail: 0, assigned: 0, sold: 0, damaged: 0 };
+
     function formatNumber(n) {
       return Number(n || 0).toLocaleString('en-IN');
     }
 
-    function animateCountUp(el, endValue, duration = 600) {
+    // Fast, ultra-smooth cubic count-up animation
+    function animateCountUp(el, endValue, duration = 320) {
       if (!el) return;
       const target = Number(endValue) || 0;
       const gap = Math.min(60, Math.max(5, Math.round(target * 0.15)));
@@ -464,6 +489,169 @@ window.PAGES.dashboard = {
         else el.textContent = target.toLocaleString('en-IN');
       }
       requestAnimationFrame(tick);
+    }
+
+    function goToSlide(cardKey, targetIndex, animate = true) {
+      const slides = cardSlides[cardKey];
+      if (!slides || !slides.length) return;
+
+      const newIndex = ((targetIndex % slides.length) + slides.length) % slides.length;
+      cardState[cardKey] = newIndex;
+      const slide = slides[newIndex];
+
+      // 1. Physically translate track with smooth cubic-bezier transition
+      const trackEl = document.getElementById(`track-${cardKey}`);
+      if (trackEl) {
+        trackEl.style.transform = `translateX(-${newIndex * 100}%)`;
+      }
+
+      // 2. Fast smooth count-up animation on the active slide's number
+      const valEl = document.getElementById(`val-${cardKey}-${newIndex}`);
+      if (valEl) {
+        if (animate) animateCountUp(valEl, slide.count, 320);
+        else valEl.textContent = formatNumber(slide.count);
+      }
+
+      // 3. Update subtitle and stepper indicator
+      const lblEl = document.getElementById(`lbl-${cardKey}-ctx`);
+      if (lblEl) lblEl.textContent = slide.sub;
+
+      const idxEl = document.getElementById(`idx-${cardKey}`);
+      if (idxEl) idxEl.textContent = `${newIndex + 1} / ${slides.length}`;
+
+      // 4. Update and center active chip in bottom chip bar
+      const chipsBar = document.getElementById(`chips-${cardKey}`);
+      if (chipsBar) {
+        chipsBar.querySelectorAll('.stat-chip').forEach((chip, i) => {
+          const isActive = i === newIndex;
+          chip.classList.toggle('active', isActive);
+          if (isActive) {
+            chip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+        });
+      }
+    }
+
+    function setupCardCarousel(cardKey, totalCount, categories) {
+      const total = Number(totalCount || 0);
+      const slides = [
+        {
+          name: 'Total All Stock',
+          icon: 'fa-layer-group',
+          count: total,
+          pct: '100% Volume',
+          sub: KPI_CONFIGS[cardKey].defaultSub
+        }
+      ];
+
+      categories.forEach((cat) => {
+        const count = Number(cat[cardKey] || 0);
+        const pct = total > 0 ? ((count / total) * 100).toFixed(1) + '% Share' : '0%';
+        slides.push({
+          name: cat.category,
+          icon: getCategoryIcon(cat.category),
+          count: count,
+          pct: pct,
+          sub: `Showing ${cat.category}`
+        });
+      });
+
+      cardSlides[cardKey] = slides;
+      cardState[cardKey] = 0;
+
+      // Populate Sliding Track with Individual Slides
+      const trackEl = document.getElementById(`track-${cardKey}`);
+      if (trackEl) {
+        trackEl.innerHTML = slides.map((s, idx) => `
+          <div class="stat-slide" data-slide-index="${idx}">
+            <div class="stat-main-metric">
+              <div class="value" id="val-${cardKey}-${idx}">0</div>
+              <span class="stat-unit">Nos</span>
+            </div>
+            <div class="stat-category-badge-wrap">
+              <span class="stat-category-badge">
+                <i class="fa-solid ${s.icon}"></i> ${s.name}
+              </span>
+              <span class="stat-pct-badge">${s.pct}</span>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render Horizontal Interactive Chips Bar
+      const chipsBar = document.getElementById(`chips-${cardKey}`);
+      if (chipsBar) {
+        chipsBar.innerHTML = slides.map((s, idx) => `
+          <button type="button" class="stat-chip${idx === 0 ? ' active' : ''}" data-card="${cardKey}" data-index="${idx}" title="${s.name}: ${formatNumber(s.count)}">
+            <i class="fa-solid ${s.icon}"></i>
+            <span>${idx === 0 ? 'All' : s.name}</span>
+            <span class="stat-chip-count">${s.count > 0 ? formatNumber(s.count) : '0'}</span>
+          </button>
+        `).join('');
+
+        chipsBar.querySelectorAll('.stat-chip').forEach((chip) => {
+          chip.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = Number(chip.dataset.index || 0);
+            goToSlide(cardKey, idx, true);
+          });
+        });
+      }
+
+      const cardEl = document.getElementById(`card-${cardKey}`);
+      if (cardEl) {
+        // Stepper Prev/Next Buttons in Header
+        const prevBtn = cardEl.querySelector('.stat-step-btn.prev');
+        const nextBtn = cardEl.querySelector('.stat-step-btn.next');
+
+        if (prevBtn) {
+          prevBtn.onclick = (e) => {
+            e.stopPropagation();
+            goToSlide(cardKey, cardState[cardKey] - 1, true);
+          };
+        }
+        if (nextBtn) {
+          nextBtn.onclick = (e) => {
+            e.stopPropagation();
+            goToSlide(cardKey, cardState[cardKey] + 1, true);
+          };
+        }
+
+        // Fluid Mobile Touch Swipe Gesture
+        const viewport = document.getElementById(`viewport-${cardKey}`);
+        if (viewport) {
+          let touchStartX = 0;
+          let touchStartY = 0;
+          let isTouchActive = false;
+
+          viewport.addEventListener('touchstart', (e) => {
+            if (!e.touches || !e.touches[0]) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            isTouchActive = true;
+          }, { passive: true });
+
+          viewport.addEventListener('touchend', (e) => {
+            if (!isTouchActive || !e.changedTouches || !e.changedTouches[0]) return;
+            isTouchActive = false;
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            const dy = e.changedTouches[0].clientY - touchStartY;
+            if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) {
+              goToSlide(cardKey, dx < 0 ? cardState[cardKey] + 1 : cardState[cardKey] - 1, true);
+            }
+          }, { passive: true });
+        }
+
+        // Card Click Drilldown
+        cardEl.onclick = () => {
+          const cfg = KPI_CONFIGS[cardKey];
+          if (cfg && cfg.targetPage) {
+            window.go(cfg.targetPage);
+          }
+        };
+      }
+
+      goToSlide(cardKey, 0, false);
     }
 
     // =========================================================================
@@ -500,7 +688,12 @@ window.PAGES.dashboard = {
         if (btnCards) btnCards.classList.add('active');
         if (btnPres) btnPres.classList.remove('active');
         if (window._lastDashData) {
-          renderExecutiveCards(window._lastDashData);
+          const data = window._lastDashData;
+          const cats = Array.isArray(data.categorySnapshot) ? data.categorySnapshot : [];
+          setupCardCarousel('avail', data.available, cats);
+          setupCardCarousel('assigned', data.assigned, cats);
+          setupCardCarousel('sold', data.sold, cats);
+          setupCardCarousel('damaged', data.damaged, cats);
         }
       }
     }
@@ -515,70 +708,13 @@ window.PAGES.dashboard = {
       });
     }
 
-    // Render Clean Executive Cards View
-    function renderExecutiveCards(data) {
-      const cats = Array.isArray(data.categorySnapshot) ? data.categorySnapshot : [];
-      const totalAvail = Number(data.available || 0);
-
-      // Card 1: Available
-      animateCountUp(document.getElementById('cardAvailVal'), totalAvail);
-      const availProg = document.getElementById('cardAvailProg');
-      if (availProg) availProg.style.width = '100%';
-
-      const availChips = document.getElementById('cardAvailChips');
-      if (availChips) {
-        const topCats = cats.slice(0, 3);
-        availChips.innerHTML = topCats.map((c) => `
-          <span class="stat-mini-pill" title="${c.category}: ${formatNumber(c.avail)}">
-            <i class="fa-solid ${getCategoryIcon(c.category)}"></i>
-            <span>${c.category}: <b>${formatNumber(c.avail)}</b></span>
-          </span>
-        `).join('');
-      }
-
-      // Card 2: Assigned
-      const totalAssigned = Number(data.assigned || 0);
-      animateCountUp(document.getElementById('cardAssignedVal'), totalAssigned);
-      const assignedProg = document.getElementById('cardAssignedProg');
-      if (assignedProg) {
-        const pct = totalAvail > 0 ? Math.min(100, (totalAssigned / totalAvail) * 100) : 0;
-        assignedProg.style.width = `${pct}%`;
-      }
-      const assignedChips = document.getElementById('cardAssignedChips');
-      if (assignedChips) {
-        assignedChips.innerHTML = `<span class="stat-mini-pill"><i class="fa-solid fa-diagram-project"></i> 0 Active Site Kits Pending</span>`;
-      }
-
-      // Card 3: Total Dispatched
-      const totalSold = Number(data.sold || 0);
-      animateCountUp(document.getElementById('cardSoldVal'), totalSold);
-      const soldProg = document.getElementById('cardSoldProg');
-      if (soldProg) {
-        const pct = totalAvail > 0 ? Math.min(100, (totalSold / (totalAvail + totalSold)) * 100) : 10;
-        soldProg.style.width = `${pct}%`;
-      }
-      const soldChips = document.getElementById('cardSoldChips');
-      if (soldChips) {
-        soldChips.innerHTML = `<span class="stat-mini-pill"><i class="fa-solid fa-truck-fast"></i> ${data.activeChallans || 0} Delivery Challans</span>`;
-      }
-
-      // Card 4: Damaged / RMA
-      const totalDamaged = Number(data.damaged || 0);
-      animateCountUp(document.getElementById('cardDamagedVal'), totalDamaged);
-      const damagedChips = document.getElementById('cardDamagedChips');
-      if (damagedChips) {
-        damagedChips.innerHTML = `<span class="stat-mini-pill"><i class="fa-solid fa-circle-check"></i> 100% Quality Inspected</span>`;
-      }
-    }
-
     // Render Presentation Mode Visual Charts (SVG Donut & Animated Bars)
     function renderPresentationCharts(data) {
       const cats = Array.isArray(data.categorySnapshot) ? data.categorySnapshot : [];
       const totalAvail = Number(data.available || 0);
-      const totalUnits = totalAvail + Number(data.sold || 0);
 
       // 1. Center Value in Donut
-      animateCountUp(document.getElementById('dashDonutTotalVal'), totalAvail);
+      animateCountUp(document.getElementById('dashDonutTotalVal'), totalAvail, 500);
 
       // 2. Build SVG Donut Chart with glowing segments
       const svg = document.getElementById('dashDonutSvg');
@@ -667,9 +803,9 @@ window.PAGES.dashboard = {
       }
 
       // 4. Presentation Telemetry & Meters
-      animateCountUp(document.getElementById('dashPresSolarKw'), data.solarKw || 0);
-      animateCountUp(document.getElementById('dashPresInverters'), data.invertersCount || 0);
-      animateCountUp(document.getElementById('dashPresDispatched'), data.sold || 0);
+      animateCountUp(document.getElementById('dashPresSolarKw'), data.solarKw || 0, 500);
+      animateCountUp(document.getElementById('dashPresInverters'), data.invertersCount || 0, 500);
+      animateCountUp(document.getElementById('dashPresDispatched'), data.sold || 0, 500);
       
       const presHubsEl = document.getElementById('dashPresHubsCount');
       if (presHubsEl) presHubsEl.textContent = `${data.warehousesCount || 1} Hub`;
@@ -688,18 +824,18 @@ window.PAGES.dashboard = {
         const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
         // Top Solar Bar
-        animateCountUp(document.getElementById('dashSolarKwVal'), data.solarKw || 0);
-        animateCountUp(document.getElementById('dashInvertersVal'), data.invertersCount || 0);
-        animateCountUp(document.getElementById('dashBatteriesVal'), data.batteriesCount || 0);
-        animateCountUp(document.getElementById('dashTotalItemsVal'), data.totalItems || 0);
+        animateCountUp(document.getElementById('dashSolarKwVal'), data.solarKw || 0, 400);
+        animateCountUp(document.getElementById('dashInvertersVal'), data.invertersCount || 0, 400);
+        animateCountUp(document.getElementById('dashBatteriesVal'), data.batteriesCount || 0, 400);
+        animateCountUp(document.getElementById('dashTotalItemsVal'), data.totalItems || 0, 400);
         setText('dashLowStockCount', `${data.lowStockCount || 0} items`);
 
         // Daily Operations Pulse
-        animateCountUp(document.getElementById('dashTodayInwardQty'), data.todayInwardQty || 0);
+        animateCountUp(document.getElementById('dashTodayInwardQty'), data.todayInwardQty || 0, 400);
         setText('dashTodayInwardInvoices', data.todayInwardInvoices || 0);
-        animateCountUp(document.getElementById('dashTodayDispatchQty'), data.todayDispatchQty || 0);
+        animateCountUp(document.getElementById('dashTodayDispatchQty'), data.todayDispatchQty || 0, 400);
         setText('dashTodayDispatchChallans', data.todayDispatchChallans || 0);
-        animateCountUp(document.getElementById('dashActiveChallans'), data.activeChallans || 0);
+        animateCountUp(document.getElementById('dashActiveChallans'), data.activeChallans || 0, 400);
         setText('dashWarehousesCount', data.warehousesCount || 1);
 
         const cats = Array.isArray(data.categorySnapshot) ? data.categorySnapshot : [];
@@ -714,11 +850,16 @@ window.PAGES.dashboard = {
         setText('dashSolarPanelsSub', `${formatNumber(panelsAvail)} Panels • Active Gen Stock`);
         setText('dashPresSolarSub', `${formatNumber(panelsAvail)} Solar Panels in Stock`);
 
-        // Render both views
-        renderExecutiveCards(data);
+        // Setup 4 Sliding Category Carousels
+        setupCardCarousel('avail', data.available, cats);
+        setupCardCarousel('assigned', data.assigned, cats);
+        setupCardCarousel('sold', data.sold, cats);
+        setupCardCarousel('damaged', data.damaged, cats);
+
+        // Render Presentation Mode
         renderPresentationCharts(data);
 
-        // Apply selected view
+        // Apply saved view
         setViewMode(currentViewMode, false);
 
         renderCategorySnapshotTable(cats, Number(data.available || 0));
@@ -840,7 +981,7 @@ window.PAGES.dashboard = {
     const DASHBOARD_WIDGETS = [
       { id: 'w_welcome', name: 'Welcome & Quick Action Header', icon: 'fa-hand-wave', desc: 'Greeting, live clock badge, and 1-click action shortcuts' },
       { id: 'w_solar_capacity', name: 'Solar Capacity & Power Portfolio', icon: 'fa-solar-panel', desc: 'Total solar KW capacity, inverters count, and batteries in stock' },
-      { id: 'w_kpi_cards', name: 'Core Inventory KPI Cards', icon: 'fa-chart-simple', desc: 'Clean executive metric cards with live volume balances' },
+      { id: 'w_kpi_cards', name: 'Core Inventory KPI Cards', icon: 'fa-chart-simple', desc: 'Interactive category sliding cards with live volume balances' },
       { id: 'w_lowstock', name: 'Low Stock Alert Banner', icon: 'fa-triangle-exclamation', desc: 'Replenishment urgency notification when items hit minimum levels' },
       { id: 'w_operations_pulse', name: "Today's Enterprise Operations Pulse", icon: 'fa-chart-line', desc: 'Daily inward, project dispatch, and BOM challan velocity' },
       { id: 'w_category_snapshot', name: 'Category-wise Inventory Matrix', icon: 'fa-table-cells', desc: 'Detailed table of stock counts per category with filters' }
