@@ -84,10 +84,10 @@ module.exports = function registerHealthRoutes(app, deps) {
     res.json(rows.map((r) => ({
       category: r.category,
       brand: r.brand_name,
-      watt: r.watt ? `${r.watt}W` : 'N/A',
-      type: r.solar_type || 'Others',
-      currentStock: r.current_stock,
-      minimumStock: r.minimum_stock,
+      watt: (Number(r.watt) > 0) ? `${Number(r.watt)}W` : '-',
+      type: r.solar_type || '-',
+      currentStock: Number(r.current_stock) || 0,
+      minimumStock: Number(r.minimum_stock) || 0,
       uom: r.uom || 'Nos',
     })));
   }));

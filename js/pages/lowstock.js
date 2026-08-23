@@ -57,8 +57,23 @@ window.PAGES.lowstock = {
     let openMenuEl = null;
     let refreshTimer = null;
 
+    function formatWattDisplay(w) {
+      if (!w || w === 'N/A' || w === '0W' || w === '0.00W' || w === '0' || Number(w) <= 0) return '-';
+      const num = parseFloat(w);
+      if (isNaN(num) || num <= 0) return '-';
+      return `${num}W`;
+    }
+
+    function formatStockNum(n) {
+      const num = parseFloat(n) || 0;
+      return Number.isInteger(num) ? String(num) : num.toFixed(2).replace(/\.?0+$/, '');
+    }
+
     function rowToValues(r) {
-      return [r.category, r.brand, r.watt, r.type, String(r.currentStock), `${r.minimumStock} ${r.uom || 'Nos'}`];
+      const wattText = formatWattDisplay(r.watt);
+      const curStockText = `${formatStockNum(r.currentStock)} ${r.uom || 'Nos'}`;
+      const minStockText = `${formatStockNum(r.minimumStock)} ${r.uom || 'Nos'}`;
+      return [r.category, r.brand, wattText, r.type || '-', curStockText, minStockText];
     }
 
     function matchesSearch(values) {
@@ -101,10 +116,14 @@ window.PAGES.lowstock = {
         <tr>
           <td data-label="Category">${r.category}</td>
           <td data-label="Brand">${r.brand}</td>
-          <td data-label="Wattage">${r.watt}</td>
-          <td data-label="Type">${r.type}</td>
-          <td data-label="Current Stock" style="color:${Number(r.currentStock) <= 0 ? 'var(--red)' : 'var(--orange)'};">${r.currentStock}</td>
-          <td data-label="Minimum Stock">${r.minimumStock} ${r.uom || 'Nos'}</td>
+          <td data-label="Wattage">${formatWattDisplay(r.watt)}</td>
+          <td data-label="Type">${r.type || '-'}</td>
+          <td data-label="Current Stock" style="color:${Number(r.currentStock) <= 0 ? 'var(--red)' : 'var(--orange)'}; font-weight:700;">
+            ${formatStockNum(r.currentStock)} <small style="font-weight:600; color:var(--txt-muted);">${r.uom || 'Nos'}</small>
+          </td>
+          <td data-label="Minimum Stock" style="font-weight:600;">
+            ${formatStockNum(r.minimumStock)} <small style="font-weight:600; color:var(--txt-muted);">${r.uom || 'Nos'}</small>
+          </td>
         </tr>`).join('');
     }
 

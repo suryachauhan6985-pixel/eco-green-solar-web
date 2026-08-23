@@ -6,36 +6,45 @@ module.exports = function registerReportsRoutes(app, deps) {
   // ?category= filters exactly like the desktop Category dropdown does.
   app.get('/api/reports/master', route(async (req, res) => {
     const category = req.query.category;
-    let sql = `SELECT serial_no, brand_name, watt, solar_type, category, pallet_no, warehouse, status,
-                      supplier_name, purchase_invoice, purchase_date, customer_name, order_no,
-                      sales_invoice, invoice_date, chalan_no, chalan_date, edited_flag
-               FROM stock_ledger`;
+    let sql = `SELECT sl.id, sl.serial_no, sl.brand_name, sl.watt, sl.solar_type, sl.category, sl.pallet_no, sl.warehouse, sl.status,
+                      sl.supplier_name, sl.purchase_invoice, sl.purchase_date, sl.customer_name, sl.order_no,
+                      sl.sales_invoice, sl.invoice_date, sl.chalan_no, sl.chalan_date, sl.edited_flag, sl.quantity,
+                      COALESCE(it.uom, 'Nos') AS uom
+               FROM stock_ledger sl
+               LEFT JOIN items it ON sl.item_id = it.id`;
     const params = [];
-    if (category && category !== 'All Categories') { sql += ` WHERE category = ?`; params.push(category); }
-    sql += ` ORDER BY id DESC`;
+    if (category && category !== 'All Categories') { sql += ` WHERE sl.category = ?`; params.push(category); }
+    sql += ` ORDER BY sl.id DESC`;
 
     const [rows] = await pool.query(sql, params);
-    const dash = (v) => (v === null || v === undefined || v === '' ? '-' : String(v));
-    res.json(rows.map((r) => ({
-      serialNo: dash(r.serial_no),
-      brand: dash(r.brand_name),
-      watt: r.watt ? `${r.watt}W` : '-',
-      solarType: dash(r.solar_type),
-      category: dash(r.category),
-      palletNo: dash(r.pallet_no),
-      warehouse: dash(r.warehouse),
-      status: dash(r.status),
-      supplier: dash(r.supplier_name),
-      purchaseInvoice: dash(r.purchase_invoice),
-      purchaseDate: dash(r.purchase_date),
-      customer: dash(r.customer_name),
-      orderNo: dash(r.order_no),
-      salesInvoice: dash(r.sales_invoice),
-      invoiceDate: dash(r.invoice_date),
-      chalanNo: dash(r.chalan_no),
-      chalanDate: dash(r.chalan_date),
-      edited: r.edited_flag ? 'Yes' : 'No',
-    })));
+    const dash = (v) => (v === null || v === undefined || v === '' || String(v).toLowerCase() === 'null' ? '-' : String(v));
+    res.json(rows.map((r) => {
+      const serial = (r.serial_no && String(r.serial_no).trim() !== '' && String(r.serial_no).toLowerCase() !== 'null') ? String(r.serial_no) : '-';
+      const watt = (Number(r.watt) > 0) ? `${Number(r.watt)}W` : '-';
+      const qty = (r.quantity != null && Number(r.quantity) > 0) ? Number(r.quantity) : 1;
+      return {
+        serialNo: serial,
+        brand: dash(r.brand_name),
+        watt: watt,
+        qty: qty,
+        uom: r.uom || 'Nos',
+        solarType: dash(r.solar_type),
+        category: dash(r.category),
+        palletNo: dash(r.pallet_no),
+        warehouse: dash(r.warehouse),
+        status: dash(r.status),
+        supplier: dash(r.supplier_name),
+        purchaseInvoice: dash(r.purchase_invoice),
+        purchaseDate: dash(r.purchase_date),
+        customer: dash(r.customer_name),
+        orderNo: dash(r.order_no),
+        salesInvoice: dash(r.sales_invoice),
+        invoiceDate: dash(r.invoice_date),
+        chalanNo: dash(r.chalan_no),
+        chalanDate: dash(r.chalan_date),
+        edited: r.edited_flag ? 'Yes' : 'No',
+      };
+    }));
   }));
 
 };

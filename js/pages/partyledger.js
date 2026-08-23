@@ -1389,53 +1389,84 @@ window.PAGES.partyledger = {
       if (stmtKeyHandler) { document.removeEventListener('keydown', stmtKeyHandler); stmtKeyHandler = null; }
     }
 
+    function renderSummary() {
+      const inC = selectedRows.filter((r) => r.movement === 'IN').reduce((sum, r) => sum + (Number(r.quantity) || 1), 0);
+      const outC = selectedRows.filter((r) => r.movement === 'OUT').reduce((sum, r) => sum + (Number(r.quantity) || 1), 0);
+      const formatQty = (n) => Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, '');
+      document.getElementById('stmtIn').textContent = formatQty(inC);
+      document.getElementById('stmtOut').textContent = formatQty(outC);
+      document.getElementById('stmtBal').textContent = formatQty(inC - outC);
+    }
+
+    function parseDate(d) {
+      const [dd, mm, yyyy] = String(d || '').split('-').map(Number);
+      if (!dd || !mm || !yyyy) return null;
+      return new Date(yyyy, mm - 1, dd);
+    }
+    function monthKey(d) { const dt = parseDate(d); return dt ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}` : '-'; }
+    function monthLabel(key) {
+      const [y, m] = key.split('-').map(Number);
+      return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+    function refDisplay(row) {
+      if (row.movement === 'IN') return row.purchase_invoice ? String(row.purchase_invoice) : '-';
+      const parts = [];
+      if (row.sales_invoice) parts.push(`INV:${row.sales_invoice}`);
+      if (row.chalan_no) parts.push(`CH:${row.chalan_no}`);
+      if (row.order_no) parts.push(`ORD:${row.order_no}`);
+      return parts.join(' | ') || '-';
+    }
+
     function renderMonths(tbody) {
-      setHead(['Month', 'Total Transactions', 'Inward (Purchase)', 'Outward (Sale)']);
+      setHead(['Month', 'Total Transactions', 'Inward (In)', 'Outward (Out)']);
       const months = {};
       selectedRows.forEach((r) => {
         const key = monthKey(r.date);
-        if (key === '-') return;
-        months[key] = months[key] || { in: 0, out: 0 };
-        months[key][r.movement === 'IN' ? 'in' : 'out']++;
+        if (!months[key]) months[key] = { in: 0, out: 0, label: monthLabel(key) };
+        months[key][r.movement === 'IN' ? 'in' : 'out'] += (Number(r.quantity) || 1);
       });
       const keys = Object.keys(months).sort((a, b) => b.localeCompare(a));
-      if (!keys.length) { tbody.innerHTML = `<tr><td colspan="4" class="pl-empty-hint">No transactions found for this party.</td></tr>`; return; }
       keys.forEach((key) => {
         const info = months[key];
         const tr = document.createElement('tr');
         tr.className = 'stmt-table-row';
         tr.innerHTML = `<td data-label="Month">📅 ${monthLabel(key)}</td>
-          <td data-label="Total" style="text-align:center;">${info.in + info.out}</td>
-          <td data-label="Inward" style="text-align:center; color:#2ECC71;">${info.in}</td>
-          <td data-label="Outward" style="text-align:center; color:var(--red);">${info.out}</td>`;
-        tr.addEventListener('click', () => { stMonth = key; renderLevel(); });
+          <td data-label="Total" style="text-align:center; font-weight:700;">${info.in + info.out}</td>
+          <td data-label="Inward" style="text-align:center; color:#2ECC71; font-weight:700;">${info.in}</td>
+          <td data-label="Outward" style="text-align:center; color:var(--red); font-weight:700;">${info.out}</td>`;
+        tr.addEventListener('click', () => {
+          stMonth = key;
+          renderLevel();
+        });
         tbody.appendChild(tr);
       });
     }
 
     function renderDates(tbody) {
-      setHead(['Date', 'Total Transactions', 'Inward (Purchase)', 'Outward (Sale)']);
-      const flat = selectedRows.filter((r) => monthKey(r.date) === stMonth);
+      setHead(['Date', 'Total Transactions', 'Inward (In)', 'Outward (Out)']);
       const dates = {};
-      flat.forEach((r) => {
-        dates[r.date] = dates[r.date] || { in: 0, out: 0, dt: parseDate(r.date) };
-        dates[r.date][r.movement === 'IN' ? 'in' : 'out']++;
+      selectedRows.filter((r) => monthKey(r.date) === stMonth).forEach((r) => {
+        if (!dates[r.date]) dates[r.date] = { in: 0, out: 0, dt: parseDate(r.date) || 0 };
+        dates[r.date][r.movement === 'IN' ? 'in' : 'out'] += (Number(r.quantity) || 1);
       });
       Object.keys(dates).sort((a, b) => dates[b].dt - dates[a].dt).forEach((dateKey) => {
         const info = dates[dateKey];
         const tr = document.createElement('tr');
         tr.className = 'stmt-table-row';
         tr.innerHTML = `<td data-label="Date">🗓️ ${dateKey}</td>
-          <td data-label="Total" style="text-align:center;">${info.in + info.out}</td>
-          <td data-label="Inward" style="text-align:center; color:#2ECC71;">${info.in}</td>
-          <td data-label="Outward" style="text-align:center; color:var(--red);">${info.out}</td>`;
-        tr.addEventListener('click', () => { stDate = dateKey; renderLevel(); });
+          <td data-label="Total" style="text-align:center; font-weight:700;">${info.in + info.out}</td>
+          <td data-label="Inward" style="text-align:center; color:#2ECC71; font-weight:700;">${info.in}</td>
+          <td data-label="Outward" style="text-align:center; color:var(--red); font-weight:700;">${info.out}</td>`;
+        tr.addEventListener('click', () => {
+          stDate = dateKey;
+          renderLevel();
+        });
         tbody.appendChild(tr);
       });
     }
 
     function renderRefs(tbody) {
-      setHead(['Voucher / Challan / Invoice No', 'Movement', 'Serial Count', 'Category', 'Warehouse', 'Actions']);
+      setHead(['Voucher / Challan / Invoice No', 'Movement', 'Total Qty', 'Category', 'Warehouse', 'Actions']);
       const groups = {};
       const order = [];
       selectedRows.filter((r) => r.date === stDate).forEach((r) => {
@@ -1449,12 +1480,14 @@ window.PAGES.partyledger = {
         const g = groups[key];
         const catText = g.cats.size === 1 ? [...g.cats][0] : 'Multiple';
         const whText = g.whs.size === 1 ? [...g.whs][0] : 'Multiple';
+        const totalQty = g.rows.reduce((sum, r) => sum + (Number(r.quantity) || 1), 0);
+        const formatTotalQty = Number.isInteger(totalQty) ? String(totalQty) : totalQty.toFixed(2).replace(/\.?0+$/, '');
         const tr = document.createElement('tr');
         tr.className = 'stmt-table-row';
         const canAct = g.ref && g.ref !== '-';
         tr.innerHTML = `<td data-label="Ref">🧾 ${refDisplay(g.first)}</td>
           <td data-label="Movement" style="text-align:center; font-weight:700; color:${g.movement === 'IN' ? '#2ECC71' : 'var(--red)'};">${g.movement === 'IN' ? 'INWARD' : 'OUTWARD'}</td>
-          <td data-label="Count" style="text-align:center;">${g.rows.length}</td>
+          <td data-label="Total Qty" style="text-align:center; font-weight:700; color:var(--blue);">${formatTotalQty}</td>
           <td data-label="Category" style="text-align:center;">${catText}</td>
           <td data-label="Warehouse" style="text-align:center;">${whText}</td>
           <td data-label="Actions" class="stmt-row-actions" style="text-align:center; white-space:nowrap;">
@@ -1501,16 +1534,20 @@ window.PAGES.partyledger = {
     }
 
     function renderSerials(tbody) {
-      setHead(['Date', 'Movement', 'Serial No', 'Item Specs', 'Category', 'Ref/Invoice No', 'Warehouse', 'Status']);
+      setHead(['Date', 'Movement', 'Serial No', 'Quantity', 'Item Specs', 'Category', 'Ref/Invoice No', 'Warehouse', 'Status']);
       const matched = selectedRows.filter((r) => r.date === stDate && r.movement === stRef.movement && r.ref_key === stRef.key);
-      const statusColor = { Available: '#2ECC71', Sold: 'var(--red)', Damaged: 'var(--orange)' };
+      const statusColor = { Available: '#2ECC71', Sold: 'var(--red)', Damaged: '#f39c12' };
       matched.forEach((r, idx) => {
         const tr = document.createElement('tr');
         tr.className = 'stmt-table-row leaf';
+        const serialText = (r.serial_no && String(r.serial_no).trim() !== '' && String(r.serial_no).toLowerCase() !== 'null') ? String(r.serial_no) : '-';
+        const qtyNum = Number(r.quantity) || 1;
+        const qtyVal = Number.isInteger(qtyNum) ? String(qtyNum) : qtyNum.toFixed(2).replace(/\.?0+$/, '');
         tr.innerHTML = `<td data-label="Date">${r.date}</td>
           <td data-label="Movement" style="font-weight:700; color:${r.movement === 'IN' ? '#2ECC71' : 'var(--red)'};">${r.movement === 'IN' ? 'INWARD' : 'OUTWARD'}</td>
-          <td data-label="Serial">${r.serial_no}</td>
-          <td data-label="Item">${r.item_name || '-'}</td>
+          <td data-label="Serial" style="font-family:monospace; font-weight:600; color:${serialText !== '-' ? 'var(--gold)' : 'var(--txt-muted)'};">${serialText}</td>
+          <td data-label="Quantity" style="text-align:center; font-weight:700; color:var(--blue);">${qtyVal} <small style="color:var(--txt-muted); font-weight:600;">${r.uom || 'Nos'}</small></td>
+          <td data-label="Item" style="font-weight:600;">${r.item_name || '-'}</td>
           <td data-label="Category" style="text-align:center;">${r.category || '-'}</td>
           <td data-label="Ref" style="text-align:center;">${refDisplay(r)}</td>
           <td data-label="Warehouse" style="text-align:center;">${r.warehouse || '-'}</td>

@@ -30,6 +30,7 @@ window.PAGES.reports = {
         <th data-col="Serial No">Serial No <button class="th-filter-btn" data-col="Serial No" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Product Brand">Product Brand <button class="th-filter-btn" data-col="Product Brand" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Wattage Spec">Wattage Spec <button class="th-filter-btn" data-col="Wattage Spec" type="button"><i class="fa-solid fa-filter"></i></button></th>
+        <th data-col="Quantity">Quantity <button class="th-filter-btn" data-col="Quantity" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Solar Type">Solar Type <button class="th-filter-btn" data-col="Solar Type" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Category">Category <button class="th-filter-btn" data-col="Category" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Pallet ID">Pallet ID <button class="th-filter-btn" data-col="Pallet ID" type="button"><i class="fa-solid fa-filter"></i></button></th>
@@ -46,7 +47,7 @@ window.PAGES.reports = {
         <th data-col="Challan Date">Challan Date <button class="th-filter-btn" data-col="Challan Date" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Edited?">Edited? <button class="th-filter-btn" data-col="Edited?" type="button"><i class="fa-solid fa-filter"></i></button></th>
       </tr></thead>
-      <tbody id="repBody"><tr><td colspan="18" style="text-align:center;color:var(--txt-muted);">Loading live data…</td></tr></tbody>
+      <tbody id="repBody"><tr><td colspan="19" style="text-align:center;color:var(--txt-muted);">Loading live data…</td></tr></tbody>
     </table></div>
   `,
 
@@ -57,7 +58,7 @@ window.PAGES.reports = {
     const catEl = $('repCategory');
 
     const columns = [
-      'Serial No', 'Product Brand', 'Wattage Spec', 'Solar Type', 'Category', 'Pallet ID',
+      'Serial No', 'Product Brand', 'Wattage Spec', 'Quantity', 'Solar Type', 'Category', 'Pallet ID',
       'Warehouse', 'Status', 'Supplier', 'Purchase Invoice', 'Purchase Date', 'Customer',
       'Order No', 'Sales Invoice', 'Sales Invoice Date', 'Challan No', 'Challan Date', 'Edited?',
     ];
@@ -80,9 +81,23 @@ window.PAGES.reports = {
     const activeFilters = {}; // { colLabel: Set of allowed values }
     let openMenuEl = null;
 
+    function formatWattDisplay(w) {
+      if (!w || w === 'N/A' || w === '0W' || w === '0.00W' || w === '0' || Number(w) <= 0) return '-';
+      const num = parseFloat(w);
+      if (isNaN(num) || num <= 0) return '-';
+      return `${num}W`;
+    }
+    function formatQtyNum(n) {
+      const num = parseFloat(n) || 1;
+      return Number.isInteger(num) ? String(num) : num.toFixed(2).replace(/\.?0+$/, '');
+    }
+
     function rowToValues(r) {
+      const serial = (r.serialNo && r.serialNo !== 'null' && r.serialNo !== '') ? r.serialNo : '-';
+      const watt = formatWattDisplay(r.watt);
+      const qtyText = `${formatQtyNum(r.qty)} ${r.uom || 'Nos'}`;
       return [
-        r.serialNo, r.brand, r.watt, r.solarType, r.category, r.palletNo, r.warehouse, r.status,
+        serial, r.brand, watt, qtyText, r.solarType, r.category, r.palletNo, r.warehouse, r.status,
         r.supplier, r.purchaseInvoice, r.purchaseDate, r.customer, r.orderNo, r.salesInvoice,
         r.invoiceDate, r.chalanNo, r.chalanDate, r.edited,
       ];
@@ -107,7 +122,7 @@ window.PAGES.reports = {
           : '/reports/master';
         rows = await window.Api.get(path);
       } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="18" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load report data from the database.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="19" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load report data from the database.</td></tr>`;
         allRows = [];
         return;
       }
@@ -127,14 +142,15 @@ window.PAGES.reports = {
     function renderTable() {
       const visible = allRows.filter((r) => matchesSearch(r) && isRowVisible(rowToValues(r)));
       if (!visible.length) {
-        tbody.innerHTML = `<tr><td colspan="18" style="text-align:center; color:var(--txt-muted); font-style:italic;">No records found for the selected filters.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="19" style="text-align:center; color:var(--txt-muted); font-style:italic;">No records found for the selected filters.</td></tr>`;
         return;
       }
       tbody.innerHTML = visible.map((r) => `
         <tr>
-          <td data-label="Serial No" class="gold-txt">${r.serialNo}</td>
+          <td data-label="Serial No" class="gold-txt" style="font-family:monospace;">${(r.serialNo && r.serialNo !== 'null' && r.serialNo !== '') ? r.serialNo : '-'}</td>
           <td data-label="Product Brand">${r.brand}</td>
-          <td data-label="Wattage Spec">${r.watt}</td>
+          <td data-label="Wattage Spec">${formatWattDisplay(r.watt)}</td>
+          <td data-label="Quantity"><span style="font-weight:700;">${formatQtyNum(r.qty)}</span> <small style="font-weight:600; color:var(--txt-muted);">${r.uom || 'Nos'}</small></td>
           <td data-label="Solar Type">${r.solarType}</td>
           <td data-label="Category">${r.category}</td>
           <td data-label="Pallet ID">${r.palletNo}</td>
