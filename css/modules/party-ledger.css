@@ -547,6 +547,18 @@ body.pl-mode-display .btn-table-del {
   display: none !important;
 }
 
-body.pl-mode-alter #btnCreateLedger {
+body.pl-mode-alter #btnCreateLedger,
+body.pl-mode-alter #btnImportLedgers,
+body.pl-mode-alter #btnDownloadTemplate {
   display: none !important;
 }
+
+body.pl-mode-create #btnEditLedger,
+body.pl-mode-create #btnDeleteLedger,
+body.pl-mode-create #btnRegisterLedger,
+body.pl-mode-create .btn-table-edit,
+body.pl-mode-create .btn-table-reg,
+body.pl-mode-create .btn-table-del {
+  display: none !important;
+}
+

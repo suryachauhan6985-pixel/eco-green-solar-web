@@ -5438,7 +5438,7 @@ window.attachColumnFilters = function (table) {
     }
 
     const accountBookItems = [
-      { name: 'Party Ledger Statement', hotkey: 'L', icon: 'fa-money-check-dollar', page: 'partyledger' },
+      { name: 'Party Ledger Statement', hotkey: 'L', icon: 'fa-money-check-dollar', page: 'partyledger', action: 'display' },
       { name: 'Purchase Register', hotkey: 'P', icon: 'fa-cart-shopping', page: 'purchaseregister' },
       { name: 'Sale Register', hotkey: 'S', icon: 'fa-money-bill-transfer', page: 'saleregister' }
     ];
@@ -6255,23 +6255,26 @@ window.attachColumnFilters = function (table) {
 
     // 3. No Flyout Open — Root Navigation & Global Hotkeys
     if (navState.focusTier === 'none') {
-      const sidebarBtns = Array.from(document.querySelectorAll('.erp-sidebar-btn'));
+      // ONLY handle Arrow keys / Enter on root sidebar if currently on Dashboard
+      if (window.CURRENT_PAGE_ID === 'dashboard') {
+        const sidebarBtns = Array.from(document.querySelectorAll('.erp-sidebar-btn'));
 
-      if (key === 'ArrowDown' || key === 'ArrowUp') {
-        e.preventDefault();
-        e.stopPropagation();
-        const curIdx = sidebarBtns.findIndex((b) => b.classList.contains('selected'));
-        let nextIdx = (curIdx === -1) ? 0 : (key === 'ArrowDown' ? curIdx + 1 : curIdx - 1 + sidebarBtns.length) % sidebarBtns.length;
-        sidebarBtns.forEach((b, i) => b.classList.toggle('selected', i === nextIdx));
-        return true;
-      }
-      if (key === 'ArrowRight' || key === 'Enter') {
-        const selBtn = sidebarBtns.find((b) => b.classList.contains('selected'));
-        if (selBtn) {
+        if (key === 'ArrowDown' || key === 'ArrowUp') {
           e.preventDefault();
           e.stopPropagation();
-          selBtn.click();
+          const curIdx = sidebarBtns.findIndex((b) => b.classList.contains('selected'));
+          let nextIdx = (curIdx === -1) ? 0 : (key === 'ArrowDown' ? curIdx + 1 : curIdx - 1 + sidebarBtns.length) % sidebarBtns.length;
+          sidebarBtns.forEach((b, i) => b.classList.toggle('selected', i === nextIdx));
           return true;
+        }
+        if (key === 'ArrowRight' || key === 'Enter') {
+          const selBtn = sidebarBtns.find((b) => b.classList.contains('selected'));
+          if (selBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            selBtn.click();
+            return true;
+          }
         }
       }
 

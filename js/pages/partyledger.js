@@ -427,6 +427,7 @@ window.PAGES.partyledger = {
     }
 
     function partyListKeyHandler(e) {
+      if (window.CURRENT_PAGE_ID !== 'partyledger') return;
       // Statement modal and Ledger Form own keys while open
       if (stOverlay && stOverlay.classList.contains('show')) return;
       if (lfOverlay && lfOverlay.classList.contains('show')) return;
@@ -556,6 +557,10 @@ window.PAGES.partyledger = {
         if (p) selectParty(p, true).then(() => openStatement());
       }
     }
+    if (window._plKeyHandler) {
+      document.removeEventListener('keydown', window._plKeyHandler);
+    }
+    window._plKeyHandler = partyListKeyHandler;
     document.addEventListener('keydown', partyListKeyHandler);
 
     const partySummaryCache = new Map();
@@ -574,13 +579,22 @@ window.PAGES.partyledger = {
       // Update DOM UI immediately (0ms latency, zero lag!)
       highlightPartyListFocus();
 
+      const isDisplayMode = (window.CURRENT_PARTY_LEDGER_MODE || 'display') === 'display';
+
       document.getElementById('plHeaderTitle').innerHTML =
         `<strong>${p.partyName}</strong> ${p.shortName ? ` <span class="pl-short-code-badge">${p.shortName}</span>` : ''} <span class="p-tag ${(p.type||'both').toLowerCase()}">${p.type}</span>`;
-      document.getElementById('btnEditLedger').style.display = p.ledgerId ? 'inline-flex' : 'none';
-      document.getElementById('btnDeleteLedger').style.display = p.ledgerId && isAdmin ? 'inline-flex' : 'none';
-      document.getElementById('btnRegisterLedger').style.display = !p.ledgerId ? 'inline-flex' : 'none';
-      document.getElementById('btnOpenStatement').style.display = 'inline-flex';
-      document.getElementById('plSummaryGrid').style.display = 'flex';
+      
+      const btnEdit = document.getElementById('btnEditLedger');
+      const btnDel = document.getElementById('btnDeleteLedger');
+      const btnReg = document.getElementById('btnRegisterLedger');
+      const btnStmt = document.getElementById('btnOpenStatement');
+      const sumGrid = document.getElementById('plSummaryGrid');
+
+      if (btnEdit) btnEdit.style.display = (!isDisplayMode && p.ledgerId) ? 'inline-flex' : 'none';
+      if (btnDel) btnDel.style.display = (!isDisplayMode && p.ledgerId && isAdmin) ? 'inline-flex' : 'none';
+      if (btnReg) btnReg.style.display = (!isDisplayMode && !p.ledgerId) ? 'inline-flex' : 'none';
+      if (btnStmt) btnStmt.style.display = 'inline-flex';
+      if (sumGrid) sumGrid.style.display = 'flex';
 
       // Check In-Memory Cache first:
       const cacheKey = `${p.partyName}::${p.type}`;
@@ -1647,20 +1661,41 @@ window.PAGES.partyledger = {
     }
 
     window.setPartyLedgerMode = function(mode) {
-      window.CURRENT_PARTY_LEDGER_MODE = mode || 'display';
-      const titleEl = document.getElementById('plDirectoryPanelTitle');
-      document.body.classList.toggle('pl-mode-display', mode === 'display');
-      document.body.classList.toggle('pl-mode-create', mode === 'create');
-      document.body.classList.toggle('pl-mode-alter', mode === 'alter');
+      const m = mode || 'display';
+      window.CURRENT_PARTY_LEDGER_MODE = m;
+      document.body.classList.toggle('pl-mode-display', m === 'display');
+      document.body.classList.toggle('pl-mode-create', m === 'create');
+      document.body.classList.toggle('pl-mode-alter', m === 'alter');
 
-      if (mode === 'create') {
+      const titleEl = document.getElementById('plDirectoryPanelTitle');
+      const btnCreate = document.getElementById('btnCreateLedger');
+      const btnImport = document.getElementById('btnImportLedgers');
+      const btnTpl = document.getElementById('btnDownloadTemplate');
+
+      if (m === 'create') {
         if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-plus-circle" style="color:var(--green);"></i> Party Ledger — Create &amp; Import Studio';
-        if (typeof openForm === 'function') openForm();
-      } else if (mode === 'alter') {
+        if (btnCreate) btnCreate.style.display = 'inline-flex';
+        if (btnImport) btnImport.style.display = 'inline-flex';
+        if (btnTpl) btnTpl.style.display = 'inline-flex';
+        if (typeof openLedgerForm === 'function') openLedgerForm(null);
+      } else if (m === 'alter') {
         if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-pen-to-square" style="color:var(--gold);"></i> Party Ledger — Alter &amp; Modify Ledgers';
+        if (btnCreate) btnCreate.style.display = 'none';
+        if (btnImport) btnImport.style.display = 'none';
+        if (btnTpl) btnTpl.style.display = 'none';
       } else {
+        // Display / Statements Mode (D A L)
         if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-book-open" style="color:var(--purple);"></i> Party Account Statements &amp; Ledger Directory';
+        if (btnCreate) btnCreate.style.display = 'none';
+        if (btnImport) btnImport.style.display = 'none';
+        if (btnTpl) btnTpl.style.display = 'none';
+      }
+
+      if (selected) {
+        selectParty(selected, true);
       }
     };
+
+    window.setPartyLedgerMode(window.CURRENT_PARTY_LEDGER_MODE || 'display');
   },
 };
