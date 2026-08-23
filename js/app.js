@@ -4656,37 +4656,185 @@ window.attachColumnFilters = function (table) {
   }
   document.addEventListener('click', closeProfileMenu);
 
-  // Build sidebar buttons from the registered pages with Hover Pre-fetching
+  // =====================================================================
+  // ACCOUNTING ERP HIERARCHICAL SIDEBAR & STRUCTURE (Tally / Shree Sava Style)
+  // =====================================================================
+  const ERP_NAV_GROUPS = [
+    {
+      type: 'single',
+      id: 'dashboard',
+      name: 'Gateway / Dashboard',
+      hotkey: 'G',
+      icon: 'fa-house-chimney',
+      page: 'dashboard'
+    },
+    {
+      type: 'group',
+      id: 'grp-accounts',
+      name: 'Accounts Info',
+      hotkey: 'A',
+      icon: 'fa-folder-open',
+      items: [
+        { name: 'Party Master & Ledgers', hotkey: 'L', icon: 'fa-address-book', page: 'partyledger' },
+        { name: 'Customer & Supplier Info', hotkey: 'C', icon: 'fa-users', page: 'masters', tab: 'tab-party' },
+        { name: 'Item & Product Master', hotkey: 'I', icon: 'fa-cubes', page: 'masters', tab: 'tab-items' },
+        { name: 'Category & Group Info', hotkey: 'G', icon: 'fa-layer-group', page: 'masters', tab: 'tab-categories' },
+        { name: 'Warehouse / Godown Info', hotkey: 'W', icon: 'fa-warehouse', page: 'masters', tab: 'tab-warehouses', requires: 'warehouse' },
+        { name: 'Brand Master', hotkey: 'B', icon: 'fa-tags', page: 'masters', tab: 'tab-brands' }
+      ]
+    },
+    {
+      type: 'group',
+      id: 'grp-transactions',
+      name: 'Transaction Entry (Vouchers)',
+      hotkey: 'T',
+      icon: 'fa-receipt',
+      items: [
+        { name: 'Purchase Inward Voucher', hotkey: 'P', icon: 'fa-truck-ramp-box', page: 'purchase' },
+        { name: 'Sales / Project Invoice', hotkey: 'S', icon: 'fa-handshake', page: 'sales' },
+        { name: 'BOM Kit Assembly & Challan', hotkey: 'B', icon: 'fa-boxes-packing', page: 'bom', requires: 'bom' },
+        { name: 'Stock Allocation / Journal', hotkey: 'A', icon: 'fa-tag', page: 'stockassign', requires: 'stock' },
+        { name: 'Sales Return & Damage', hotkey: 'R', icon: 'fa-arrow-rotate-left', page: 'returns' },
+        { name: 'Serial Number Scan Sheet', hotkey: 'C', icon: 'fa-barcode', page: 'scansheet', requires: 'serial' }
+      ]
+    },
+    {
+      type: 'group',
+      id: 'grp-display',
+      name: 'Display / Print',
+      hotkey: 'D',
+      icon: 'fa-chart-pie',
+      items: [
+        { subhead: 'Account Books (D ➔ A)' },
+        { name: 'Ledger Statement', hotkey: 'D A L', icon: 'fa-money-check-dollar', page: 'partyledger' },
+        { name: 'Purchase Register', hotkey: 'D A P', icon: 'fa-cart-shopping', page: 'purchaseregister' },
+        { name: 'Sale Register', hotkey: 'D A S', icon: 'fa-money-bill-transfer', page: 'saleregister' },
+        { subhead: 'Stock Books (D ➔ S)' },
+        { name: 'Stock Summary / Master', hotkey: 'D S M', icon: 'fa-clipboard-list', page: 'reports', requires: 'stock' },
+        { name: 'Low Stock Alert', hotkey: 'D S L', icon: 'fa-triangle-exclamation', page: 'lowstock', requires: 'stock' },
+        { name: 'BOM Track Register', hotkey: 'D S B', icon: 'fa-route', page: 'bom', tab: 'tab-track', requires: 'bom' }
+      ]
+    },
+    {
+      type: 'group',
+      id: 'grp-utilities',
+      name: 'Utilities & Setup',
+      hotkey: 'U',
+      icon: 'fa-gear',
+      items: [
+        { name: 'ERP Mode & Features', hotkey: 'S', icon: 'fa-sliders', action: 'openSettings', tab: 'tab-erp-mode' },
+        { name: 'Master Catalog', hotkey: 'M', icon: 'fa-cube', page: 'masters' },
+        { name: 'User Accounts & Roles', hotkey: 'U', icon: 'fa-users-gear', action: 'openSettings', tab: 'tab-users' },
+        { name: 'Backup & Restore', hotkey: 'B', icon: 'fa-cloud-arrow-up', page: 'backup' }
+      ]
+    }
+  ];
+
+  function shouldShowNavItem(item) {
+    if (!item.requires) return true;
+    if (item.requires === 'bom') return window.ERP ? window.ERP.isBomEnabled() : true;
+    if (item.requires === 'serial') return window.ERP ? window.ERP.isSerialEnabled() : true;
+    if (item.requires === 'warehouse') return window.ERP ? window.ERP.isWarehouseEnabled() : true;
+    if (item.requires === 'stock') return window.ERP ? !window.ERP.isAccountsOnly() : true;
+    return true;
+  }
+
+  // Build hierarchical sidebar buttons with groups and hotkeys
   function renderNavButtons() {
     const navEl = document.getElementById('navScroll') || navScroll;
     if (!navEl) return;
     navEl.innerHTML = '';
-    NAV_ORDER.forEach((id) => {
-      const page = window.PAGES[id];
-      if (!page) return;
-      const btn = document.createElement('button');
-      btn.className = 'nav-btn' + (id === 'dashboard' ? ' active' : '');
-      btn.dataset.tab = id;
-      btn.innerHTML = `<i class="fa-solid ${page.icon}"></i> <span>${page.name}</span>`;
-      btn.onclick = () => go(id);
 
-      // Hover Pre-fetching: Warms up API caches before user even finishes clicking
-      btn.addEventListener('mouseenter', () => {
-        if (!window.Api || !window.currentAuthToken) return;
-        if (['masters', 'purchase', 'sales', 'bom', 'stockassign'].includes(id)) {
-          window.Api.get('/masters/categories', { silent: true }).catch(() => {});
-          window.Api.get('/masters/brands', { silent: true }).catch(() => {});
-          window.Api.get('/masters/items', { silent: true }).catch(() => {});
-          window.Api.get('/masters/warehouses', { silent: true }).catch(() => {});
+    ERP_NAV_GROUPS.forEach((grp) => {
+      if (grp.type === 'single') {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'nav-btn' + (grp.id === 'dashboard' ? ' active' : '');
+        btn.dataset.tab = grp.id;
+        btn.innerHTML = `
+          <i class="fa-solid ${grp.icon}"></i>
+          <span style="flex:1;">${grp.name}</span>
+          <span class="hk-badge">${grp.hotkey}</span>
+        `;
+        btn.onclick = () => go(grp.page);
+        navEl.appendChild(btn);
+        return;
+      }
+
+      // Group Container
+      const grpEl = document.createElement('div');
+      grpEl.className = 'erp-nav-group';
+      grpEl.id = grp.id;
+
+      // Group Header
+      const header = document.createElement('div');
+      header.className = 'erp-nav-group-header';
+      header.innerHTML = `
+        <span class="grp-title"><i class="fa-solid ${grp.icon}" style="color:var(--gold);"></i> <span>${grp.name}</span></span>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span class="hk-badge">${grp.hotkey}</span>
+          <i class="fa-solid fa-chevron-right grp-arrow"></i>
+        </div>
+      `;
+      header.onclick = () => grpEl.classList.toggle('open');
+      grpEl.appendChild(header);
+
+      // Group Items
+      const itemsWrap = document.createElement('div');
+      itemsWrap.className = 'erp-nav-group-items';
+
+      grp.items.forEach((item) => {
+        if (item.subhead) {
+          const subHeadEl = document.createElement('div');
+          subHeadEl.className = 'erp-nav-subhead';
+          subHeadEl.textContent = item.subhead;
+          itemsWrap.appendChild(subHeadEl);
+          return;
         }
-      }, { passive: true });
 
-      navEl.appendChild(btn);
+        if (!shouldShowNavItem(item)) return;
+
+        const subBtn = document.createElement('button');
+        subBtn.type = 'button';
+        subBtn.className = 'erp-nav-sub-btn';
+        if (item.page) subBtn.dataset.tab = item.page;
+        if (item.tab) subBtn.dataset.subtab = item.tab;
+
+        subBtn.innerHTML = `
+          <span class="sub-label"><i class="fa-solid ${item.icon}" style="color:var(--blue); font-size:12px;"></i> <span>${item.name}</span></span>
+          <span class="hk-badge">${item.hotkey}</span>
+        `;
+
+        subBtn.onclick = (e) => {
+          e.stopPropagation();
+          if (item.action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
+            window.openSystemSettingsModal(item.tab || 'tab-erp-mode');
+          } else if (item.page) {
+            go(item.page, { tab: item.tab });
+          }
+        };
+
+        // Hover Pre-fetching
+        subBtn.addEventListener('mouseenter', () => {
+          if (!window.Api || !window.currentAuthToken) return;
+          if (['masters', 'purchase', 'sales', 'bom', 'stockassign'].includes(item.page)) {
+            window.Api.get('/masters/categories', { silent: true }).catch(() => {});
+            window.Api.get('/masters/brands', { silent: true }).catch(() => {});
+            window.Api.get('/masters/items', { silent: true }).catch(() => {});
+            window.Api.get('/masters/warehouses', { silent: true }).catch(() => {});
+          }
+        }, { passive: true });
+
+        itemsWrap.appendChild(subBtn);
+      });
+
+      grpEl.appendChild(itemsWrap);
+      navEl.appendChild(grpEl);
     });
   }
   renderNavButtons();
 
-  function go(id) {
+  function go(id, opts = {}) {
     const page = window.PAGES[id];
     if (!page) return;
 
@@ -4706,9 +4854,15 @@ window.attachColumnFilters = function (table) {
     if (pageSubEl) pageSubEl.textContent = page.sub || '';
     if (window.topbarExtra) window.topbarExtra.innerHTML = ''; // reset header widget before each page's init()
 
-    document.querySelectorAll('.nav-btn').forEach((b) =>
-      b.classList.toggle('active', b.dataset.tab === id)
-    );
+    // Highlight active nav item and auto-open group
+    document.querySelectorAll('.erp-nav-sub-btn, .nav-btn').forEach((b) => {
+      const match = (b.dataset.tab === id) && (!opts.tab || b.dataset.subtab === opts.tab);
+      b.classList.toggle('active', match);
+      if (match) {
+        const grp = b.closest('.erp-nav-group');
+        if (grp) grp.classList.add('open');
+      }
+    });
 
     // Page-specific wiring (subtab clicks, form buttons, etc.) runs after
     // its HTML is in the DOM.
@@ -4718,6 +4872,14 @@ window.attachColumnFilters = function (table) {
       } catch (err) {
         console.error(`Error initializing page "${id}":`, err);
       }
+    }
+
+    // Switch specific subtab if requested
+    if (opts.tab) {
+      setTimeout(() => {
+        const subTabBtn = document.querySelector(`[data-tab="${opts.tab}"]`);
+        if (subTabBtn) subTabBtn.click();
+      }, 60);
     }
 
     if (typeof applyGlobalTableSearch === 'function') {
@@ -4732,13 +4894,8 @@ window.attachColumnFilters = function (table) {
       if (contentEl) contentEl.classList.remove('page-entering');
     }, 400);
 
-    // Remember which page is open by writing it into the URL hash (e.g.
-    // "#sales"). On a refresh/reopen, the startup code reads this
-    // hash to restore the same page instead of always falling back to
-    // Dashboard. history.replaceState (not pushState) so navigating
-    // between tabs doesn't pile up entries in the browser's Back history.
     try {
-      const newHash = `#${id}`;
+      const newHash = opts.tab ? `#${id}:${opts.tab}` : `#${id}`;
       if (window.location.hash !== newHash) {
         history.replaceState(null, '', newHash);
       }
@@ -4747,6 +4904,133 @@ window.attachColumnFilters = function (table) {
 
   window.goPage = go;
   window.navigateToPage = go;
+  window.renderNavButtons = renderNavButtons;
+
+  // =========================================================================
+  // TALLY / SHREE SAVA ACCOUNTING HOTKEY SEQUENCER ENGINE
+  // =========================================================================
+  let erpHotkeyBuffer = [];
+  let erpHotkeyTimer = null;
+
+  function showHotkeyHud(text, keys = []) {
+    let hud = document.getElementById('egsHotkeyHud');
+    if (!hud) {
+      hud = document.createElement('div');
+      hud.id = 'egsHotkeyHud';
+      hud.className = 'egs-hotkey-hud';
+      document.body.appendChild(hud);
+    }
+    hud.innerHTML = `
+      <div class="hud-keys">${keys.map((k) => `<span class="hud-key">${k}</span>`).join('')}</div>
+      <div class="hud-desc">${text}</div>
+    `;
+    hud.style.display = 'flex';
+  }
+
+  function hideHotkeyHud() {
+    const hud = document.getElementById('egsHotkeyHud');
+    if (hud) hud.style.display = 'none';
+  }
+
+  function processAccountingHotkey(key) {
+    clearTimeout(erpHotkeyTimer);
+    erpHotkeyBuffer.push(key);
+
+    // Root Level Keys
+    if (erpHotkeyBuffer.length === 1) {
+      const k = erpHotkeyBuffer[0];
+      if (k === 'G') {
+        showHotkeyHud('Gateway / Dashboard', ['G']);
+        go('dashboard');
+        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 900);
+        return;
+      }
+      if (k === 'D') {
+        showHotkeyHud('Display / Print ➔ (A: Account Books, S: Stock Books)', ['D']);
+        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 2200);
+        return;
+      }
+      if (k === 'T' || k === 'V') {
+        showHotkeyHud('Transaction Entry ➔ (P: Purchase, S: Sales, B: BOM, A: Stock, R: Returns, C: Scan)', [k]);
+        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 2200);
+        return;
+      }
+      if (k === 'A') {
+        showHotkeyHud('Accounts Info ➔ (L: Ledger, C: Customer, I: Items, G: Groups, W: Warehouses, B: Brands)', ['A']);
+        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 2200);
+        return;
+      }
+      if (k === 'U') {
+        showHotkeyHud('Utilities ➔ (S: ERP Settings, M: Catalog, U: Users, B: Backup)', ['U']);
+        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 2200);
+        return;
+      }
+    }
+
+    // 2-Key Sequences
+    if (erpHotkeyBuffer.length === 2) {
+      const [k1, k2] = erpHotkeyBuffer;
+      if (k1 === 'T' || k1 === 'V') {
+        if (k2 === 'P') { showHotkeyHud('Purchase Inward Voucher', ['T', 'P']); go('purchase'); }
+        else if (k2 === 'S') { showHotkeyHud('Sales / Project Invoice', ['T', 'S']); go('sales'); }
+        else if (k2 === 'B') { showHotkeyHud('BOM Kit Assembly & Challan', ['T', 'B']); go('bom'); }
+        else if (k2 === 'A') { showHotkeyHud('Stock Allocation', ['T', 'A']); go('stockassign'); }
+        else if (k2 === 'R') { showHotkeyHud('Sales Return & Damage', ['T', 'R']); go('returns'); }
+        else if (k2 === 'C') { showHotkeyHud('Serial Scan Sheet', ['T', 'C']); go('scansheet'); }
+        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 900);
+        return;
+      }
+      if (k1 === 'A') {
+        if (k2 === 'L') { showHotkeyHud('Party Master & Ledgers', ['A', 'L']); go('partyledger'); }
+        else if (k2 === 'C') { showHotkeyHud('Customer & Supplier Info', ['A', 'C']); go('masters', { tab: 'tab-party' }); }
+        else if (k2 === 'I') { showHotkeyHud('Item & Product Master', ['A', 'I']); go('masters', { tab: 'tab-items' }); }
+        else if (k2 === 'G') { showHotkeyHud('Category & Group Info', ['A', 'G']); go('masters', { tab: 'tab-categories' }); }
+        else if (k2 === 'W') { showHotkeyHud('Warehouse / Godown Info', ['A', 'W']); go('masters', { tab: 'tab-warehouses' }); }
+        else if (k2 === 'B') { showHotkeyHud('Brand Master', ['A', 'B']); go('masters', { tab: 'tab-brands' }); }
+        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 900);
+        return;
+      }
+      if (k1 === 'D') {
+        if (k2 === 'A') {
+          showHotkeyHud('Account Books ➔ (L: Ledger Statement, P: Purchase Reg, S: Sale Reg)', ['D', 'A']);
+          erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 2200);
+          return;
+        }
+        if (k2 === 'S') {
+          showHotkeyHud('Stock Books ➔ (M: Master Stock Report, L: Low Stock Alert, B: BOM Track)', ['D', 'S']);
+          erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 2200);
+          return;
+        }
+      }
+      if (k1 === 'U') {
+        if (k2 === 'S') { showHotkeyHud('ERP Mode & Features', ['U', 'S']); window.openSystemSettingsModal('tab-erp-mode'); }
+        else if (k2 === 'M') { showHotkeyHud('Master Catalog', ['U', 'M']); go('masters'); }
+        else if (k2 === 'U') { showHotkeyHud('User Accounts', ['U', 'U']); window.openSystemSettingsModal('tab-users'); }
+        else if (k2 === 'B') { showHotkeyHud('Backup & Restore', ['U', 'B']); go('backup'); }
+        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 900);
+        return;
+      }
+    }
+
+    // 3-Key Sequences (D A L, D A P, D A S, D S M, D S L, D S B)
+    if (erpHotkeyBuffer.length === 3) {
+      const [k1, k2, k3] = erpHotkeyBuffer;
+      if (k1 === 'D' && k2 === 'A') {
+        if (k3 === 'L') { showHotkeyHud('Party Ledger Statement', ['D', 'A', 'L']); go('partyledger'); }
+        else if (k3 === 'P') { showHotkeyHud('Purchase Register', ['D', 'A', 'P']); go('purchaseregister'); }
+        else if (k3 === 'S') { showHotkeyHud('Sale Register', ['D', 'A', 'S']); go('saleregister'); }
+      } else if (k1 === 'D' && k2 === 'S') {
+        if (k3 === 'M') { showHotkeyHud('Master Stock Report', ['D', 'S', 'M']); go('reports'); }
+        else if (k3 === 'L') { showHotkeyHud('Low Stock Alert', ['D', 'S', 'L']); go('lowstock'); }
+        else if (k3 === 'B') { showHotkeyHud('BOM Track Register', ['D', 'S', 'B']); go('bom', { tab: 'tab-track' }); }
+      }
+      erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 900);
+      return;
+    }
+
+    // Fallback reset
+    erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 600);
+  }
 
   // =====================================================================
   // ENTERPRISE ERP KEYBOARD ENGINE (All 14 Modules + Universal Shortcuts)
@@ -4925,6 +5209,19 @@ window.attachColumnFilters = function (table) {
       if (handled) {
         e.preventDefault();
         e.stopImmediatePropagation();
+        return;
+      }
+    }
+
+    // =========================================================================
+    // TALLY / SHREE SAVA GLOBAL HOTKEY SEQUENCER (e.g. D A L, T P, A L, G, etc.)
+    // =========================================================================
+    if (!isTyping && !e.ctrlKey && !e.altKey && !e.metaKey && /^[a-zA-Z]$/.test(e.key) && e.key !== '/') {
+      const modalOpen = document.querySelector('.modal-overlay.show, .settings-modal-box, #statementOverlay.show, #ledgerFormOverlay.show');
+      if (!modalOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        processAccountingHotkey(e.key.toUpperCase());
         return;
       }
     }
@@ -5539,21 +5836,9 @@ window.attachColumnFilters = function (table) {
   }
 
   function applyErpModeRules() {
-    const isAccountsOnly = window.ERP.isAccountsOnly();
-    const isBomDisabled = !window.ERP.isBomEnabled();
-
-    // Hide or show sidebar items dynamically based on ERP configuration
-    const navItems = document.querySelectorAll('.nav-btn');
-    navItems.forEach((btn) => {
-      const page = btn.dataset.page;
-      if (page === 'bom' && isBomDisabled) {
-        btn.style.display = 'none';
-      } else if ((page === 'scansheet' || page === 'stockassign') && isAccountsOnly) {
-        btn.style.display = 'none';
-      } else {
-        btn.style.display = '';
-      }
-    });
+    if (typeof window.renderNavButtons === 'function') {
+      window.renderNavButtons();
+    }
   }
 
   window.applyErpModeRules = applyErpModeRules;
