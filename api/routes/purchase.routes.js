@@ -109,12 +109,14 @@ module.exports = function registerPurchaseRoutes(app, deps) {
 
       // Already-in-database check — mirrors the per-serial "SELECT COUNT(*)
       // FROM stock_ledger WHERE serial_no=%s" loop.
-      const [existingRows] = await conn.query(`SELECT serial_no FROM stock_ledger WHERE serial_no IN (?)`, [allSerials]);
-      if (existingRows.length) {
-        await conn.rollback();
-        return res.status(400).json({
-          error: `Inward Blocked! The following Serial Numbers already exist in the database: ${existingRows.map((r) => r.serial_no).join(', ')}`,
-        });
+      if (allSerials.length > 0) {
+        const [existingRows] = await conn.query(`SELECT serial_no FROM stock_ledger WHERE serial_no IN (?)`, [allSerials]);
+        if (existingRows.length) {
+          await conn.rollback();
+          return res.status(400).json({
+            error: `Inward Blocked! The following Serial Numbers already exist in the database: ${existingRows.map((r) => r.serial_no).join(', ')}`,
+          });
+        }
       }
 
       for (const line of lines) {

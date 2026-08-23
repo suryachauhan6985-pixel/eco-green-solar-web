@@ -65,9 +65,11 @@ async function validateSalesLineSerials(runner, serials, line) {
 }
 
 async function getOrCreateItem(conn, category, brand, watt, solarType, model) {
+  const cat = String(category || 'Other').trim();
+  const b = String(brand || cat || 'General').trim();
   const w = Number(watt) || 0;
-  const st = solarType || 'Others';
-  const m = (model || '').trim();
+  const st = String(solarType || 'Others').trim();
+  const m = String(model || '').trim();
   // Model-based items (Wattage/Serial both non-mandatory for this category)
   // must be looked up / created by category+brand+model, not watt — every
   // model-based item shares watt=0, so watt+solar_type can't tell them
@@ -77,7 +79,7 @@ async function getOrCreateItem(conn, category, brand, watt, solarType, model) {
   const lookupSql = isModelBased
     ? `SELECT id FROM items WHERE category=? AND brand_name=? AND LOWER(COALESCE(model,''))=LOWER(?)`
     : `SELECT id FROM items WHERE category=? AND brand_name=? AND watt=? AND solar_type=?`;
-  const lookupParams = isModelBased ? [category, brand, m] : [category, brand, w, st];
+  const lookupParams = isModelBased ? [cat, b, m] : [cat, b, w, st];
 
   const [rows] = await conn.query(lookupSql, lookupParams);
   if (rows.length) return rows[0].id;
@@ -85,16 +87,16 @@ async function getOrCreateItem(conn, category, brand, watt, solarType, model) {
   const baseSql = isModelBased
     ? `SELECT uom, minimum_stock FROM items WHERE category=? AND brand_name=? LIMIT 1`
     : `SELECT uom, minimum_stock FROM items WHERE category=? AND brand_name=? AND watt=? LIMIT 1`;
-  const baseParams = isModelBased ? [category, brand] : [category, brand, w];
+  const baseParams = isModelBased ? [cat, b] : [cat, b, w];
   const [baseRows] = await conn.query(baseSql, baseParams);
   const uom = baseRows.length && baseRows[0].uom ? baseRows[0].uom : 'Nos';
   const minimumStock = baseRows.length && baseRows[0].minimum_stock != null ? baseRows[0].minimum_stock : 0;
-  const nameSlug = itemNameSlug(brand, w, st, m);
+  const nameSlug = itemNameSlug(b, w, st, m);
 
   try {
     const [result] = await conn.query(
       `INSERT INTO items (name, brand_name, watt, solar_type, category, uom, minimum_stock, model) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [nameSlug, brand, w, st, category, uom, minimumStock, isModelBased ? m : null]
+      [nameSlug, b, w, st, cat, uom, minimumStock, isModelBased ? m : null]
     );
     return result.insertId;
   } catch (e) {
@@ -103,6 +105,8 @@ async function getOrCreateItem(conn, category, brand, watt, solarType, model) {
     // name slug collided, just look it up instead of failing the whole save.
     const [retryRows] = await conn.query(lookupSql, lookupParams);
     if (retryRows.length) return retryRows[0].id;
+    const [nameRows] = await conn.query(`SELECT id FROM items WHERE name=? LIMIT 1`, [nameSlug]);
+    if (nameRows.length) return nameRows[0].id;
     throw e;
   }
 }
