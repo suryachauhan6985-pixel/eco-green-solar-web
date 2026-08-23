@@ -4814,35 +4814,26 @@ window.attachColumnFilters = function (table) {
     }
   };
 
-  // Wheel and Touch Event Trap: Prevents background scrolling when hovering backdrop or hitting modal boundaries
+  // Wheel and Touch Event Trap: Prevents background scrolling when hovering backdrop
   document.addEventListener('wheel', (e) => {
     if (!document.body.classList.contains('egs-modal-locked') && !document.body.classList.contains('no-scroll')) return;
 
-    const scrollable = e.target.closest('.modal-box, .modal-body, .settings-panel, .settings-tabs, .sess-list, .egs-legal-doc, .egs-popup-card, .egs-onboard-card, .confirm-card, #stmtTbodyWrap, .th-filter-list, .nav-scroll');
-    if (!scrollable) {
-      // Scrolled on backdrop/background/overlay
-      e.preventDefault();
-      return;
-    }
-
-    const delta = e.deltaY;
-    const isScrollableVertically = scrollable.scrollHeight > scrollable.clientHeight;
-    if (!isScrollableVertically) {
-      e.preventDefault();
-      return;
-    }
-
-    const atTop = scrollable.scrollTop <= 0 && delta < 0;
-    const atBottom = (scrollable.scrollTop + scrollable.clientHeight >= scrollable.scrollHeight - 1) && delta > 0;
-    if (atTop || atBottom) {
+    // If wheel is inside any modal dialog, settings panel, legal doc or drawer, let it scroll naturally!
+    const insideModalCard = e.target.closest(
+      '.modal-box, .modal-card, .confirm-card, .egs-popup-card, .egs-onboard-card, .settings-panel, .settings-tabs, .sess-list, .egs-legal-doc, #statementOverlay .modal-box, #ledgerFormOverlay .modal-box, .sidebar'
+    );
+    if (!insideModalCard) {
+      // Scrolled on empty backdrop/overlay outside the card
       e.preventDefault();
     }
   }, { passive: false });
 
   document.addEventListener('touchmove', (e) => {
     if (!document.body.classList.contains('egs-modal-locked') && !document.body.classList.contains('no-scroll')) return;
-    const scrollable = e.target.closest('.modal-box, .modal-body, .settings-panel, .settings-tabs, .sess-list, .egs-legal-doc, .egs-popup-card, .egs-onboard-card, .confirm-card, #stmtTbodyWrap, .th-filter-list, .nav-scroll');
-    if (!scrollable) {
+    const insideModalCard = e.target.closest(
+      '.modal-box, .modal-card, .confirm-card, .egs-popup-card, .egs-onboard-card, .settings-panel, .settings-tabs, .sess-list, .egs-legal-doc, #statementOverlay .modal-box, #ledgerFormOverlay .modal-box, .sidebar'
+    );
+    if (!insideModalCard) {
       e.preventDefault();
     }
   }, { passive: false });
