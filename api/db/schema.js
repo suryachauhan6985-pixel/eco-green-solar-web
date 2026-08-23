@@ -139,7 +139,8 @@ async function ensureBomChallanSchema(pool) {
 // serial_no = NULL and quantity = <entered qty>.
 async function ensureStockQuantitySchema(pool) {
   try {
-    await pool.query(`ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS quantity INT NOT NULL DEFAULT 1`);
+    await pool.query(`ALTER TABLE stock_ledger ADD COLUMN IF NOT EXISTS quantity DECIMAL(12,3) NOT NULL DEFAULT 1.000`);
+    await pool.query(`ALTER TABLE stock_ledger MODIFY COLUMN quantity DECIMAL(12,3) NOT NULL DEFAULT 1.000`);
   } catch (e) { console.warn('[Stock quantity schema] Could not ensure quantity column on stock_ledger (will retry lazily on first use):', e.message); }
 }
 // Goal: per-item override of the Wattage/Serial "mandatory" rule, plus a

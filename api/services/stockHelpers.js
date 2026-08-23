@@ -81,7 +81,7 @@ async function ensureCategoryExists(conn, categoryName) {
   return cat;
 }
 
-async function getOrCreateItem(conn, category, brand, watt, solarType, model) {
+async function getOrCreateItem(conn, category, brand, watt, solarType, model, uomVal) {
   let cat = String(category || 'Other').trim() || 'Other';
   const b = String(brand || cat || 'General').trim() || 'General';
   const w = Number(watt) || 0;
@@ -124,7 +124,7 @@ async function getOrCreateItem(conn, category, brand, watt, solarType, model) {
     : `SELECT uom, minimum_stock FROM items WHERE category=? AND brand_name=? AND watt=? LIMIT 1`;
   const baseParams = isModelBased ? [cat, b] : [cat, b, w];
   const [baseRows] = await conn.query(baseSql, baseParams);
-  const uom = baseRows.length && baseRows[0].uom ? baseRows[0].uom : 'Nos';
+  const uom = String(uomVal || (baseRows.length && baseRows[0].uom ? baseRows[0].uom : 'Nos')).trim() || 'Nos';
   const minimumStock = baseRows.length && baseRows[0].minimum_stock != null ? baseRows[0].minimum_stock : 0;
 
   try {

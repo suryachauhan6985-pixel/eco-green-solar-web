@@ -55,7 +55,7 @@ window.PAGES.purchase = {
 
             <div class="field"><label>Invoice No <span class="req">*</span></label><input id="purInv" placeholder="INV-2026-001"></div>
             <div class="field"><label>Pallet ID</label><input id="purPallet" placeholder="Optional"></div>
-            <div class="field"><label>Qty <span class="req">*</span></label><input id="purQty" type="number" placeholder="0"></div>
+            <div class="field"><label>Qty <span id="purQtyUomBadge" style="font-size:11.5px; color:var(--blue); font-weight:700;">(Nos)</span> <span class="req">*</span></label><input id="purQty" type="number" step="any" min="0" placeholder="0"></div>
             <div class="field"><label>Warehouse <span class="req">*</span></label>
               <select id="purWh"><option value="">Loading...</option></select></div>
             <div class="field span-full"><label>Purchase Date <span class="req">*</span></label><input id="purDate" type="date"></div>
@@ -133,7 +133,7 @@ window.PAGES.purchase = {
               <select id="purEditModel"><option value="">-- Select Brand First --</option></select></div>
             <div class="field"><label>Type <span class="req">*</span></label>
               <select id="purEditType"><option value="">-- Select Category First --</option></select></div>
-            <div class="field"><label>Qty <span class="req">*</span></label><input id="purEditQty" type="number" placeholder="0"></div>
+            <div class="field"><label>Qty <span id="purEditQtyUomBadge" style="font-size:11.5px; color:var(--blue); font-weight:700;">(Nos)</span> <span class="req">*</span></label><input id="purEditQty" type="number" step="any" min="0" placeholder="0"></div>
 
             <div class="field span-full"><label>Date <span class="req">*</span></label><input id="purEditDate" type="date"></div>
 
@@ -259,7 +259,7 @@ window.PAGES.purchase = {
       container.innerHTML = lines.map((ln, idx) => `
         <div class="line-item" data-idx="${idx}" title="Double-click to edit this line in the form above">
           <span>${ln.cat} • ${ln.brand} ${ln.model ? '• ' + ln.model : (ln.watt ? '• ' + ln.watt + 'W' : '')} • ${ln.type} • ${ln.warehouse}</span>
-          <span class="qty-badge">Qty ${ln.qty}${ln.needsSerial === false ? ' <small>(Quantity-based, no serial)</small>' : ''}</span>
+          <span class="qty-badge">Qty ${ln.qty} ${ln.uom ? ln.uom : 'Nos'}${ln.needsSerial === false ? ' <small>(Quantity-based, no serial)</small>' : ''}</span>
         </div>
       `).join('');
     }
@@ -381,9 +381,77 @@ window.PAGES.purchase = {
       return !purCategoryWattMandatory[cat] && !purCategorySerialMandatory[cat];
     }
 
+    let purMasterItemsCache = [];
+    function getCategoryDefaultUom(catName) {
+      if (!catName) return 'Nos';
+      const c = String(catName).toLowerCase();
+      if (c.includes('panel') || c.includes('inverter')) return 'Nos';
+      if (c.includes('structure')) return 'Set';
+      if (c.includes('pipe')) return 'Nos';
+      if (c.includes('earthing') && c.includes('bag')) return 'Bag';
+      if (c.includes('earthing') || c.includes('la kit')) return 'Set';
+      if (c.includes('wire') || c.includes('cable')) return 'Meters';
+      if (c.includes('box')) return 'Box';
+      if (c.includes('civil') || c.includes('cement')) return 'Bag';
+      if (c.includes('fastener') || c.includes('nut') || c.includes('bolt')) return 'Pkt';
+      return 'Nos';
+    }
+
+    function updatePurUomBadge() {
+      const cat = purCatEl.value;
+      const brand = purBrandEl.value;
+      const watt = purWattEl.value;
+      const model = purModelEl.value;
+      let uom = 'Nos';
+
+      if (purMasterItemsCache && purMasterItemsCache.length) {
+        const item = purMasterItemsCache.find((it) => 
+          it.category === cat &&
+          it.brand_name === brand &&
+          (purCategoryNeedsModel(cat) ? (it.model || '').toLowerCase() === (model || '').toLowerCase() : Number(it.watt) === Number(watt))
+        ) || purMasterItemsCache.find((it) => it.category === cat && it.brand_name === brand);
+        if (item && item.uom) uom = item.uom;
+        else uom = getCategoryDefaultUom(cat);
+      } else {
+        uom = getCategoryDefaultUom(cat);
+      }
+
+      const badgeEl = $('purQtyUomBadge');
+      if (badgeEl) badgeEl.textContent = `(${uom})`;
+      return uom;
+    }
+
+    function updatePurEditUomBadge() {
+      const cat = $('purEditCat') ? $('purEditCat').value : '';
+      const brand = $('purEditBrand') ? $('purEditBrand').value : '';
+      const watt = $('purEditWatt') ? $('purEditWatt').value : '';
+      const model = $('purEditModel') ? $('purEditModel').value : '';
+      let uom = 'Nos';
+
+      if (purMasterItemsCache && purMasterItemsCache.length) {
+        const item = purMasterItemsCache.find((it) => 
+          it.category === cat &&
+          it.brand_name === brand &&
+          (purCategoryNeedsModel(cat) ? (it.model || '').toLowerCase() === (model || '').toLowerCase() : Number(it.watt) === Number(watt))
+        ) || purMasterItemsCache.find((it) => it.category === cat && it.brand_name === brand);
+        if (item && item.uom) uom = item.uom;
+        else uom = getCategoryDefaultUom(cat);
+      } else {
+        uom = getCategoryDefaultUom(cat);
+      }
+
+      const badgeEl = $('purEditQtyUomBadge');
+      if (badgeEl) badgeEl.textContent = `(${uom})`;
+      return uom;
+    }
+
     async function loadPurCategories() {
       try {
-        const cats = await window.Api.get('/masters/categories');
+        const [cats, items] = await Promise.all([
+          window.Api.get('/masters/categories'),
+          window.Api.get('/masters/items').catch(() => [])
+        ]);
+        if (Array.isArray(items)) purMasterItemsCache = items;
         fillSelect(purCatEl, cats.map((c) => c.name), 'No categories found');
         purCategorySerialMandatory = {};
         purCategoryWattMandatory = {};
@@ -395,6 +463,7 @@ window.PAGES.purchase = {
         fillSelect(purCatEl, [], 'Failed to load categories');
       }
       await refreshPurBrandsAndType();
+      updatePurUomBadge();
     }
 
     async function refreshPurBrandsAndType() {
@@ -404,6 +473,7 @@ window.PAGES.purchase = {
         fillSelect(purTypeEl, [], '-- Select Category First --');
         await refreshPurWattages();
         await refreshPurModels();
+        updatePurUomBadge();
         return;
       }
       try {
@@ -420,12 +490,14 @@ window.PAGES.purchase = {
       }
       await refreshPurWattages();
       await refreshPurModels();
+      updatePurUomBadge();
     }
 
     async function refreshPurWattages() {
       const cat = purCatEl.value, brand = purBrandEl.value;
       if (!cat || !brand) {
         fillSelect(purWattEl, [], '-- Select Brand First --');
+        updatePurUomBadge();
         return;
       }
       try {
@@ -434,6 +506,7 @@ window.PAGES.purchase = {
       } catch (e) {
         fillSelect(purWattEl, ['N/A'], 'N/A');
       }
+      updatePurUomBadge();
     }
 
     // Model dropdown's equivalent of refreshPurWattages() above — same
@@ -443,6 +516,7 @@ window.PAGES.purchase = {
       const cat = purCatEl.value, brand = purBrandEl.value;
       if (!cat || !brand) {
         fillSelect(purModelEl, [], '-- Select Brand First --');
+        updatePurUomBadge();
         return;
       }
       try {
@@ -451,6 +525,7 @@ window.PAGES.purchase = {
       } catch (e) {
         fillSelect(purModelEl, ['N/A'], 'N/A');
       }
+      updatePurUomBadge();
     }
 
     // Swaps the Wattage field for the Model field (or back) based on the
@@ -460,10 +535,13 @@ window.PAGES.purchase = {
       const showModel = purCategoryNeedsModel(purCatEl.value);
       $('purWattField').style.display = showModel ? 'none' : '';
       $('purModelField').style.display = showModel ? '' : 'none';
+      updatePurUomBadge();
     }
 
     purCatEl.addEventListener('change', () => { refreshPurBrandsAndType(); updatePurSerialVisibility(); updatePurWattModelVisibility(); });
-    purBrandEl.addEventListener('change', () => { refreshPurWattages(); refreshPurModels(); });
+    purBrandEl.addEventListener('change', () => { refreshPurWattages(); refreshPurModels(); updatePurUomBadge(); });
+    purWattEl.addEventListener('change', () => { updatePurUomBadge(); });
+    purModelEl.addEventListener('change', () => { updatePurUomBadge(); });
     loadPurCategories().then(() => { updatePurSerialVisibility(); updatePurWattModelVisibility(); });
 
     // Shows/hides the pooled Serial Numbers box depending on whether it's
@@ -1195,8 +1273,9 @@ window.PAGES.purchase = {
         window.openModal('Validation Error', '<p>Enter a valid Qty before adding a product line.</p>');
         return;
       }
+      const uom = updatePurUomBadge();
       const needsSerial = purCategoryNeedsSerial(cat);
-      purLines.push({ cat, brand, watt, model, type, warehouse: wh, qty, needsSerial });
+      purLines.push({ cat, brand, watt, model, type, warehouse: wh, qty, uom, needsSerial });
       renderLineList(purLineList, purLines, '');
       $('purQty').value = '';
       updatePurSerialVisibility();
@@ -1249,11 +1328,12 @@ window.PAGES.purchase = {
             <table style="width:100%; border-collapse:collapse;" id="purKitPreviewTable">
               <thead>
                 <tr style="background:var(--table-header); position:sticky; top:0; z-index:2;">
-                  <th style="width:48px; text-align:center; padding:10px 8px; border-bottom:1px solid var(--border);"><input type="checkbox" id="purKitMasterCheckbox" checked style="cursor:pointer; width:16px; height:16px;"></th>
-                  <th style="width:200px; text-align:left; padding:10px 14px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:700;">Category</th>
-                  <th style="text-align:left; padding:10px 14px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:700;">Item Name &amp; Specifications</th>
-                  <th style="width:110px; text-align:center; padding:10px 10px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:700;">Qty / Kit</th>
-                  <th style="width:140px; text-align:center; padding:10px 14px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:700; color:var(--green);">Inward Qty</th>
+                  <th style="width:40px; text-align:center; padding:10px 6px; border-bottom:1px solid var(--border);"><input type="checkbox" id="purKitMasterCheckbox" checked style="cursor:pointer; width:16px; height:16px;"></th>
+                  <th style="width:160px; text-align:left; padding:10px 10px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:700;">Category</th>
+                  <th style="text-align:left; padding:10px 10px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:700;">Item Name &amp; Specifications</th>
+                  <th style="width:80px; text-align:center; padding:10px 6px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:700; color:var(--blue);">UOM</th>
+                  <th style="width:95px; text-align:center; padding:10px 8px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:700;">Qty / Kit</th>
+                  <th style="width:145px; text-align:center; padding:10px 10px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:700; color:var(--green);">Inward Qty</th>
                 </tr>
               </thead>
               <tbody id="purKitPreviewTbody"></tbody>
@@ -1314,6 +1394,7 @@ window.PAGES.purchase = {
               watt: match.watt ? String(match.watt) : '',
               model: match.model || rawModel,
               type: match.solar_type || 'Standard',
+              uom: match.uom || it.uom || it.unit || getCategoryDefaultUom(match.category),
               needsSerial: !!match.serial_mandatory_effective
             };
           }
@@ -1333,6 +1414,7 @@ window.PAGES.purchase = {
               watt: match.watt ? String(match.watt) : '',
               model: match.model || rawModel,
               type: match.solar_type || 'Standard',
+              uom: match.uom || it.uom || it.unit || getCategoryDefaultUom(match.category),
               needsSerial: !!match.serial_mandatory_effective
             };
           }
@@ -1349,6 +1431,7 @@ window.PAGES.purchase = {
               watt: match.watt ? String(match.watt) : (it.watt || ''),
               model: match.model || rawModel || (!match.watt ? rawName : ''),
               type: match.solar_type || 'Standard',
+              uom: match.uom || it.uom || it.unit || getCategoryDefaultUom(match.category),
               needsSerial: !!match.serial_mandatory_effective
             };
           }
@@ -1368,6 +1451,7 @@ window.PAGES.purchase = {
             watt: needsModel ? '' : (it.watt || ''),
             model: needsModel ? (rawModel || rawName) : '',
             type: it.type || 'Standard',
+            uom: it.uom || it.unit || getCategoryDefaultUom(knownCat.name),
             needsSerial
           };
         }
@@ -1395,6 +1479,7 @@ window.PAGES.purchase = {
               watt: needsModel ? '' : (it.watt || ''),
               model: needsModel ? (rawModel || rawName) : '',
               type: it.type || 'Standard',
+              uom: it.uom || it.unit || getCategoryDefaultUom(matchedGuessed.name),
               needsSerial
             };
           }
@@ -1407,6 +1492,7 @@ window.PAGES.purchase = {
           watt: it.watt || '',
           model: rawModel || rawName || '',
           type: it.type || 'Standard',
+          uom: it.uom || it.unit || getCategoryDefaultUom(fallbackCat),
           needsSerial: purCategoryNeedsSerial(fallbackCat)
         };
       }
@@ -1432,6 +1518,7 @@ window.PAGES.purchase = {
                 watt: resolved.watt,
                 model: resolved.model,
                 type: resolved.type,
+                uom: resolved.uom || 'Nos',
                 needsSerial: resolved.needsSerial,
                 defaultQty: defaultQty,
                 qty: defaultQty * mult
@@ -1465,15 +1552,21 @@ window.PAGES.purchase = {
               </td>
               <td style="padding:6px 10px; border-bottom:1px solid var(--border-light); font-size:12px; font-weight:600; color:var(--blue);">${purEsc(it.category)}</td>
               <td style="padding:6px 10px; border-bottom:1px solid var(--border-light); font-size:12.5px; font-weight:600; color:var(--txt);">${purEsc(it.name)}</td>
-              <td style="padding:6px 6px; border-bottom:1px solid var(--border-light); text-align:center; font-size:12px; color:var(--txt-muted);">${it.defaultQty}</td>
+              <td style="padding:6px 6px; border-bottom:1px solid var(--border-light); text-align:center;">
+                <span style="display:inline-block; padding:2px 8px; border-radius:6px; background:rgba(59,130,246,0.12); color:var(--blue); font-size:11.5px; font-weight:700; border:1px solid rgba(59,130,246,0.25);">${purEsc(it.uom || 'Nos')}</span>
+              </td>
+              <td style="padding:6px 6px; border-bottom:1px solid var(--border-light); text-align:center; font-size:12px; color:var(--txt-muted);">${it.defaultQty} <small style="font-weight:600;">${purEsc(it.uom || 'Nos')}</small></td>
               <td style="padding:6px 10px; border-bottom:1px solid var(--border-light); text-align:center;">
-                <input type="number" class="pur-kit-item-qty" data-idx="${idx}" min="0" step="1" value="${it.qty}" style="width:75px; height:28px; text-align:center; font-size:12px; font-weight:700; border-radius:6px; color:var(--green);" ${!it.selected ? 'disabled' : ''}>
+                <div style="display:inline-flex; align-items:center; gap:5px;">
+                  <input type="number" class="pur-kit-item-qty" data-idx="${idx}" min="0" step="any" value="${it.qty}" style="width:75px; height:28px; text-align:center; font-size:12px; font-weight:700; border-radius:6px; color:var(--green);" ${!it.selected ? 'disabled' : ''}>
+                  <span style="font-size:11px; font-weight:700; color:var(--txt-muted); min-width:24px; text-align:left;">${purEsc(it.uom || 'Nos')}</span>
+                </div>
               </td>
             </tr>
           `;
         });
 
-        tbodyEl.innerHTML = html || '<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--txt-muted);">No items match this filter</td></tr>';
+        tbodyEl.innerHTML = html || '<tr><td colspan="6" style="text-align:center; padding:16px; color:var(--txt-muted);">No items match this filter</td></tr>';
         updateSelectedBadge();
 
         // Wire row checkboxes
@@ -1498,7 +1591,7 @@ window.PAGES.purchase = {
           inp.addEventListener('input', (e) => {
             const idx = parseInt(e.target.getAttribute('data-idx'), 10);
             if (currentKitItems[idx]) {
-              currentKitItems[idx].qty = Math.max(0, parseInt(e.target.value || 0, 10));
+              currentKitItems[idx].qty = Math.max(0, parseFloat(e.target.value || 0));
             }
             updateSelectedBadge();
           });
@@ -1563,6 +1656,7 @@ window.PAGES.purchase = {
               type: it.type,
               warehouse: wh,
               qty: String(it.qty),
+              uom: it.uom,
               needsSerial: it.needsSerial
             });
             addedCount++;
@@ -1860,10 +1954,11 @@ window.PAGES.purchase = {
           window.openModal('Validation Error', '<p>Enter a valid Qty before adding a product line.</p>');
           return;
         }
+        const uom = updatePurEditUomBadge();
         const needsSerial = purCategoryNeedsSerial(cat);
         // Brand-new line added during this edit — no existing db row(s)
         // behind it yet, so qtyRowIds starts empty (PUT will INSERT it).
-        purEditLines.push({ cat, brand, watt, model, type, warehouse: wh, qty, needsSerial, qtyRowIds: [] });
+        purEditLines.push({ cat, brand, watt, model, type, warehouse: wh, qty, uom, needsSerial, qtyRowIds: [] });
         renderLineList(purEditLineList, purEditLines, '');
         $('purEditQty').value = '';
         updatePurEditSerialVisibility();
@@ -1906,7 +2001,7 @@ window.PAGES.purchase = {
         purEditLines.length = 0;
         inv.lines.forEach((ln) => purEditLines.push({
           cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type, warehouse: ln.warehouse,
-          qty: ln.qty, serials: ln.serials, qtyRowIds: ln.qtyRowIds || [],
+          qty: ln.qty, uom: ln.uom || 'Nos', serials: ln.serials, qtyRowIds: ln.qtyRowIds || [],
           needsSerial: purCategoryNeedsSerial(ln.cat),
         }));
         renderLineList(purEditLineList, purEditLines, 'Find an invoice above to load its lines.');
@@ -1964,11 +2059,11 @@ window.PAGES.purchase = {
             // Quantity-tracked line — Qty is final, no serials. qtyRowIds
             // carries forward whichever db row(s) it came from (empty
             // means it's brand-new, added during this edit).
-            return { cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type, warehouse: ln.warehouse, qty, serials: [], qtyRowIds: ln.qtyRowIds || [] };
+            return { cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type, warehouse: ln.warehouse, qty, uom: ln.uom || 'Nos', serials: [], qtyRowIds: ln.qtyRowIds || [] };
           }
           const serials = allSerials.slice(cursor, cursor + qty);
           cursor += qty;
-          return { cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type, warehouse: ln.warehouse, qty, serials };
+          return { cat: ln.cat, brand: ln.brand, watt: ln.watt, model: ln.model, type: ln.type, warehouse: ln.warehouse, qty, uom: ln.uom || 'Nos', serials };
         });
 
         const applyBtn = $('purBtnApply');

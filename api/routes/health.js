@@ -73,13 +73,13 @@ module.exports = function registerHealthRoutes(app, deps) {
   app.get('/api/lowstock', route(async (req, res) => {
     const [rows] = await pool.query(`
       SELECT i.id, i.brand_name, i.watt, i.solar_type, i.category, i.uom, i.minimum_stock,
-             COALESCE(SUM(CASE WHEN s.status='Available' THEN 1 ELSE 0 END),0) AS current_stock
+             COALESCE(SUM(CASE WHEN s.status='Available' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) AS current_stock
       FROM items i
       LEFT JOIN stock_ledger s ON s.item_id = i.id
       WHERE i.minimum_stock > 0
       GROUP BY i.id, i.brand_name, i.watt, i.solar_type, i.category, i.uom, i.minimum_stock
-      HAVING COALESCE(SUM(CASE WHEN s.status='Available' THEN 1 ELSE 0 END),0) <= i.minimum_stock
-      ORDER BY (i.minimum_stock - COALESCE(SUM(CASE WHEN s.status='Available' THEN 1 ELSE 0 END),0)) DESC
+      HAVING COALESCE(SUM(CASE WHEN s.status='Available' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) <= i.minimum_stock
+      ORDER BY (i.minimum_stock - COALESCE(SUM(CASE WHEN s.status='Available' THEN COALESCE(s.quantity, 1) ELSE 0 END),0)) DESC
     `);
     res.json(rows.map((r) => ({
       category: r.category,

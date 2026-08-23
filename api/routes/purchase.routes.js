@@ -125,8 +125,8 @@ module.exports = function registerPurchaseRoutes(app, deps) {
         const watt = Number(line.watt) || 0;
         const type = String(line.type || 'Others').trim() || 'Others';
         const wh = String(line.warehouse || 'Warehouse 1').trim() || 'Warehouse 1';
-        const model = line.model ? String(line.model).trim() : null;
-        const itemId = await getOrCreateItem(conn, cat, brand, watt, type, model);
+        const uom = String(line.uom || '').trim();
+        const itemId = await getOrCreateItem(conn, cat, brand, watt, type, model, uom);
         const itemName = itemNameSlug(brand, watt, type, model);
         const serials = Array.isArray(line.serials) ? line.serials.map((s) => String(s || '').trim()).filter(Boolean) : [];
         const linePallet = String(line.pallet || pallet || '-').trim() || '-';
@@ -179,11 +179,11 @@ module.exports = function registerPurchaseRoutes(app, deps) {
     );
     const resolvedName = shortMatch.length ? shortMatch[0].ledger_name : null;
 
-    let sql = `SELECT id, category, brand_name, watt, solar_type, model, supplier_name, purchase_invoice, pallet_no, warehouse, purchase_date, serial_no, purchase_attachment, quantity
-               FROM stock_ledger WHERE purchase_invoice = ? OR supplier_name LIKE ?`;
+    let sql = `SELECT sl.id, sl.category, sl.brand_name, sl.watt, sl.solar_type, sl.model, sl.supplier_name, sl.purchase_invoice, sl.pallet_no, sl.warehouse, sl.purchase_date, sl.serial_no, sl.purchase_attachment, sl.quantity, COALESCE(it.uom, 'Nos') AS uom
+               FROM stock_ledger sl LEFT JOIN items it ON sl.item_id = it.id WHERE sl.purchase_invoice = ? OR sl.supplier_name LIKE ?`;
     const params = [term, `%${term}%`];
-    if (resolvedName) { sql += ` OR supplier_name = ?`; params.push(resolvedName); }
-    sql += ` ORDER BY STR_TO_DATE(purchase_date, '%d-%m-%Y') DESC, category, brand_name, watt, solar_type, id`;
+    if (resolvedName) { sql += ` OR sl.supplier_name = ?`; params.push(resolvedName); }
+    sql += ` ORDER BY STR_TO_DATE(sl.purchase_date, '%d-%m-%Y') DESC, sl.category, sl.brand_name, sl.watt, sl.solar_type, sl.id`;
 
     const [allMatches] = await pool.query(sql, params);
     if (!allMatches.length) {
@@ -209,7 +209,7 @@ module.exports = function registerPurchaseRoutes(app, deps) {
       if (!grouped.has(key)) {
         grouped.set(key, {
           cat: r.category, brand: r.brand_name, watt: r.watt || 0, type: r.solar_type, model: r.model || '',
-          pallet: r.pallet_no || '', warehouse: r.warehouse || '', serials: [], qtyRows: [],
+          pallet: r.pallet_no || '', warehouse: r.warehouse || '', uom: r.uom || 'Nos', serials: [], qtyRows: [],
         });
       }
       const g = grouped.get(key);
@@ -234,6 +234,7 @@ module.exports = function registerPurchaseRoutes(app, deps) {
       originalQtyRowIds: records.filter((r) => !r.serial_no).map((r) => r.id),
       lines: Array.from(grouped.values()).map((l) => ({
         cat: l.cat, brand: l.brand, watt: l.watt, type: l.type, model: l.model, pallet: l.pallet, warehouse: l.warehouse,
+        uom: l.uom || 'Nos',
         serials: l.serials,
         qtyRowIds: l.qtyRows.map((r) => r.id),
         qty: l.serials.length ? l.serials.length : l.qtyRows.reduce((sum, r) => sum + r.qty, 0),
@@ -337,8 +338,8 @@ module.exports = function registerPurchaseRoutes(app, deps) {
         const watt = Number(line.watt) || 0;
         const type = String(line.type || 'Others').trim() || 'Others';
         const wh = String(line.warehouse || 'Warehouse 1').trim() || 'Warehouse 1';
-        const model = line.model ? String(line.model).trim() : null;
-        const itemId = await getOrCreateItem(conn, cat, brand, watt, type, model);
+        const uom = String(line.uom || '').trim();
+        const itemId = await getOrCreateItem(conn, cat, brand, watt, type, model, uom);
         const itemName = itemNameSlug(brand, watt, type, model);
         const serials = Array.isArray(line.serials) ? line.serials.map((s) => String(s || '').trim()).filter(Boolean) : [];
         const linePallet = String(line.pallet || pallet || '-').trim() || '-';
@@ -450,17 +451,16 @@ module.exports = function registerPurchaseRoutes(app, deps) {
   // the group was ever edited.
   app.get('/api/purchase/register', route(async (req, res) => {
     const category = req.query.category;
-    // SUM(quantity) instead of COUNT(*): a serial-tracked row is always
-    // quantity=1 (so this matches the old COUNT(*) behaviour exactly for
-    // those), while a quantity-tracked row (serial_no NULL) can represent
-    // many units in a single row — COUNT(*) would have under-reported it.
-    let sql = `SELECT purchase_invoice, purchase_date, supplier_name, category, brand_name, warehouse,
-                      MIN(serial_no) AS first_serial, SUM(quantity) AS qty, MAX(edited_flag) AS edited
-               FROM stock_ledger WHERE purchase_invoice IS NOT NULL AND purchase_invoice != '-'`;
+    let sql = `SELECT sl.purchase_invoice, sl.purchase_date, sl.supplier_name, sl.category, sl.brand_name, sl.warehouse,
+                      MIN(sl.serial_no) AS first_serial, SUM(sl.quantity) AS qty, MAX(sl.edited_flag) AS edited,
+                      COALESCE(it.uom, 'Nos') AS uom
+               FROM stock_ledger sl
+               LEFT JOIN items it ON sl.item_id = it.id
+               WHERE sl.purchase_invoice IS NOT NULL AND sl.purchase_invoice != '-'`;
     const params = [];
-    if (category && category !== 'All Categories') { sql += ` AND category = ?`; params.push(category); }
-    sql += ` GROUP BY purchase_invoice, purchase_date, supplier_name, category, brand_name, warehouse
-             ORDER BY STR_TO_DATE(purchase_date, '%d-%m-%Y') DESC, purchase_invoice DESC`;
+    if (category && category !== 'All Categories') { sql += ` AND sl.category = ?`; params.push(category); }
+    sql += ` GROUP BY sl.purchase_invoice, sl.purchase_date, sl.supplier_name, sl.category, sl.brand_name, sl.warehouse, it.uom
+             ORDER BY STR_TO_DATE(sl.purchase_date, '%d-%m-%Y') DESC, sl.purchase_invoice DESC`;
 
     const [rows] = await pool.query(sql, params);
     res.json(rows.map((r) => ({
@@ -472,6 +472,7 @@ module.exports = function registerPurchaseRoutes(app, deps) {
       warehouse: r.warehouse,
       firstSerial: r.first_serial,
       qty: r.qty,
+      uom: r.uom || 'Nos',
       edited: !!r.edited,
     })));
   }));

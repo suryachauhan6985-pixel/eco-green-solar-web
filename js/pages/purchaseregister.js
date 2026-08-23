@@ -84,7 +84,7 @@ window.PAGES.purchaseregister = {
     const columns = ['Invoice No', 'Date', 'Supplier', 'Category', 'Brand', 'Qty', 'Warehouse', 'Edited?'];
 
     function rowToValues(r) {
-      return [r.invoiceNo, r.date, r.supplier, r.category, r.brand, String(r.qty), r.warehouse, r.edited ? 'Yes' : 'No'];
+      return [r.invoiceNo, r.date, r.supplier, r.category, r.brand, `${r.qty} ${r.uom || 'Nos'}`, r.warehouse, r.edited ? 'Yes' : 'No'];
     }
 
     function inDateRange(dmy) {
@@ -135,7 +135,7 @@ window.PAGES.purchaseregister = {
           <td data-label="Supplier">${r.supplier}</td>
           <td data-label="Category">${r.category}</td>
           <td data-label="Brand">${r.brand}</td>
-          <td data-label="Qty">${r.qty}</td>
+          <td data-label="Qty"><span style="font-weight:700;">${r.qty}</span> <small style="font-weight:600; color:var(--txt-muted);">${r.uom || 'Nos'}</small></td>
           <td data-label="Warehouse">${r.warehouse}</td>
           <td data-label="Edited?" ${r.edited ? 'class="gold-txt"' : ''}>${r.edited ? 'Yes' : 'No'}</td>
         </tr>`).join('');
