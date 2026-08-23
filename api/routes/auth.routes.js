@@ -652,6 +652,14 @@ module.exports = function registerAuthRoutes(app, deps) {
     if (settings.dispatch_alert_enabled == null) settings.dispatch_alert_enabled = '0';
     if (settings.dispatch_alert_emails == null) settings.dispatch_alert_emails = '';
     if (settings.scanner_sound == null) settings.scanner_sound = 'beep';
+    if (settings.erp_mode == null) settings.erp_mode = 'hybrid';
+    if (settings.feature_bom_enabled == null) settings.feature_bom_enabled = '1';
+    if (settings.feature_pricing_enabled == null) settings.feature_pricing_enabled = '1';
+    if (settings.feature_warehouse_enabled == null) settings.feature_warehouse_enabled = '1';
+    if (settings.feature_pallet_enabled == null) settings.feature_pallet_enabled = '1';
+    if (settings.feature_attachment_mandatory == null) settings.feature_attachment_mandatory = '0';
+    if (settings.feature_wattage_mandatory == null) settings.feature_wattage_mandatory = 'auto';
+    if (settings.nav_style == null) settings.nav_style = 'both';
     res.json({ settings });
   }));
 
@@ -661,7 +669,10 @@ module.exports = function registerAuthRoutes(app, deps) {
     const allowed = [
       'challan_prefix', 'challan_suffix', 'challan_next', 'challan_pad',
       'low_stock_threshold', 'low_stock_alert_enabled', 'low_stock_alert_emails',
-      'dispatch_alert_enabled', 'dispatch_alert_emails', 'scanner_sound'
+      'dispatch_alert_enabled', 'dispatch_alert_emails', 'scanner_sound',
+      'erp_mode', 'feature_bom_enabled', 'feature_pricing_enabled',
+      'feature_warehouse_enabled', 'feature_pallet_enabled',
+      'feature_attachment_mandatory', 'feature_wattage_mandatory', 'nav_style'
     ];
     for (const key of allowed) {
       if (body[key] == null) continue;

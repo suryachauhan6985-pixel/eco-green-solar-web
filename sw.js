@@ -1,10 +1,10 @@
-const CACHE_NAME = 'eco-green-solar-erp-v128';
+const CACHE_NAME = 'eco-green-solar-erp-v129';
 
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/css/style.css?v=103',
+  '/css/style.css?v=104',
   '/css/modules/base.css?v=103',
   '/css/modules/layout.css?v=103',
   '/css/modules/components.css?v=103',
@@ -33,7 +33,7 @@ const APP_SHELL = [
   '/js/pages/saleregister.js?v=4',
   '/js/pages/reports.js?v=4',
   '/js/pages/returns.js?v=3',
-  '/js/pages/partyledger.js?v=23',
+  '/js/pages/partyledger.js?v=24',
   '/js/pages/lowstock.js?v=5',
   '/js/pages/backup.js?v=4',
   '/js/pages/bom-kit-helpers.js?v=20',
@@ -46,7 +46,7 @@ const APP_SHELL = [
   '/js/pages/bom-serial-modal.js?v=4',
   '/js/pages/bom-dispatch.js?v=14',
   '/js/pages/bom.js?v=32',
-  '/js/app.js?v=55',
+  '/js/app.js?v=56',
   '/js/theme.js?v=5'
 ];
 

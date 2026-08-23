@@ -2708,6 +2708,7 @@ window.attachColumnFilters = function (table) {
       <div class="settings-layout">
         <div class="settings-tabs">
           <button type="button" class="settings-tab-btn" data-tab="tab-profile"><i class="fa-solid fa-user-gear"></i> My Profile &amp; Security</button>
+          ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-erp-mode"><i class="fa-solid fa-sliders"></i> ERP Mode &amp; Features</button>' : ''}
           ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-users"><i class="fa-solid fa-users-gear"></i> User Accounts</button>' : ''}
           <button type="button" class="settings-tab-btn" data-tab="tab-challan"><i class="fa-solid fa-file-invoice"></i> Challan &amp; Print</button>
           <button type="button" class="settings-tab-btn" data-tab="tab-theme"><i class="fa-solid fa-palette"></i> Appearance</button>
@@ -3357,6 +3358,125 @@ window.attachColumnFilters = function (table) {
             <p style="margin:0; font-size:13px; color:var(--txt-muted);">
               1-click XML ledger sync directly into Tally Prime and Busy Accounting software.
             </p>
+        <!-- ERP Mode & Feature Switches Tab -->
+        <div class="settings-panel" id="tab-erp-mode">
+          <!-- Card 1: ERP Core Operating Mode -->
+          <div class="settings-card">
+            <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between;">
+              <span><i class="fa-solid fa-layer-group" style="color:var(--gold);"></i> Core ERP Operating Mode</span>
+              <span class="pill pill-green" style="font-size:11px; padding:2px 8px;">Instant Switch</span>
+            </div>
+            <p style="margin:0 0 14px; font-size:12.5px; color:var(--txt-muted);">
+              Select how your enterprise tracks inventory, serial numbers, and accounting across the entire software. Switching modes applies dynamically without code modifications.
+            </p>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px;" id="erpModeRadioGroup">
+              
+              <label class="egs-mode-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:var(--panel-alt); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.15s ease;">
+                <input type="radio" name="setErpMode" value="hybrid" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-solar-panel" style="color:var(--gold); margin-right:4px;"></i> Hybrid (Serial + Quantity) <span class="pill pill-gold" style="font-size:10px; padding:1px 6px;">Recommended</span></div>
+                  <div style="font-size:12px; color:var(--txt-muted); margin-top:3px;">Track high-value items (Panels, Inverters) by unique Serial Numbers, and cables, hardware, civil items by Quantity &amp; UOM.</div>
+                </div>
+              </label>
+
+              <label class="egs-mode-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:var(--panel-alt); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.15s ease;">
+                <input type="radio" name="setErpMode" value="serial_only" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-barcode" style="color:var(--blue); margin-right:4px;"></i> Strict Serial-Only Inventory</div>
+                  <div style="font-size:12px; color:var(--txt-muted); margin-top:3px;">Every single inward/outward item requires an individual barcode / serial scan for strict warranty management.</div>
+                </div>
+              </label>
+
+              <label class="egs-mode-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:var(--panel-alt); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.15s ease;">
+                <input type="radio" name="setErpMode" value="quantity_only" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-cubes-stacked" style="color:#2ecc71; margin-right:4px;"></i> Quantity &amp; UOM Bulk Mode</div>
+                  <div style="font-size:12px; color:var(--txt-muted); margin-top:3px;">No serial number scans required anywhere. High-speed bulk inward/dispatch using decimals (Kg, Feet, Meters, Sets).</div>
+                </div>
+              </label>
+
+              <label class="egs-mode-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:var(--panel-alt); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.15s ease;">
+                <input type="radio" name="setErpMode" value="full_accounting" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-file-invoice-dollar" style="color:#a855f7; margin-right:4px;"></i> Full Accounting + Inventory ERP</div>
+                  <div style="font-size:12px; color:var(--txt-muted); margin-top:3px;">Complete item stock control + Rate, Price, GST/Tax computation, and Debit/Credit party ledger accounting.</div>
+                </div>
+              </label>
+
+              <label class="egs-mode-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:var(--panel-alt); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.15s ease;">
+                <input type="radio" name="setErpMode" value="accounts_only" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-book" style="color:var(--red); margin-right:4px;"></i> Financial Accounting Only (No Stock)</div>
+                  <div style="font-size:12px; color:var(--txt-muted); margin-top:3px;">Hides physical warehouse &amp; stock allocation; operates as a pure financial ledger &amp; voucher accounting system.</div>
+                </div>
+              </label>
+
+            </div>
+          </div>
+
+          <!-- Card 2: Feature Switchboard & Mandatory Rules -->
+          <div class="settings-card" style="margin-top:16px;">
+            <div class="settings-card-title"><i class="fa-solid fa-toggle-on" style="color:var(--blue);"></i> Feature Switchboard &amp; Mandatory Rules</div>
+            
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px; margin-top:12px;">
+              
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="setCheckFeatureBom" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13px;">BOM Kit Assembly &amp; Project Dispatch</div>
+                  <div style="font-size:11.5px; color:var(--txt-muted);">Enable multi-item Bill of Materials kits and automated customer dispatch challans.</div>
+                </div>
+              </label>
+
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="setCheckFeaturePricing" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13px;">Pricing &amp; Rate Valuation in Forms</div>
+                  <div style="font-size:11.5px; color:var(--txt-muted);">Show Unit Rate, Subtotal, and GST columns during Purchase Inward and Sales.</div>
+                </div>
+              </label>
+
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="setCheckFeatureWarehouse" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13px;">Warehouse &amp; Godown Hub Tracking</div>
+                  <div style="font-size:11.5px; color:var(--txt-muted);">Track specific godown / warehouse locations for all stock transactions.</div>
+                </div>
+              </label>
+
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="setCheckFeaturePallet" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13px;">Pallet ID Allocation</div>
+                  <div style="font-size:11.5px; color:var(--txt-muted);">Enable Pallet / Box grouping for incoming solar panels &amp; modules.</div>
+                </div>
+              </label>
+
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="setCheckFeatureProofMandatory" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13px;">Invoice / Challan Attachment Mandatory</div>
+                  <div style="font-size:11.5px; color:var(--txt-muted);">Block saving inward/sales vouchers without an uploaded PDF/Photo proof.</div>
+                </div>
+              </label>
+
+              <div class="field" style="margin:0;">
+                <label style="font-weight:700; color:var(--txt); font-size:13px; display:block; margin-bottom:4px;">Wattage Requirement Rule</label>
+                <select id="setFeatureWattRule" class="form-control" style="width:100%; font-size:12.5px;">
+                  <option value="auto">Auto (Only for Solar Panels &amp; Inverters)</option>
+                  <option value="always">Always Mandatory for all categories</option>
+                  <option value="never">Optional / Disabled</option>
+                </select>
+              </div>
+
+            </div>
+
+            <div class="actions-row" style="margin-top:18px; justify-content:flex-end; border-top:1px solid var(--border-light); padding-top:14px;">
+              <button type="button" class="btn btn-green" id="btnSaveErpModeSettings" style="padding:11px 24px; font-size:13.5px; font-weight:700; box-shadow:0 4px 14px rgba(46,204,113,0.3);">
+                <i class="fa-solid fa-floppy-disk"></i> Save ERP Operating Mode &amp; Features
+              </button>
+            </div>
           </div>
         </div>
         </div>
@@ -3929,7 +4049,103 @@ window.attachColumnFilters = function (table) {
         if (lowStockEmailsInp && s.low_stock_alert_emails != null) lowStockEmailsInp.value = s.low_stock_alert_emails;
         if (chkDispatchEmail) chkDispatchEmail.checked = s.dispatch_alert_enabled === '1';
         if (dispatchEmailsInp && s.dispatch_alert_emails != null) dispatchEmailsInp.value = s.dispatch_alert_emails;
+
+        // ERP Mode & Feature Switches population
+        const curMode = s.erp_mode || 'hybrid';
+        document.querySelectorAll('input[name="setErpMode"]').forEach((r) => {
+          r.checked = (r.value === curMode);
+          const card = r.closest('.egs-mode-card');
+          if (card) {
+            card.style.borderColor = r.checked ? 'var(--blue)' : 'var(--border)';
+            card.style.background = r.checked ? 'rgba(59,142,208,0.08)' : 'var(--panel-alt)';
+          }
+        });
+        const chkFeatureBom = document.getElementById('setCheckFeatureBom');
+        const chkFeaturePricing = document.getElementById('setCheckFeaturePricing');
+        const chkFeatureWarehouse = document.getElementById('setCheckFeatureWarehouse');
+        const chkFeaturePallet = document.getElementById('setCheckFeaturePallet');
+        const chkFeatureProofMandatory = document.getElementById('setCheckFeatureProofMandatory');
+        const selFeatureWattRule = document.getElementById('setFeatureWattRule');
+
+        if (chkFeatureBom) chkFeatureBom.checked = (s.feature_bom_enabled !== '0');
+        if (chkFeaturePricing) chkFeaturePricing.checked = (s.feature_pricing_enabled !== '0');
+        if (chkFeatureWarehouse) chkFeatureWarehouse.checked = (s.feature_warehouse_enabled !== '0');
+        if (chkFeaturePallet) chkFeaturePallet.checked = (s.feature_pallet_enabled !== '0');
+        if (chkFeatureProofMandatory) chkFeatureProofMandatory.checked = (s.feature_attachment_mandatory === '1');
+        if (selFeatureWattRule && s.feature_wattage_mandatory) selFeatureWattRule.value = s.feature_wattage_mandatory;
       }).catch(() => {});
+    }
+
+    // ERP Mode Radio card highlight on change
+    document.querySelectorAll('input[name="setErpMode"]').forEach((r) => {
+      r.addEventListener('change', () => {
+        document.querySelectorAll('input[name="setErpMode"]').forEach((other) => {
+          const card = other.closest('.egs-mode-card');
+          if (card) {
+            card.style.borderColor = other.checked ? 'var(--blue)' : 'var(--border)';
+            card.style.background = other.checked ? 'rgba(59,142,208,0.08)' : 'var(--panel-alt)';
+          }
+        });
+      });
+    });
+
+    // Save ERP Mode & Features Button
+    const btnSaveErpMode = document.getElementById('btnSaveErpModeSettings');
+    if (btnSaveErpMode) {
+      btnSaveErpMode.addEventListener('click', async () => {
+        let selectedMode = 'hybrid';
+        document.querySelectorAll('input[name="setErpMode"]').forEach((r) => { if (r.checked) selectedMode = r.value; });
+        const chkFeatureBom = document.getElementById('setCheckFeatureBom');
+        const chkFeaturePricing = document.getElementById('setCheckFeaturePricing');
+        const chkFeatureWarehouse = document.getElementById('setCheckFeatureWarehouse');
+        const chkFeaturePallet = document.getElementById('setCheckFeaturePallet');
+        const chkFeatureProofMandatory = document.getElementById('setCheckFeatureProofMandatory');
+        const selFeatureWattRule = document.getElementById('setFeatureWattRule');
+
+        const featureBom = (chkFeatureBom && chkFeatureBom.checked) ? '1' : '0';
+        const featurePricing = (chkFeaturePricing && chkFeaturePricing.checked) ? '1' : '0';
+        const featureWarehouse = (chkFeatureWarehouse && chkFeatureWarehouse.checked) ? '1' : '0';
+        const featurePallet = (chkFeaturePallet && chkFeaturePallet.checked) ? '1' : '0';
+        const featureProofMandatory = (chkFeatureProofMandatory && chkFeatureProofMandatory.checked) ? '1' : '0';
+        const featureWattRule = (selFeatureWattRule ? selFeatureWattRule.value : 'auto') || 'auto';
+
+        try {
+          await window.Api.put('/auth/app-settings', {
+            settings: {
+              erp_mode: selectedMode,
+              feature_bom_enabled: featureBom,
+              feature_pricing_enabled: featurePricing,
+              feature_warehouse_enabled: featureWarehouse,
+              feature_pallet_enabled: featurePallet,
+              feature_attachment_mandatory: featureProofMandatory,
+              feature_wattage_mandatory: featureWattRule
+            }
+          });
+
+          // Sync into window.ERP_CONFIG
+          window.ERP_CONFIG = Object.assign(window.ERP_CONFIG || {}, {
+            erp_mode: selectedMode,
+            feature_bom_enabled: featureBom,
+            feature_pricing_enabled: featurePricing,
+            feature_warehouse_enabled: featureWarehouse,
+            feature_pallet_enabled: featurePallet,
+            feature_attachment_mandatory: featureProofMandatory,
+            feature_wattage_mandatory: featureWattRule
+          });
+
+          if (typeof window.applyErpModeRules === 'function') {
+            window.applyErpModeRules();
+          }
+
+          if (window.showSuccess) {
+            window.showSuccess('ERP Operating Mode Updated', `Active ERP mode set to '${selectedMode.toUpperCase()}'. Features & validation rules applied across software.`);
+          } else if (window.showToast) {
+            window.showToast('ERP mode and feature settings saved!', 'success');
+          }
+        } catch (e) {
+          window.showError('Save Failed', (e && e.message) || 'Could not save ERP mode settings.');
+        }
+      });
     }
 
     // Helper: validate comma-separated emails
@@ -5279,4 +5495,294 @@ window.attachColumnFilters = function (table) {
       scan(document);
     });
   }
+})();
+
+// ============================================================================
+// ENTERPRISE ERP MODE & GATEWAY CASCADING MENU SYSTEM (Shree Sava / Tally Inspired)
+// ============================================================================
+(function () {
+  // 1. Global ERP Engine & Config Cache
+  window.ERP_CONFIG = {
+    erp_mode: 'hybrid',
+    feature_bom_enabled: '1',
+    feature_pricing_enabled: '1',
+    feature_warehouse_enabled: '1',
+    feature_pallet_enabled: '1',
+    feature_attachment_mandatory: '0',
+    feature_wattage_mandatory: 'auto',
+    nav_style: 'both'
+  };
+
+  window.ERP = {
+    getMode() { return window.ERP_CONFIG.erp_mode || 'hybrid'; },
+    isSerialEnabled() { return window.ERP_CONFIG.erp_mode !== 'quantity_only' && window.ERP_CONFIG.erp_mode !== 'accounts_only'; },
+    isQuantityOnly() { return window.ERP_CONFIG.erp_mode === 'quantity_only'; },
+    isAccountingMode() { return window.ERP_CONFIG.erp_mode === 'full_accounting' || window.ERP_CONFIG.erp_mode === 'accounts_only'; },
+    isAccountsOnly() { return window.ERP_CONFIG.erp_mode === 'accounts_only'; },
+    isBomEnabled() { return window.ERP_CONFIG.feature_bom_enabled !== '0' && window.ERP_CONFIG.erp_mode !== 'accounts_only'; },
+    isPricingEnabled() { return window.ERP_CONFIG.feature_pricing_enabled !== '0'; },
+    isWarehouseEnabled() { return window.ERP_CONFIG.feature_warehouse_enabled !== '0' && window.ERP_CONFIG.erp_mode !== 'accounts_only'; },
+    isPalletEnabled() { return window.ERP_CONFIG.feature_pallet_enabled !== '0' && window.ERP_CONFIG.erp_mode !== 'accounts_only'; },
+    isProofMandatory() { return window.ERP_CONFIG.feature_attachment_mandatory === '1'; }
+  };
+
+  // Fetch initial config from server
+  async function loadGlobalErpConfig() {
+    if (!window.Api) return;
+    try {
+      const res = await window.Api.get('/auth/app-settings', { silent: true });
+      if (res && res.settings) {
+        window.ERP_CONFIG = Object.assign(window.ERP_CONFIG, res.settings);
+        applyErpModeRules();
+      }
+    } catch (e) {}
+  }
+
+  function applyErpModeRules() {
+    const isAccountsOnly = window.ERP.isAccountsOnly();
+    const isBomDisabled = !window.ERP.isBomEnabled();
+
+    // Hide or show sidebar items dynamically based on ERP configuration
+    const navItems = document.querySelectorAll('.nav-btn');
+    navItems.forEach((btn) => {
+      const page = btn.dataset.page;
+      if (page === 'bom' && isBomDisabled) {
+        btn.style.display = 'none';
+      } else if ((page === 'scansheet' || page === 'stockassign') && isAccountsOnly) {
+        btn.style.display = 'none';
+      } else {
+        btn.style.display = '';
+      }
+    });
+  }
+
+  window.applyErpModeRules = applyErpModeRules;
+  loadGlobalErpConfig();
+
+  // 2. Gateway of ERP / Cascading Flyout Menu Builder
+  function createGatewayMenuDOM() {
+    let wrap = document.getElementById('egsGatewayMenuWrap');
+    if (wrap) return wrap;
+
+    wrap = document.createElement('div');
+    wrap.id = 'egsGatewayMenuWrap';
+    wrap.className = 'egs-gateway-menu-wrap';
+    wrap.style.display = 'none';
+    wrap.innerHTML = `
+      <div class="egs-gateway-backdrop" id="egsGatewayBackdrop"></div>
+      <div class="egs-gateway-modal" id="egsGatewayModal" role="dialog" aria-modal="true">
+        <div class="egs-gateway-head">
+          <div class="egs-gateway-title"><i class="fa-solid fa-layer-group" style="color:var(--gold);"></i> <span>Gateway of ERP &bull; Main Menu</span></div>
+          <div class="egs-gateway-actions">
+            <span class="egs-gateway-hint"><kbd>Alt+M</kbd> / <kbd>Esc</kbd></span>
+            <button type="button" class="btn btn-ghost egs-gateway-close-btn" id="btnGatewayClose"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+
+        <div class="egs-cascading-container">
+          <!-- Tier 1: Main Menu -->
+          <div class="egs-cascading-tier" id="cascadingTier1">
+            <div class="egs-tier-head">Main Menu</div>
+            <div class="egs-tier-list">
+              <div class="egs-menu-item active" data-target="sub-accounts">
+                <span class="m-txt"><i class="fa-solid fa-folder-open" style="color:var(--gold);"></i> Accounts Info</span>
+                <i class="fa-solid fa-chevron-right m-arrow"></i>
+              </div>
+              <div class="egs-menu-item" data-target="sub-transactions">
+                <span class="m-txt"><i class="fa-solid fa-receipt" style="color:#2ecc71;"></i> Transaction Entry</span>
+                <i class="fa-solid fa-chevron-right m-arrow"></i>
+              </div>
+              <div class="egs-menu-item" data-target="sub-display">
+                <span class="m-txt"><i class="fa-solid fa-chart-pie" style="color:var(--blue);"></i> Display / Print</span>
+                <i class="fa-solid fa-chevron-right m-arrow"></i>
+              </div>
+              <div class="egs-menu-item" data-target="sub-utilities">
+                <span class="m-txt"><i class="fa-solid fa-gear" style="color:#a855f7;"></i> Utilities &amp; Setup</span>
+                <i class="fa-solid fa-chevron-right m-arrow"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tier 2: Sub Menu -->
+          <div class="egs-cascading-tier" id="cascadingTier2">
+            <!-- Sub: Accounts Info -->
+            <div class="egs-tier-subpanel" id="sub-accounts">
+              <div class="egs-tier-head">Accounts Info</div>
+              <div class="egs-tier-list">
+                <div class="egs-menu-leaf" data-go="partyledger"><i class="fa-solid fa-address-book" style="color:var(--gold);"></i> Party Master &amp; Ledgers</div>
+                <div class="egs-menu-leaf" data-go="masters" data-tab="tab-party"><i class="fa-solid fa-users" style="color:var(--blue);"></i> Customer &amp; Supplier Master</div>
+                <div class="egs-menu-leaf" data-go="partyledger"><i class="fa-solid fa-money-check-dollar" style="color:#2ecc71;"></i> Ledger Statements</div>
+              </div>
+            </div>
+
+            <!-- Sub: Transaction Entry -->
+            <div class="egs-tier-subpanel" id="sub-transactions" style="display:none;">
+              <div class="egs-tier-head">Transaction Entry (Vouchers)</div>
+              <div class="egs-tier-list">
+                <div class="egs-menu-leaf" data-go="purchase"><i class="fa-solid fa-truck-ramp-box" style="color:#2ecc71;"></i> Purchase Inward (Stock In)</div>
+                <div class="egs-menu-leaf" data-go="sales"><i class="fa-solid fa-handshake" style="color:var(--blue);"></i> Project Sales &amp; Dispatch (Outward)</div>
+                <div class="egs-menu-leaf" data-go="bom"><i class="fa-solid fa-boxes-packing" style="color:var(--gold);"></i> BOM Kit Assembly &amp; Challan</div>
+                <div class="egs-menu-leaf" data-go="stockassign"><i class="fa-solid fa-tag" style="color:#eab308;"></i> Stock Allocation &amp; Assignment</div>
+                <div class="egs-menu-leaf" data-go="returns"><i class="fa-solid fa-arrow-rotate-left" style="color:var(--red);"></i> Sales Returns &amp; Damage Write-off</div>
+              </div>
+            </div>
+
+            <!-- Sub: Display / Print -->
+            <div class="egs-tier-subpanel" id="sub-display" style="display:none;">
+              <div class="egs-tier-head">Display / Print</div>
+              <div class="egs-tier-list">
+                <div class="egs-menu-branch active" data-subtarget="sub-acc-books">
+                  <span class="m-txt"><i class="fa-solid fa-book" style="color:var(--gold);"></i> Account Books</span>
+                  <i class="fa-solid fa-chevron-right m-arrow"></i>
+                </div>
+                <div class="egs-menu-branch" data-subtarget="sub-stock-books">
+                  <span class="m-txt"><i class="fa-solid fa-boxes-stacked" style="color:#2ecc71;"></i> Stock Books &amp; Reports</span>
+                  <i class="fa-solid fa-chevron-right m-arrow"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sub: Utilities & Setup -->
+            <div class="egs-tier-subpanel" id="sub-utilities" style="display:none;">
+              <div class="egs-tier-head">Utilities &amp; Setup</div>
+              <div class="egs-tier-list">
+                <div class="egs-menu-leaf" data-action="openSettings" data-tab="tab-erp-mode"><i class="fa-solid fa-sliders" style="color:var(--gold);"></i> ERP Operating Modes &amp; Switches</div>
+                <div class="egs-menu-leaf" data-go="masters"><i class="fa-solid fa-cube" style="color:var(--blue);"></i> Master Catalog &amp; Categories</div>
+                <div class="egs-menu-leaf" data-action="openSettings" data-tab="tab-users"><i class="fa-solid fa-users-gear" style="color:#2ecc71;"></i> User Accounts &amp; Permissions</div>
+                <div class="egs-menu-leaf" data-go="backup"><i class="fa-solid fa-cloud-arrow-up" style="color:#a855f7;"></i> Backup &amp; Disaster Recovery</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tier 3: Sub-Branch (Account Books vs Stock Books) -->
+          <div class="egs-cascading-tier" id="cascadingTier3">
+            <div class="egs-tier-subpanel" id="sub-acc-books">
+              <div class="egs-tier-head">A/c Books &amp; Registers</div>
+              <div class="egs-tier-list">
+                <div class="egs-menu-leaf" data-go="partyledger"><i class="fa-solid fa-address-book" style="color:var(--gold);"></i> Party Account Statement</div>
+                <div class="egs-menu-leaf" data-go="purchaseregister"><i class="fa-solid fa-cart-shopping" style="color:#2ecc71;"></i> Purchase Register</div>
+                <div class="egs-menu-leaf" data-go="saleregister"><i class="fa-solid fa-money-bill-transfer" style="color:var(--blue);"></i> Sale Register</div>
+              </div>
+            </div>
+
+            <div class="egs-tier-subpanel" id="sub-stock-books" style="display:none;">
+              <div class="egs-tier-head">Stock Books &amp; Reports</div>
+              <div class="egs-tier-list">
+                <div class="egs-menu-leaf" data-go="reports"><i class="fa-solid fa-clipboard-list" style="color:var(--blue);"></i> Master Inventory Report</div>
+                <div class="egs-menu-leaf" data-go="lowstock"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red);"></i> Low Stock Alert Summary</div>
+                <div class="egs-menu-leaf" data-go="scansheet"><i class="fa-solid fa-barcode" style="color:var(--gold);"></i> Serial Number Scan Sheets</div>
+                <div class="egs-menu-leaf" data-go="bom" data-tab="tab-track"><i class="fa-solid fa-route" style="color:#2ecc71;"></i> BOM Track &amp; Dispatch Register</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(wrap);
+
+    // Event listeners
+    const backdrop = wrap.querySelector('#egsGatewayBackdrop');
+    const closeBtn = wrap.querySelector('#btnGatewayClose');
+    if (backdrop) backdrop.addEventListener('click', closeGatewayMenu);
+    if (closeBtn) closeBtn.addEventListener('click', closeGatewayMenu);
+
+    // Tier 1 Click/Hover
+    const tier1Items = wrap.querySelectorAll('#cascadingTier1 .egs-menu-item');
+    tier1Items.forEach((item) => {
+      const targetId = item.dataset.target;
+      const activate = () => {
+        tier1Items.forEach((i) => i.classList.toggle('active', i === item));
+        wrap.querySelectorAll('#cascadingTier2 .egs-tier-subpanel').forEach((panel) => {
+          panel.style.display = panel.id === targetId ? 'flex' : 'none';
+        });
+        const tier3 = wrap.querySelector('#cascadingTier3');
+        if (tier3) {
+          tier3.style.display = (targetId === 'sub-display') ? 'flex' : 'none';
+        }
+      };
+      item.addEventListener('mouseenter', activate);
+      item.addEventListener('click', activate);
+    });
+
+    // Tier 2 Branch Click/Hover
+    const tier2Branches = wrap.querySelectorAll('#cascadingTier2 .egs-menu-branch');
+    tier2Branches.forEach((branch) => {
+      const targetId = branch.dataset.subtarget;
+      const activate = () => {
+        tier2Branches.forEach((b) => b.classList.toggle('active', b === branch));
+        wrap.querySelectorAll('#cascadingTier3 .egs-tier-subpanel').forEach((panel) => {
+          panel.style.display = panel.id === targetId ? 'flex' : 'none';
+        });
+      };
+      branch.addEventListener('mouseenter', activate);
+      branch.addEventListener('click', activate);
+    });
+
+    // Leaves Navigation
+    wrap.querySelectorAll('.egs-menu-leaf').forEach((leaf) => {
+      leaf.addEventListener('click', () => {
+        closeGatewayMenu();
+        const page = leaf.dataset.go;
+        const tab = leaf.dataset.tab;
+        const action = leaf.dataset.action;
+
+        if (action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
+          window.openSystemSettingsModal(tab || 'tab-erp-mode');
+        } else if (page && typeof window.go === 'function') {
+          window.go(page);
+          if (tab) {
+            setTimeout(() => {
+              const tb = document.querySelector(`[data-tab="${tab}"]`);
+              if (tb) tb.click();
+            }, 100);
+          }
+        }
+      });
+    });
+
+    return wrap;
+  }
+
+  function openGatewayMenu() {
+    const wrap = createGatewayMenuDOM();
+    wrap.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeGatewayMenu() {
+    const wrap = document.getElementById('egsGatewayMenuWrap');
+    if (wrap) {
+      wrap.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+
+  window.openGatewayMenu = openGatewayMenu;
+  window.closeGatewayMenu = closeGatewayMenu;
+
+  // Keyboard shortcut Alt+M or F1 or Escape
+  document.addEventListener('keydown', (e) => {
+    if ((e.altKey && (e.key === 'm' || e.key === 'M')) || e.key === 'F1') {
+      e.preventDefault();
+      const wrap = document.getElementById('egsGatewayMenuWrap');
+      if (wrap && wrap.style.display !== 'none') {
+        closeGatewayMenu();
+      } else {
+        openGatewayMenu();
+      }
+    } else if (e.key === 'Escape') {
+      const wrap = document.getElementById('egsGatewayMenuWrap');
+      if (wrap && wrap.style.display !== 'none') {
+        closeGatewayMenu();
+      }
+    }
+  });
+
+  // Topbar and Mobile button listeners
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#btnTopbarGatewayMenu') || e.target.closest('#btnMobileGatewayMenu')) {
+      e.preventDefault();
+      openGatewayMenu();
+    }
+  });
 })();

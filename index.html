@@ -59,7 +59,7 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=103">
+<link rel="stylesheet" href="css/style.css?v=104">
 <!-- Barcode/QR camera scanning (Sheets feature) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <!-- XLSX parsing for Sheets "Import CSV/XLSX" (CSV import needs no library) -->
@@ -118,6 +118,7 @@
         </div>
       </div>
     </div>
+    <button type="button" class="btn btn-ghost" id="btnMobileGatewayMenu" style="padding:4px 8px; font-size:13px; color:var(--gold);" title="Gateway Menu (Alt+M)"><i class="fa-solid fa-layer-group"></i></button>
     <button type="button" class="avatar mobile-profile-avatar" id="mobileProfileAvatar" style="width:34px;height:34px;font-size:13px;border:none;padding:0;" title="Profile">S</button>
   </div>
   <div class="search-mini mobile-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="egs-quick-search-mobile" id="egsQuickSearchMobile" placeholder="Quick search anything... (Ctrl+K)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"></div>
@@ -130,6 +131,7 @@
       </div>
       <div id="topbarExtra" class="topbar-extra"></div>
       <div class="topbar-right" style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="btn btn-ghost" id="btnTopbarGatewayMenu" style="display:inline-flex; align-items:center; gap:6px; font-weight:700; border-radius:8px; padding:6px 12px; font-size:12px; color:var(--gold); border:1px solid rgba(218,165,32,0.3); background:rgba(218,165,32,0.06);" title="Gateway of ERP Menu (Alt+M)"><i class="fa-solid fa-layer-group"></i> Gateway Menu <span style="font-size:10px; opacity:0.75; font-family:monospace; background:rgba(255,255,255,0.08); padding:1px 4px; border-radius:4px;">Alt+M</span></button>
         <button type="button" class="btn btn-gold" id="btnTopbarInstallApp" style="display:none; align-items:center; gap:6px; font-weight:700; border-radius:999px; padding:6px 14px; font-size:12px;" onclick="window.openAppInstallGuide()"><i class="fa-solid fa-download"></i> Install App</button>
         <div class="search-mini"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="egs-quick-search" id="egsQuickSearch" placeholder="Quick search anything... (Ctrl+K)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"></div>
       </div>
@@ -194,7 +196,7 @@
 <script src="js/pages/saleregister.js?v=4"></script>
 <script src="js/pages/reports.js?v=4"></script>
 <script src="js/pages/returns.js?v=3"></script>
-<script src="js/pages/partyledger.js?v=23"></script>
+<script src="js/pages/partyledger.js?v=24"></script>
 <script src="js/pages/lowstock.js?v=5"></script>
 <script src="js/pages/backup.js?v=4"></script>
 <!-- bom.js was split into multiple files (was 3340 lines) — helpers/Challan
@@ -212,7 +214,7 @@
 <script src="js/pages/bom-dispatch.js?v=14"></script>
 <script src="js/pages/bom.js?v=32"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
-<script src="js/app.js?v=55"></script>
+<script src="js/app.js?v=56"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
