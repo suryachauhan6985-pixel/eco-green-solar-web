@@ -432,6 +432,7 @@ html[data-theme="light"] .egs-top-progress {
   user-select: none;
 }
 .erp-sidebar-btn:hover,
+.erp-sidebar-btn.selected,
 .erp-sidebar-btn.flyout-open {
   background: var(--panel-alt);
   border-color: var(--blue);
@@ -444,8 +445,10 @@ html[data-theme="light"] .egs-top-progress {
   color: #fff;
   box-shadow: 0 4px 14px rgba(59, 142, 208, 0.35);
 }
-.erp-sidebar-btn.active i {
+.erp-sidebar-btn.active i,
+.erp-sidebar-btn.active .erp-hk-char {
   color: #fff !important;
+  text-decoration-color: #fff !important;
 }
 .erp-sidebar-btn .btn-label {
   display: flex;
@@ -461,6 +464,24 @@ html[data-theme="light"] .egs-top-progress {
 .erp-sidebar-btn.flyout-open .btn-arrow {
   opacity: 1;
   transform: translateX(2px);
+}
+
+/* Hotkey Letter Underline (Tally / Shree Sava Style) */
+.erp-hk-char {
+  text-decoration: underline;
+  text-decoration-color: var(--gold);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  font-weight: 800;
+  color: var(--gold);
+}
+.erp-sidebar-btn.active .erp-hk-char,
+.erp-sidebar-btn:hover .erp-hk-char,
+.egs-flyout-item:hover .erp-hk-char,
+.egs-flyout-item.selected .erp-hk-char,
+.egs-flyout-item.active .erp-hk-char {
+  color: #fff;
+  text-decoration-color: #fff;
 }
 
 /* Floating Flyout Menu System (Tally / Shree Sava) */
@@ -541,7 +562,6 @@ html[data-theme="light"] .egs-top-progress {
   position: relative;
 }
 .egs-flyout-item:hover,
-.egs-flyout-item.active,
 .egs-flyout-item.selected {
   background: linear-gradient(135deg, var(--blue), var(--blue-hover));
   color: #fff;
@@ -549,7 +569,6 @@ html[data-theme="light"] .egs-top-progress {
   box-shadow: 0 3px 10px rgba(59, 142, 208, 0.35);
 }
 .egs-flyout-item:hover i,
-.egs-flyout-item.active i,
 .egs-flyout-item.selected i {
   color: #fff !important;
 }
@@ -564,7 +583,7 @@ html[data-theme="light"] .egs-top-progress {
   opacity: 0.7;
 }
 
-/* Tier 2 Nested Flyout */
+/* Tier 2 Nested Flyout — Exclusively controlled by .nested-open */
 .egs-nested-flyout-box {
   position: absolute;
   top: -6px;
@@ -580,9 +599,8 @@ html[data-theme="light"] .egs-top-progress {
   overflow: hidden;
   animation: egsFlyoutIn 0.12s ease-out;
 }
-.egs-flyout-item:hover > .egs-nested-flyout-box,
-.egs-flyout-item.selected > .egs-nested-flyout-box {
-  display: flex;
+.egs-flyout-item.nested-open > .egs-nested-flyout-box {
+  display: flex !important;
 }
 
 

@@ -4659,6 +4659,15 @@ window.attachColumnFilters = function (table) {
   // =====================================================================
   // SHREE SAVA / TALLY STYLE SIDEBAR NAVIGATION & FLOATING FLYOUT SYSTEM
   // =====================================================================
+
+  function formatHkLabel(text, char) {
+    if (!char) return text;
+    const idx = text.toLowerCase().indexOf(char.toLowerCase());
+    if (idx === -1) return text;
+    const match = text.substr(idx, 1);
+    return text.substring(0, idx) + `<span class="erp-hk-char">${match}</span>` + text.substring(idx + 1);
+  }
+
   const ERP_NAV_GROUPS = [
     {
       type: 'single',
@@ -4760,21 +4769,93 @@ window.attachColumnFilters = function (table) {
     return true;
   }
 
-  let activeFlyoutGroup = null;
+  // Navigation State Engine
+  const navState = {
+    focusTier: 'none', // 'none' | 'sidebar' | 'flyout_tier1' | 'flyout_tier2'
+    sidebarIndex: 0,
+    tier1Index: 0,
+    tier2Index: -1,
+    activeFlyoutGroup: null,
+    activeNestedParentEl: null
+  };
 
-  function closeSidebarFlyout() {
-    activeFlyoutGroup = null;
+  function closeAllFlyouts() {
+    navState.focusTier = 'none';
+    navState.tier1Index = -1;
+    navState.tier2Index = -1;
+    navState.activeFlyoutGroup = null;
+    navState.activeNestedParentEl = null;
+
     const existing = document.getElementById('egsActiveSidebarFlyout');
     if (existing) existing.remove();
     const backdrop = document.getElementById('egsActiveFlyoutBackdrop');
     if (backdrop) backdrop.remove();
-    document.querySelectorAll('.erp-sidebar-btn').forEach((b) => b.classList.remove('flyout-open'));
+    document.querySelectorAll('.erp-sidebar-btn').forEach((b) => {
+      b.classList.remove('flyout-open');
+    });
   }
 
-  function openSidebarFlyout(grp, anchorEl) {
-    closeSidebarFlyout();
+  function setNestedSubmenuOpen(parentRowEl, open = true) {
+    const flyout = document.getElementById('egsActiveSidebarFlyout');
+    if (!flyout) return;
+
+    flyout.querySelectorAll('.egs-flyout-item.has-nested').forEach((row) => {
+      if (row !== parentRowEl || !open) {
+        row.classList.remove('nested-open');
+        row.querySelectorAll('.egs-flyout-item').forEach((sub) => sub.classList.remove('selected'));
+      }
+    });
+
+    if (open && parentRowEl) {
+      parentRowEl.classList.add('nested-open');
+      navState.activeNestedParentEl = parentRowEl;
+    } else if (!open) {
+      navState.activeNestedParentEl = null;
+    }
+  }
+
+  function updateTier1Selection(index) {
+    const flyout = document.getElementById('egsActiveSidebarFlyout');
+    if (!flyout) return;
+    const items = Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item'));
+    if (!items.length) return;
+
+    if (index < 0) index = 0;
+    if (index >= items.length) index = items.length - 1;
+    navState.tier1Index = index;
+
+    items.forEach((it, idx) => {
+      const isSel = (idx === index);
+      it.classList.toggle('selected', isSel);
+      if (isSel && it.classList.contains('has-nested')) {
+        setNestedSubmenuOpen(it, true);
+      } else if (isSel && !it.classList.contains('has-nested')) {
+        setNestedSubmenuOpen(null, false);
+      }
+    });
+  }
+
+  function updateTier2Selection(index) {
+    if (!navState.activeNestedParentEl) return;
+    const subItems = Array.from(navState.activeNestedParentEl.querySelectorAll('.egs-nested-flyout-box .tier2-item'));
+    if (!subItems.length) return;
+
+    if (index < 0) index = 0;
+    if (index >= subItems.length) index = subItems.length - 1;
+    navState.tier2Index = index;
+
+    subItems.forEach((it, idx) => {
+      it.classList.toggle('selected', idx === index);
+    });
+  }
+
+  function openSidebarFlyout(grp, anchorEl, selectFirst = true) {
+    closeAllFlyouts();
     if (!grp) return;
-    activeFlyoutGroup = grp;
+    navState.activeFlyoutGroup = grp;
+    navState.focusTier = 'flyout_tier1';
+    navState.tier1Index = selectFirst ? 0 : -1;
+    navState.tier2Index = -1;
 
     if (anchorEl) anchorEl.classList.add('flyout-open');
 
@@ -4782,7 +4863,7 @@ window.attachColumnFilters = function (table) {
     const backdrop = document.createElement('div');
     backdrop.id = 'egsActiveFlyoutBackdrop';
     backdrop.className = 'egs-flyout-backdrop';
-    backdrop.onclick = closeSidebarFlyout;
+    backdrop.onclick = closeAllFlyouts;
     document.body.appendChild(backdrop);
 
     // Create Flyout Box
@@ -4805,20 +4886,23 @@ window.attachColumnFilters = function (table) {
     grp.items.forEach((item) => {
       if (!shouldShowNavItem(item)) return;
 
+      const itemLabelHtml = formatHkLabel(item.name, item.hotkey);
+
       if (item.hasNested) {
         let nestedRows = '';
         item.nestedItems.forEach((sub) => {
           if (!shouldShowNavItem(sub)) return;
+          const subLabelHtml = formatHkLabel(sub.name, sub.hotkey);
           nestedRows += `
-            <div class="egs-flyout-item" data-page="${sub.page || ''}" data-tab="${sub.tab || ''}" data-hotkey="${sub.hotkey || ''}">
-              <span class="item-text"><i class="fa-solid ${sub.icon}" style="color:var(--blue); font-size:12px;"></i> ${sub.name}</span>
+            <div class="egs-flyout-item tier2-item" data-page="${sub.page || ''}" data-tab="${sub.tab || ''}" data-hotkey="${sub.hotkey || ''}">
+              <span class="item-text"><i class="fa-solid ${sub.icon}" style="color:var(--blue); font-size:12px;"></i> <span>${subLabelHtml}</span></span>
             </div>
           `;
         });
 
         itemsHtml += `
-          <div class="egs-flyout-item has-nested" data-hotkey="${item.hotkey || ''}">
-            <span class="item-text"><i class="fa-solid ${item.icon}" style="color:var(--gold); font-size:12px;"></i> ${item.name}</span>
+          <div class="egs-flyout-item tier1-item has-nested" data-hotkey="${item.hotkey || ''}">
+            <span class="item-text"><i class="fa-solid ${item.icon}" style="color:var(--gold); font-size:12px;"></i> <span>${itemLabelHtml}</span></span>
             <i class="fa-solid fa-chevron-right item-arrow"></i>
             <div class="egs-nested-flyout-box">
               <div class="egs-flyout-header"><span>${item.nestedTitle || item.name}</span></div>
@@ -4828,8 +4912,8 @@ window.attachColumnFilters = function (table) {
         `;
       } else {
         itemsHtml += `
-          <div class="egs-flyout-item" data-page="${item.page || ''}" data-tab="${item.tab || ''}" data-action="${item.action || ''}" data-hotkey="${item.hotkey || ''}">
-            <span class="item-text"><i class="fa-solid ${item.icon}" style="color:var(--blue); font-size:12px;"></i> ${item.name}</span>
+          <div class="egs-flyout-item tier1-item" data-page="${item.page || ''}" data-tab="${item.tab || ''}" data-action="${item.action || ''}" data-hotkey="${item.hotkey || ''}">
+            <span class="item-text"><i class="fa-solid ${item.icon}" style="color:var(--blue); font-size:12px;"></i> <span>${itemLabelHtml}</span></span>
           </div>
         `;
       }
@@ -4845,16 +4929,35 @@ window.attachColumnFilters = function (table) {
 
     document.body.appendChild(flyout);
 
-    // Wire clicks on flyout items
-    flyout.querySelectorAll('.egs-flyout-item').forEach((row) => {
+    // Wire mouseenter and clicks on flyout items
+    const tier1Els = Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item'));
+    tier1Els.forEach((row, idx) => {
+      row.addEventListener('mouseenter', () => {
+        navState.focusTier = 'flyout_tier1';
+        navState.tier1Index = idx;
+        tier1Els.forEach((r, i) => r.classList.toggle('selected', i === idx));
+        if (row.classList.contains('has-nested')) {
+          setNestedSubmenuOpen(row, true);
+        } else {
+          setNestedSubmenuOpen(null, false);
+        }
+      });
+
       row.addEventListener('click', (e) => {
-        if (row.classList.contains('has-nested') && !e.target.closest('.egs-nested-flyout-box .egs-flyout-item')) return;
+        if (row.classList.contains('has-nested') && !e.target.closest('.egs-nested-flyout-box .tier2-item')) {
+          e.stopPropagation();
+          setNestedSubmenuOpen(row, true);
+          navState.focusTier = 'flyout_tier2';
+          navState.tier2Index = 0;
+          updateTier2Selection(0);
+          return;
+        }
         e.stopPropagation();
         const page = row.dataset.page;
         const tab = row.dataset.tab;
         const action = row.dataset.action;
 
-        closeSidebarFlyout();
+        closeAllFlyouts();
         if (action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
           window.openSystemSettingsModal(tab || 'tab-erp-mode');
         } else if (page) {
@@ -4862,28 +4965,57 @@ window.attachColumnFilters = function (table) {
         }
       });
     });
+
+    // Wire mouseenter and clicks on Tier 2 items
+    flyout.querySelectorAll('.tier2-item').forEach((subRow) => {
+      subRow.addEventListener('mouseenter', () => {
+        navState.focusTier = 'flyout_tier2';
+        const parentBox = subRow.closest('.egs-nested-flyout-box');
+        if (parentBox) {
+          const allSubs = Array.from(parentBox.querySelectorAll('.tier2-item'));
+          const sIdx = allSubs.indexOf(subRow);
+          navState.tier2Index = sIdx;
+          allSubs.forEach((sr, i) => sr.classList.toggle('selected', i === sIdx));
+        }
+      });
+
+      subRow.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const page = subRow.dataset.page;
+        const tab = subRow.dataset.tab;
+        closeAllFlyouts();
+        if (page) go(page, { tab });
+      });
+    });
+
+    if (selectFirst && tier1Els.length > 0) {
+      updateTier1Selection(0);
+    }
   }
 
   window.openSidebarFlyout = openSidebarFlyout;
-  window.closeSidebarFlyout = closeSidebarFlyout;
+  window.closeSidebarFlyout = closeAllFlyouts;
 
   function renderNavButtons() {
     const navEl = document.getElementById('navScroll') || navScroll;
     if (!navEl) return;
     navEl.innerHTML = '';
 
-    ERP_NAV_GROUPS.forEach((grp) => {
+    ERP_NAV_GROUPS.forEach((grp, gIdx) => {
+      const labelHtml = formatHkLabel(grp.name, grp.hotkey);
+
       if (grp.type === 'single') {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'erp-sidebar-btn' + (grp.id === 'dashboard' ? ' active' : '');
         btn.id = 'btnNav_' + grp.id;
         btn.dataset.tab = grp.id;
+        btn.dataset.index = gIdx;
         btn.innerHTML = `
-          <span class="btn-label"><i class="fa-solid ${grp.icon}"></i> <span>${grp.name}</span></span>
+          <span class="btn-label"><i class="fa-solid ${grp.icon}"></i> <span>${labelHtml}</span></span>
         `;
         btn.onclick = () => {
-          closeSidebarFlyout();
+          closeAllFlyouts();
           go(grp.page);
         };
         navEl.appendChild(btn);
@@ -4895,17 +5027,18 @@ window.attachColumnFilters = function (table) {
       btn.className = 'erp-sidebar-btn';
       btn.id = 'btnNav_' + grp.id;
       btn.dataset.groupId = grp.id;
+      btn.dataset.index = gIdx;
       btn.innerHTML = `
-        <span class="btn-label"><i class="fa-solid ${grp.icon}" style="color:var(--gold);"></i> <span>${grp.name}</span></span>
+        <span class="btn-label"><i class="fa-solid ${grp.icon}" style="color:var(--gold);"></i> <span>${labelHtml}</span></span>
         <i class="fa-solid fa-chevron-right btn-arrow"></i>
       `;
 
       btn.onclick = (e) => {
         e.stopPropagation();
-        if (activeFlyoutGroup === grp) {
-          closeSidebarFlyout();
+        if (navState.activeFlyoutGroup === grp) {
+          closeAllFlyouts();
         } else {
-          openSidebarFlyout(grp, btn);
+          openSidebarFlyout(grp, btn, true);
         }
       };
 
@@ -4918,7 +5051,7 @@ window.attachColumnFilters = function (table) {
     const page = window.PAGES[id];
     if (!page) return;
 
-    closeSidebarFlyout();
+    closeAllFlyouts();
 
     const contentEl = document.getElementById('content') || content;
     const pageTitleEl = document.getElementById('pageTitle') || pageTitle;
@@ -4949,6 +5082,7 @@ window.attachColumnFilters = function (table) {
         }
       }
       b.classList.toggle('active', isMatch);
+      b.classList.remove('selected');
     });
 
     if (typeof page.init === 'function') {
@@ -4990,93 +5124,205 @@ window.attachColumnFilters = function (table) {
   window.renderNavButtons = renderNavButtons;
 
   // =========================================================================
-  // SHREE SAVA / TALLY KEYBOARD HOTKEY ROUTER
+  // SHREE SAVA / TALLY KEYBOARD HOTKEY & ARROW ROUTER
   // =========================================================================
-  function processAccountingHotkey(key) {
-    key = key.toUpperCase();
+  function handleAccountingKeyboard(e) {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    const isTyping = tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable);
+    if (isTyping) return false;
 
-    // 1. If NO flyout is currently open:
-    if (!activeFlyoutGroup) {
-      if (key === 'G') {
-        go('dashboard');
-        return;
+    const modalOpen = document.querySelector('.modal-overlay.show, .settings-modal-box, #statementOverlay.show, #ledgerFormOverlay.show, #egsPopupOverlay.show');
+    if (modalOpen) return false;
+
+    const key = e.key;
+
+    // 1. Tier 2 (Nested Submenu) is Active
+    if (navState.focusTier === 'flyout_tier2' && navState.activeNestedParentEl) {
+      const subItems = Array.from(navState.activeNestedParentEl.querySelectorAll('.tier2-item'));
+
+      if (key === 'ArrowDown') {
+        e.preventDefault();
+        e.stopPropagation();
+        navState.tier2Index = (navState.tier2Index + 1) % subItems.length;
+        updateTier2Selection(navState.tier2Index);
+        return true;
       }
-      if (key === 'A') {
-        const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-accounts');
-        const anchor = document.getElementById('btnNav_grp-accounts');
-        openSidebarFlyout(grp, anchor);
-        return;
+      if (key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        navState.tier2Index = (navState.tier2Index - 1 + subItems.length) % subItems.length;
+        updateTier2Selection(navState.tier2Index);
+        return true;
       }
-      if (key === 'T' || key === 'V') {
-        const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-transactions');
-        const anchor = document.getElementById('btnNav_grp-transactions');
-        openSidebarFlyout(grp, anchor);
-        return;
+      if (key === 'ArrowLeft' || key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        // Step-by-step back to Tier 1!
+        setNestedSubmenuOpen(null, false);
+        navState.focusTier = 'flyout_tier1';
+        navState.tier2Index = -1;
+        updateTier1Selection(navState.tier1Index);
+        return true;
       }
-      if (key === 'D') {
-        const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-display');
-        const anchor = document.getElementById('btnNav_grp-display');
-        openSidebarFlyout(grp, anchor);
-        return;
+      if (key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (subItems[navState.tier2Index]) {
+          subItems[navState.tier2Index].click();
+        }
+        return true;
       }
-      if (key === 'U') {
-        const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-utilities');
-        const anchor = document.getElementById('btnNav_grp-utilities');
-        openSidebarFlyout(grp, anchor);
-        return;
+      if (/^[a-zA-Z]$/.test(key)) {
+        const uKey = key.toUpperCase();
+        const matched = subItems.find((it) => it.dataset.hotkey && it.dataset.hotkey.toUpperCase() === uKey);
+        if (matched) {
+          e.preventDefault();
+          e.stopPropagation();
+          matched.click();
+          return true;
+        }
       }
-      return;
     }
 
-    // 2. If a flyout IS OPEN:
-    const curId = activeFlyoutGroup.id;
+    // 2. Tier 1 (Flyout Menu) is Active
+    if (navState.focusTier === 'flyout_tier1' && navState.activeFlyoutGroup) {
+      const flyout = document.getElementById('egsActiveSidebarFlyout');
+      const tier1Items = flyout ? Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item')) : [];
 
-    if (curId === 'grp-accounts') {
-      if (key === 'L') { closeSidebarFlyout(); go('partyledger'); }
-      else if (key === 'C') { closeSidebarFlyout(); go('masters', { tab: 'tab-party' }); }
-      else if (key === 'I') { closeSidebarFlyout(); go('masters', { tab: 'tab-items' }); }
-      else if (key === 'G') { closeSidebarFlyout(); go('masters', { tab: 'tab-categories' }); }
-      else if (key === 'W') { closeSidebarFlyout(); go('masters', { tab: 'tab-warehouses' }); }
-      else if (key === 'B') { closeSidebarFlyout(); go('masters', { tab: 'tab-brands' }); }
-      return;
-    }
-
-    if (curId === 'grp-transactions') {
-      if (key === 'P') { closeSidebarFlyout(); go('purchase'); }
-      else if (key === 'S') { closeSidebarFlyout(); go('sales'); }
-      else if (key === 'B') { closeSidebarFlyout(); go('bom'); }
-      else if (key === 'A') { closeSidebarFlyout(); go('stockassign'); }
-      else if (key === 'R') { closeSidebarFlyout(); go('returns'); }
-      else if (key === 'C') { closeSidebarFlyout(); go('scansheet'); }
-      return;
-    }
-
-    if (curId === 'grp-display') {
-      // Account Books subkeys or direct
-      if (key === 'A') {
-        const nestedItem = document.querySelector('.egs-flyout-item.has-nested[data-hotkey="A"]');
-        if (nestedItem) nestedItem.classList.add('selected');
-        return;
+      if (key === 'ArrowDown') {
+        e.preventDefault();
+        e.stopPropagation();
+        navState.tier1Index = (navState.tier1Index + 1) % tier1Items.length;
+        updateTier1Selection(navState.tier1Index);
+        return true;
       }
-      if (key === 'S') {
-        const nestedItem = document.querySelector('.egs-flyout-item.has-nested[data-hotkey="S"]');
-        if (nestedItem) nestedItem.classList.add('selected');
-        return;
+      if (key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        navState.tier1Index = (navState.tier1Index - 1 + tier1Items.length) % tier1Items.length;
+        updateTier1Selection(navState.tier1Index);
+        return true;
       }
-      if (key === 'L') { closeSidebarFlyout(); go('partyledger'); }
-      else if (key === 'P') { closeSidebarFlyout(); go('purchaseregister'); }
-      else if (key === 'M') { closeSidebarFlyout(); go('reports'); }
-      else if (key === 'B') { closeSidebarFlyout(); go('bom', { tab: 'tab-track' }); }
-      return;
+      if (key === 'ArrowRight') {
+        e.preventDefault();
+        e.stopPropagation();
+        const curItem = tier1Items[navState.tier1Index];
+        if (curItem && curItem.classList.contains('has-nested')) {
+          setNestedSubmenuOpen(curItem, true);
+          navState.focusTier = 'flyout_tier2';
+          navState.tier2Index = 0;
+          updateTier2Selection(0);
+        }
+        return true;
+      }
+      if (key === 'ArrowLeft' || key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        // Step-by-step back to Sidebar!
+        closeAllFlyouts();
+        return true;
+      }
+      if (key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        const curItem = tier1Items[navState.tier1Index];
+        if (curItem) {
+          if (curItem.classList.contains('has-nested')) {
+            setNestedSubmenuOpen(curItem, true);
+            navState.focusTier = 'flyout_tier2';
+            navState.tier2Index = 0;
+            updateTier2Selection(0);
+          } else {
+            curItem.click();
+          }
+        }
+        return true;
+      }
+      if (/^[a-zA-Z]$/.test(key)) {
+        const uKey = key.toUpperCase();
+        const matched = tier1Items.find((it) => it.dataset.hotkey && it.dataset.hotkey.toUpperCase() === uKey);
+        if (matched) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (matched.classList.contains('has-nested')) {
+            setNestedSubmenuOpen(matched, true);
+            navState.focusTier = 'flyout_tier2';
+            navState.tier2Index = 0;
+            updateTier2Selection(0);
+          } else {
+            matched.click();
+          }
+          return true;
+        }
+      }
     }
 
-    if (curId === 'grp-utilities') {
-      if (key === 'S') { closeSidebarFlyout(); window.openSystemSettingsModal('tab-erp-mode'); }
-      else if (key === 'M') { closeSidebarFlyout(); go('masters'); }
-      else if (key === 'U') { closeSidebarFlyout(); window.openSystemSettingsModal('tab-users'); }
-      else if (key === 'B') { closeSidebarFlyout(); go('backup'); }
-      return;
+    // 3. No Flyout Open — Root Navigation & Global Hotkeys
+    if (navState.focusTier === 'none') {
+      const sidebarBtns = Array.from(document.querySelectorAll('.erp-sidebar-btn'));
+
+      if (key === 'ArrowDown' || key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        const curIdx = sidebarBtns.findIndex((b) => b.classList.contains('selected'));
+        let nextIdx = (curIdx === -1) ? 0 : (key === 'ArrowDown' ? curIdx + 1 : curIdx - 1 + sidebarBtns.length) % sidebarBtns.length;
+        sidebarBtns.forEach((b, i) => b.classList.toggle('selected', i === nextIdx));
+        return true;
+      }
+      if (key === 'ArrowRight' || key === 'Enter') {
+        const selBtn = sidebarBtns.find((b) => b.classList.contains('selected'));
+        if (selBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          selBtn.click();
+          return true;
+        }
+      }
+
+      if (/^[a-zA-Z]$/.test(key) && !e.ctrlKey && !e.altKey && !e.metaKey && key !== '/') {
+        const uKey = key.toUpperCase();
+        if (uKey === 'G') {
+          e.preventDefault();
+          e.stopPropagation();
+          go('dashboard');
+          return true;
+        }
+        if (uKey === 'A') {
+          e.preventDefault();
+          e.stopPropagation();
+          const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-accounts');
+          const anchor = document.getElementById('btnNav_grp-accounts');
+          openSidebarFlyout(grp, anchor, true);
+          return true;
+        }
+        if (uKey === 'T' || uKey === 'V') {
+          e.preventDefault();
+          e.stopPropagation();
+          const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-transactions');
+          const anchor = document.getElementById('btnNav_grp-transactions');
+          openSidebarFlyout(grp, anchor, true);
+          return true;
+        }
+        if (uKey === 'D') {
+          e.preventDefault();
+          e.stopPropagation();
+          const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-display');
+          const anchor = document.getElementById('btnNav_grp-display');
+          openSidebarFlyout(grp, anchor, true);
+          return true;
+        }
+        if (uKey === 'U') {
+          e.preventDefault();
+          e.stopPropagation();
+          const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-utilities');
+          const anchor = document.getElementById('btnNav_grp-utilities');
+          openSidebarFlyout(grp, anchor, true);
+          return true;
+        }
+      }
     }
+
+    return false;
   }
 
   // =====================================================================
@@ -5205,7 +5451,13 @@ window.attachColumnFilters = function (table) {
       return;
     }
 
-    // 2. Universal Escape Key: Closes any active modal, dialog, popup, drawer, or quick search
+    // 2. Accounting ERP Keyboard Navigation & Flyout Engine (Arrows, Enter, Esc, Underlined Hotkeys)
+    if (typeof handleAccountingKeyboard === 'function') {
+      const wasHandled = handleAccountingKeyboard(e);
+      if (wasHandled) return;
+    }
+
+    // 3. Universal Escape Key: Closes any active modal, dialog, popup, drawer, or quick search
     if (e.key === 'Escape') {
       if (e.target && (e.target.id === 'egsQuickSearch' || e.target.id === 'egsQuickSearchMobile')) {
         e.preventDefault();
@@ -5216,8 +5468,8 @@ window.attachColumnFilters = function (table) {
       }
 
       let handled = false;
-      if (typeof closeSidebarFlyout === 'function') {
-        closeSidebarFlyout();
+      if (typeof closeAllFlyouts === 'function') {
+        closeAllFlyouts();
       }
       const modalOverlay = document.getElementById('modalOverlay');
       if (modalOverlay && modalOverlay.classList.contains('show')) {
@@ -5259,19 +5511,6 @@ window.attachColumnFilters = function (table) {
       if (handled) {
         e.preventDefault();
         e.stopImmediatePropagation();
-        return;
-      }
-    }
-
-    // =========================================================================
-    // TALLY / SHREE SAVA GLOBAL HOTKEY SEQUENCER (e.g. D A L, T P, A L, G, etc.)
-    // =========================================================================
-    if (!isTyping && !e.ctrlKey && !e.altKey && !e.metaKey && /^[a-zA-Z]$/.test(e.key) && e.key !== '/') {
-      const modalOpen = document.querySelector('.modal-overlay.show, .settings-modal-box, #statementOverlay.show, #ledgerFormOverlay.show');
-      if (!modalOpen) {
-        e.preventDefault();
-        e.stopPropagation();
-        processAccountingHotkey(e.key.toUpperCase());
         return;
       }
     }
