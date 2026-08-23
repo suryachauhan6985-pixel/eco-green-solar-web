@@ -130,16 +130,18 @@ window.PAGES.partyledger = {
               <input id="lfShort" placeholder="Short keyword e.g. RAJ, ABC" style="color:var(--gold); font-weight:700;">
             </div>
             <div class="field">
-              <label>Mobile No.</label>
-              <input id="lfMobile" placeholder="Enter 10-digit mobile number">
+              <label>Mobile No. <span style="font-size:11px; color:var(--txt-muted); font-weight:normal;">(Optional - 10 Digits)</span></label>
+              <input id="lfMobile" placeholder="e.g. 9876543210" maxlength="16" autocomplete="off">
+              <div id="lfMobileFeedback" class="input-val-feedback" style="display:none; font-size:11.5px; margin-top:4px; font-weight:600;"></div>
             </div>
             <div class="field">
               <label>Address</label>
               <input id="lfAddress" placeholder="Enter address / city">
             </div>
             <div class="field" id="lfGstinField">
-              <label>GSTIN</label>
-              <input id="lfGstin" placeholder="Enter GSTIN (if applicable)">
+              <label>GSTIN <span style="font-size:11px; color:var(--txt-muted); font-weight:normal;">(Optional - 15 Chars)</span></label>
+              <input id="lfGstin" placeholder="e.g. 24AAAPL1234C1Z1" maxlength="18" autocomplete="off" style="text-transform:uppercase; font-family:monospace; letter-spacing:0.5px;">
+              <div id="lfGstinFeedback" class="input-val-feedback" style="display:none; font-size:11.5px; margin-top:4px; font-weight:600;"></div>
             </div>
           </div>
           <div class="actions-row">
@@ -707,9 +709,82 @@ window.PAGES.partyledger = {
     const lfOverlay = document.getElementById('ledgerFormOverlay');
     const lfMode = document.getElementById('lfMode');
     const lfShortInput = document.getElementById('lfShort');
+    const lfMobileInput = document.getElementById('lfMobile');
+    const lfMobileFeedback = document.getElementById('lfMobileFeedback');
     const lfGstinField = document.getElementById('lfGstinField');
     const lfGstinInput = document.getElementById('lfGstin');
+    const lfGstinFeedback = document.getElementById('lfGstinFeedback');
     let editingLedgerId = null;
+
+    function updateMobileLiveFeedback() {
+      if (!lfMobileFeedback || !lfMobileInput) return;
+      const val = lfMobileInput.value.trim();
+      if (!val || val === '-') {
+        lfMobileFeedback.style.display = 'none';
+        lfMobileFeedback.innerHTML = '';
+        lfMobileInput.style.borderColor = '';
+        return;
+      }
+      const res = window.validateMobile ? window.validateMobile(val) : { isValid: true };
+      lfMobileFeedback.style.display = 'block';
+      if (res.isValid) {
+        lfMobileFeedback.style.color = '#22c55e';
+        lfMobileFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> Valid Mobile: <strong>${res.formatted}</strong>`;
+        lfMobileInput.style.borderColor = '#22c55e';
+      } else {
+        lfMobileFeedback.style.color = '#ef4444';
+        lfMobileFeedback.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ${res.error}`;
+        lfMobileInput.style.borderColor = '#ef4444';
+      }
+    }
+
+    function updateGstinLiveFeedback() {
+      if (!lfGstinFeedback || !lfGstinInput) return;
+      const val = lfGstinInput.value.trim().toUpperCase();
+      lfGstinInput.value = val;
+      if (!val || val === '-') {
+        lfGstinFeedback.style.display = 'none';
+        lfGstinFeedback.innerHTML = '';
+        lfGstinInput.style.borderColor = '';
+        return;
+      }
+      const res = window.validateGstin ? window.validateGstin(val) : { isValid: true };
+      lfGstinFeedback.style.display = 'block';
+      if (res.isValid) {
+        lfGstinFeedback.style.color = '#22c55e';
+        lfGstinFeedback.innerHTML = `<i class="fa-solid fa-circle-check"></i> Valid GSTIN &bull; <strong style="color:var(--txt);">${res.stateName} [${res.stateCode}]</strong> (PAN: ${res.pan})`;
+        lfGstinInput.style.borderColor = '#22c55e';
+      } else {
+        if (val.length < 15) {
+          const stateName = window.getGstinStateName ? window.getGstinStateName(val) : '';
+          if (stateName) {
+            lfGstinFeedback.style.color = 'var(--gold)';
+            lfGstinFeedback.innerHTML = `<i class="fa-solid fa-location-dot"></i> State: <strong>${stateName}</strong> &bull; (${val.length}/15 chars)`;
+            lfGstinInput.style.borderColor = 'var(--gold)';
+            return;
+          }
+        }
+        lfGstinFeedback.style.color = '#ef4444';
+        lfGstinFeedback.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ${res.error}`;
+        lfGstinInput.style.borderColor = '#ef4444';
+      }
+    }
+
+    if (lfMobileInput) {
+      lfMobileInput.addEventListener('input', updateMobileLiveFeedback);
+      lfMobileInput.addEventListener('blur', () => {
+        if (lfMobileInput.value.trim() && window.normalizeMobile) {
+          const clean = window.normalizeMobile(lfMobileInput.value);
+          if (clean.length === 10) lfMobileInput.value = clean;
+        }
+        updateMobileLiveFeedback();
+      });
+    }
+
+    if (lfGstinInput) {
+      lfGstinInput.addEventListener('input', updateGstinLiveFeedback);
+      lfGstinInput.addEventListener('blur', updateGstinLiveFeedback);
+    }
 
     function updateLedgerFormMode() {
       const mode = lfMode.value;
@@ -723,7 +798,10 @@ window.PAGES.partyledger = {
       };
       lfShortInput.placeholder = shortPlaceholders[mode] || 'Enter short name';
       lfGstinField.style.display = isCustomer ? 'none' : 'flex';
-      if (isCustomer) lfGstinInput.value = '';
+      if (isCustomer) {
+        lfGstinInput.value = '';
+        if (lfGstinFeedback) { lfGstinFeedback.style.display = 'none'; lfGstinFeedback.innerHTML = ''; }
+      }
     }
     lfMode.addEventListener('change', updateLedgerFormMode);
 
@@ -787,11 +865,24 @@ window.PAGES.partyledger = {
       editingLedgerId = editing ? editing.ledgerId : null;
       document.getElementById('lfName').value = editing ? editing.partyName : '';
       document.getElementById('lfShort').value = editing ? (editing.shortName || '') : '';
-      document.getElementById('lfMobile').value = editing && editing.mobile !== '-' ? editing.mobile || '' : '';
+      lfMobileInput.value = editing && editing.mobile !== '-' ? editing.mobile || '' : '';
       document.getElementById('lfAddress').value = editing && editing.address !== '-' ? editing.address || '' : '';
       lfGstinInput.value = editing && editing.gstin !== '-' ? editing.gstin || '' : '';
       lfMode.value = editing && ['Customer', 'Supplier', 'Dealer', 'Installer', 'Fabricator'].includes(editing.type) ? editing.type : 'Customer';
       updateLedgerFormMode();
+
+      if (lfMobileFeedback) { lfMobileFeedback.style.display = 'none'; lfMobileFeedback.innerHTML = ''; }
+      if (lfGstinFeedback) { lfGstinFeedback.style.display = 'none'; lfGstinFeedback.innerHTML = ''; }
+      if (lfMobileInput) lfMobileInput.style.borderColor = '';
+      if (lfGstinInput) lfGstinInput.style.borderColor = '';
+
+      if (editing) {
+        setTimeout(() => {
+          updateMobileLiveFeedback();
+          updateGstinLiveFeedback();
+        }, 50);
+      }
+
       // "editing" is truthy both for a real Edit (has ledgerId) and for a
       // Register (pre-filling an unregistered party's name into a fresh
       // Create form) — only the former is really "editing" an existing row.
@@ -844,13 +935,38 @@ window.PAGES.partyledger = {
         else window.openModal('Missing Info', '<p>Ledger Name is required.</p>');
         return;
       }
+
+      // Live Mobile Validation
+      const rawMobile = lfMobileInput.value.trim();
+      if (rawMobile && rawMobile !== '-' && window.validateMobile) {
+        const mobRes = window.validateMobile(rawMobile);
+        if (!mobRes.isValid) {
+          if (window.showWarning) window.showWarning('Invalid Mobile Number', mobRes.error);
+          else window.openModal('Invalid Mobile Number', `<p style="color:var(--red);">${mobRes.error}</p>`);
+          lfMobileInput.focus();
+          return;
+        }
+      }
+
+      // Live GSTIN Validation
+      const rawGstin = lfGstinInput.value.trim();
+      if (lfMode.value !== 'Customer' && rawGstin && rawGstin !== '-' && window.validateGstin) {
+        const gstRes = window.validateGstin(rawGstin);
+        if (!gstRes.isValid) {
+          if (window.showWarning) window.showWarning('Invalid GSTIN', gstRes.error);
+          else window.openModal('Invalid GSTIN', `<p style="color:var(--red);">${gstRes.error}</p>`);
+          lfGstinInput.focus();
+          return;
+        }
+      }
+
       const payload = {
         name,
         short: lfShortInput.value.trim(),
         type: lfMode.value,
-        mobile: document.getElementById('lfMobile').value.trim(),
+        mobile: rawMobile,
         address: document.getElementById('lfAddress').value.trim(),
-        gstin: lfMode.value === 'Customer' ? '' : lfGstinInput.value.trim(),
+        gstin: lfMode.value === 'Customer' ? '' : rawGstin,
       };
       const url = editingLedgerId ? `${API_BASE}/ledgers/${editingLedgerId}` : `${API_BASE}/ledgers`;
       const method = editingLedgerId ? 'PUT' : 'POST';
@@ -893,7 +1009,7 @@ window.PAGES.partyledger = {
       downloadCsv(`Party_Ledger_Template_${stamp}.csv`, [
         ['ledger_type', 'ledger_name', 'short_name', 'mobile', 'address', 'gstin'],
         ['Customer', 'Customer / Project Name', 'Order No / Alias', '', '', ''],
-        ['Supplier', 'Supplier Name', 'Supplier Short Name', '', '', 'Supplier GSTIN'],
+        ['Supplier', 'Supplier Name', 'Supplier Short Name', '', '', '24AAAPL1234C1Z1'],
       ]);
       if (window.showToast) window.showToast('Template downloaded successfully.');
     }
@@ -943,57 +1059,230 @@ window.PAGES.partyledger = {
         return def;
       };
 
-      // Fetch the full current directory (unfiltered) to dedupe against, same
-      // as the desktop app checking self.db.get_all_ledgers() before import.
+      // Fetch the full current directory (unfiltered) to dedupe against
       const existingRes = await fetch(`${API_BASE}/ledgers/directory?search=&type=All Parties`);
       const existing = existingRes.ok ? await existingRes.json() : [];
       const existingKeys = new Set(existing.filter((p) => p.ledgerId).map((p) => `${p.partyName.trim().toLowerCase()}|${(p.shortName || '').trim().toLowerCase()}`));
 
-      const incoming = [];
-      const duplicates = [];
-      rows.forEach((row) => {
+      const validRows = [];
+      const skippedRows = []; // Already exists
+      const failedRows = [];  // Validation error (Mobile, GSTIN, etc.)
+
+      rows.forEach((row, idx) => {
+        const rowNo = idx + 2; // Line 1 is header
         const name = valueFrom(row, ['ledger_name', 'name', 'party_name', 'customer_name', 'supplier_name']);
-        if (!name) return;
+        if (!name) return; // Ignore blank rows
+
         const short = valueFrom(row, ['short_name', 'short', 'alias', 'order_no', 'order_number']);
-        const key = `${name.trim().toLowerCase()}|${short.trim().toLowerCase()}`;
-        if (existingKeys.has(key)) { duplicates.push(short ? `${name} (${short})` : name); return; }
         let type = valueFrom(row, ['ledger_type', 'type'], 'Both');
         type = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
-        if (!['Both', 'Customer', 'Supplier'].includes(type)) type = 'Both';
-        incoming.push({
-          name, short, type,
-          mobile: valueFrom(row, ['mobile', 'mobile_no', 'phone']),
-          address: valueFrom(row, ['address', 'city']),
-          gstin: valueFrom(row, ['gstin', 'gst', 'gst_no']),
+        if (!['Both', 'Customer', 'Supplier', 'Dealer', 'Installer', 'Fabricator'].includes(type)) type = 'Both';
+
+        const rawMobile = valueFrom(row, ['mobile', 'mobile_no', 'phone', 'contact']);
+        const address = valueFrom(row, ['address', 'city', 'location']);
+        const rawGstin = valueFrom(row, ['gstin', 'gst', 'gst_no']);
+
+        const key = `${name.trim().toLowerCase()}|${short.trim().toLowerCase()}`;
+
+        // Check if duplicate / already exists
+        if (existingKeys.has(key)) {
+          skippedRows.push({
+            rowNo,
+            name,
+            short,
+            type,
+            mobile: rawMobile || '-',
+            gstin: rawGstin || '-',
+            address: address || '-',
+            status: 'Skipped',
+            reason: 'Ledger already exists in ERP'
+          });
+          return;
+        }
+
+        // Validate Mobile (if provided)
+        let validatedMobile = rawMobile;
+        if (rawMobile && rawMobile !== '-' && window.validateMobile) {
+          const mobRes = window.validateMobile(rawMobile);
+          if (!mobRes.isValid) {
+            failedRows.push({
+              rowNo,
+              name,
+              short,
+              type,
+              mobile: rawMobile,
+              gstin: rawGstin || '-',
+              address: address || '-',
+              status: 'Failed',
+              reason: `Invalid Mobile: ${mobRes.error}`
+            });
+            return;
+          }
+          validatedMobile = mobRes.mobile;
+        }
+
+        // Validate GSTIN (if provided and applicable)
+        let validatedGstin = rawGstin;
+        if (type !== 'Customer' && rawGstin && rawGstin !== '-' && window.validateGstin) {
+          const gstRes = window.validateGstin(rawGstin);
+          if (!gstRes.isValid) {
+            failedRows.push({
+              rowNo,
+              name,
+              short,
+              type,
+              mobile: rawMobile || '-',
+              gstin: rawGstin,
+              address: address || '-',
+              status: 'Failed',
+              reason: `Invalid GSTIN: ${gstRes.error}`
+            });
+            return;
+          }
+          validatedGstin = gstRes.gstin;
+        }
+
+        // Row is valid
+        validRows.push({
+          rowNo,
+          name,
+          short,
+          type,
+          mobile: validatedMobile || '-',
+          address: address || '-',
+          gstin: validatedGstin || '-'
         });
-        existingKeys.add(key);
+        existingKeys.add(key); // Deduplicate within same batch
       });
 
-      if (duplicates.length) {
-        const proceed = await window.confirmDialog('Duplicates Found', `${duplicates.length} ledger(s) already exist and will be skipped. Import only new ledgers?`, { kind: 'warning', okLabel: 'Import New Only' });
-        if (!proceed) return;
-      }
-      if (!incoming.length) { window.openModal('Nothing to Import', '<p>All ledgers already exist.</p>'); return; }
-
+      // Execute Creation for Valid Rows
       let created = 0;
-      const failed = [];
-      for (const ledger of incoming) {
+      for (const ledger of validRows) {
         try {
           const res = await fetch(`${API_BASE}/ledgers`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(ledger),
+            body: JSON.stringify({
+              name: ledger.name,
+              short: ledger.short,
+              type: ledger.type,
+              mobile: ledger.mobile,
+              address: ledger.address,
+              gstin: ledger.gstin
+            }),
           });
           const data = await res.json();
-          if (res.ok) created++;
-          else failed.push(`${ledger.name}: ${data.error || 'failed'}`);
+          if (res.ok) {
+            created++;
+          } else {
+            failedRows.push({
+              rowNo: ledger.rowNo,
+              name: ledger.name,
+              short: ledger.short,
+              type: ledger.type,
+              mobile: ledger.mobile,
+              gstin: ledger.gstin,
+              address: ledger.address,
+              status: 'Failed',
+              reason: `Server: ${data.error || 'Could not create ledger'}`
+            });
+          }
         } catch (err) {
-          failed.push(`${ledger.name}: ${err.message}`);
+          failedRows.push({
+            rowNo: ledger.rowNo,
+            name: ledger.name,
+            short: ledger.short,
+            type: ledger.type,
+            mobile: ledger.mobile,
+            gstin: ledger.gstin,
+            address: ledger.address,
+            status: 'Failed',
+            reason: `Network: ${err.message}`
+          });
         }
       }
+
       await loadDirectory();
-      if (window.showToast) window.showToast(`${created} new ledger(s) imported successfully.`);
-      if (failed.length) window.openModal('Some Rows Failed', `<p>${failed.join('<br>')}</p>`);
+
+      // Downloadable CSV Report of All Skipped & Failed Rows
+      const allProblemRows = [...failedRows, ...skippedRows];
+      const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const reportFilename = `Ledger_Import_Report_${stamp}_${Date.now().toString().slice(-4)}.csv`;
+
+      window._downloadLastImportReport = () => {
+        const reportData = [
+          ['Row No', 'Party Name', 'Short Name', 'Type', 'Mobile', 'GSTIN', 'Address', 'Status', 'Reason / Error Details'],
+          ...allProblemRows.map(r => [
+            r.rowNo,
+            r.name,
+            r.short,
+            r.type,
+            r.mobile,
+            r.gstin,
+            r.address,
+            r.status,
+            r.reason
+          ])
+        ];
+        downloadCsv(reportFilename, reportData);
+        if (window.showToast) window.showToast('Import report downloaded successfully.', 'success');
+      };
+
+      let resultHtml = `
+        <div style="padding:4px 0;">
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:16px;">
+            <div style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:10px; padding:12px; text-align:center;">
+              <div style="font-size:24px; font-weight:800; color:#22c55e;">${created}</div>
+              <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">✔ Successfully Created</div>
+            </div>
+            <div style="background:rgba(234,179,8,0.1); border:1px solid rgba(234,179,8,0.3); border-radius:10px; padding:12px; text-align:center;">
+              <div style="font-size:24px; font-weight:800; color:#eab308;">${skippedRows.length}</div>
+              <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">⏩ Skipped (Already Exist)</div>
+            </div>
+            <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:10px; padding:12px; text-align:center;">
+              <div style="font-size:24px; font-weight:800; color:#ef4444;">${failedRows.length}</div>
+              <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">✖ Failed (Validation Errors)</div>
+            </div>
+          </div>
+      `;
+
+      if (allProblemRows.length > 0) {
+        resultHtml += `
+          <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <span style="font-size:12.5px; color:var(--txt-muted);">Detailed breakdown of problematic rows:</span>
+            <button class="btn btn-green" onclick="window._downloadLastImportReport()" style="padding:6px 14px; font-size:12px; border-radius:20px;">
+              <i class="fa-solid fa-file-arrow-down"></i> Download Error &amp; Skip Report (.CSV)
+            </button>
+          </div>
+          <div style="max-height:260px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;">
+            <table style="width:100%; border-collapse:collapse; font-size:11.5px;">
+              <thead style="background:var(--bg-card); position:sticky; top:0;">
+                <tr>
+                  <th style="padding:6px 10px; text-align:left; border-bottom:1px solid var(--border);">Row</th>
+                  <th style="padding:6px 10px; text-align:left; border-bottom:1px solid var(--border);">Party Name</th>
+                  <th style="padding:6px 10px; text-align:left; border-bottom:1px solid var(--border);">Status</th>
+                  <th style="padding:6px 10px; text-align:left; border-bottom:1px solid var(--border);">Reason / Error Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${allProblemRows.map(r => `
+                  <tr style="border-bottom:1px solid var(--border-light);">
+                    <td style="padding:6px 10px; font-family:monospace;">#${r.rowNo}</td>
+                    <td style="padding:6px 10px; font-weight:600;">${r.name}</td>
+                    <td style="padding:6px 10px;">
+                      <span class="p-tag" style="background:${r.status === 'Skipped' ? 'rgba(234,179,8,0.2)' : 'rgba(239,68,68,0.2)'}; color:${r.status === 'Skipped' ? '#eab308' : '#ef4444'}; font-size:10.5px; padding:2px 6px; border-radius:10px;">${r.status}</span>
+                    </td>
+                    <td style="padding:6px 10px; color:${r.status === 'Skipped' ? 'var(--txt-muted)' : '#ef4444'}; font-weight:500;">${r.reason}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      resultHtml += `</div>`;
+      window.openModal('Ledger Import Summary', resultHtml, { size: 'large' });
     }
 
     // ---------------- Statement modal (drill-down) ----------------

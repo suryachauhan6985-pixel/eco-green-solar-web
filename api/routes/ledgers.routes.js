@@ -189,20 +189,40 @@ module.exports = function registerLedgersRoutes(app, deps) {
     res.json(cached);
   }));
 
+  const { validateGstin, validateMobile } = require('../utils/validators');
+
   app.post('/api/ledgers', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const name = String(req.body.name || '').trim();
     const short = String(req.body.short || '').trim();
     const type = req.body.type || 'Both';
-    const mobile = String(req.body.mobile || '').trim() || '-';
+    const rawMobile = String(req.body.mobile || '').trim();
     const address = String(req.body.address || '').trim() || '-';
-    const gstin = String(req.body.gstin || '').trim() || '-';
+    const rawGstin = String(req.body.gstin || '').trim();
 
     if (!name) return res.status(400).json({ error: 'Ledger Name cannot be empty.' });
     if (await ledgerExists(name, short)) return res.status(400).json({ error: `Ledger '${name}' already exists.` });
 
+    let finalMobile = '-';
+    if (rawMobile && rawMobile !== '-') {
+      const mobRes = validateMobile(rawMobile);
+      if (!mobRes.isValid) {
+        return res.status(400).json({ error: `Invalid Mobile: ${mobRes.error}` });
+      }
+      finalMobile = mobRes.mobile;
+    }
+
+    let finalGstin = '-';
+    if (rawGstin && rawGstin !== '-') {
+      const gstRes = validateGstin(rawGstin);
+      if (!gstRes.isValid) {
+        return res.status(400).json({ error: `Invalid GSTIN: ${gstRes.error}` });
+      }
+      finalGstin = gstRes.gstin;
+    }
+
     await pool.query(
       `INSERT INTO ledgers (ledger_name, short_name, ledger_type, mobile, address, gstin, created_on) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [name, short, type, mobile, address, gstin, ledgerTimestamp()]
+      [name, short, type, finalMobile, address, finalGstin, ledgerTimestamp()]
     );
     if (typeof invalidateLedgerCaches === 'function') invalidateLedgerCaches();
     res.json({ success: true });
@@ -213,16 +233,34 @@ module.exports = function registerLedgersRoutes(app, deps) {
     const name = String(req.body.name || '').trim();
     const short = String(req.body.short || '').trim();
     const type = req.body.type || 'Both';
-    const mobile = String(req.body.mobile || '').trim() || '-';
+    const rawMobile = String(req.body.mobile || '').trim();
     const address = String(req.body.address || '').trim() || '-';
-    const gstin = String(req.body.gstin || '').trim() || '-';
+    const rawGstin = String(req.body.gstin || '').trim();
 
     if (!name) return res.status(400).json({ error: 'Ledger Name cannot be empty.' });
     if (await ledgerExists(name, short, Number(id))) return res.status(400).json({ error: `Ledger '${name}' already exists.` });
 
+    let finalMobile = '-';
+    if (rawMobile && rawMobile !== '-') {
+      const mobRes = validateMobile(rawMobile);
+      if (!mobRes.isValid) {
+        return res.status(400).json({ error: `Invalid Mobile: ${mobRes.error}` });
+      }
+      finalMobile = mobRes.mobile;
+    }
+
+    let finalGstin = '-';
+    if (rawGstin && rawGstin !== '-') {
+      const gstRes = validateGstin(rawGstin);
+      if (!gstRes.isValid) {
+        return res.status(400).json({ error: `Invalid GSTIN: ${gstRes.error}` });
+      }
+      finalGstin = gstRes.gstin;
+    }
+
     const [result] = await pool.query(
       `UPDATE ledgers SET ledger_name=?, short_name=?, ledger_type=?, mobile=?, address=?, gstin=? WHERE id=?`,
-      [name, short, type, mobile, address, gstin, id]
+      [name, short, type, finalMobile, address, finalGstin, id]
     );
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Ledger not found.' });
     if (typeof invalidateLedgerCaches === 'function') invalidateLedgerCaches();
