@@ -180,7 +180,7 @@
 <script src="js/data/purchase-data.js?v=3"></script>
 <!-- NEW: talks to the backend API (server.js), which reads the same MariaDB
      database the desktop .py app uses. Must load before dashboard.js/masters.js. -->
-<script src="js/data/api.js?v=5"></script>
+<script src="js/data/api.js?v=6"></script>
 <!-- Sheets (Scan To Sheet) feature: offline localStorage layer, loaded before its page module -->
 <script src="js/data/sheets-store.js?v=4"></script>
 <!-- Each page's markup + data lives in its own file, like dashboard.py / masters.py in the desktop app -->
@@ -214,7 +214,7 @@
 <script src="js/pages/bom-dispatch.js?v=14"></script>
 <script src="js/pages/bom.js?v=32"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
-<script src="js/app.js?v=68"></script>
+<script src="js/app.js?v=69"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

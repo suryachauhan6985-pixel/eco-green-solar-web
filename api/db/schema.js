@@ -61,9 +61,11 @@ async function ensureStartupSchema(pool) {
   await ensureWattUnitSchema(pool);
   await ensureBomDispatchSchema(pool);
   await ensureBomOrderSchema(pool);
-  await ensureChallanCategoryMapSchema(pool);
   await ensureBomKitTemplatesSchema(pool);
   await ensureAccountingVouchersSchema(pool);
+  await ensurePerformanceIndexesSchema(pool);
+  await ensureStockSummarySchema(pool);
+  await syncStockSummary(pool);
 }
 async function ensureSessionSchema(pool) { try { await pool.query(`ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS last_seen DATETIME NULL`); } catch (e) { console.warn('[Session schema] Could not ensure last_seen column (will retry lazily on first use):', e.message); } }
 async function ensureSerialRuleSchema(pool) { try { await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS serial_mandatory TINYINT(1) NOT NULL DEFAULT 0`); } catch (e) { console.warn('[Serial rule schema] Could not ensure serial_mandatory column (will retry lazily on first use):', e.message); } }
@@ -415,4 +417,99 @@ async function ensureAccountingVouchersSchema(pool) {
   } catch (e) { console.warn('[Accounting vouchers schema] Could not ensure accounting_vouchers table:', e.message); }
 }
 
-module.exports = { ensureStartupSchema };
+async function createIndexIfNotExists(pool, tableName, indexName, columnsSql) {
+  try {
+    const [rows] = await pool.query(
+      `SELECT COUNT(*) AS cnt FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?`,
+      [tableName, indexName]
+    );
+    if (!rows[0] || !rows[0].cnt) {
+      await pool.query(`ALTER TABLE \`${tableName}\` ADD INDEX \`${indexName}\` (${columnsSql})`);
+    }
+  } catch (e) {
+    // Ignore harmless duplicate or non-fatal index check errors
+  }
+}
+
+async function ensurePerformanceIndexesSchema(pool) {
+  try {
+    // 1. stock_ledger composite indexes for fast search, filter & counting
+    await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_status_cat_brand', 'status, category, brand_name, watt, solar_type, model');
+    await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_serial', 'serial_no');
+    await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_order', 'order_no');
+    await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_challan', 'chalan_no');
+    await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_date_status', 'sales_date, status');
+    await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_purchase_date', 'purchase_date, status');
+    await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_bom', 'bom_dispatch_id');
+    await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_item_id', 'item_id');
+
+    // 2. items, ledgers, vouchers
+    await createIndexIfNotExists(pool, 'items', 'idx_items_cat_brand', 'category, brand_name');
+    await createIndexIfNotExists(pool, 'ledgers', 'idx_ledgers_type_name', 'ledger_type, ledger_name');
+    await createIndexIfNotExists(pool, 'accounting_vouchers', 'idx_vouchers_date_type', 'voucher_date, voucher_type');
+  } catch (e) {
+    console.warn('[Performance Indexes] Warning creating composite indexes:', e.message);
+  }
+}
+
+async function ensureStockSummarySchema(pool) {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS stock_summary (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      category VARCHAR(100) NOT NULL,
+      brand_name VARCHAR(100) NOT NULL,
+      watt DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+      solar_type VARCHAR(100) NOT NULL DEFAULT '',
+      model VARCHAR(100) NOT NULL DEFAULT '',
+      available_qty INT NOT NULL DEFAULT 0,
+      assigned_qty INT NOT NULL DEFAULT 0,
+      sold_qty INT NOT NULL DEFAULT 0,
+      damaged_qty INT NOT NULL DEFAULT 0,
+      total_qty INT NOT NULL DEFAULT 0,
+      last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE INDEX uniq_stock_summary_spec (category, brand_name, watt, solar_type, model),
+      INDEX idx_summary_cat_brand (category, brand_name),
+      INDEX idx_summary_avail (available_qty)
+    )`);
+  } catch (e) {
+    console.warn('[Stock Summary Schema] Warning:', e.message);
+  }
+}
+
+async function syncStockSummary(pool) {
+  try {
+    await pool.query(`
+      INSERT INTO stock_summary (category, brand_name, watt, solar_type, model, available_qty, assigned_qty, sold_qty, damaged_qty, total_qty, last_updated)
+      SELECT
+        COALESCE(category, '') AS category,
+        COALESCE(brand_name, '') AS brand_name,
+        COALESCE(watt, 0) AS watt,
+        COALESCE(solar_type, '') AS solar_type,
+        COALESCE(model, '') AS model,
+        COALESCE(SUM(CASE WHEN status='Available' THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS available_qty,
+        COALESCE(SUM(CASE WHEN status='Assigned' THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS assigned_qty,
+        COALESCE(SUM(CASE WHEN status='Sold' THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS sold_qty,
+        COALESCE(SUM(CASE WHEN status='Damaged' THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS damaged_qty,
+        COALESCE(SUM(COALESCE(quantity, 1)), 0) AS total_qty,
+        NOW() AS last_updated
+      FROM stock_ledger
+      GROUP BY category, brand_name, watt, solar_type, model
+      ON DUPLICATE KEY UPDATE
+        available_qty = VALUES(available_qty),
+        assigned_qty = VALUES(assigned_qty),
+        sold_qty = VALUES(sold_qty),
+        damaged_qty = VALUES(damaged_qty),
+        total_qty = VALUES(total_qty),
+        last_updated = NOW()
+    `);
+  } catch (e) {
+    console.warn('[Stock Summary Sync] Warning:', e.message);
+  }
+}
+
+module.exports = {
+  ensureStartupSchema,
+  ensurePerformanceIndexesSchema,
+  ensureStockSummarySchema,
+  syncStockSummary
+};

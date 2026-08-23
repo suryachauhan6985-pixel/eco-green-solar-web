@@ -1,5 +1,16 @@
 module.exports = function registerSalesRoutes(app, deps) {
-  const { pool, route, requireRole, getItemId, validateSalesLineSerials, itemNameSlug, ledgerTimestamp } = deps;
+  const {
+    pool,
+    route,
+    requireRole,
+    getItemId,
+    validateSalesLineSerials,
+    itemNameSlug,
+    ledgerTimestamp,
+    reportCache,
+    invalidateStockCaches,
+    syncStockSummary
+  } = deps;
 
   // ---------------------------------------------------------------------------
   // Shared quantity-line helpers (used by POST /dispatch and PUT /modify) —
@@ -386,6 +397,8 @@ module.exports = function registerSalesRoutes(app, deps) {
       }
 
       await conn.commit();
+      if (typeof syncStockSummary === 'function') syncStockSummary(pool).catch(() => {});
+      if (typeof invalidateStockCaches === 'function') invalidateStockCaches();
       res.json({ success: true, orderNo, chalanNo, lineCount: lines.length, serialCount: allSerials.length, qtyDispatched: qtyDispatchedTotal });
     } catch (err) {
       await conn.rollback();
@@ -537,6 +550,9 @@ module.exports = function registerSalesRoutes(app, deps) {
       }
 
       await conn.commit();
+      if (typeof syncStockSummary === 'function') syncStockSummary(pool).catch(() => {});
+      if (typeof invalidateStockCaches === 'function') invalidateStockCaches();
+
       try {
         const oldDetails = `Action: ${actionType} | Date: ${actionDate}`;
         const newDetails = `Remarks: ${remarks} | Serials: ${allSerials.join(', ') || 'none'} | Qty lines adjusted: ${qtyAdjustedTotal}`;
@@ -805,6 +821,8 @@ module.exports = function registerSalesRoutes(app, deps) {
       }
 
       await conn.commit();
+      if (typeof syncStockSummary === 'function') syncStockSummary(pool).catch(() => {});
+      if (typeof invalidateStockCaches === 'function') invalidateStockCaches();
       res.json({ success: true, orderNo: loadedOrderNo, qtyDispatched: qtyDispatchedTotal, qtyReleased: qtyReleasedTotal });
     } catch (err) {
       await conn.rollback();
@@ -841,6 +859,8 @@ module.exports = function registerSalesRoutes(app, deps) {
       );
     }
     const totalQtyReverted = qtyRows.reduce((sum, r) => sum + (r.quantity || 0), 0);
+    if (typeof syncStockSummary === 'function') syncStockSummary(pool).catch(() => {});
+    if (typeof invalidateStockCaches === 'function') invalidateStockCaches();
     try {
       await pool.query(
         `INSERT INTO audit_logs (transaction_type, reference_no, action_by, action_timestamp, old_details, new_details) VALUES ('SALE_DELETE', ?, 'User', ?, ?, ?)`,
@@ -858,31 +878,35 @@ module.exports = function registerSalesRoutes(app, deps) {
   // exactly like the desktop query's WHERE status='Sold' AND chalan_no != '-'.
   app.get('/api/sales/register', route(async (req, res) => {
     const category = req.query.category;
-    // SUM(quantity) instead of COUNT(*): a serial-tracked row is always
-    // quantity=1 (so this matches the old COUNT(*) behaviour exactly for
-    // those), while a quantity-tracked row (serial_no NULL) can represent
-    // many units in a single row — COUNT(*) was under-reporting it as 1.
-    let sql = `SELECT chalan_no, chalan_date, customer_name, order_no, category, brand_name, sales_invoice,
-                      MIN(serial_no) AS first_serial, COALESCE(SUM(quantity), 0) AS qty, MAX(edited_flag) AS edited
-               FROM stock_ledger WHERE status='Sold' AND chalan_no IS NOT NULL AND chalan_no != '-'`;
-    const params = [];
-    if (category && category !== 'All Categories') { sql += ` AND category = ?`; params.push(category); }
-    sql += ` GROUP BY chalan_no, chalan_date, customer_name, order_no, category, brand_name, sales_invoice
-             ORDER BY STR_TO_DATE(chalan_date, '%d-%m-%Y') DESC, chalan_no DESC`;
+    const cacheKey = `sales:register:${category || 'all'}`;
+    const rows = await deps.reportCache.wrap(cacheKey, async () => {
+      // SUM(quantity) instead of COUNT(*): a serial-tracked row is always
+      // quantity=1 (so this matches the old COUNT(*) behaviour exactly for
+      // those), while a quantity-tracked row (serial_no NULL) can represent
+      // many units in a single row — COUNT(*) was under-reporting it as 1.
+      let sql = `SELECT chalan_no, chalan_date, customer_name, order_no, category, brand_name, sales_invoice,
+                        MIN(serial_no) AS first_serial, COALESCE(SUM(quantity), 0) AS qty, MAX(edited_flag) AS edited
+                 FROM stock_ledger WHERE status='Sold' AND chalan_no IS NOT NULL AND chalan_no != '-'`;
+      const params = [];
+      if (category && category !== 'All Categories') { sql += ` AND category = ?`; params.push(category); }
+      sql += ` GROUP BY chalan_no, chalan_date, customer_name, order_no, category, brand_name, sales_invoice
+               ORDER BY STR_TO_DATE(chalan_date, '%d-%m-%Y') DESC, chalan_no DESC`;
 
-    const [rows] = await pool.query(sql, params);
-    res.json(rows.map((r) => ({
-      challanNo: r.chalan_no,
-      date: r.chalan_date,
-      customer: r.customer_name,
-      orderNo: r.order_no,
-      category: r.category,
-      brand: r.brand_name,
-      qty: r.qty,
-      invoice: r.sales_invoice && r.sales_invoice !== '-' ? r.sales_invoice : '',
-      firstSerial: r.first_serial,
-      edited: !!r.edited,
-    })));
+      const [data] = await pool.query(sql, params);
+      return data.map((r) => ({
+        challanNo: r.chalan_no,
+        date: r.chalan_date,
+        customer: r.customer_name,
+        orderNo: r.order_no,
+        category: r.category,
+        brand: r.brand_name,
+        qty: r.qty,
+        invoice: r.sales_invoice && r.sales_invoice !== '-' ? r.sales_invoice : '',
+        firstSerial: r.first_serial,
+        edited: !!r.edited,
+      }));
+    }, 45000);
+    res.json(rows);
   }));
 
 };

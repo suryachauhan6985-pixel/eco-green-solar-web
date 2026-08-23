@@ -14,8 +14,15 @@ const path = require('path');
 const compression = require('compression');
 const { corsMiddleware } = require('./config/cors');
 const { pool } = require('./db/pool');
-const { ensureStartupSchema } = require('./db/schema');
-const { masterCache } = require('./utils/cache');
+const { ensureStartupSchema, syncStockSummary } = require('./db/schema');
+const {
+  masterCache,
+  reportCache,
+  dashboardCache,
+  invalidateStockCaches,
+  invalidateLedgerCaches,
+  invalidateVoucherCaches
+} = require('./utils/cache');
 const { authenticateToken, issueToken, requireRole, setAuthPool } = require('./middleware/auth.middleware');
 const { globalLimiter, mutationLimiter, exportLimiter, loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter } = require('./middleware/rateLimiters');
 const { hashPassword, verifyPassword } = require('./services/passwords');
@@ -109,6 +116,12 @@ const deps = {
   pool,
   route,
   masterCache,
+  reportCache,
+  dashboardCache,
+  invalidateStockCaches,
+  invalidateLedgerCaches,
+  invalidateVoucherCaches,
+  syncStockSummary,
   requireRole,
   issueToken,
   hashPassword,

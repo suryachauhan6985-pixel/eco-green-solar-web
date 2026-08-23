@@ -54,6 +54,28 @@ window.ERP = {
   isProofMandatory() { return !!(window.ERP_CONFIG && window.ERP_CONFIG.feature_attachment_mandatory === '1'); }
 };
 
+window.debounce = function(fn, delayMs = 150) {
+  let timer = null;
+  return function(...args) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      fn.apply(this, args);
+      timer = null;
+    }, delayMs);
+  };
+};
+
+window.throttle = function(fn, limitMs = 100) {
+  let lastCall = 0;
+  return function(...args) {
+    const now = Date.now();
+    if (now - lastCall >= limitMs) {
+      lastCall = now;
+      fn.apply(this, args);
+    }
+  };
+};
+
 function applyErpModeRules() {
   const mode = window.ERP.getMode();
   if (document.body) {
@@ -2875,6 +2897,7 @@ window.attachColumnFilters = function (table) {
         <div class="settings-tabs">
           <button type="button" class="settings-tab-btn" data-tab="tab-profile"><i class="fa-solid fa-user-gear"></i> My Profile &amp; Security</button>
           <button type="button" class="settings-tab-btn" data-tab="tab-shortcuts"><i class="fa-solid fa-keyboard"></i> Shortcuts &amp; Hotkeys</button>
+          ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-perf"><i class="fa-solid fa-gauge-high"></i> Performance &amp; Engine</button>' : ''}
           ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-erp-mode"><i class="fa-solid fa-sliders"></i> ERP Mode &amp; Features</button>' : ''}
           ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-users"><i class="fa-solid fa-users-gear"></i> User Accounts</button>' : ''}
           <button type="button" class="settings-tab-btn" data-tab="tab-challan"><i class="fa-solid fa-file-invoice"></i> Challan &amp; Print</button>
@@ -3540,7 +3563,26 @@ window.attachColumnFilters = function (table) {
               1-click XML ledger sync directly into Tally Prime and Busy Accounting software.
             </p>
           </div>
+        <!-- Performance & System Telemetry Tab -->
+        ${isAdmin ? `
+        <div class="settings-panel" id="tab-perf">
+          <div class="settings-card">
+            <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+              <span style="display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-gauge-high" style="color:var(--gold);"></i> High-Speed Engine Telemetry &amp; Caches</span>
+              <div style="display:flex; gap:8px;">
+                <button type="button" class="btn btn-ghost" id="btnPurgeClientCache" style="font-size:11.5px; padding:4px 10px;"><i class="fa-solid fa-broom"></i> Purge Client Cache</button>
+                <button type="button" class="btn btn-blue" id="btnRefreshPerfStats" style="font-size:11.5px; padding:4px 10px;"><i class="fa-solid fa-rotate"></i> Refresh</button>
+              </div>
+            </div>
+            <p style="margin:0 0 14px 0; font-size:12.5px; color:var(--txt-muted);">
+              Real-time backend connection pool saturation, multi-tier memory caching hit rates, database scale, and client latency.
+            </p>
+            <div id="perfTelemetryContainer">
+              <div style="text-align:center; padding:20px; color:var(--txt-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Fetching real-time telemetry...</div>
+            </div>
+          </div>
         </div>
+        ` : ''}
 
         <!-- ERP Mode & Feature Switches Tab -->
         <div class="settings-panel" id="tab-erp-mode">
@@ -3677,11 +3719,113 @@ window.attachColumnFilters = function (table) {
       tabBtns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === tabId));
       panels.forEach((p) => p.classList.toggle('active', p.id === tabId));
       if (contentWrap) contentWrap.scrollTop = 0;
+      if (tabId === 'tab-perf') {
+        loadPerformanceTelemetry();
+      }
     }
     tabBtns.forEach((btn) => {
       btn.addEventListener('click', () => activateTab(btn.getAttribute('data-tab')));
     });
     activateTab(initialTab);
+
+    // Performance & Telemetry Handlers
+    async function loadPerformanceTelemetry() {
+      const container = document.getElementById('perfTelemetryContainer');
+      if (!container) return;
+      container.innerHTML = `<div style="text-align:center; padding:20px; color:var(--txt-muted); font-size:13px;"><i class="fa-solid fa-spinner fa-spin"></i> Fetching real-time telemetry metrics...</div>`;
+      try {
+        const start = performance.now();
+        const data = await window.Api.get('/system/performance', { bypassCache: true });
+        const roundTripMs = Math.round(performance.now() - start);
+
+        const pool = data.pool || {};
+        const cache = data.cache || {};
+        const db = data.database || {};
+        const mem = data.memory || {};
+
+        container.innerHTML = `
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:16px;">
+            <div style="background:var(--bg-subtle, rgba(255,255,255,0.03)); border:1px solid var(--border-light); border-radius:8px; padding:12px;">
+              <div style="font-size:11.5px; color:var(--txt-muted); text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-stopwatch" style="color:var(--gold);"></i> API Latency</div>
+              <div style="font-size:22px; font-weight:800; color:var(--green); margin-top:4px;">${roundTripMs} ms</div>
+              <div style="font-size:11.5px; color:var(--txt-muted); margin-top:2px;">Uptime: ${Math.floor(data.uptimeSeconds / 60)}m · Heap: ${mem.heapUsedMb} MB</div>
+            </div>
+
+            <div style="background:var(--bg-subtle, rgba(255,255,255,0.03)); border:1px solid var(--border-light); border-radius:8px; padding:12px;">
+              <div style="font-size:11.5px; color:var(--txt-muted); text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-database" style="color:var(--blue);"></i> Connection Pool</div>
+              <div style="font-size:22px; font-weight:800; color:var(--blue); margin-top:4px;">${pool.activeConnections} / ${pool.connectionLimit}</div>
+              <div style="font-size:11.5px; color:var(--txt-muted); margin-top:2px;">Free: ${pool.freeConnections} · Queued: ${pool.queuedRequests} · KeepAlive: ${pool.keepAlive ? 'On' : 'Off'}</div>
+            </div>
+
+            <div style="background:var(--bg-subtle, rgba(255,255,255,0.03)); border:1px solid var(--border-light); border-radius:8px; padding:12px;">
+              <div style="font-size:11.5px; color:var(--txt-muted); text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-bolt" style="color:var(--gold);"></i> Cache Hit Rate</div>
+              <div style="font-size:22px; font-weight:800; color:var(--gold); margin-top:4px;">${cache.masters ? cache.masters.hitRate : '100%'}</div>
+              <div style="font-size:11.5px; color:var(--txt-muted); margin-top:2px;">Masters: ${cache.masters?.hits || 0} · Reports: ${cache.reports?.hits || 0}</div>
+            </div>
+
+            <div style="background:var(--bg-subtle, rgba(255,255,255,0.03)); border:1px solid var(--border-light); border-radius:8px; padding:12px;">
+              <div style="font-size:11.5px; color:var(--txt-muted); text-transform:uppercase; font-weight:700;"><i class="fa-solid fa-table-cells" style="color:#9b59b6;"></i> Ledger Scale</div>
+              <div style="font-size:22px; font-weight:800; color:var(--txt); margin-top:4px;">${Number(db.total_ledger_rows || 0).toLocaleString()} <span style="font-size:12px; color:var(--txt-muted); font-weight:normal;">rows</span></div>
+              <div style="font-size:11.5px; color:var(--txt-muted); margin-top:2px;">Summary: ${db.summary_buckets || 0} buckets · Vouchers: ${db.total_vouchers || 0}</div>
+            </div>
+          </div>
+
+          <div style="border:1px solid var(--border-light); border-radius:8px; overflow:hidden;">
+            <table class="report-table" style="margin:0; width:100%;">
+              <thead>
+                <tr>
+                  <th>Cache Domain</th>
+                  <th>Cached Entries</th>
+                  <th>Hits</th>
+                  <th>Misses</th>
+                  <th>Hit Ratio</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Masters &amp; Metadata Cache</strong></td>
+                  <td>${cache.masters?.size || 0}</td>
+                  <td style="color:var(--green); font-weight:700;">${cache.masters?.hits || 0}</td>
+                  <td style="color:var(--txt-muted);">${cache.masters?.misses || 0}</td>
+                  <td><span class="pill pill-gold">${cache.masters?.hitRate || '100%'}</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Reports &amp; Registers Cache</strong></td>
+                  <td>${cache.reports?.size || 0}</td>
+                  <td style="color:var(--green); font-weight:700;">${cache.reports?.hits || 0}</td>
+                  <td style="color:var(--txt-muted);">${cache.reports?.misses || 0}</td>
+                  <td><span class="pill pill-blue">${cache.reports?.hitRate || '100%'}</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Dashboard Summary Cache</strong></td>
+                  <td>${cache.dashboard?.size || 0}</td>
+                  <td style="color:var(--green); font-weight:700;">${cache.dashboard?.hits || 0}</td>
+                  <td style="color:var(--txt-muted);">${cache.dashboard?.misses || 0}</td>
+                  <td><span class="pill pill-green">${cache.dashboard?.hitRate || '100%'}</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `;
+      } catch (e) {
+        container.innerHTML = `<div style="padding:14px; color:var(--red); font-size:12.5px;"><i class="fa-solid fa-triangle-exclamation"></i> Telemetry unavailable: ${e.message}</div>`;
+      }
+    }
+
+    const btnRefreshPerf = document.getElementById('btnRefreshPerfStats');
+    if (btnRefreshPerf) {
+      btnRefreshPerf.addEventListener('click', () => loadPerformanceTelemetry());
+    }
+
+    const btnPurgeClient = document.getElementById('btnPurgeClientCache');
+    if (btnPurgeClient) {
+      btnPurgeClient.addEventListener('click', () => {
+        if (typeof window.clearClientApiCache === 'function') {
+          window.clearClientApiCache();
+          if (window.showToast) window.showToast('Client-side in-memory cache purged successfully.');
+        }
+      });
+    }
 
     // Wire Theme buttons inside Settings
     const modalBox = document.querySelector('#modalOverlay .modal-box');

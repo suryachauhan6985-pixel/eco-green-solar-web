@@ -2,7 +2,7 @@
 // Enterprise Double-Entry Voucher and Financial Reports Engine (Tally / ERP Standard)
 
 module.exports = function registerVouchersRoutes(app, deps) {
-  const { pool, route, requireRole, getISTParts } = deps;
+  const { pool, route, requireRole, getISTParts, invalidateVoucherCaches } = deps;
 
   // -------------------------------------------------------------------------
   // 1. GET /api/vouchers — List vouchers with pagination, type, & date filter
@@ -97,6 +97,7 @@ module.exports = function registerVouchersRoutes(app, deps) {
       ]
     );
 
+    if (typeof invalidateVoucherCaches === 'function') invalidateVoucherCaches();
     res.json({
       success: true,
       message: `${voucher_type} Voucher ${voucher_no} recorded successfully.`,
@@ -116,6 +117,7 @@ module.exports = function registerVouchersRoutes(app, deps) {
     if (resDelete.affectedRows === 0) {
       return res.status(404).json({ error: 'Voucher not found.' });
     }
+    if (typeof invalidateVoucherCaches === 'function') invalidateVoucherCaches();
     res.json({ success: true, message: 'Voucher deleted successfully.' });
   }));
 

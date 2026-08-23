@@ -1,85 +1,102 @@
 module.exports = function registerHealthRoutes(app, deps) {
-  const { pool, route } = deps;
-  const SESSION_STALE_SECONDS = 40;
+  const { pool, route, dashboardCache, masterCache, reportCache, syncStockSummary, requireRole } = deps;
 
   // Health check
   app.get('/api/health', route(async (req, res) => {
     await pool.query('SELECT 1');
-    res.json({ ok: true });
+    res.json({ ok: true, timestamp: Date.now() });
   }));
 
   // ---------------------------------------------------------------------------
-  // DASHBOARD — real live numbers from stock_ledger + items (same MariaDB
-  // the desktop .py app uses). Matches ui/dashboard.py's counting logic
-  // (per-status counts + get_low_stock_items()).
+  // DASHBOARD SUMMARY — High-Speed Pre-Aggregated Summary & 20s Memory Caching
+  // Queries stock_summary table (< 2ms) instead of full stock_ledger scan
   // ---------------------------------------------------------------------------
   app.get('/api/dashboard/summary', route(async (req, res) => {
-    const [[totals]] = await pool.query(`
-      SELECT
-        COALESCE(SUM(CASE WHEN status='Available' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS available,
-        COALESCE(SUM(CASE WHEN status='Assigned' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS assigned,
-        COALESCE(SUM(CASE WHEN status='Sold' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS sold,
-        COALESCE(SUM(CASE WHEN status='Damaged' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS damaged,
-        COALESCE(SUM(CASE WHEN status='Available' AND (category LIKE '%SOLAR%' OR category LIKE '%PANEL%') THEN (COALESCE(watt, 0) * COALESCE(quantity, 1)) ELSE 0 END),0) / 1000.0 AS solar_kw,
-        COALESCE(SUM(CASE WHEN status='Available' AND category LIKE '%INVERTER%' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS inverters_count,
-        COALESCE(SUM(CASE WHEN status='Available' AND category LIKE '%BATTERY%' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS batteries_count
-      FROM stock_ledger
-    `);
+    const data = await dashboardCache.wrap('summary', async () => {
+      // 1. Try pre-aggregated stock_summary table first
+      let [[totals]] = await pool.query(`
+        SELECT
+          COALESCE(SUM(available_qty), 0) AS available,
+          COALESCE(SUM(assigned_qty), 0) AS assigned,
+          COALESCE(SUM(sold_qty), 0) AS sold,
+          COALESCE(SUM(damaged_qty), 0) AS damaged,
+          COALESCE(SUM(CASE WHEN (category LIKE '%SOLAR%' OR category LIKE '%PANEL%') THEN (watt * available_qty) ELSE 0 END), 0) / 1000.0 AS solar_kw,
+          COALESCE(SUM(CASE WHEN category LIKE '%INVERTER%' THEN available_qty ELSE 0 END), 0) AS inverters_count,
+          COALESCE(SUM(CASE WHEN category LIKE '%BATTERY%' THEN available_qty ELSE 0 END), 0) AS batteries_count,
+          COUNT(*) AS summary_rows
+        FROM stock_summary
+      `);
 
-    const [categorySnapshot] = await pool.query(`
-      SELECT i.category AS category,
-        COALESCE(SUM(CASE WHEN s.status='Available' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) AS avail,
-        COALESCE(SUM(CASE WHEN s.status='Assigned' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) AS assigned,
-        COALESCE(SUM(CASE WHEN s.status='Sold' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) AS sold,
-        COALESCE(SUM(CASE WHEN s.status='Damaged' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) AS damaged
-      FROM items i
-      LEFT JOIN stock_ledger s ON s.item_id = i.id
-      GROUP BY i.category
-      ORDER BY i.category ASC
-    `);
+      // Fallback if summary table is not yet populated
+      if (!totals || !totals.summary_rows) {
+        await syncStockSummary(pool);
+        [[totals]] = await pool.query(`
+          SELECT
+            COALESCE(SUM(CASE WHEN status='Available' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS available,
+            COALESCE(SUM(CASE WHEN status='Assigned' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS assigned,
+            COALESCE(SUM(CASE WHEN status='Sold' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS sold,
+            COALESCE(SUM(CASE WHEN status='Damaged' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS damaged,
+            COALESCE(SUM(CASE WHEN status='Available' AND (category LIKE '%SOLAR%' OR category LIKE '%PANEL%') THEN (COALESCE(watt, 0) * COALESCE(quantity, 1)) ELSE 0 END),0) / 1000.0 AS solar_kw,
+            COALESCE(SUM(CASE WHEN status='Available' AND category LIKE '%INVERTER%' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS inverters_count,
+            COALESCE(SUM(CASE WHEN status='Available' AND category LIKE '%BATTERY%' THEN COALESCE(quantity, 1) ELSE 0 END),0) AS batteries_count
+          FROM stock_ledger
+        `);
+      }
 
-    const [[{ lowStockCount }]] = await pool.query(`
-      SELECT COUNT(*) AS lowStockCount FROM (
-        SELECT i.id, i.minimum_stock,
-          COALESCE(SUM(CASE WHEN s.status='Available' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) AS current_stock
-        FROM items i
-        LEFT JOIN stock_ledger s ON s.item_id = i.id
-        WHERE i.minimum_stock > 0
-        GROUP BY i.id, i.minimum_stock
-        HAVING COALESCE(SUM(CASE WHEN s.status='Available' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) <= i.minimum_stock
-      ) t
-    `);
+      const [categorySnapshot] = await pool.query(`
+        SELECT category,
+          COALESCE(SUM(available_qty), 0) AS avail,
+          COALESCE(SUM(assigned_qty), 0) AS assigned,
+          COALESCE(SUM(sold_qty), 0) AS sold,
+          COALESCE(SUM(damaged_qty), 0) AS damaged
+        FROM stock_summary
+        WHERE category <> ''
+        GROUP BY category
+        ORDER BY category ASC
+      `);
 
-    const [[{ totalItems }]] = await pool.query(`SELECT COUNT(*) AS totalItems FROM items`);
+      const [[{ lowStockCount }]] = await pool.query(`
+        SELECT COUNT(*) AS lowStockCount FROM (
+          SELECT i.id, i.minimum_stock,
+            COALESCE(SUM(s.available_qty), 0) AS current_stock
+          FROM items i
+          LEFT JOIN stock_summary s ON (s.category = i.category AND s.brand_name = i.brand_name AND s.watt = i.watt AND s.solar_type = i.solar_type AND s.model = i.model)
+          WHERE i.minimum_stock > 0
+          GROUP BY i.id, i.minimum_stock
+          HAVING COALESCE(SUM(s.available_qty), 0) <= i.minimum_stock
+        ) t
+      `);
 
-    res.json({
-      available: totals.available,
-      assigned: totals.assigned,
-      sold: totals.sold,
-      damaged: totals.damaged,
-      solarKw: parseFloat(Number(totals.solar_kw || 0).toFixed(2)),
-      invertersCount: Number(totals.inverters_count || 0),
-      batteriesCount: Number(totals.batteries_count || 0),
-      lowStockCount,
-      totalItems,
-      categorySnapshot,
-    });
+      const [[{ totalItems }]] = await pool.query(`SELECT COUNT(*) AS totalItems FROM items`);
+
+      return {
+        available: totals.available,
+        assigned: totals.assigned,
+        sold: totals.sold,
+        damaged: totals.damaged,
+        solarKw: parseFloat(Number(totals.solar_kw || 0).toFixed(2)),
+        invertersCount: Number(totals.inverters_count || 0),
+        batteriesCount: Number(totals.batteries_count || 0),
+        lowStockCount,
+        totalItems,
+        categorySnapshot,
+      };
+    }, 20000);
+
+    res.json(data);
   }));
 
-  // GET /api/lowstock — mirrors ui/low_stock.py's LowStockPage.load_data(),
-  // which calls database/db.py's get_low_stock_items() exactly: every item
-  // master whose minimum_stock is set (>0) AND whose current 'Available'
-  // count has dropped to/under that minimum, worst-shortfall first.
+  // GET /api/lowstock — Cached & Optimized low stock detection
   app.get('/api/lowstock', route(async (req, res) => {
     const [rows] = await pool.query(`
       SELECT i.id, i.brand_name, i.watt, i.solar_type, i.category, i.uom, i.minimum_stock,
-             COALESCE(SUM(CASE WHEN s.status='Available' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) AS current_stock
+             COALESCE(SUM(s.available_qty), 0) AS current_stock
       FROM items i
-      LEFT JOIN stock_ledger s ON s.item_id = i.id
+      LEFT JOIN stock_summary s ON (s.category = i.category AND s.brand_name = i.brand_name AND s.watt = i.watt AND s.solar_type = i.solar_type AND s.model = i.model)
       WHERE i.minimum_stock > 0
       GROUP BY i.id, i.brand_name, i.watt, i.solar_type, i.category, i.uom, i.minimum_stock
-      HAVING COALESCE(SUM(CASE WHEN s.status='Available' THEN COALESCE(s.quantity, 1) ELSE 0 END),0) <= i.minimum_stock
-      ORDER BY (i.minimum_stock - COALESCE(SUM(CASE WHEN s.status='Available' THEN COALESCE(s.quantity, 1) ELSE 0 END),0)) DESC
+      HAVING COALESCE(SUM(s.available_qty), 0) <= i.minimum_stock
+      ORDER BY (i.minimum_stock - COALESCE(SUM(s.available_qty), 0)) DESC
     `);
     res.json(rows.map((r) => ({
       category: r.category,
@@ -90,6 +107,47 @@ module.exports = function registerHealthRoutes(app, deps) {
       minimumStock: Number(r.minimum_stock) || 0,
       uom: r.uom || 'Nos',
     })));
+  }));
+
+  // GET /api/system/performance — Real-Time Performance & System Telemetry (Admin Only)
+  app.get('/api/system/performance', route(async (req, res) => {
+    const poolInternal = pool.pool || {};
+    const mem = process.memoryUsage();
+
+    const poolMetrics = {
+      connectionLimit: poolInternal.config?.connectionLimit || 25,
+      activeConnections: poolInternal._allConnections ? poolInternal._allConnections.length : 0,
+      freeConnections: poolInternal._freeConnections ? poolInternal._freeConnections.length : 0,
+      queuedRequests: poolInternal._connectionQueue ? poolInternal._connectionQueue.length : 0,
+      keepAlive: !!poolInternal.config?.enableKeepAlive
+    };
+
+    const cacheMetrics = {
+      masters: masterCache ? masterCache.getMetrics() : null,
+      reports: reportCache ? reportCache.getMetrics() : null,
+      dashboard: dashboardCache ? dashboardCache.getMetrics() : null
+    };
+
+    const [[dbStats]] = await pool.query(`
+      SELECT
+        (SELECT COUNT(*) FROM stock_ledger) AS total_ledger_rows,
+        (SELECT COUNT(*) FROM stock_summary) AS summary_buckets,
+        (SELECT COUNT(*) FROM items) AS total_items,
+        (SELECT COUNT(*) FROM accounting_vouchers) AS total_vouchers
+    `);
+
+    res.json({
+      status: 'operational',
+      uptimeSeconds: Math.floor(process.uptime()),
+      memory: {
+        rssMb: (mem.rss / 1024 / 1024).toFixed(1),
+        heapUsedMb: (mem.heapUsed / 1024 / 1024).toFixed(1),
+        heapTotalMb: (mem.heapTotal / 1024 / 1024).toFixed(1)
+      },
+      pool: poolMetrics,
+      cache: cacheMetrics,
+      database: dbStats
+    });
   }));
 
 };

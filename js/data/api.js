@@ -26,25 +26,33 @@ async function parseApiResponse(res, path) {
   return data;
 }
 
-// High-Speed Client In-Memory API Cache
-// Drops repeated dropdown and master read queries to 0ms during tab navigation
+// High-Speed Client In-Memory API Cache with Stale-While-Revalidate
 const clientApiCache = new Map();
-const CLIENT_CACHE_TTL_MS = 25000; // 25s TTL for ultra-fast tab switches
+const DEFAULT_CLIENT_TTL_MS = 120000; // 2 minutes default
+
+function getCacheTtlForPath(path) {
+  if (path.startsWith('/dashboard/summary')) return 15000;
+  if (path.startsWith('/masters/') || path.startsWith('/purchase/brands') || path.startsWith('/purchase/wattages') || path.startsWith('/purchase/models')) return 180000;
+  if (path.startsWith('/ledgers')) return 120000;
+  if (path.startsWith('/auth/app-settings')) return 300000;
+  return DEFAULT_CLIENT_TTL_MS;
+}
 
 function getCachedApiResponse(path) {
   const item = clientApiCache.get(path);
   if (!item) return null;
-  if (Date.now() > item.expiry) {
-    clientApiCache.delete(path);
-    return null;
-  }
-  return item.data;
+  const isExpired = Date.now() > item.expiry;
+  return {
+    data: item.data,
+    isStale: isExpired
+  };
 }
 
-function setCachedApiResponse(path, data, ttlMs = CLIENT_CACHE_TTL_MS) {
+function setCachedApiResponse(path, data, customTtl) {
+  const ttl = customTtl || getCacheTtlForPath(path);
   clientApiCache.set(path, {
     data,
-    expiry: Date.now() + ttlMs
+    expiry: Date.now() + ttl
   });
 }
 
@@ -55,15 +63,36 @@ window.clearClientApiCache = clearClientApiCache;
 
 window.Api = {
   async get(path, opts) {
-    // Check if endpoint is eligible for instant in-memory read (Masters & settings)
-    const isCacheEligible = path.startsWith('/masters/') || path.startsWith('/auth/app-settings');
+    // Endpoints eligible for instant in-memory read (Masters, lookups, settings, dashboard)
+    const isCacheEligible = (
+      path.startsWith('/masters/') ||
+      path.startsWith('/purchase/brands') ||
+      path.startsWith('/purchase/wattages') ||
+      path.startsWith('/purchase/models') ||
+      path.startsWith('/ledgers') ||
+      path.startsWith('/auth/app-settings') ||
+      path.startsWith('/dashboard/summary')
+    );
     const bypassCache = opts && (opts.bypassCache || opts.fresh);
 
     if (isCacheEligible && !bypassCache) {
       const cached = getCachedApiResponse(path);
-      if (cached !== null && cached !== undefined) {
-        // Return cloned copy instantly (0ms)
-        return JSON.parse(JSON.stringify(cached));
+      if (cached && !cached.isStale) {
+        // Instant response (0ms)
+        return JSON.parse(JSON.stringify(cached.data));
+      }
+      if (cached && cached.isStale) {
+        // Stale-While-Revalidate: Return cached immediately, revalidate silently in background
+        setTimeout(() => {
+          fetch(`${window.API_BASE}${path}`, { method: 'GET', egsSilent: true })
+            .then(res => parseApiResponse(res, path))
+            .then(fresh => {
+              setCachedApiResponse(path, fresh);
+              window.dispatchEvent(new CustomEvent('egs:cache-revalidated', { detail: { path, data: fresh } }));
+            })
+            .catch(() => {});
+        }, 10);
+        return JSON.parse(JSON.stringify(cached.data));
       }
     }
 

@@ -1,46 +1,58 @@
 module.exports = function registerPurchaseRoutes(app, deps) {
-  const { pool, route, requireRole, getOrCreateItem, itemNameSlug, ledgerTimestamp } = deps;
-  // ---------------------------------------------------------------------------
-  // PURCHASE INWARD — cascading dropdown fetch (Category -> Brand -> Wattage),
-  // same logic as the desktop app's db.py: get_brands_for_category() and
-  // get_wattages_for_brand_category(). Both read straight from the `items`
-  // table (unlike the global /api/masters/brands above, these are filtered).
-  // ---------------------------------------------------------------------------
+  const {
+    pool,
+    route,
+    requireRole,
+    getOrCreateItem,
+    itemNameSlug,
+    ledgerTimestamp,
+    masterCache,
+    invalidateStockCaches,
+    syncStockSummary
+  } = deps;
 
-  // Brands registered under one category (used when Category dropdown changes)
+  // Brands registered under one category (Cached)
   app.get('/api/purchase/brands/:category', route(async (req, res) => {
     const { category } = req.params;
-    const [rows] = await pool.query(
-      `SELECT DISTINCT brand_name FROM items WHERE category = ? AND brand_name IS NOT NULL AND brand_name <> '' ORDER BY brand_name ASC`,
-      [category]
-    );
-    res.json(rows.map(r => r.brand_name));
+    const cacheKey = `purchase:brands:${String(category).toLowerCase()}`;
+    const brands = await masterCache.wrap(cacheKey, async () => {
+      const [rows] = await pool.query(
+        `SELECT DISTINCT brand_name FROM items WHERE category = ? AND brand_name IS NOT NULL AND brand_name <> '' ORDER BY brand_name ASC`,
+        [category]
+      );
+      return rows.map(r => r.brand_name);
+    }, 300000);
+    res.json(brands);
   }));
 
-  // Wattages registered for one category+brand combo (used when Brand dropdown changes)
+  // Wattages registered for one category+brand combo (Cached)
   app.get('/api/purchase/wattages', route(async (req, res) => {
     const { category, brand } = req.query;
     if (!category || !brand) return res.json([]);
-    const [rows] = await pool.query(
-      `SELECT DISTINCT watt FROM items WHERE category = ? AND brand_name = ? AND watt IS NOT NULL AND watt > 0 ORDER BY watt ASC`,
-      [category, brand]
-    );
-    res.json(rows.map(r => r.watt));
+    const cacheKey = `purchase:wattages:${String(category).toLowerCase()}:${String(brand).toLowerCase()}`;
+    const wattages = await masterCache.wrap(cacheKey, async () => {
+      const [rows] = await pool.query(
+        `SELECT DISTINCT watt FROM items WHERE category = ? AND brand_name = ? AND watt IS NOT NULL AND watt > 0 ORDER BY watt ASC`,
+        [category, brand]
+      );
+      return rows.map(r => r.watt);
+    }, 300000);
+    res.json(wattages);
   }));
 
-  // Models registered for one category+brand combo — the Model dropdown's
-  // equivalent of /wattages above, used when the selected category has
-  // NEITHER Wattage nor Serial No. mandatory (e.g. PVC Pipe), so Purchase
-  // Inward shows a Model dropdown instead of a Wattage dropdown, same rule
-  // Masters > Item Registration already applies to its own form.
+  // Models registered for one category+brand combo (Cached)
   app.get('/api/purchase/models', route(async (req, res) => {
     const { category, brand } = req.query;
     if (!category || !brand) return res.json([]);
-    const [rows] = await pool.query(
-      `SELECT DISTINCT model FROM items WHERE category = ? AND brand_name = ? AND model IS NOT NULL AND model <> '' ORDER BY model ASC`,
-      [category, brand]
-    );
-    res.json(rows.map(r => r.model));
+    const cacheKey = `purchase:models:${String(category).toLowerCase()}:${String(brand).toLowerCase()}`;
+    const models = await masterCache.wrap(cacheKey, async () => {
+      const [rows] = await pool.query(
+        `SELECT DISTINCT model FROM items WHERE category = ? AND brand_name = ? AND model IS NOT NULL AND model <> '' ORDER BY model ASC`,
+        [category, brand]
+      );
+      return rows.map(r => r.model);
+    }, 300000);
+    res.json(models);
   }));
 
   // Which of the given serial numbers already exist in stock_ledger — mirrors
@@ -156,6 +168,8 @@ module.exports = function registerPurchaseRoutes(app, deps) {
       }
 
       await conn.commit();
+      if (typeof syncStockSummary === 'function') syncStockSummary(pool).catch(() => {});
+      if (typeof invalidateStockCaches === 'function') invalidateStockCaches();
       res.json({ success: true, invoiceNo, lineCount: lines.length, serialCount: allSerials.length });
     } catch (err) {
       await conn.rollback();
@@ -337,6 +351,7 @@ module.exports = function registerPurchaseRoutes(app, deps) {
         const brand = String(line.brand || line.name || cat || 'General').trim() || 'General';
         const watt = Number(line.watt) || 0;
         const type = String(line.type || 'Others').trim() || 'Others';
+        const model = String(line.model || '').trim();
         const wh = String(line.warehouse || 'Warehouse 1').trim() || 'Warehouse 1';
         const uom = String(line.uom || '').trim();
         const itemId = await getOrCreateItem(conn, cat, brand, watt, type, model, uom);
@@ -409,6 +424,8 @@ module.exports = function registerPurchaseRoutes(app, deps) {
       }
 
       await conn.commit();
+      if (typeof syncStockSummary === 'function') syncStockSummary(pool).catch(() => {});
+      if (typeof invalidateStockCaches === 'function') invalidateStockCaches();
       res.json({ success: true, invoiceNo: newInv });
     } catch (err) {
       await conn.rollback();
@@ -435,6 +452,9 @@ module.exports = function registerPurchaseRoutes(app, deps) {
     }
 
     await pool.query(`DELETE FROM stock_ledger WHERE purchase_invoice=?`, [invoiceNo]);
+    if (typeof syncStockSummary === 'function') syncStockSummary(pool).catch(() => {});
+    if (typeof invalidateStockCaches === 'function') invalidateStockCaches();
+
     try {
       await pool.query(
         `INSERT INTO audit_logs (transaction_type, reference_no, action_by, action_timestamp, old_details, new_details) VALUES ('PURCHASE_DELETE', ?, 'User', ?, ?, ?)`,
@@ -451,30 +471,39 @@ module.exports = function registerPurchaseRoutes(app, deps) {
   // the group was ever edited.
   app.get('/api/purchase/register', route(async (req, res) => {
     const category = req.query.category;
-    let sql = `SELECT sl.purchase_invoice, sl.purchase_date, sl.supplier_name, sl.category, sl.brand_name, sl.warehouse,
-                      MIN(sl.serial_no) AS first_serial, SUM(sl.quantity) AS qty, MAX(sl.edited_flag) AS edited,
-                      COALESCE(it.uom, 'Nos') AS uom
-               FROM stock_ledger sl
-               LEFT JOIN items it ON sl.item_id = it.id
-               WHERE sl.purchase_invoice IS NOT NULL AND sl.purchase_invoice != '-'`;
-    const params = [];
-    if (category && category !== 'All Categories') { sql += ` AND sl.category = ?`; params.push(category); }
-    sql += ` GROUP BY sl.purchase_invoice, sl.purchase_date, sl.supplier_name, sl.category, sl.brand_name, sl.warehouse, it.uom
-             ORDER BY STR_TO_DATE(sl.purchase_date, '%d-%m-%Y') DESC, sl.purchase_invoice DESC`;
+    const cacheKey = `purchase:register:${category || 'all'}`;
 
-    const [rows] = await pool.query(sql, params);
-    res.json(rows.map((r) => ({
-      invoiceNo: r.purchase_invoice,
-      date: r.purchase_date,
-      supplier: r.supplier_name,
-      category: r.category,
-      brand: r.brand_name,
-      warehouse: r.warehouse,
-      firstSerial: r.first_serial,
-      qty: r.qty,
-      uom: r.uom || 'Nos',
-      edited: !!r.edited,
-    })));
+    const rows = await deps.reportCache.wrap(cacheKey, async () => {
+      let sql = `SELECT sl.purchase_invoice, sl.purchase_date, sl.supplier_name, sl.category, sl.brand_name, sl.warehouse,
+                        MIN(sl.serial_no) AS first_serial, SUM(sl.quantity) AS qty, MAX(sl.edited_flag) AS edited,
+                        COALESCE(it.uom, 'Nos') AS uom
+                 FROM stock_ledger sl
+                 LEFT JOIN items it ON sl.item_id = it.id
+                 WHERE sl.purchase_invoice IS NOT NULL AND sl.purchase_invoice != '-'`;
+      const params = [];
+      if (category && category !== 'All Categories') {
+        sql += ` AND sl.category = ?`;
+        params.push(category);
+      }
+      sql += ` GROUP BY sl.purchase_invoice, sl.purchase_date, sl.supplier_name, sl.category, sl.brand_name, sl.warehouse, it.uom
+               ORDER BY STR_TO_DATE(sl.purchase_date, '%d-%m-%Y') DESC, sl.purchase_invoice DESC`;
+
+      const [data] = await pool.query(sql, params);
+      return data.map((r) => ({
+        invoiceNo: r.purchase_invoice,
+        date: r.purchase_date,
+        supplier: r.supplier_name,
+        category: r.category,
+        brand: r.brand_name,
+        warehouse: r.warehouse,
+        firstSerial: r.first_serial,
+        qty: r.qty,
+        uom: r.uom || 'Nos',
+        edited: !!r.edited,
+      }));
+    }, 45000);
+
+    res.json(rows);
   }));
 
 };
