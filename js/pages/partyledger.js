@@ -694,8 +694,14 @@ window.PAGES.partyledger = {
     lfMode.addEventListener('change', updateLedgerFormMode);
 
     // Locks/unlocks background page scroll while a fullscreen modal is open.
-    function lockPageScroll() { document.body.classList.add('no-scroll'); }
-    function unlockPageScroll() { document.body.classList.remove('no-scroll'); }
+    function lockPageScroll() {
+      if (typeof window.lockBackgroundScroll === 'function') window.lockBackgroundScroll();
+      else document.body.classList.add('no-scroll');
+    }
+    function unlockPageScroll() {
+      if (typeof window.unlockBackgroundScroll === 'function') window.unlockBackgroundScroll();
+      else document.body.classList.remove('no-scroll');
+    }
 
     let lfEscHandler = null;
     function attachLedgerFormEscape() {

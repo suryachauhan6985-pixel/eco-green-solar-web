@@ -148,21 +148,39 @@ html[data-theme="ocean"]{
   color-scheme:dark;
 }
 
-*{box-sizing:border-box;}
-html,body{margin:0;padding:0;height:100%;}
-body{
-  background:var(--bg); color:var(--txt);
-  font-family:var(--font-main);
-  -webkit-font-smoothing:antialiased;
+/* Universal Modal Background Scroll Lock Engine */
+html.egs-modal-locked,
+body.egs-modal-locked,
+html.no-scroll,
+body.no-scroll {
+  overflow: hidden !important;
+  height: 100% !important;
+  max-height: 100vh !important;
+  overscroll-behavior: none !important;
+  touch-action: none !important;
 }
-a{color:inherit;text-decoration:none;}
-button{font-family:inherit;cursor:pointer;}
-input,select,textarea{color:var(--txt); background:var(--input-bg);}
-input::placeholder,textarea::placeholder{color:var(--txt-muted); opacity:1;}
-::-webkit-scrollbar{width:10px;height:10px;}
-::-webkit-scrollbar-track{background:var(--bg);}
-::-webkit-scrollbar-thumb{background:var(--input-bg);border-radius:5px;}
-::-webkit-scrollbar-thumb:hover{background:var(--blue);}
+
+html.egs-modal-locked .main,
+body.egs-modal-locked .main,
+html.egs-modal-locked .content,
+body.egs-modal-locked .content,
+html.no-scroll .main,
+body.no-scroll .main,
+html.no-scroll .content,
+body.no-scroll .content {
+  overflow: hidden !important;
+  max-height: 100vh !important;
+}
+
+/* Ensure modal overlays, popups, and dialogs remain interactive */
+.modal-overlay,
+.confirm-overlay,
+.egs-popup-overlay,
+.egs-onboard-overlay,
+.sidebar.open,
+.overlay.show {
+  pointer-events: auto !important;
+}
 
 /* Global full-screen loading overlay — High-tech Solar Orbital Pulse */
 .loader-overlay{

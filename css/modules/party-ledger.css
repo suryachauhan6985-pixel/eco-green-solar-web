@@ -366,9 +366,7 @@ html[data-theme="light"] .p-tag.customer { color: #2563eb; background: rgba(37, 
 .modal-overlay.modal-fullscreen .modal-box .form-grid,
 .modal-overlay.modal-fullscreen .modal-box .actions-row{max-width:640px;}
 
-/* Locks the underlying page in place while a fullscreen modal is open, so
-   scrolling inside the modal never bleeds through to the page behind it. */
-body.no-scroll{overflow:hidden; height:100%;}
+html.no-scroll, body.no-scroll, html.egs-modal-locked, body.egs-modal-locked{overflow:hidden !important; height:100% !important; max-height:100vh !important; overscroll-behavior:none !important; touch-action:none !important;}
 
 /* Keyboard-selected row inside the statement drill-down table (Arrow keys +
    Enter to drill in, Backspace to go back — mirrors the desktop app). */

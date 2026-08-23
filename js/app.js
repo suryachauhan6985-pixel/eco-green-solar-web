@@ -4747,17 +4747,118 @@ window.attachColumnFilters = function (table) {
     }
   });
 
+  // =====================================================================
+  // UNIVERSAL MODAL BACKGROUND SCROLL LOCK ENGINE
+  // =====================================================================
+  let activeModalLockCount = 0;
+
+  window.lockBackgroundScroll = function () {
+    activeModalLockCount++;
+    document.documentElement.classList.add('egs-modal-locked', 'no-scroll');
+    document.body.classList.add('egs-modal-locked', 'no-scroll');
+  };
+
+  window.unlockBackgroundScroll = function (force) {
+    if (force) activeModalLockCount = 0;
+    else activeModalLockCount = Math.max(0, activeModalLockCount - 1);
+
+    if (activeModalLockCount === 0) {
+      setTimeout(() => {
+        const openModals = document.querySelectorAll(
+          '.modal-overlay.show, .confirm-overlay.show, .egs-popup-overlay.active, .egs-onboard-overlay, .sidebar.open, #statementOverlay.show, #ledgerFormOverlay.show'
+        );
+        if (!openModals.length) {
+          document.documentElement.classList.remove('egs-modal-locked', 'no-scroll');
+          document.body.classList.remove('egs-modal-locked', 'no-scroll');
+        }
+      }, 40);
+    }
+  };
+
+  window.syncModalScrollLock = function () {
+    const openModals = document.querySelectorAll(
+      '.modal-overlay.show, .confirm-overlay.show, .egs-popup-overlay.active, .egs-onboard-overlay, .sidebar.open, #statementOverlay.show, #ledgerFormOverlay.show'
+    );
+    if (openModals.length > 0) {
+      document.documentElement.classList.add('egs-modal-locked', 'no-scroll');
+      document.body.classList.add('egs-modal-locked', 'no-scroll');
+    } else {
+      activeModalLockCount = 0;
+      document.documentElement.classList.remove('egs-modal-locked', 'no-scroll');
+      document.body.classList.remove('egs-modal-locked', 'no-scroll');
+    }
+  };
+
+  // Automatic DOM Observer: Ensures scroll lock stays 100% synchronized anywhere in the app
+  if (typeof MutationObserver !== 'undefined') {
+    const modalScrollObserver = new MutationObserver(() => {
+      window.syncModalScrollLock();
+    });
+    if (document.body) {
+      modalScrollObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style'],
+        subtree: true,
+        childList: true
+      });
+    } else {
+      window.addEventListener('DOMContentLoaded', () => {
+        modalScrollObserver.observe(document.body, {
+          attributes: true,
+          attributeFilter: ['class', 'style'],
+          subtree: true,
+          childList: true
+        });
+      });
+    }
+  }
+
+  // Wheel and Touch Event Trap: Prevents background scrolling when hovering backdrop or hitting modal boundaries
+  document.addEventListener('wheel', (e) => {
+    if (!document.body.classList.contains('egs-modal-locked') && !document.body.classList.contains('no-scroll')) return;
+
+    const scrollable = e.target.closest('.modal-box, .modal-body, .settings-panel, .settings-tabs, .sess-list, .egs-legal-doc, .egs-popup-card, .egs-onboard-card, .confirm-card, #stmtTbodyWrap, .th-filter-list, .nav-scroll');
+    if (!scrollable) {
+      // Scrolled on backdrop/background/overlay
+      e.preventDefault();
+      return;
+    }
+
+    const delta = e.deltaY;
+    const isScrollableVertically = scrollable.scrollHeight > scrollable.clientHeight;
+    if (!isScrollableVertically) {
+      e.preventDefault();
+      return;
+    }
+
+    const atTop = scrollable.scrollTop <= 0 && delta < 0;
+    const atBottom = (scrollable.scrollTop + scrollable.clientHeight >= scrollable.scrollHeight - 1) && delta > 0;
+    if (atTop || atBottom) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!document.body.classList.contains('egs-modal-locked') && !document.body.classList.contains('no-scroll')) return;
+    const scrollable = e.target.closest('.modal-box, .modal-body, .settings-panel, .settings-tabs, .sess-list, .egs-legal-doc, .egs-popup-card, .egs-onboard-card, .confirm-card, #stmtTbodyWrap, .th-filter-list, .nav-scroll');
+    if (!scrollable) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
   // ---------- Sidebar (mobile) ----------
   window.openSidebar = function () {
     document.getElementById('sidebar').classList.add('open');
     document.getElementById('overlay').classList.add('show');
+    window.lockBackgroundScroll();
   };
   window.closeSidebar = function () {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('overlay').classList.remove('show');
+    window.unlockBackgroundScroll();
   };
 
-  // ---------- Modal (used for "Live User Sessions" popup, etc.) ----------
+  // ---------- Modal (used for "Live User Sessions" popup, Settings, etc.) ----------
   let currentModalCloseCb = null;
   window.openModal = function (title, bodyHtml, opts) {
     opts = opts || {};
@@ -4780,6 +4881,7 @@ window.attachColumnFilters = function (table) {
       }
     }
     overlay.classList.add('show');
+    window.lockBackgroundScroll();
   };
 
   let modalMouseDownTarget = null;
@@ -4796,6 +4898,7 @@ window.attachColumnFilters = function (table) {
     const overlay = document.getElementById('modalOverlay');
     overlay.classList.remove('show');
     overlay.classList.remove('modal-fullscreen');
+    window.unlockBackgroundScroll();
     if (!skipCallback && currentModalCloseCb) {
       const cb = currentModalCloseCb;
       currentModalCloseCb = null;
@@ -4805,10 +4908,7 @@ window.attachColumnFilters = function (table) {
     }
   };
 
-  // ---------- Confirm Dialog (drop-in replacement for window.confirm(),
-  // mirrors ui/notify.py's custom question/confirm_danger dialogs: a
-  // rounded card with a coloured accent border + icon, and Cancel/Confirm
-  // buttons — never the native browser "site says" popup. ----------
+  // ---------- Confirm Dialog ----------
   const KIND_STYLE = {
     question: { color: 'var(--purple)', icon: 'fa-circle-question' },
     danger: { color: 'var(--red)', icon: 'fa-triangle-exclamation' },
@@ -4819,11 +4919,10 @@ window.attachColumnFilters = function (table) {
 
   function closeConfirmDialog(result) {
     document.getElementById('confirmOverlay').classList.remove('show');
+    window.unlockBackgroundScroll();
     if (confirmResolver) { const r = confirmResolver; confirmResolver = null; r(result); }
   }
 
-  // window.confirmDialog(title, message, opts?) -> Promise<boolean>
-  // opts: { kind: 'question'|'danger'|'warning'|'info', okLabel, cancelLabel }
   window.confirmDialog = function (title, message, opts) {
     opts = opts || {};
     const kind = KIND_STYLE[opts.kind] ? opts.kind : 'question';
@@ -4834,9 +4933,6 @@ window.attachColumnFilters = function (table) {
     document.getElementById('confirmTitle').textContent = title || 'Please Confirm';
     const msgEl = document.getElementById('confirmMsg');
     msgEl.innerHTML = message || '';
-    // Safety net: even if some caller passes long content without its own
-    // scrollList()-style wrapper, the dialog itself never grows past this —
-    // it scrolls internally instead of stretching the whole card/page.
     msgEl.style.maxHeight = '55vh';
     msgEl.style.overflowY = 'auto';
     const okBtn = document.getElementById('confirmBtnOk');
@@ -4844,14 +4940,14 @@ window.attachColumnFilters = function (table) {
     okBtn.textContent = opts.okLabel || 'Yes';
     cancelBtn.textContent = opts.cancelLabel || 'Cancel';
     document.getElementById('confirmOverlay').classList.add('show');
+    window.lockBackgroundScroll();
     return new Promise((resolve) => {
       confirmResolver = resolve;
       okBtn.onclick = () => closeConfirmDialog(true);
       cancelBtn.onclick = () => closeConfirmDialog(false);
     });
   };
-  // Convenience wrapper matching notify.py's confirm_danger() — destructive
-  // actions (delete etc.), red accent, defaults to "Yes"/"Cancel".
+
   window.confirmDanger = function (title, message) {
     return window.confirmDialog(title, message, { kind: 'danger', okLabel: 'Yes, Delete' });
   };
