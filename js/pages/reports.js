@@ -18,6 +18,7 @@ window.PAGES.reports = {
     <div class="page-head"><i class="fa-solid fa-clipboard-list" style="color:var(--blue);"></i><h2>Master Reports</h2>
       <button type="button" class="info-btn" data-info="Use the filter icon in any column header to apply an Excel-style filter to that column."><i class="fa-solid fa-circle-info"></i></button>
     </div>
+    <div id="repSavedViews"></div>
     <div class="toolbar">
       <div class="grow"><input id="repSearch" placeholder="Search Serial No..." style="width:100%;"></div>
       <div><label>Category</label> <select id="repCategory"><option>All Categories</option></select></div>
@@ -27,6 +28,7 @@ window.PAGES.reports = {
     </div>
     <div class="table-wrap"><table>
       <thead><tr>
+        <th style="width:36px; text-align:center;"><input type="checkbox" id="repSelectAll" title="Select All"></th>
         <th data-col="Serial No">Serial No <button class="th-filter-btn" data-col="Serial No" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Product Brand">Product Brand <button class="th-filter-btn" data-col="Product Brand" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Wattage Spec">Wattage Spec <button class="th-filter-btn" data-col="Wattage Spec" type="button"><i class="fa-solid fa-filter"></i></button></th>
@@ -47,8 +49,9 @@ window.PAGES.reports = {
         <th data-col="Challan Date">Challan Date <button class="th-filter-btn" data-col="Challan Date" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Edited?">Edited? <button class="th-filter-btn" data-col="Edited?" type="button"><i class="fa-solid fa-filter"></i></button></th>
       </tr></thead>
-      <tbody id="repBody"><tr><td colspan="19" style="text-align:center;color:var(--txt-muted);">Loading live data…</td></tr></tbody>
+      <tbody id="repBody"><tr><td colspan="20" style="text-align:center;color:var(--txt-muted);">Loading live data…</td></tr></tbody>
     </table></div>
+    <div id="repBulkBar"></div>
   `,
 
   init() {
@@ -127,8 +130,15 @@ window.PAGES.reports = {
         return;
       }
       allRows = rows;
+      selectedRows.clear();
+      if (bulkBarApi) bulkBarApi.update(0);
+      const selectAllEl = $('repSelectAll');
+      if (selectAllEl) selectAllEl.checked = false;
       renderTable();
     }
+
+    const selectedRows = new Set();
+    let bulkBarApi = null;
 
     function isRowVisible(values) {
       return columns.every((col, i) => !activeFilters[col] || activeFilters[col].has(values[i]));
@@ -139,14 +149,23 @@ window.PAGES.reports = {
       return ['available', 'assigned', 'sold', 'damaged'].includes(s) ? s : '';
     }
 
+    function getRowKey(r) {
+      return r.id || r.serialNo || (r.brand + '_' + r.category + '_' + r.purchaseInvoice);
+    }
+
     function renderTable() {
       const visible = allRows.filter((r) => matchesSearch(r) && isRowVisible(rowToValues(r)));
       if (!visible.length) {
-        tbody.innerHTML = `<tr><td colspan="19" style="text-align:center; color:var(--txt-muted); font-style:italic;">No records found for the selected filters.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="20" style="text-align:center; color:var(--txt-muted); font-style:italic;">No records found for the selected filters.</td></tr>`;
         return;
       }
-      tbody.innerHTML = visible.map((r) => `
-        <tr>
+      tbody.innerHTML = visible.map((r) => {
+        const key = getRowKey(r);
+        return `
+        <tr class="${selectedRows.has(key) ? 'selected-row' : ''}">
+          <td style="text-align:center;" onclick="event.stopPropagation()">
+            <input type="checkbox" class="rep-row-chk" data-key="${key}" ${selectedRows.has(key) ? 'checked' : ''}>
+          </td>
           <td data-label="Serial No" class="gold-txt" style="font-family:monospace;">${(r.serialNo && r.serialNo !== 'null' && r.serialNo !== '') ? r.serialNo : '-'}</td>
           <td data-label="Product Brand">${r.brand}</td>
           <td data-label="Wattage Spec">${formatWattDisplay(r.watt)}</td>
@@ -166,14 +185,118 @@ window.PAGES.reports = {
           <td data-label="Challan No">${r.chalanNo}</td>
           <td data-label="Challan Date">${r.chalanDate}</td>
           <td data-label="Edited?" ${r.edited === 'Yes' ? 'class="gold-txt"' : ''}>${r.edited}</td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
+
+      // Wire row checkboxes
+      tbody.querySelectorAll('.rep-row-chk').forEach(chk => {
+        chk.addEventListener('change', () => {
+          const key = chk.getAttribute('data-key');
+          if (chk.checked) selectedRows.add(key);
+          else selectedRows.delete(key);
+          const tr = chk.closest('tr');
+          if (tr) tr.classList.toggle('selected-row', chk.checked);
+          if (bulkBarApi) bulkBarApi.update(selectedRows.size);
+        });
+      });
+    }
+
+    // Select All Checkbox
+    const selectAllEl = $('repSelectAll');
+    if (selectAllEl) {
+      selectAllEl.addEventListener('change', () => {
+        const visible = allRows.filter((r) => matchesSearch(r) && isRowVisible(rowToValues(r)));
+        if (selectAllEl.checked) {
+          visible.forEach(r => selectedRows.add(getRowKey(r)));
+        } else {
+          selectedRows.clear();
+        }
+        renderTable();
+        if (bulkBarApi) bulkBarApi.update(selectedRows.size);
+      });
+    }
+
+    // Initialize Bulk Actions Bar
+    const bulkContainer = $('repBulkBar');
+    if (bulkContainer && window.initBulkActionsBar) {
+      bulkBarApi = window.initBulkActionsBar(bulkContainer, {
+        getSelectedData: () => {
+          return allRows.filter(r => selectedRows.has(getRowKey(r)));
+        },
+        onExport: (selected) => {
+          if (!selected.length) return;
+          const header = columns.join(',');
+          const lines = selected.map((r) => rowToValues(r).map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','));
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Master_Inventory_Selected_${selected.length}_rows.csv`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          if (window.showToast) window.showToast(`Exported ${selected.length} selected inventory items.`);
+        },
+        onCopy: (selected) => {
+          if (!selected.length) return;
+          const serials = selected.map(r => r.serialNo).filter(sn => sn && sn !== 'null' && sn !== '-');
+          if (serials.length) {
+            navigator.clipboard.writeText(serials.join('\n')).then(() => {
+              if (window.showToast) window.showToast(`Copied ${serials.length} Serial Numbers to clipboard!`);
+            }).catch(() => {});
+          } else {
+            const list = selected.map(r => `${r.brand} ${r.category} (${r.qty} ${r.uom || 'Nos'})`).join('\n');
+            navigator.clipboard.writeText(list).then(() => {
+              if (window.showToast) window.showToast(`Copied ${selected.length} Item references to clipboard!`);
+            }).catch(() => {});
+          }
+        },
+        onClear: () => {
+          selectedRows.clear();
+          if (selectAllEl) selectAllEl.checked = false;
+          renderTable();
+          if (bulkBarApi) bulkBarApi.update(0);
+        }
+      });
+    }
+
+    // Initialize Saved Views Bar
+    const savedViewsContainer = $('repSavedViews');
+    if (savedViewsContainer && window.initSavedViewsBar) {
+      window.initSavedViewsBar(savedViewsContainer, {
+        pageKey: 'master_reports',
+        defaultPresets: [
+          { id: 'all', label: 'All Inventory', state: { cat: 'All Categories', search: '', status: null } },
+          { id: 'available', label: 'Available In-Stock', state: { cat: 'All Categories', search: '', status: 'Available' } },
+          { id: 'assigned', label: 'Assigned / In-Transit', state: { cat: 'All Categories', search: '', status: 'Assigned' } },
+          { id: 'sold', label: 'Sold Out', state: { cat: 'All Categories', search: '', status: 'Sold' } },
+          { id: 'damaged', label: 'Damaged / RMA', state: { cat: 'All Categories', search: '', status: 'Damaged' } }
+        ],
+        onApply: (state) => {
+          if (state.cat) catEl.value = state.cat;
+          if (state.search !== undefined) searchEl.value = state.search;
+          if (state.status) {
+            activeFilters['Status'] = new Set([state.status]);
+          } else {
+            delete activeFilters['Status'];
+          }
+          applyAllFilters();
+        },
+        getCurrentState: () => ({
+          cat: catEl.value,
+          search: searchEl.value,
+          status: activeFilters['Status'] ? Array.from(activeFilters['Status'])[0] : null
+        })
+      });
     }
 
     catEl.addEventListener('change', loadData);
-    searchEl.addEventListener('input', renderTable);
+    searchEl.addEventListener('input', window.debounce(renderTable, 150));
     $('repBtnRefresh').addEventListener('click', loadData);
 
-    // ---------- Excel-style header filters (same mechanism as Purchase / Sale Register) ----------
+    // ---------- Excel-style header filters ----------
     const filterBtns = document.querySelectorAll('.th-filter-btn');
 
     function uniqueValues(col) {

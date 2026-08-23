@@ -46,6 +46,7 @@ const registerBomRoutes = require('./routes/bom.routes');
 const registerBomKitsRoutes = require('./routes/bom_kits.routes');
 const registerSerialExcelRoutes = require('./routes/serial_excel.routes');
 const registerVouchersRoutes = require('./routes/vouchers.routes');
+const { registerAuditRoutes, logAuditEvent } = require('./routes/audit.routes');
 
 // =====================================================================
 // PROCESS SAFETY & CRASH GUARDS
@@ -142,7 +143,8 @@ const deps = {
   validateSalesLineSerials,
   getOrCreateItem,
   getISTParts,
-  ledgerTimestamp
+  ledgerTimestamp,
+  logAuditEvent
 };
 
 registerAttachmentRoutes(app, deps);
@@ -161,6 +163,7 @@ registerBomRoutes(app, deps);
 registerBomKitsRoutes(app, deps);
 registerSerialExcelRoutes(app, deps);
 registerVouchersRoutes(app, deps);
+registerAuditRoutes(app, deps);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {

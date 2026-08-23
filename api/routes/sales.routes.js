@@ -399,6 +399,15 @@ module.exports = function registerSalesRoutes(app, deps) {
       await conn.commit();
       if (typeof syncStockSummary === 'function') syncStockSummary(pool).catch(() => {});
       if (typeof invalidateStockCaches === 'function') invalidateStockCaches();
+      if (typeof deps.logAuditEvent === 'function') {
+        deps.logAuditEvent(pool, {
+          type: 'SALES_DISPATCH',
+          ref: chalanNo || orderNo || 'DISPATCH',
+          user: (req.user && req.user.username) || 'User',
+          oldVal: null,
+          newVal: `Customer: ${customer} | Order: ${orderNo} | Challan: ${chalanNo} | Serials: ${allSerials.length} | Qty: ${qtyDispatchedTotal}`
+        });
+      }
       res.json({ success: true, orderNo, chalanNo, lineCount: lines.length, serialCount: allSerials.length, qtyDispatched: qtyDispatchedTotal });
     } catch (err) {
       await conn.rollback();

@@ -98,6 +98,15 @@ module.exports = function registerVouchersRoutes(app, deps) {
     );
 
     if (typeof invalidateVoucherCaches === 'function') invalidateVoucherCaches();
+    if (typeof deps.logAuditEvent === 'function') {
+      deps.logAuditEvent(pool, {
+        type: 'VOUCHER_CREATE',
+        ref: voucher_no,
+        user: req.user ? req.user.username : 'User',
+        oldVal: null,
+        newVal: `${voucher_type} Voucher ${voucher_no} | Dr: ${debit_ledger} | Cr: ${credit_ledger} | Rs. ${numAmt}`
+      });
+    }
     res.json({
       success: true,
       message: `${voucher_type} Voucher ${voucher_no} recorded successfully.`,
@@ -113,11 +122,23 @@ module.exports = function registerVouchersRoutes(app, deps) {
     const id = parseInt(req.params.id);
     if (!id) return res.status(400).json({ error: 'Invalid voucher ID.' });
 
+    const [vRow] = await pool.query(`SELECT voucher_no, voucher_type, amount FROM accounting_vouchers WHERE id = ?`, [id]);
+    const voucherMeta = vRow && vRow[0] ? `${vRow[0].voucher_type} ${vRow[0].voucher_no} (Rs. ${vRow[0].amount})` : `ID:${id}`;
+
     const [resDelete] = await pool.query(`DELETE FROM accounting_vouchers WHERE id = ?`, [id]);
     if (resDelete.affectedRows === 0) {
       return res.status(404).json({ error: 'Voucher not found.' });
     }
     if (typeof invalidateVoucherCaches === 'function') invalidateVoucherCaches();
+    if (typeof deps.logAuditEvent === 'function') {
+      deps.logAuditEvent(pool, {
+        type: 'VOUCHER_DELETE',
+        ref: vRow && vRow[0] ? vRow[0].voucher_no : `ID:${id}`,
+        user: req.user ? req.user.username : 'User',
+        oldVal: voucherMeta,
+        newVal: 'Voucher permanently deleted'
+      });
+    }
     res.json({ success: true, message: 'Voucher deleted successfully.' });
   }));
 

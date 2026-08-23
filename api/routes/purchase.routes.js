@@ -170,6 +170,15 @@ module.exports = function registerPurchaseRoutes(app, deps) {
       await conn.commit();
       if (typeof syncStockSummary === 'function') syncStockSummary(pool).catch(() => {});
       if (typeof invalidateStockCaches === 'function') invalidateStockCaches();
+      if (typeof deps.logAuditEvent === 'function') {
+        deps.logAuditEvent(pool, {
+          type: 'PURCHASE_INWARD',
+          ref: invoiceNo,
+          user: (req.user && req.user.username) || 'User',
+          oldVal: null,
+          newVal: `Supplier: ${supplier} | Lines: ${lines.length} | Serials: ${allSerials.length}`
+        });
+      }
       res.json({ success: true, invoiceNo, lineCount: lines.length, serialCount: allSerials.length });
     } catch (err) {
       await conn.rollback();
@@ -426,6 +435,15 @@ module.exports = function registerPurchaseRoutes(app, deps) {
       await conn.commit();
       if (typeof syncStockSummary === 'function') syncStockSummary(pool).catch(() => {});
       if (typeof invalidateStockCaches === 'function') invalidateStockCaches();
+      if (typeof deps.logAuditEvent === 'function') {
+        deps.logAuditEvent(pool, {
+          type: 'PURCHASE_UPDATE',
+          ref: newInv,
+          user: (req.user && req.user.username) || 'User',
+          oldVal: `Original Inv: ${origInv} | Serials: ${originalSerials.length}`,
+          newVal: `New Inv: ${newInv} | Supplier: ${newSupp} | Serials: ${newSerials.length}`
+        });
+      }
       res.json({ success: true, invoiceNo: newInv });
     } catch (err) {
       await conn.rollback();

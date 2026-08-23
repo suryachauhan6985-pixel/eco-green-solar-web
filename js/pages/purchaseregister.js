@@ -18,6 +18,7 @@ window.PAGES.purchaseregister = {
     <div class="page-head"><i class="fa-solid fa-receipt" style="color:var(--green);"></i><h2>Purchase Register</h2>
       <button type="button" class="info-btn" data-info="Double-click any record to open it in Purchase Inward's edit panel, pre-filled. You can also filter any column using the filter icon in its header."><i class="fa-solid fa-circle-info"></i></button>
     </div>
+    <div id="pregSavedViews"></div>
     <div class="toolbar">
       <div><label>From</label> <input type="date" id="pregFrom"></div>
       <div><label>To</label> <input type="date" id="pregTo"></div>
@@ -29,6 +30,7 @@ window.PAGES.purchaseregister = {
     </div>
     <div class="table-wrap"><table>
       <thead><tr>
+        <th style="width:36px; text-align:center;"><input type="checkbox" id="pregSelectAll" title="Select All"></th>
         <th data-col="Invoice No">Invoice No <button class="th-filter-btn" data-col="Invoice No" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Date">Date <button class="th-filter-btn" data-col="Date" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Supplier">Supplier <button class="th-filter-btn" data-col="Supplier" type="button"><i class="fa-solid fa-filter"></i></button></th>
@@ -40,6 +42,7 @@ window.PAGES.purchaseregister = {
       </tr></thead>
       <tbody id="pregBody"></tbody>
     </table></div>
+    <div id="pregBulkBar"></div>
   `,
 
   init() {
@@ -115,8 +118,15 @@ window.PAGES.purchaseregister = {
         return;
       }
       allRows = rows.filter((r) => inDateRange(r.date) && matchesSearch(rowToValues(r)));
+      selectedInvoices.clear();
+      if (bulkBarApi) bulkBarApi.update(0);
+      const selectAllEl = $('pregSelectAll');
+      if (selectAllEl) selectAllEl.checked = false;
       renderTable();
     }
+
+    const selectedInvoices = new Set();
+    let bulkBarApi = null;
 
     function isRowVisible(values) {
       return columns.every((col, i) => !activeFilters[col] || activeFilters[col].has(values[i]));
@@ -125,11 +135,14 @@ window.PAGES.purchaseregister = {
     function renderTable() {
       const visible = allRows.filter((r) => isRowVisible(rowToValues(r)));
       if (!visible.length) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--txt-muted); font-style:italic;">No purchase records found for the selected filters.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--txt-muted); font-style:italic;">No purchase records found for the selected filters.</td></tr>`;
         return;
       }
       tbody.innerHTML = visible.map((r) => `
-        <tr class="preg-row" data-inv="${r.invoiceNo}" style="cursor:pointer;" title="Double-click to edit this invoice">
+        <tr class="preg-row ${selectedInvoices.has(r.invoiceNo) ? 'selected-row' : ''}" data-inv="${r.invoiceNo}" style="cursor:pointer;" title="Double-click to edit this invoice">
+          <td style="text-align:center;" onclick="event.stopPropagation()">
+            <input type="checkbox" class="preg-row-chk" data-inv="${r.invoiceNo}" ${selectedInvoices.has(r.invoiceNo) ? 'checked' : ''}>
+          </td>
           <td data-label="Invoice No" class="gold-txt">${r.invoiceNo}</td>
           <td data-label="Date">${r.date}</td>
           <td data-label="Supplier">${r.supplier}</td>
@@ -139,10 +152,103 @@ window.PAGES.purchaseregister = {
           <td data-label="Warehouse">${r.warehouse}</td>
           <td data-label="Edited?" ${r.edited ? 'class="gold-txt"' : ''}>${r.edited ? 'Yes' : 'No'}</td>
         </tr>`).join('');
+
+      // Wire row checkboxes
+      tbody.querySelectorAll('.preg-row-chk').forEach(chk => {
+        chk.addEventListener('change', () => {
+          const inv = chk.getAttribute('data-inv');
+          if (chk.checked) selectedInvoices.add(inv);
+          else selectedInvoices.delete(inv);
+          const tr = chk.closest('tr');
+          if (tr) tr.classList.toggle('selected-row', chk.checked);
+          if (bulkBarApi) bulkBarApi.update(selectedInvoices.size);
+        });
+      });
+    }
+
+    // Select All Checkbox
+    const selectAllEl = $('pregSelectAll');
+    if (selectAllEl) {
+      selectAllEl.addEventListener('change', () => {
+        const visible = allRows.filter((r) => isRowVisible(rowToValues(r)));
+        if (selectAllEl.checked) {
+          visible.forEach(r => selectedInvoices.add(r.invoiceNo));
+        } else {
+          selectedInvoices.clear();
+        }
+        renderTable();
+        if (bulkBarApi) bulkBarApi.update(selectedInvoices.size);
+      });
+    }
+
+    // Initialize Bulk Actions Bar
+    const bulkContainer = $('pregBulkBar');
+    if (bulkContainer && window.initBulkActionsBar) {
+      bulkBarApi = window.initBulkActionsBar(bulkContainer, {
+        getSelectedData: () => {
+          return allRows.filter(r => selectedInvoices.has(r.invoiceNo));
+        },
+        onExport: (selected) => {
+          if (!selected.length) return;
+          const header = columns.join(',');
+          const lines = selected.map((r) => rowToValues(r).map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','));
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Purchase_Selected_${selected.length}_rows.csv`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          if (window.showToast) window.showToast(`Exported ${selected.length} selected invoices.`);
+        },
+        onCopy: (selected) => {
+          if (!selected.length) return;
+          const invList = selected.map(r => r.invoiceNo).join('\n');
+          navigator.clipboard.writeText(invList).then(() => {
+            if (window.showToast) window.showToast(`Copied ${selected.length} Invoice Numbers to clipboard!`);
+          }).catch(() => {});
+        },
+        onClear: () => {
+          selectedInvoices.clear();
+          if (selectAllEl) selectAllEl.checked = false;
+          renderTable();
+          if (bulkBarApi) bulkBarApi.update(0);
+        }
+      });
+    }
+
+    // Initialize Saved Views Bar
+    const savedViewsContainer = $('pregSavedViews');
+    if (savedViewsContainer && window.initSavedViewsBar) {
+      window.initSavedViewsBar(savedViewsContainer, {
+        pageKey: 'purchase_register',
+        defaultPresets: [
+          { id: 'all', label: 'All Inwards', state: { cat: 'All Categories', search: '', from: toISO(firstOfMonth), to: toISO(today) } },
+          { id: 'today', label: "Today's Inward", state: { cat: 'All Categories', search: '', from: toISO(today), to: toISO(today) } },
+          { id: 'solar', label: 'Solar Panels', state: { cat: 'Solar Panel', search: '', from: toISO(firstOfMonth), to: toISO(today) } },
+          { id: 'inverter', label: 'Inverters', state: { cat: 'Inverter', search: '', from: toISO(firstOfMonth), to: toISO(today) } }
+        ],
+        onApply: (state) => {
+          if (state.from) fromEl.value = state.from;
+          if (state.to) toEl.value = state.to;
+          if (state.cat) catEl.value = state.cat;
+          if (state.search !== undefined) searchEl.value = state.search;
+          loadData();
+        },
+        getCurrentState: () => ({
+          from: fromEl.value,
+          to: toEl.value,
+          cat: catEl.value,
+          search: searchEl.value
+        })
+      });
     }
 
     [fromEl, toEl, catEl].forEach((el) => el.addEventListener('change', loadData));
-    searchEl.addEventListener('input', loadData);
+    searchEl.addEventListener('input', window.debounce(loadData, 150));
     $('pregBtnRefresh').addEventListener('click', loadData);
 
     // ---------- double-click a row -> Purchase Inward, edit panel, autofilled ----------
@@ -156,7 +262,7 @@ window.PAGES.purchaseregister = {
       }
     });
 
-    // ---------- Excel-style header filters (same mechanism as Dashboard) ----------
+    // ---------- Excel-style header filters ----------
     const filterBtns = document.querySelectorAll('.th-filter-btn');
 
     function uniqueValues(col) {

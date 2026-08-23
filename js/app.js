@@ -76,6 +76,162 @@ window.throttle = function(fn, limitMs = 100) {
   };
 };
 
+// ---------------------------------------------------------------------------
+// GLOBAL COMPONENT: SMART SAVED VIEWS & FILTER PRESETS BAR
+// ---------------------------------------------------------------------------
+window.initSavedViewsBar = function(containerEl, config) {
+  if (!containerEl || !config) return null;
+  const { pageKey, defaultPresets = [], onApply, getCurrentState } = config;
+  const storageKey = `egs_saved_views_${pageKey}`;
+
+  function getCustomViews() {
+    try {
+      return JSON.parse(localStorage.getItem(storageKey) || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveCustomViews(views) {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(views));
+    } catch (e) {}
+  }
+
+  let activeViewId = defaultPresets[0] ? defaultPresets[0].id : 'all';
+
+  function render() {
+    const customViews = getCustomViews();
+    const allViews = [...defaultPresets, ...customViews];
+
+    containerEl.innerHTML = `
+      <div class="saved-views-bar">
+        <div class="saved-views-label"><i class="fa-solid fa-bolt" style="color:var(--gold);"></i> Quick Views:</div>
+        <div class="saved-views-pills">
+          ${allViews.map(v => `
+            <div class="view-pill ${v.id === activeViewId ? 'active' : ''}" data-view-id="${v.id}" title="${v.label}">
+              <span>${v.label}</span>
+              ${v.isCustom ? `<span class="view-pill-del" data-del-id="${v.id}" title="Delete View"><i class="fa-solid fa-xmark"></i></span>` : ''}
+            </div>
+          `).join('')}
+        </div>
+        <button type="button" class="btn btn-ghost btn-save-view" style="font-size:11.5px; padding:3px 8px;" title="Save current filter configuration">
+          <i class="fa-solid fa-bookmark" style="color:var(--blue);"></i> Save View
+        </button>
+      </div>
+    `;
+
+    // Click on view pills
+    containerEl.querySelectorAll('.view-pill').forEach(pill => {
+      pill.addEventListener('click', (e) => {
+        if (e.target.closest('.view-pill-del')) return;
+        const viewId = pill.getAttribute('data-view-id');
+        const view = allViews.find(v => v.id === viewId);
+        if (view) {
+          activeViewId = viewId;
+          render();
+          if (typeof onApply === 'function') onApply(view.state || {});
+        }
+      });
+    });
+
+    // Delete custom view pill
+    containerEl.querySelectorAll('.view-pill-del').forEach(delBtn => {
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const delId = delBtn.getAttribute('data-del-id');
+        const updated = getCustomViews().filter(v => v.id !== delId);
+        saveCustomViews(updated);
+        if (activeViewId === delId) activeViewId = defaultPresets[0] ? defaultPresets[0].id : 'all';
+        render();
+        if (window.showToast) window.showToast('Custom view removed.');
+      });
+    });
+
+    // Save view button
+    const btnSave = containerEl.querySelector('.btn-save-view');
+    if (btnSave) {
+      btnSave.addEventListener('click', () => {
+        const viewName = prompt('Enter a name for this custom view (e.g. "Tata 545W Inward"):');
+        if (!viewName || !viewName.trim()) return;
+        const state = typeof getCurrentState === 'function' ? getCurrentState() : {};
+        const customViews = getCustomViews();
+        const newView = {
+          id: 'custom_' + Date.now(),
+          label: viewName.trim(),
+          isCustom: true,
+          state
+        };
+        customViews.push(newView);
+        saveCustomViews(customViews);
+        activeViewId = newView.id;
+        render();
+        if (window.showToast) window.showToast(`View "${viewName.trim()}" saved!`);
+      });
+    }
+  }
+
+  render();
+  return {
+    setActive(id) {
+      activeViewId = id;
+      render();
+    }
+  };
+};
+
+// ---------------------------------------------------------------------------
+// GLOBAL COMPONENT: BULK ACTIONS FLOATING TOOLBAR
+// ---------------------------------------------------------------------------
+window.initBulkActionsBar = function(containerEl, config) {
+  if (!containerEl || !config) return null;
+  const { onExport, onPrint, onCopy, onClear, getSelectedData } = config;
+
+  containerEl.innerHTML = `
+    <div class="bulk-actions-bar" style="display:none;">
+      <div class="bulk-count">
+        <i class="fa-solid fa-circle-check" style="color:var(--green);"></i>
+        <span><strong class="bulk-count-num">0</strong> items selected</span>
+      </div>
+      <div class="bulk-btn-group">
+        ${onExport ? `<button type="button" class="btn btn-blue btn-bulk-export" style="font-size:12px; padding:4px 10px;"><i class="fa-solid fa-file-excel"></i> Export Selected</button>` : ''}
+        ${onPrint ? `<button type="button" class="btn btn-ghost btn-bulk-print" style="font-size:12px; padding:4px 10px;"><i class="fa-solid fa-print"></i> Print</button>` : ''}
+        ${onCopy ? `<button type="button" class="btn btn-ghost btn-bulk-copy" style="font-size:12px; padding:4px 10px;"><i class="fa-solid fa-copy"></i> Copy Selected</button>` : ''}
+        ${onClear ? `<button type="button" class="btn btn-ghost btn-bulk-clear" style="font-size:12px; padding:4px 10px;"><i class="fa-solid fa-xmark"></i> Deselect</button>` : ''}
+      </div>
+    </div>
+  `;
+
+  const barEl = containerEl.querySelector('.bulk-actions-bar');
+  const countEl = containerEl.querySelector('.bulk-count-num');
+
+  const btnExport = containerEl.querySelector('.btn-bulk-export');
+  if (btnExport && onExport) btnExport.addEventListener('click', () => onExport(getSelectedData ? getSelectedData() : []));
+
+  const btnPrint = containerEl.querySelector('.btn-bulk-print');
+  if (btnPrint && onPrint) btnPrint.addEventListener('click', () => onPrint(getSelectedData ? getSelectedData() : []));
+
+  const btnCopy = containerEl.querySelector('.btn-bulk-copy');
+  if (btnCopy && onCopy) btnCopy.addEventListener('click', () => onCopy(getSelectedData ? getSelectedData() : []));
+
+  const btnClear = containerEl.querySelector('.btn-bulk-clear');
+  if (btnClear && onClear) btnClear.addEventListener('click', () => onClear());
+
+  return {
+    update(selectedCount) {
+      if (selectedCount > 0) {
+        if (countEl) countEl.textContent = selectedCount;
+        if (barEl) barEl.style.display = 'flex';
+      } else {
+        if (barEl) barEl.style.display = 'none';
+      }
+    },
+    hide() {
+      if (barEl) barEl.style.display = 'none';
+    }
+  };
+};
+
 function applyErpModeRules() {
   const mode = window.ERP.getMode();
   if (document.body) {
@@ -2897,6 +3053,7 @@ window.attachColumnFilters = function (table) {
         <div class="settings-tabs">
           <button type="button" class="settings-tab-btn" data-tab="tab-profile"><i class="fa-solid fa-user-gear"></i> My Profile &amp; Security</button>
           <button type="button" class="settings-tab-btn" data-tab="tab-shortcuts"><i class="fa-solid fa-keyboard"></i> Shortcuts &amp; Hotkeys</button>
+          <button type="button" class="settings-tab-btn" data-tab="tab-audit"><i class="fa-solid fa-clock-rotate-left"></i> Activity Audit Feed</button>
           ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-perf"><i class="fa-solid fa-gauge-high"></i> Performance &amp; Engine</button>' : ''}
           ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-erp-mode"><i class="fa-solid fa-sliders"></i> ERP Mode &amp; Features</button>' : ''}
           ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-users"><i class="fa-solid fa-users-gear"></i> User Accounts</button>' : ''}
@@ -3565,6 +3722,35 @@ window.attachColumnFilters = function (table) {
           </div>
         </div>
 
+        <!-- Activity Timeline & Audit Feed Tab -->
+        <div class="settings-panel" id="tab-audit">
+          <div class="settings-card">
+            <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+              <span style="display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-clock-rotate-left" style="color:var(--gold);"></i> Activity Timeline &amp; Audit Feed</span>
+              <button type="button" class="btn btn-blue" id="btnRefreshAuditLogs" style="font-size:11.5px; padding:4px 10px;"><i class="fa-solid fa-rotate"></i> Refresh Feed</button>
+            </div>
+            <p style="margin:0 0 12px 0; font-size:12.5px; color:var(--txt-muted);">
+              Live audit trail of enterprise transactions: Inwards, Dispatches, Deletions, Vouchers, and Security events.
+            </p>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center;">
+              <input type="text" id="auditSearchInput" placeholder="Search reference, user, or details..." style="flex:1; min-width:200px;">
+              <select id="auditModuleFilter" style="width:170px;">
+                <option value="ALL">All Operations</option>
+                <option value="PURCHASE">Purchase Inward</option>
+                <option value="SALES">Sales / Dispatch</option>
+                <option value="VOUCHER">Double-Entry Vouchers</option>
+                <option value="STOCK">Stock Adjustments</option>
+                <option value="SECURITY">Security &amp; Auth</option>
+              </select>
+            </div>
+
+            <div id="auditTimelineContainer">
+              <div style="text-align:center; padding:24px; color:var(--txt-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading live activity feed...</div>
+            </div>
+          </div>
+        </div>
+
         <!-- Performance & System Telemetry Tab -->
         ${isAdmin ? `
         <div class="settings-panel" id="tab-perf">
@@ -3721,6 +3907,9 @@ window.attachColumnFilters = function (table) {
       tabBtns.forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === tabId));
       panels.forEach((p) => p.classList.toggle('active', p.id === tabId));
       if (contentWrap) contentWrap.scrollTop = 0;
+      if (tabId === 'tab-audit') {
+        loadActivityAuditFeed();
+      }
       if (tabId === 'tab-perf') {
         loadPerformanceTelemetry();
       }
@@ -3728,6 +3917,126 @@ window.attachColumnFilters = function (table) {
     tabBtns.forEach((btn) => {
       btn.addEventListener('click', () => activateTab(btn.getAttribute('data-tab')));
     });
+
+    // Activity Timeline & Audit Feed Handlers
+    async function loadActivityAuditFeed() {
+      const container = document.getElementById('auditTimelineContainer');
+      const searchInput = document.getElementById('auditSearchInput');
+      const moduleFilter = document.getElementById('auditModuleFilter');
+      if (!container) return;
+
+      container.innerHTML = `<div style="text-align:center; padding:24px; color:var(--txt-muted); font-size:13px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading live activity feed...</div>`;
+
+      try {
+        const search = searchInput ? searchInput.value.trim() : '';
+        const mod = moduleFilter ? moduleFilter.value : 'ALL';
+        const url = `/audit-logs?module=${encodeURIComponent(mod)}&search=${encodeURIComponent(search)}&limit=50`;
+        const res = await window.Api.get(url, { bypassCache: true });
+        const logs = (res && res.logs) || [];
+
+        if (!logs.length) {
+          container.innerHTML = `
+            <div style="text-align:center; padding:30px 10px; color:var(--txt-muted);">
+              <i class="fa-solid fa-clock-rotate-left" style="font-size:28px; opacity:0.3; margin-bottom:8px;"></i>
+              <div style="font-weight:600; font-size:13px;">No activity records found matching the criteria.</div>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="audit-timeline">
+            ${logs.map(log => {
+              const type = (log.transaction_type || '').toUpperCase();
+              let icon = 'fa-circle-info';
+              let itemClass = 'audit-item';
+              let badgeColor = 'blue';
+
+              if (type.includes('DELETE') || type.includes('DAMAGE')) {
+                icon = 'fa-trash-can';
+                itemClass = 'audit-item audit-delete';
+                badgeColor = 'red';
+              } else if (type.includes('PURCHASE') || type.includes('INWARD')) {
+                icon = 'fa-cart-plus';
+                badgeColor = 'green';
+              } else if (type.includes('SALES') || type.includes('DISPATCH') || type.includes('BOM')) {
+                icon = 'fa-truck-fast';
+                badgeColor = 'blue';
+              } else if (type.includes('VOUCHER')) {
+                icon = 'fa-file-invoice-dollar';
+                badgeColor = 'purple';
+              } else if (type.includes('SECURITY') || type.includes('LOGIN') || type.includes('AUTH') || type.includes('PASSWORD')) {
+                icon = 'fa-shield-halved';
+                itemClass = 'audit-item audit-security';
+                badgeColor = 'gold';
+              }
+
+              const timeStr = log.action_timestamp || (log.created_at ? new Date(log.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : '');
+
+              return `
+                <div class="${itemClass}">
+                  <div class="audit-header">
+                    <div class="audit-meta">
+                      <span class="pill pill-${badgeColor}" style="font-size:10.5px; padding:2px 7px; font-weight:700;"><i class="fa-solid ${icon}"></i> ${type}</span>
+                      ${log.reference_no ? `<strong style="color:var(--txt); font-size:12px;">#${log.reference_no}</strong>` : ''}
+                      <span style="color:var(--txt-muted); font-size:11.5px;"><i class="fa-solid fa-user"></i> @${log.action_by || 'User'}</span>
+                    </div>
+                    <div style="font-size:11.5px; color:var(--txt-muted);">${timeStr}</div>
+                  </div>
+                  <div class="audit-desc">${log.new_details || log.old_details || 'Activity logged.'}</div>
+                  ${log.old_details && log.new_details ? `
+                    <div style="margin-top:6px;">
+                      <a href="javascript:void(0)" class="btn-view-audit-diff" data-id="${log.id}" style="color:var(--blue); font-size:11.5px; text-decoration:underline;"><i class="fa-solid fa-code-compare"></i> View Details Snapshot</a>
+                    </div>
+                  ` : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+
+        // Wire diff inspection
+        container.querySelectorAll('.btn-view-audit-diff').forEach(link => {
+          link.addEventListener('click', () => {
+            const logId = parseInt(link.getAttribute('data-id'), 10);
+            const found = logs.find(l => l.id === logId);
+            if (!found) return;
+
+            window.openModal(`Audit Snapshot — ${found.transaction_type} (${found.reference_no || ''})`, `
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div style="font-size:12px; color:var(--txt-muted);">Timestamp: <strong>${found.action_timestamp || found.created_at}</strong> · Action by: <strong>@${found.action_by}</strong></div>
+                <div style="background:rgba(231,76,60,0.06); border:1px solid rgba(231,76,60,0.25); border-radius:6px; padding:10px;">
+                  <div style="font-size:11px; font-weight:700; color:var(--red); text-transform:uppercase; margin-bottom:4px;">Original Snapshot</div>
+                  <pre style="margin:0; font-size:12px; color:var(--txt); white-space:pre-wrap; word-break:break-word;">${found.old_details || 'N/A'}</pre>
+                </div>
+                <div style="background:rgba(46,204,113,0.06); border:1px solid rgba(46,204,113,0.25); border-radius:6px; padding:10px;">
+                  <div style="font-size:11px; font-weight:700; color:var(--green); text-transform:uppercase; margin-bottom:4px;">Updated Snapshot</div>
+                  <pre style="margin:0; font-size:12px; color:var(--txt); white-space:pre-wrap; word-break:break-word;">${found.new_details || 'N/A'}</pre>
+                </div>
+              </div>
+            `);
+          });
+        });
+      } catch (err) {
+        container.innerHTML = `<div style="padding:14px; color:var(--red); font-size:12.5px;"><i class="fa-solid fa-triangle-exclamation"></i> Error loading audit logs: ${err.message}</div>`;
+      }
+    }
+
+    const btnRefreshAudit = document.getElementById('btnRefreshAuditLogs');
+    if (btnRefreshAudit) {
+      btnRefreshAudit.addEventListener('click', () => loadActivityAuditFeed());
+    }
+
+    const auditSearch = document.getElementById('auditSearchInput');
+    if (auditSearch) {
+      auditSearch.addEventListener('input', window.debounce(() => loadActivityAuditFeed(), 200));
+    }
+
+    const auditFilter = document.getElementById('auditModuleFilter');
+    if (auditFilter) {
+      auditFilter.addEventListener('change', () => loadActivityAuditFeed());
+    }
+
     // Performance & Telemetry Handlers
     async function loadPerformanceTelemetry() {
       const container = document.getElementById('perfTelemetryContainer');

@@ -1,19 +1,19 @@
-const CACHE_NAME = 'eco-green-solar-erp-v145';
+const CACHE_NAME = 'eco-green-solar-erp-v146';
 
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/css/style.css?v=140',
-  '/css/modules/base.css?v=140',
-  '/css/modules/layout.css?v=140',
-  '/css/modules/components.css?v=140',
-  '/css/modules/dashboard.css?v=140',
-  '/css/modules/responsive.css?v=140',
-  '/css/modules/party-ledger.css?v=140',
-  '/css/modules/auth.css?v=140',
-  '/css/modules/bom.css?v=140',
-  '/css/modules/scan-sheet.css?v=140',
+  '/css/style.css?v=146',
+  '/css/modules/base.css?v=146',
+  '/css/modules/layout.css?v=146',
+  '/css/modules/components.css?v=146',
+  '/css/modules/dashboard.css?v=146',
+  '/css/modules/responsive.css?v=146',
+  '/css/modules/party-ledger.css?v=146',
+  '/css/modules/auth.css?v=146',
+  '/css/modules/bom.css?v=146',
+  '/css/modules/scan-sheet.css?v=146',
   '/assets/icon.ico',
   '/assets/icons/icon-192.png?v=2',
   '/assets/icons/icon-512.png?v=2',
@@ -29,9 +29,9 @@ const APP_SHELL = [
   '/js/pages/purchase.js?v=10',
   '/js/pages/sales.js?v=9',
   '/js/pages/stockassign.js?v=3',
-  '/js/pages/purchaseregister.js?v=4',
-  '/js/pages/saleregister.js?v=4',
-  '/js/pages/reports.js?v=4',
+  '/js/pages/purchaseregister.js?v=5',
+  '/js/pages/saleregister.js?v=5',
+  '/js/pages/reports.js?v=5',
   '/js/pages/returns.js?v=3',
   '/js/pages/vouchers.js?v=1',
   '/js/pages/financialreports.js?v=1',
@@ -48,7 +48,7 @@ const APP_SHELL = [
   '/js/pages/bom-serial-modal.js?v=4',
   '/js/pages/bom-dispatch.js?v=14',
   '/js/pages/bom.js?v=32',
-  '/js/app.js?v=70',
+  '/js/app.js?v=71',
   '/js/theme.js?v=5'
 ];
 

@@ -21,6 +21,7 @@ window.PAGES.saleregister = {
     <div class="page-head"><i class="fa-solid fa-file-invoice" style="color:var(--orange);"></i><h2>Sale Register</h2>
       <button type="button" class="info-btn" data-info="Double-click any record to open it directly in the Project Sales modification panel. You can also filter any column using the filter icon in its header."><i class="fa-solid fa-circle-info"></i></button>
     </div>
+    <div id="sregSavedViews"></div>
     <div class="toolbar">
       <div><label>From</label> <input type="date" id="sregFrom"></div>
       <div><label>To</label> <input type="date" id="sregTo"></div>
@@ -32,6 +33,7 @@ window.PAGES.saleregister = {
     </div>
     <div class="table-wrap"><table>
       <thead><tr>
+        <th style="width:36px; text-align:center;"><input type="checkbox" id="sregSelectAll" title="Select All"></th>
         <th data-col="Challan No">Challan No <button class="th-filter-btn" data-col="Challan No" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Date">Date <button class="th-filter-btn" data-col="Date" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Customer">Customer <button class="th-filter-btn" data-col="Customer" type="button"><i class="fa-solid fa-filter"></i></button></th>
@@ -44,6 +46,7 @@ window.PAGES.saleregister = {
       </tr></thead>
       <tbody id="sregBody"></tbody>
     </table></div>
+    <div id="sregBulkBar"></div>
   `,
 
   init() {
@@ -122,8 +125,15 @@ window.PAGES.saleregister = {
         return;
       }
       allRows = rows.filter((r) => inDateRange(r.date) && matchesSearch(rowToValues(r)));
+      selectedChallans.clear();
+      if (bulkBarApi) bulkBarApi.update(0);
+      const selectAllEl = $('sregSelectAll');
+      if (selectAllEl) selectAllEl.checked = false;
       renderTable();
     }
+
+    const selectedChallans = new Set();
+    let bulkBarApi = null;
 
     function isRowVisible(values) {
       return columns.every((col, i) => !activeFilters[col] || activeFilters[col].has(values[i]));
@@ -132,11 +142,14 @@ window.PAGES.saleregister = {
     function renderTable() {
       const visible = allRows.filter((r) => isRowVisible(rowToValues(r)));
       if (!visible.length) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--txt-muted); font-style:italic;">No sales records found for the selected filters.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--txt-muted); font-style:italic;">No sales records found for the selected filters.</td></tr>`;
         return;
       }
       tbody.innerHTML = visible.map((r) => `
-        <tr class="sreg-row" data-challan="${r.challanNo}" style="cursor:pointer;" title="Double-click to edit this order">
+        <tr class="sreg-row ${selectedChallans.has(r.challanNo) ? 'selected-row' : ''}" data-challan="${r.challanNo}" style="cursor:pointer;" title="Double-click to edit this order">
+          <td style="text-align:center;" onclick="event.stopPropagation()">
+            <input type="checkbox" class="sreg-row-chk" data-challan="${r.challanNo}" ${selectedChallans.has(r.challanNo) ? 'checked' : ''}>
+          </td>
           <td data-label="Challan No" class="gold-txt">
             <div style="display:inline-flex; align-items:center; gap:6px;">
               <span>${r.challanNo}</span>
@@ -152,10 +165,111 @@ window.PAGES.saleregister = {
           <td data-label="Sales Invoice">${r.invoice || '-'}</td>
           <td data-label="Edited?" ${r.edited ? 'class="gold-txt"' : ''}>${r.edited ? 'Yes' : 'No'}</td>
         </tr>`).join('');
+
+      // Wire row checkboxes
+      tbody.querySelectorAll('.sreg-row-chk').forEach(chk => {
+        chk.addEventListener('change', () => {
+          const chNo = chk.getAttribute('data-challan');
+          if (chk.checked) selectedChallans.add(chNo);
+          else selectedChallans.delete(chNo);
+          const tr = chk.closest('tr');
+          if (tr) tr.classList.toggle('selected-row', chk.checked);
+          if (bulkBarApi) bulkBarApi.update(selectedChallans.size);
+        });
+      });
+    }
+
+    // Select All Checkbox
+    const selectAllEl = $('sregSelectAll');
+    if (selectAllEl) {
+      selectAllEl.addEventListener('change', () => {
+        const visible = allRows.filter((r) => isRowVisible(rowToValues(r)));
+        if (selectAllEl.checked) {
+          visible.forEach(r => selectedChallans.add(r.challanNo));
+        } else {
+          selectedChallans.clear();
+        }
+        renderTable();
+        if (bulkBarApi) bulkBarApi.update(selectedChallans.size);
+      });
+    }
+
+    // Initialize Bulk Actions Bar
+    const bulkContainer = $('sregBulkBar');
+    if (bulkContainer && window.initBulkActionsBar) {
+      bulkBarApi = window.initBulkActionsBar(bulkContainer, {
+        getSelectedData: () => {
+          return allRows.filter(r => selectedChallans.has(r.challanNo));
+        },
+        onExport: (selected) => {
+          if (!selected.length) return;
+          const header = columns.join(',');
+          const lines = selected.map((r) => rowToValues(r).map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','));
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Sales_Selected_${selected.length}_rows.csv`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          if (window.showToast) window.showToast(`Exported ${selected.length} selected sales records.`);
+        },
+        onPrint: (selected) => {
+          if (!selected.length) return;
+          selected.forEach(r => {
+            if (typeof window.printChallanByNo === 'function') {
+              window.printChallanByNo(r.challanNo);
+            }
+          });
+        },
+        onCopy: (selected) => {
+          if (!selected.length) return;
+          const list = selected.map(r => `Challan: ${r.challanNo} | Order: ${r.orderNo} | Customer: ${r.customer}`).join('\n');
+          navigator.clipboard.writeText(list).then(() => {
+            if (window.showToast) window.showToast(`Copied ${selected.length} Challan references to clipboard!`);
+          }).catch(() => {});
+        },
+        onClear: () => {
+          selectedChallans.clear();
+          if (selectAllEl) selectAllEl.checked = false;
+          renderTable();
+          if (bulkBarApi) bulkBarApi.update(0);
+        }
+      });
+    }
+
+    // Initialize Saved Views Bar
+    const savedViewsContainer = $('sregSavedViews');
+    if (savedViewsContainer && window.initSavedViewsBar) {
+      window.initSavedViewsBar(savedViewsContainer, {
+        pageKey: 'sales_register',
+        defaultPresets: [
+          { id: 'all', label: 'All Dispatches', state: { cat: 'All Categories', search: '', from: toISO(firstOfMonth), to: toISO(today) } },
+          { id: 'today', label: "Today's Dispatches", state: { cat: 'All Categories', search: '', from: toISO(today), to: toISO(today) } },
+          { id: 'solar', label: 'Solar Panels', state: { cat: 'Solar Panel', search: '', from: toISO(firstOfMonth), to: toISO(today) } },
+          { id: 'inverter', label: 'Inverters', state: { cat: 'Inverter', search: '', from: toISO(firstOfMonth), to: toISO(today) } }
+        ],
+        onApply: (state) => {
+          if (state.from) fromEl.value = state.from;
+          if (state.to) toEl.value = state.to;
+          if (state.cat) catEl.value = state.cat;
+          if (state.search !== undefined) searchEl.value = state.search;
+          loadData();
+        },
+        getCurrentState: () => ({
+          from: fromEl.value,
+          to: toEl.value,
+          cat: catEl.value,
+          search: searchEl.value
+        })
+      });
     }
 
     [fromEl, toEl, catEl].forEach((el) => el.addEventListener('change', loadData));
-    searchEl.addEventListener('input', loadData);
+    searchEl.addEventListener('input', window.debounce(loadData, 150));
     $('sregBtnRefresh').addEventListener('click', loadData);
 
     // ---------- click print button or double-click row -> Project Sales ----------
@@ -181,7 +295,7 @@ window.PAGES.saleregister = {
       }, 100);
     });
 
-    // ---------- Excel-style header filters (same mechanism as Purchase Register) ----------
+    // ---------- Excel-style header filters ----------
     const filterBtns = document.querySelectorAll('.th-filter-btn');
 
     function uniqueValues(col) {

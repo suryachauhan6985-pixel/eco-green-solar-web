@@ -65,6 +65,7 @@ async function ensureStartupSchema(pool) {
   await ensureAccountingVouchersSchema(pool);
   await ensurePerformanceIndexesSchema(pool);
   await ensureStockSummarySchema(pool);
+  await ensureAuditLogsSchema(pool);
   await syncStockSummary(pool);
 }
 async function ensureSessionSchema(pool) { try { await pool.query(`ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS last_seen DATETIME NULL`); } catch (e) { console.warn('[Session schema] Could not ensure last_seen column (will retry lazily on first use):', e.message); } }
@@ -507,9 +508,30 @@ async function syncStockSummary(pool) {
   }
 }
 
+async function ensureAuditLogsSchema(pool) {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS audit_logs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      transaction_type VARCHAR(60) NOT NULL,
+      reference_no VARCHAR(120) NULL,
+      action_by VARCHAR(100) NULL,
+      action_timestamp VARCHAR(60) NULL,
+      old_details LONGTEXT NULL,
+      new_details LONGTEXT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_audit_type_ref (transaction_type, reference_no),
+      INDEX idx_audit_action_by (action_by),
+      INDEX idx_audit_created_at (created_at)
+    )`);
+  } catch (e) {
+    console.warn('[Audit logs schema] Warning:', e.message);
+  }
+}
+
 module.exports = {
   ensureStartupSchema,
   ensurePerformanceIndexesSchema,
   ensureStockSummarySchema,
+  ensureAuditLogsSchema,
   syncStockSummary
 };

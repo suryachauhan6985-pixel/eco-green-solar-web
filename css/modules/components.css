@@ -1231,4 +1231,184 @@ html[data-theme="light"] .settings-email-input {
   box-shadow: 0 0 16px rgba(255, 255, 255, 0.4);
 }
 
+/* =========================================================================
+   SAVED VIEWS & SMART FILTER PRESETS BAR
+   ========================================================================= */
+.saved-views-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+}
+.saved-views-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--txt-muted);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.saved-views-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+.view-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--card-bg, #1a2234);
+  color: var(--txt-muted);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+.view-pill:hover {
+  color: var(--txt);
+  border-color: var(--blue);
+  background: rgba(59, 142, 208, 0.08);
+}
+.view-pill.active {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+  box-shadow: 0 2px 8px rgba(59, 142, 208, 0.35);
+}
+.view-pill-del {
+  font-size: 10px;
+  opacity: 0.7;
+  padding: 0 2px;
+  border-radius: 50%;
+  transition: opacity 0.15s;
+}
+.view-pill-del:hover {
+  opacity: 1;
+  color: #ff6b6b;
+}
+
+/* =========================================================================
+   BULK ACTIONS FLOATING BAR
+   ========================================================================= */
+.bulk-actions-bar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 18px;
+  background: var(--card-bg, #141c2e);
+  border: 1px solid var(--blue);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 12px rgba(59, 142, 208, 0.25);
+  animation: egsSlideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: 12px;
+}
+@keyframes egsSlideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.bulk-count {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--txt);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bulk-btn-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* =========================================================================
+   ACTIVITY TIMELINE & AUDIT FEED
+   ========================================================================= */
+.audit-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  padding-left: 20px;
+}
+.audit-timeline::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  background: var(--border-light);
+}
+.audit-item {
+  position: relative;
+  background: var(--bg-subtle, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 12px 14px;
+  transition: border-color 0.2s;
+}
+.audit-item:hover {
+  border-color: rgba(59, 142, 208, 0.4);
+}
+.audit-item::before {
+  content: '';
+  position: absolute;
+  left: -17px;
+  top: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 0 3px var(--bg-main, #0f172a);
+}
+.audit-item.audit-delete::before {
+  background: var(--red, #e74c3c);
+}
+.audit-item.audit-security::before {
+  background: var(--gold, #f39c12);
+}
+.audit-item.audit-success::before {
+  background: var(--green, #2ecc71);
+}
+.audit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.audit-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.audit-desc {
+  font-size: 12.5px;
+  color: var(--txt);
+  line-height: 1.45;
+  margin: 4px 0 0 0;
+  word-break: break-word;
+}
+
+
 
