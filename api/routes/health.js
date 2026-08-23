@@ -93,10 +93,10 @@ module.exports = function registerHealthRoutes(app, deps) {
         warehousesCount = wh?.cnt || 1;
       } catch (e) {}
 
-      let totalVouchers = 0;
+      let activeChallans = 0;
       try {
-        const [[vc]] = await pool.query(`SELECT COUNT(*) AS cnt FROM vouchers`);
-        totalVouchers = vc?.cnt || 0;
+        const [[ch]] = await pool.query(`SELECT COUNT(DISTINCT chalan_no) AS cnt FROM stock_ledger WHERE chalan_no IS NOT NULL AND chalan_no <> ''`);
+        activeChallans = ch?.cnt || 0;
       } catch (e) {}
 
       return {
@@ -113,7 +113,7 @@ module.exports = function registerHealthRoutes(app, deps) {
         todayDispatchQty: Number(opsToday?.today_dispatch_qty || 0),
         todayDispatchChallans: Number(opsToday?.today_dispatch_challans || 0),
         warehousesCount: Number(warehousesCount || 1),
-        totalVouchers: Number(totalVouchers || 0),
+        activeChallans: Number(activeChallans || 0),
         lowStockCount,
         totalItems,
         categorySnapshot,
