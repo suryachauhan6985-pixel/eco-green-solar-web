@@ -27,6 +27,46 @@
 //   attached (hadToken below) — a 401 with no token just means "not logged
 //   in yet", which is normal and not an error to react to.
 // ---------------------------------------------------------------------------
+// GLOBAL ERP OPERATING MODE ENGINE & CONFIG CACHE
+// ---------------------------------------------------------------------------
+window.ERP_CONFIG = window.ERP_CONFIG || {
+  erp_mode: 'hybrid',
+  feature_bom_enabled: '1',
+  feature_pricing_enabled: '1',
+  feature_warehouse_enabled: '1',
+  feature_pallet_enabled: '1',
+  feature_attachment_mandatory: '0',
+  feature_wattage_mandatory: 'auto',
+  nav_style: 'both'
+};
+
+window.ERP = {
+  getMode() { return (window.ERP_CONFIG && window.ERP_CONFIG.erp_mode) || 'hybrid'; },
+  isSerialEnabled() { const m = this.getMode(); return m !== 'quantity_only' && m !== 'accounts_only'; },
+  isQuantityOnly() { return this.getMode() === 'quantity_only'; },
+  isAccountingMode() { const m = this.getMode(); return m === 'full_accounting' || m === 'accounts_only'; },
+  isAccountsOnly() { return this.getMode() === 'accounts_only'; },
+  isBomEnabled() { return !window.ERP_CONFIG || (window.ERP_CONFIG.feature_bom_enabled !== '0' && this.getMode() !== 'accounts_only'); },
+  isPricingEnabled() { return !window.ERP_CONFIG || window.ERP_CONFIG.feature_pricing_enabled !== '0'; },
+  isWarehouseEnabled() { return !window.ERP_CONFIG || (window.ERP_CONFIG.feature_warehouse_enabled !== '0' && this.getMode() !== 'accounts_only'); },
+  isPalletEnabled() { return !window.ERP_CONFIG || (window.ERP_CONFIG.feature_pallet_enabled !== '0' && this.getMode() !== 'accounts_only'); },
+  isProofMandatory() { return !!(window.ERP_CONFIG && window.ERP_CONFIG.feature_attachment_mandatory === '1'); }
+};
+
+function applyErpModeRules() {
+  const mode = window.ERP.getMode();
+  if (document.body) {
+    document.body.setAttribute('data-erp-mode', mode);
+    document.body.classList.toggle('erp-mode-quantity-only', window.ERP.isQuantityOnly());
+    document.body.classList.toggle('erp-mode-financial-only', window.ERP.isAccountsOnly());
+    document.body.classList.toggle('erp-mode-full-accounting', window.ERP.isAccountingMode());
+  }
+  if (typeof window.renderNavButtons === 'function') {
+    window.renderNavButtons();
+  }
+}
+window.applyErpModeRules = applyErpModeRules;
+
 // ---------------------------------------------------------------------------
 // GLOBAL LOADING INDICATORS — Smooth Unidirectional Top Progress Bar + Action Loader
 // Batches cascading API calls into a SINGLE smooth sweep (0 -> 100% -> fade).
@@ -5148,7 +5188,7 @@ window.attachColumnFilters = function (table) {
   window.closeSidebarFlyout = closeAllFlyouts;
 
   function renderNavButtons() {
-    const navEl = document.getElementById('navScroll') || navScroll;
+    const navEl = document.getElementById('navScroll') || document.querySelector('.nav-scroll');
     if (!navEl) return;
     navEl.innerHTML = '';
 
@@ -5199,7 +5239,11 @@ window.attachColumnFilters = function (table) {
     });
   }
   window.renderNavButtons = renderNavButtons;
-  renderNavButtons();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderNavButtons);
+  } else {
+    renderNavButtons();
+  }
 
   function go(id, opts = {}) {
     const page = window.PAGES[id];
@@ -6443,56 +6487,19 @@ window.attachColumnFilters = function (table) {
 // ENTERPRISE ERP MODE & GATEWAY CASCADING MENU SYSTEM (Shree Sava / Tally Inspired)
 // ============================================================================
 (function () {
-  // 1. Global ERP Engine & Config Cache
-  window.ERP_CONFIG = {
-    erp_mode: 'hybrid',
-    feature_bom_enabled: '1',
-    feature_pricing_enabled: '1',
-    feature_warehouse_enabled: '1',
-    feature_pallet_enabled: '1',
-    feature_attachment_mandatory: '0',
-    feature_wattage_mandatory: 'auto',
-    nav_style: 'both'
-  };
-
-  window.ERP = {
-    getMode() { return window.ERP_CONFIG.erp_mode || 'hybrid'; },
-    isSerialEnabled() { return window.ERP_CONFIG.erp_mode !== 'quantity_only' && window.ERP_CONFIG.erp_mode !== 'accounts_only'; },
-    isQuantityOnly() { return window.ERP_CONFIG.erp_mode === 'quantity_only'; },
-    isAccountingMode() { return window.ERP_CONFIG.erp_mode === 'full_accounting' || window.ERP_CONFIG.erp_mode === 'accounts_only'; },
-    isAccountsOnly() { return window.ERP_CONFIG.erp_mode === 'accounts_only'; },
-    isBomEnabled() { return window.ERP_CONFIG.feature_bom_enabled !== '0' && window.ERP_CONFIG.erp_mode !== 'accounts_only'; },
-    isPricingEnabled() { return window.ERP_CONFIG.feature_pricing_enabled !== '0'; },
-    isWarehouseEnabled() { return window.ERP_CONFIG.feature_warehouse_enabled !== '0' && window.ERP_CONFIG.erp_mode !== 'accounts_only'; },
-    isPalletEnabled() { return window.ERP_CONFIG.feature_pallet_enabled !== '0' && window.ERP_CONFIG.erp_mode !== 'accounts_only'; },
-    isProofMandatory() { return window.ERP_CONFIG.feature_attachment_mandatory === '1'; }
-  };
-
-  // Fetch initial config from server
+  // 1. Fetch initial config from server
   async function loadGlobalErpConfig() {
     if (!window.Api) return;
     try {
       const res = await window.Api.get('/auth/app-settings', { silent: true });
       if (res && res.settings) {
-        window.ERP_CONFIG = Object.assign(window.ERP_CONFIG, res.settings);
-        applyErpModeRules();
+        window.ERP_CONFIG = Object.assign(window.ERP_CONFIG || {}, res.settings);
+        if (typeof window.applyErpModeRules === 'function') {
+          window.applyErpModeRules();
+        }
       }
     } catch (e) {}
   }
-
-  function applyErpModeRules() {
-    const mode = window.ERP ? window.ERP.getMode() : (window.ERP_CONFIG ? window.ERP_CONFIG.erp_mode : 'hybrid');
-    document.body.setAttribute('data-erp-mode', mode);
-    document.body.classList.toggle('erp-mode-quantity-only', window.ERP ? window.ERP.isQuantityOnly() : false);
-    document.body.classList.toggle('erp-mode-financial-only', window.ERP ? window.ERP.isAccountsOnly() : false);
-    document.body.classList.toggle('erp-mode-full-accounting', window.ERP ? window.ERP.isAccountingMode() : false);
-
-    if (typeof window.renderNavButtons === 'function') {
-      window.renderNavButtons();
-    }
-  }
-
-  window.applyErpModeRules = applyErpModeRules;
   loadGlobalErpConfig();
 
   // 2. Gateway of ERP / Cascading Flyout Menu Builder
