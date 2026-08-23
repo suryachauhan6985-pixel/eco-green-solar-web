@@ -87,15 +87,9 @@ async function getOrCreateItem(conn, category, brand, watt, solarType, model) {
   const w = Number(watt) || 0;
   const st = String(solarType || 'Others').trim() || 'Others';
   const m = String(model || '').trim();
-  // Model-based items (Wattage/Serial both non-mandatory for this category)
-  // must be looked up / created by category+brand+model, not watt — every
-  // model-based item shares watt=0, so watt+solar_type can't tell them
-  // apart (see getItemId above for the same reasoning).
   const isModelBased = w <= 0 && !!m;
 
-  // Ensure category exists in categories table so FK items_ibfk_1 is satisfied!
-  cat = await ensureCategoryExists(conn, cat);
-
+  // 1. Direct match with specified category
   const lookupSql = isModelBased
     ? `SELECT id FROM items WHERE category=? AND brand_name=? AND LOWER(COALESCE(model,''))=LOWER(?)`
     : `SELECT id FROM items WHERE category=? AND brand_name=? AND watt=? AND solar_type=?`;
@@ -104,6 +98,27 @@ async function getOrCreateItem(conn, category, brand, watt, solarType, model) {
   const [rows] = await conn.query(lookupSql, lookupParams);
   if (rows.length) return rows[0].id;
 
+  // 2. Intelligent cross-category lookup: If this item was already registered
+  // in Masters > Item Registration under its true category, use that item directly!
+  const crossLookupSql = isModelBased
+    ? `SELECT id FROM items WHERE LOWER(brand_name)=LOWER(?) AND LOWER(COALESCE(model,''))=LOWER(?) LIMIT 1`
+    : `SELECT id FROM items WHERE LOWER(brand_name)=LOWER(?) AND watt=? LIMIT 1`;
+  const crossLookupParams = isModelBased ? [b, m] : [b, w];
+  const [crossRows] = await conn.query(crossLookupSql, crossLookupParams);
+  if (crossRows.length) {
+    return crossRows[0].id;
+  }
+
+  // 3. Match by name slug across all registered items
+  const nameSlug = itemNameSlug(b, w, st, m);
+  const [nameRows] = await conn.query(`SELECT id FROM items WHERE name=? OR LOWER(name)=LOWER(?) LIMIT 1`, [nameSlug, nameSlug]);
+  if (nameRows.length) {
+    return nameRows[0].id;
+  }
+
+  // 4. Truly brand-new unregistered item: ensure category exists in categories table so FK is satisfied
+  cat = await ensureCategoryExists(conn, cat);
+
   const baseSql = isModelBased
     ? `SELECT uom, minimum_stock FROM items WHERE category=? AND brand_name=? LIMIT 1`
     : `SELECT uom, minimum_stock FROM items WHERE category=? AND brand_name=? AND watt=? LIMIT 1`;
@@ -111,7 +126,6 @@ async function getOrCreateItem(conn, category, brand, watt, solarType, model) {
   const [baseRows] = await conn.query(baseSql, baseParams);
   const uom = baseRows.length && baseRows[0].uom ? baseRows[0].uom : 'Nos';
   const minimumStock = baseRows.length && baseRows[0].minimum_stock != null ? baseRows[0].minimum_stock : 0;
-  const nameSlug = itemNameSlug(b, w, st, m);
 
   try {
     const [result] = await conn.query(
@@ -120,13 +134,10 @@ async function getOrCreateItem(conn, category, brand, watt, solarType, model) {
     );
     return result.insertId;
   } catch (e) {
-    // Race/duplicate safety net, same as the .py try/except around the
-    // INSERT: if another line/request created it in the meantime, or the
-    // name slug collided, just look it up instead of failing the whole save.
     const [retryRows] = await conn.query(lookupSql, lookupParams);
     if (retryRows.length) return retryRows[0].id;
-    const [nameRows] = await conn.query(`SELECT id FROM items WHERE name=? LIMIT 1`, [nameSlug]);
-    if (nameRows.length) return nameRows[0].id;
+    const [retryNameRows] = await conn.query(`SELECT id FROM items WHERE name=? LIMIT 1`, [nameSlug]);
+    if (retryNameRows.length) return retryNameRows[0].id;
     throw e;
   }
 }

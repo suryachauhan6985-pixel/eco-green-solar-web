@@ -1283,6 +1283,134 @@ window.PAGES.purchase = {
       const badgeEl = document.getElementById('purKitSelectedBadge');
       const confirmBtn = document.getElementById('purKitConfirmImportBtn');
 
+      // Fetch master items and categories so each BOM kit item resolves to its REAL registered category
+      let masterItems = [];
+      let masterCategories = [];
+      try {
+        const [itemsRes, catsRes] = await Promise.all([
+          window.Api.get('/masters/items'),
+          window.Api.get('/masters/categories')
+        ]);
+        if (Array.isArray(itemsRes)) masterItems = itemsRes;
+        if (Array.isArray(catsRes)) masterCategories = catsRes;
+      } catch (e) {
+        console.warn('Could not load master items for BOM resolution:', e);
+      }
+
+      function resolveKitItemMaster(it, secTitle) {
+        const rawName = String(it.name || '').trim();
+        const rawBrand = String(it.brand || '').trim();
+        const rawModel = String(it.model || '').trim();
+        const rawCat = String(it.category || '').trim();
+        const cleanTitle = String(secTitle || '').replace(/^[\d.\s-]+/, '').trim();
+
+        // 1. Exact match by item name in Item Master
+        if (rawName) {
+          const match = masterItems.find((m) => m.name && m.name.toLowerCase() === rawName.toLowerCase());
+          if (match) {
+            return {
+              category: match.category,
+              brand: match.brand_name || rawBrand || match.category,
+              watt: match.watt ? String(match.watt) : '',
+              model: match.model || rawModel,
+              type: match.solar_type || 'Standard',
+              needsSerial: !!match.serial_mandatory_effective
+            };
+          }
+        }
+
+        // 2. Match by brand_name + model in Item Master
+        if (rawBrand || rawName) {
+          const checkBrand = rawBrand || rawName;
+          const match = masterItems.find((m) => 
+            m.brand_name && m.brand_name.toLowerCase() === checkBrand.toLowerCase() &&
+            (rawModel ? (m.model || '').toLowerCase() === rawModel.toLowerCase() : true)
+          );
+          if (match) {
+            return {
+              category: match.category,
+              brand: match.brand_name,
+              watt: match.watt ? String(match.watt) : '',
+              model: match.model || rawModel,
+              type: match.solar_type || 'Standard',
+              needsSerial: !!match.serial_mandatory_effective
+            };
+          }
+        }
+
+        // 3. Match by brand_name only in Item Master
+        if (rawBrand || rawName) {
+          const checkBrand = rawBrand || rawName;
+          const match = masterItems.find((m) => m.brand_name && m.brand_name.toLowerCase() === checkBrand.toLowerCase());
+          if (match) {
+            return {
+              category: match.category,
+              brand: match.brand_name,
+              watt: match.watt ? String(match.watt) : (it.watt || ''),
+              model: match.model || rawModel || (!match.watt ? rawName : ''),
+              type: match.solar_type || 'Standard',
+              needsSerial: !!match.serial_mandatory_effective
+            };
+          }
+        }
+
+        // 4. Check if rawCat or cleanTitle directly matches a known category in Category Master
+        const knownCat = masterCategories.find((c) => 
+          (rawCat && c.name.toLowerCase() === rawCat.toLowerCase()) ||
+          (cleanTitle && c.name.toLowerCase() === cleanTitle.toLowerCase())
+        );
+        if (knownCat) {
+          const needsModel = purCategoryNeedsModel(knownCat.name);
+          const needsSerial = purCategoryNeedsSerial(knownCat.name);
+          return {
+            category: knownCat.name,
+            brand: rawBrand || rawName || knownCat.name,
+            watt: needsModel ? '' : (it.watt || ''),
+            model: needsModel ? (rawModel || rawName) : '',
+            type: it.type || 'Standard',
+            needsSerial
+          };
+        }
+
+        // 5. Fuzzy category detection from name / title
+        const combined = `${rawCat} ${cleanTitle} ${rawName}`.toLowerCase();
+        let guessedCat = '';
+        if (combined.includes('panel') || combined.includes('module')) guessedCat = 'Solar Panel';
+        else if (combined.includes('inverter') || combined.includes('inv')) guessedCat = 'Inverter';
+        else if (combined.includes('structure') || combined.includes('elevated') || combined.includes('tin shade') || combined.includes('rcc')) guessedCat = 'GI Structure';
+        else if (combined.includes('pipe') || combined.includes('gi pipe')) guessedCat = 'GI Pipe';
+        else if (combined.includes('earthing') || combined.includes('la kit') || combined.includes('lightning') || combined.includes('rod')) guessedCat = 'Earthing & LA Kit';
+        else if (combined.includes('wire') || combined.includes('cable') || combined.includes('dc cable') || combined.includes('ac cable')) guessedCat = 'Wire Box';
+        else if (combined.includes('bom box') || combined.includes('fastener') || combined.includes('mcb') || combined.includes('spd') || combined.includes('box')) guessedCat = 'Bom Box';
+        else if (combined.includes('civil') || combined.includes('cement') || combined.includes('grouting')) guessedCat = 'Civil Items';
+
+        if (guessedCat) {
+          const matchedGuessed = masterCategories.find((c) => c.name.toLowerCase() === guessedCat.toLowerCase());
+          if (matchedGuessed) {
+            const needsModel = purCategoryNeedsModel(matchedGuessed.name);
+            const needsSerial = purCategoryNeedsSerial(matchedGuessed.name);
+            return {
+              category: matchedGuessed.name,
+              brand: rawBrand || rawName || matchedGuessed.name,
+              watt: needsModel ? '' : (it.watt || ''),
+              model: needsModel ? (rawModel || rawName) : '',
+              type: it.type || 'Standard',
+              needsSerial
+            };
+          }
+        }
+
+        const fallbackCat = masterCategories[0] ? masterCategories[0].name : 'Other';
+        return {
+          category: fallbackCat,
+          brand: rawBrand || rawName || fallbackCat,
+          watt: it.watt || '',
+          model: rawModel || rawName || '',
+          type: it.type || 'Standard',
+          needsSerial: purCategoryNeedsSerial(fallbackCat)
+        };
+      }
+
       let currentKitItems = [];
 
       function loadKitItems() {
@@ -1295,14 +1423,16 @@ window.PAGES.purchase = {
           kitObj.sections.forEach((sec) => {
             (sec.items || []).forEach((it) => {
               const defaultQty = Number(it.qty || 1);
+              const resolved = resolveKitItemMaster(it, sec.title);
               currentKitItems.push({
                 selected: true,
-                category: it.category || sec.title || 'Other',
-                name: it.name || '',
-                brand: it.brand || it.name || '',
-                watt: it.watt || '',
-                model: it.model || '',
-                type: it.type || 'Standard',
+                category: resolved.category,
+                name: it.name || resolved.model || resolved.brand || '',
+                brand: resolved.brand,
+                watt: resolved.watt,
+                model: resolved.model,
+                type: resolved.type,
+                needsSerial: resolved.needsSerial,
                 defaultQty: defaultQty,
                 qty: defaultQty * mult
               });
@@ -1333,7 +1463,7 @@ window.PAGES.purchase = {
               <td style="text-align:center; padding:6px 6px; border-bottom:1px solid var(--border-light);">
                 <input type="checkbox" class="pur-kit-row-check" data-idx="${idx}" ${it.selected ? 'checked' : ''}>
               </td>
-              <td style="padding:6px 10px; border-bottom:1px solid var(--border-light); font-size:12px; color:var(--txt-muted);">${purEsc(it.category)}</td>
+              <td style="padding:6px 10px; border-bottom:1px solid var(--border-light); font-size:12px; font-weight:600; color:var(--blue);">${purEsc(it.category)}</td>
               <td style="padding:6px 10px; border-bottom:1px solid var(--border-light); font-size:12.5px; font-weight:600; color:var(--txt);">${purEsc(it.name)}</td>
               <td style="padding:6px 6px; border-bottom:1px solid var(--border-light); text-align:center; font-size:12px; color:var(--txt-muted);">${it.defaultQty}</td>
               <td style="padding:6px 10px; border-bottom:1px solid var(--border-light); text-align:center;">
@@ -1425,23 +1555,15 @@ window.PAGES.purchase = {
           let addedCount = 0;
 
           toImport.forEach((it) => {
-            const cat = it.category;
-            const needsModel = purCategoryNeedsModel(cat);
-            const needsSerial = purCategoryNeedsSerial(cat);
-            const brand = it.brand || it.name || '';
-            const watt = needsModel ? '' : (it.watt || '');
-            const model = needsModel ? (it.model || it.name || '') : '';
-            const type = it.type || 'Standard';
-
             purLines.push({
-              cat,
-              brand,
-              watt,
-              model,
-              type,
+              cat: it.category,
+              brand: it.brand,
+              watt: it.watt,
+              model: it.model,
+              type: it.type,
               warehouse: wh,
               qty: String(it.qty),
-              needsSerial
+              needsSerial: it.needsSerial
             });
             addedCount++;
           });
