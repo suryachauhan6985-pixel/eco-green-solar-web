@@ -64,17 +64,37 @@ async function validateSalesLineSerials(runner, serials, line) {
   return errors;
 }
 
+async function ensureCategoryExists(conn, categoryName) {
+  const cat = String(categoryName || 'Other').trim() || 'Other';
+  try {
+    const [rows] = await conn.query(`SELECT name FROM categories WHERE name = ? LIMIT 1`, [cat]);
+    if (!rows.length) {
+      await conn.query(
+        `INSERT INTO categories (name, watt_mandatory, serial_mandatory) VALUES (?, 0, 0)
+         ON DUPLICATE KEY UPDATE name=VALUES(name)`,
+        [cat]
+      );
+    }
+  } catch (e) {
+    // Ignore duplicate or existing
+  }
+  return cat;
+}
+
 async function getOrCreateItem(conn, category, brand, watt, solarType, model) {
-  const cat = String(category || 'Other').trim();
-  const b = String(brand || cat || 'General').trim();
+  let cat = String(category || 'Other').trim() || 'Other';
+  const b = String(brand || cat || 'General').trim() || 'General';
   const w = Number(watt) || 0;
-  const st = String(solarType || 'Others').trim();
+  const st = String(solarType || 'Others').trim() || 'Others';
   const m = String(model || '').trim();
   // Model-based items (Wattage/Serial both non-mandatory for this category)
   // must be looked up / created by category+brand+model, not watt — every
   // model-based item shares watt=0, so watt+solar_type can't tell them
   // apart (see getItemId above for the same reasoning).
   const isModelBased = w <= 0 && !!m;
+
+  // Ensure category exists in categories table so FK items_ibfk_1 is satisfied!
+  cat = await ensureCategoryExists(conn, cat);
 
   const lookupSql = isModelBased
     ? `SELECT id FROM items WHERE category=? AND brand_name=? AND LOWER(COALESCE(model,''))=LOWER(?)`
