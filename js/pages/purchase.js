@@ -257,20 +257,28 @@ window.PAGES.purchase = {
         return;
       }
       container.innerHTML = lines.map((ln, idx) => `
-        <div class="line-item" data-idx="${idx}">
+        <div class="line-item" data-idx="${idx}" title="Double-click to edit this line in the form above">
           <span>${ln.cat} • ${ln.brand} ${ln.model ? '• ' + ln.model : (ln.watt ? '• ' + ln.watt + 'W' : '')} • ${ln.type} • ${ln.warehouse}</span>
           <span class="qty-badge">Qty ${ln.qty}${ln.needsSerial === false ? ' <small>(Quantity-based, no serial)</small>' : ''}</span>
         </div>
       `).join('');
     }
 
-    function wireLineSelection(container) {
+    function wireLineSelection(container, onDblClick) {
       container.addEventListener('click', (e) => {
         const item = e.target.closest('.line-item');
         if (!item) return;
         container.querySelectorAll('.line-item').forEach((el) => el.classList.remove('selected'));
         item.classList.add('selected');
       });
+      if (typeof onDblClick === 'function') {
+        container.addEventListener('dblclick', (e) => {
+          const item = e.target.closest('.line-item');
+          if (!item) return;
+          const idx = parseInt(item.dataset.idx, 10);
+          if (!isNaN(idx) && idx >= 0) onDblClick(idx);
+        });
+      }
     }
 
     function selectedLineIndex(container) {
@@ -1150,8 +1158,31 @@ window.PAGES.purchase = {
     const purLines = [];
     const purProof = { files: [] };
     const purLineList = $('purLineList');
-    renderLineList(purLineList, purLines, 'No product lines added yet — fill the fields above and click "Add Product Line".');
-    wireLineSelection(purLineList);
+    wireLineSelection(purLineList, async (idx) => {
+      const ln = purLines[idx];
+      if (!ln) return;
+      purLines.splice(idx, 1);
+      renderLineList(purLineList, purLines, 'No product lines added yet — fill the fields above and click "Add Product Line".');
+      updatePurSerialVisibility();
+
+      $('purCat').value = ln.cat;
+      await refreshPurBrandsAndType();
+      $('purBrand').value = ln.brand;
+      await refreshPurWattages();
+      await refreshPurModels();
+      const needsModel = purCategoryNeedsModel(ln.cat);
+      if (needsModel) {
+        $('purModel').value = ln.model || '';
+      } else {
+        $('purWatt').value = ln.watt || '';
+      }
+      $('purType').value = ln.type || 'Standard';
+      if (ln.warehouse) $('purWh').value = ln.warehouse;
+      $('purQty').value = ln.qty || '';
+      updatePurWattModelVisibility();
+      updatePurSerialVisibility();
+      if (window.showToast) window.showToast(`Line loaded into form for editing: ${ln.cat} (${ln.brand})`, 'info');
+    });
     wireProofButtons('purProofFile', 'purBtnAttach', 'purBtnClearProof', 'purProofName', purProof);
 
     $('purBtnAddLine').addEventListener('click', () => {
