@@ -41,6 +41,7 @@ const fsp = fs.promises;
 const path = require('path');
 const ExcelJS = require('exceljs');
 const { fillTemplateAndConvertToPdf } = require('../services/challanPdf');
+const { validateVehicleNumber } = require('../utils/vehicleValidator');
 
 // Fixed set of Challan summary rows a BOM item can be filed under — kept in
 // one place so both the mapping-editor dropdown and the PUT validation use
@@ -178,6 +179,20 @@ module.exports = function registerChallanRoutes(app, deps) {
     const orderNo = String(b.orderNo || '').trim();
     const v1 = String(b.vehicleNo || '').trim();
     const v2 = String(b.vehicleNo2 || '').trim();
+
+    if (v1) {
+      const val1 = validateVehicleNumber(v1);
+      if (!val1.valid) {
+        return res.status(400).json({ error: `Vehicle No. 1 is invalid: ${val1.error}` });
+      }
+    }
+    if (v2) {
+      const val2 = validateVehicleNumber(v2);
+      if (!val2.valid) {
+        return res.status(400).json({ error: `Vehicle No. 2 is invalid: ${val2.error}` });
+      }
+    }
+
     const vehicleCombined = [v1, v2].filter(Boolean).join(' / ');
 
     const [result] = await pool.query(
@@ -429,6 +444,20 @@ module.exports = function registerChallanRoutes(app, deps) {
     const orderNo = String(b.orderNo || '').trim();
     const v1 = String(b.vehicleNo || '').trim();
     const v2 = String(b.vehicleNo2 || '').trim();
+
+    if (v1) {
+      const val1 = validateVehicleNumber(v1);
+      if (!val1.valid) {
+        return res.status(400).json({ error: `Vehicle No. 1 is invalid: ${val1.error}` });
+      }
+    }
+    if (v2) {
+      const val2 = validateVehicleNumber(v2);
+      if (!val2.valid) {
+        return res.status(400).json({ error: `Vehicle No. 2 is invalid: ${val2.error}` });
+      }
+    }
+
     const vehicleCombined = [v1, v2].filter(Boolean).join(' / ');
 
     const [[existing]] = await pool.query(`SELECT id, challan_no FROM bom_challans WHERE id=?`, [id]);

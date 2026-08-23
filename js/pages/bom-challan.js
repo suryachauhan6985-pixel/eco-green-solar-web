@@ -465,6 +465,76 @@ function bomTodayLocalDateStr() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+// Live RTO Vehicle Validation Helpers for Challan Modals
+function bomWireChallanVehicleValidation() {
+  const v1 = document.getElementById('bomChallanModalVehicleNo');
+  const f1 = document.getElementById('bomChallanVehicleFeedback1');
+  const v2 = document.getElementById('bomChallanModalVehicleNo2');
+  const f2 = document.getElementById('bomChallanVehicleFeedback2');
+
+  function attach(input, feedback) {
+    if (!input || !feedback) return;
+    function update() {
+      const val = input.value.trim();
+      if (!val) {
+        feedback.innerHTML = '';
+        feedback.className = 'vehicle-rto-feedback';
+        return;
+      }
+      if (!window.VehicleValidator) {
+        feedback.innerHTML = '';
+        return;
+      }
+      const res = window.VehicleValidator.validate(val);
+      if (res.valid) {
+        feedback.className = 'vehicle-rto-feedback valid';
+        feedback.innerHTML = `
+          <span class="vehicle-rto-badge valid">
+            <i class="fa-solid fa-circle-check"></i>
+            <span><b>${bomEsc(res.state)}</b> • ${bomEsc(res.place)}</span>
+          </span>
+        `;
+      } else {
+        feedback.className = 'vehicle-rto-feedback invalid';
+        feedback.innerHTML = `
+          <span class="vehicle-rto-badge invalid">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>${bomEsc(res.error)}</span>
+          </span>
+        `;
+      }
+    }
+    input.addEventListener('input', update);
+    input.addEventListener('blur', update);
+    update();
+  }
+
+  attach(v1, f1);
+  attach(v2, f2);
+}
+
+function bomValidateChallanVehicleInputs(payload, modalVehicleNo, modalVehicleNo2) {
+  if (payload.vehicleNo && window.VehicleValidator) {
+    const v1Check = window.VehicleValidator.validate(payload.vehicleNo);
+    if (!v1Check.valid) {
+      if (window.showToast) window.showToast(`Vehicle No. 1 is invalid: ${v1Check.error}`, 'error');
+      else alert(`Vehicle No. 1 is invalid: ${v1Check.error}`);
+      if (modalVehicleNo) modalVehicleNo.focus();
+      return false;
+    }
+  }
+  if (payload.vehicleNo2 && window.VehicleValidator) {
+    const v2Check = window.VehicleValidator.validate(payload.vehicleNo2);
+    if (!v2Check.valid) {
+      if (window.showToast) window.showToast(`Vehicle No. 2 is invalid: ${v2Check.error}`, 'error');
+      else alert(`Vehicle No. 2 is invalid: ${v2Check.error}`);
+      if (modalVehicleNo2) modalVehicleNo2.focus();
+      return false;
+    }
+  }
+  return true;
+}
+
 function bomRenderChallanEntryModalHtml(header, kit, opts) {
   opts = opts || {};
   const autoResult = bomComputeChallanAutoQty(kit ? kit.sections : []);
@@ -523,8 +593,16 @@ function bomRenderChallanEntryModalHtml(header, kit, opts) {
         <div class="field"><label>Capacity (kW)</label><input type="text" id="bomChallanModalCapacity" value="${bomEscAttr(capVal)}"></div>
         <div class="field"><label>Name</label><input type="text" id="bomChallanModalName" value="${bomEscAttr(header.customerName || '')}" placeholder="Customer / Party"></div>
         <div class="field"><label>City</label><input type="text" id="bomChallanModalCity" value="${bomEscAttr(header.city || '')}" placeholder="City"></div>
-        <div class="field"><label>Vehicle No.</label><input type="text" id="bomChallanModalVehicleNo" value="${bomEscAttr(header.vehicleNo || '')}" placeholder="e.g. GJ-03-BZ-7562"></div>
-        <div class="field"><label>Vehicle No. 2 (Optional)</label><input type="text" id="bomChallanModalVehicleNo2" value="${bomEscAttr(header.vehicleNo2 || '')}" placeholder="e.g. GJ-01-AB-1234 (Second vehicle if multi-trip)"></div>
+        <div class="field">
+          <label>Vehicle No.</label>
+          <input type="text" id="bomChallanModalVehicleNo" value="${bomEscAttr(header.vehicleNo || '')}" placeholder="e.g. GJ-03-BZ-7562" autocomplete="off">
+          <div class="vehicle-rto-feedback" id="bomChallanVehicleFeedback1"></div>
+        </div>
+        <div class="field">
+          <label>Vehicle No. 2 (Optional)</label>
+          <input type="text" id="bomChallanModalVehicleNo2" value="${bomEscAttr(header.vehicleNo2 || '')}" placeholder="e.g. GJ-01-AB-1234 (Second vehicle if multi-trip)" autocomplete="off">
+          <div class="vehicle-rto-feedback" id="bomChallanVehicleFeedback2"></div>
+        </div>
       </div>
 
       <div style="display:flex; align-items:center; justify-content:space-between; margin:18px 0 10px; flex-wrap:wrap; gap:8px;">
@@ -1574,6 +1652,7 @@ window.openChallanFromSalesData = async function(salesData) {
   if (modalNo && !modalNo.value.trim() && challanNo) modalNo.value = challanNo;
 
   if (addItemBtn) addItemBtn.addEventListener('click', bomChallanAddExtraItemRow);
+  bomWireChallanVehicleValidation();
 
   function buildPayload() {
     return {
@@ -1607,6 +1686,9 @@ window.openChallanFromSalesData = async function(salesData) {
         window.openModal('Validation Error', '<p>Challan No. is required.</p>');
         return;
       }
+      if (!bomValidateChallanVehicleInputs(payload, modalVehicleNo, modalVehicleNo2)) {
+        return;
+      }
       saveBtn.disabled = true;
       saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
       try {
@@ -1628,6 +1710,9 @@ window.openChallanFromSalesData = async function(salesData) {
       const payload = buildPayload();
       if (!payload.challanNo) {
         window.openModal('Validation Error', '<p>Challan No. is required.</p>');
+        return;
+      }
+      if (!bomValidateChallanVehicleInputs(payload, modalVehicleNo, modalVehicleNo2)) {
         return;
       }
       printBtn.disabled = true;
@@ -1766,6 +1851,7 @@ window.openCustomChallanModal = async function(prefillData) {
   }
 
   if (addItemBtn) addItemBtn.addEventListener('click', bomChallanAddExtraItemRow);
+  bomWireChallanVehicleValidation();
 
   function buildPayload() {
     return {
@@ -1792,6 +1878,9 @@ window.openCustomChallanModal = async function(prefillData) {
         window.openModal('Validation Error', '<p>Challan No. is required.</p>');
         return;
       }
+      if (!bomValidateChallanVehicleInputs(payload, modalVehicleNo, modalVehicleNo2)) {
+        return;
+      }
       saveBtn.disabled = true;
       saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
       try {
@@ -1813,6 +1902,9 @@ window.openCustomChallanModal = async function(prefillData) {
       const payload = buildPayload();
       if (!payload.challanNo) {
         window.openModal('Validation Error', '<p>Challan No. is required.</p>');
+        return;
+      }
+      if (!bomValidateChallanVehicleInputs(payload, modalVehicleNo, modalVehicleNo2)) {
         return;
       }
       printBtn.disabled = true;
@@ -2091,6 +2183,7 @@ window.openChallanEditModal = async function(challanId) {
     }
 
     if (addItemBtn) addItemBtn.addEventListener('click', bomChallanAddExtraItemRow);
+    bomWireChallanVehicleValidation();
 
     function buildPayload() {
       return {
@@ -2117,6 +2210,9 @@ window.openChallanEditModal = async function(challanId) {
           window.openModal('Validation Error', '<p>Challan No. is required.</p>');
           return;
         }
+        if (!bomValidateChallanVehicleInputs(payload, modalVehicleNo, modalVehicleNo2)) {
+          return;
+        }
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
         try {
@@ -2138,6 +2234,9 @@ window.openChallanEditModal = async function(challanId) {
         const payload = buildPayload();
         if (!payload.challanNo) {
           window.openModal('Validation Error', '<p>Challan No. is required.</p>');
+          return;
+        }
+        if (!bomValidateChallanVehicleInputs(payload, modalVehicleNo, modalVehicleNo2)) {
           return;
         }
         printBtn.disabled = true;

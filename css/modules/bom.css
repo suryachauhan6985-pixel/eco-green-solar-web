@@ -910,3 +910,39 @@ td.bom-challan-footer-caption{
 .bom-pop-in {
   animation: bomPopCheck 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
+
+/* Vehicle Number Live RTO Validation Feedback Badge */
+.vehicle-rto-feedback {
+  margin-top: 4px;
+  font-size: 11.5px;
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.vehicle-rto-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  animation: bomPopCheck 0.25s ease-out;
+}
+
+.vehicle-rto-badge.valid {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.vehicle-rto-badge.invalid {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+

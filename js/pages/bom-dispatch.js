@@ -808,6 +808,7 @@ function createBomDispatchModule(ctx) {
 
         // ---------------- Extra (software-added) item rows ----------------
         if (addItemBtn) addItemBtn.addEventListener('click', () => bomChallanAddExtraItemRow());
+        if (typeof bomWireChallanVehicleValidation === 'function') bomWireChallanVehicleValidation();
 
         // Collect ONLY Solar Panel serial numbers for the auto Excel
         // that is written to the NAS folder when a Challan is saved/printed.
@@ -875,6 +876,9 @@ function createBomDispatchModule(ctx) {
         if (saveBtn) {
           saveBtn.addEventListener('click', async () => {
             const payload = buildChallanSavePayload();
+            if (typeof bomValidateChallanVehicleInputs === 'function') {
+              if (!bomValidateChallanVehicleInputs(payload, modalVehicleNo, modalVehicleNo2)) return;
+            }
             saveBtn.disabled = true;
             const originalLabel = saveBtn.innerHTML;
             saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
@@ -901,13 +905,14 @@ function createBomDispatchModule(ctx) {
 
         if (printBtn) {
           printBtn.addEventListener('click', async () => {
-            // Open the tab SYNCHRONOUSLY, as the very first thing in this
-            // handler, before any `await`. This is what stops browsers'
+            const payload = buildChallanSavePayload();
+            if (typeof bomValidateChallanVehicleInputs === 'function') {
+              if (!bomValidateChallanVehicleInputs(payload, modalVehicleNo, modalVehicleNo2)) return;
+            }
             printBtn.disabled = true;
             const originalLabel = printBtn.innerHTML;
             printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
             try {
-              const payload = buildChallanSavePayload();
               await window.Api.post('/challan', payload);
               syncSavedChallanBackToBom(payload);
               if (window.showToast) window.showToast('Challan saved & opening print preview!', 'success');
