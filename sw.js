@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eco-green-solar-erp-v116';
+const CACHE_NAME = 'eco-green-solar-erp-v117';
 
 const APP_SHELL = [
   '/',
@@ -20,20 +20,19 @@ const APP_SHELL = [
   '/assets/icons/icon-1024.png?v=2',
   '/assets/logo.png',
   '/assets/challan_logo.png',
+  '/js/data/purchase-data.js?v=3',
   '/js/data/api.js?v=5',
-  '/js/data/store.js?v=3',
-  '/js/data/auth-store.js?v=7',
   '/js/data/sheets-store.js?v=4',
   '/js/pages/dashboard.js?v=9',
   '/js/pages/scansheet.js?v=25',
   '/js/pages/masters.js?v=10',
   '/js/pages/purchase.js?v=7',
-  '/js/pages/sales.js?v=7',
+  '/js/pages/sales.js?v=9',
   '/js/pages/stockassign.js?v=3',
   '/js/pages/purchaseregister.js?v=3',
   '/js/pages/saleregister.js?v=4',
   '/js/pages/reports.js?v=3',
-  '/js/pages/returns.js?v=7',
+  '/js/pages/returns.js?v=3',
   '/js/pages/partyledger.js?v=20',
   '/js/pages/lowstock.js?v=4',
   '/js/pages/backup.js?v=4',
@@ -47,15 +46,23 @@ const APP_SHELL = [
   '/js/pages/bom-serial-modal.js?v=4',
   '/js/pages/bom-dispatch.js?v=14',
   '/js/pages/bom.js?v=32',
-  '/js/app.js?v=50',
-  '/js/theme.js?v=4'
+  '/js/app.js?v=51',
+  '/js/theme.js?v=5'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
+      .then((cache) => {
+        return Promise.allSettled(
+          APP_SHELL.map((url) =>
+            fetch(url).then((res) => {
+              if (res && res.ok) return cache.put(url, res);
+            })
+          )
+        );
+      })
       .then(() => self.skipWaiting())
   );
 });
@@ -99,26 +106,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Everything else (JS/CSS/images) — cache-first
+  // 3. Static assets (JS/CSS/images/fonts) — Cache-first with network fallback
+  // NEVER fall back to /index.html for static assets (which would cause SyntaxError: Unexpected token '<')
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
 
-      return fetch(request)
-        .then((networkResponse) => {
-          const shouldCache =
-            networkResponse &&
-            networkResponse.ok &&
-            url.origin === self.location.origin;
+      return fetch(request).then((networkResponse) => {
+        const shouldCache =
+          networkResponse &&
+          networkResponse.ok &&
+          url.origin === self.location.origin;
 
-          if (shouldCache) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-          }
+        if (shouldCache) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+        }
 
-          return networkResponse;
-        })
-        .catch(() => caches.match('/index.html'));
+        return networkResponse;
+      });
     })
   );
 });

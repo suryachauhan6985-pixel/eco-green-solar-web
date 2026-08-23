@@ -4433,42 +4433,54 @@ window.attachColumnFilters = function (table) {
   document.addEventListener('click', closeProfileMenu);
 
   // Build sidebar buttons from the registered pages with Hover Pre-fetching
-  NAV_ORDER.forEach((id) => {
-    const page = window.PAGES[id];
-    if (!page) return;
-    const btn = document.createElement('button');
-    btn.className = 'nav-btn' + (id === 'dashboard' ? ' active' : '');
-    btn.dataset.tab = id;
-    btn.innerHTML = `<i class="fa-solid ${page.icon}"></i> <span>${page.name}</span>`;
-    btn.onclick = () => go(id);
+  function renderNavButtons() {
+    const navEl = document.getElementById('navScroll') || navScroll;
+    if (!navEl) return;
+    navEl.innerHTML = '';
+    NAV_ORDER.forEach((id) => {
+      const page = window.PAGES[id];
+      if (!page) return;
+      const btn = document.createElement('button');
+      btn.className = 'nav-btn' + (id === 'dashboard' ? ' active' : '');
+      btn.dataset.tab = id;
+      btn.innerHTML = `<i class="fa-solid ${page.icon}"></i> <span>${page.name}</span>`;
+      btn.onclick = () => go(id);
 
-    // Hover Pre-fetching: Warms up API caches before user even finishes clicking
-    btn.addEventListener('mouseenter', () => {
-      if (!window.Api || !window.currentAuthToken) return;
-      if (['masters', 'purchase', 'sales', 'bom', 'stockassign'].includes(id)) {
-        window.Api.get('/masters/categories', { silent: true }).catch(() => {});
-        window.Api.get('/masters/brands', { silent: true }).catch(() => {});
-        window.Api.get('/masters/items', { silent: true }).catch(() => {});
-        window.Api.get('/masters/warehouses', { silent: true }).catch(() => {});
-      }
-    }, { passive: true });
+      // Hover Pre-fetching: Warms up API caches before user even finishes clicking
+      btn.addEventListener('mouseenter', () => {
+        if (!window.Api || !window.currentAuthToken) return;
+        if (['masters', 'purchase', 'sales', 'bom', 'stockassign'].includes(id)) {
+          window.Api.get('/masters/categories', { silent: true }).catch(() => {});
+          window.Api.get('/masters/brands', { silent: true }).catch(() => {});
+          window.Api.get('/masters/items', { silent: true }).catch(() => {});
+          window.Api.get('/masters/warehouses', { silent: true }).catch(() => {});
+        }
+      }, { passive: true });
 
-    navScroll.appendChild(btn);
-  });
+      navEl.appendChild(btn);
+    });
+  }
+  renderNavButtons();
 
   function go(id) {
     const page = window.PAGES[id];
     if (!page) return;
 
-    // Trigger smooth page transition animation
-    content.classList.remove('page-entering');
-    void content.offsetWidth; // force reflow
-    content.innerHTML = page.html;
-    content.classList.add('page-entering');
+    const contentEl = document.getElementById('content') || content;
+    const pageTitleEl = document.getElementById('pageTitle') || pageTitle;
+    const pageSubEl = document.getElementById('pageSub') || pageSub;
 
-    pageTitle.textContent = page.name;
-    pageSub.textContent = page.sub || '';
-    if (topbarExtra) topbarExtra.innerHTML = ''; // reset header widget before each page's init()
+    if (contentEl) {
+      // Trigger smooth page transition animation
+      contentEl.classList.remove('page-entering');
+      void contentEl.offsetWidth; // force reflow
+      contentEl.innerHTML = page.html || '';
+      contentEl.classList.add('page-entering');
+    }
+
+    if (pageTitleEl) pageTitleEl.textContent = page.name || 'Dashboard';
+    if (pageSubEl) pageSubEl.textContent = page.sub || '';
+    if (window.topbarExtra) window.topbarExtra.innerHTML = ''; // reset header widget before each page's init()
 
     document.querySelectorAll('.nav-btn').forEach((b) =>
       b.classList.toggle('active', b.dataset.tab === id)
@@ -4476,20 +4488,28 @@ window.attachColumnFilters = function (table) {
 
     // Page-specific wiring (subtab clicks, form buttons, etc.) runs after
     // its HTML is in the DOM.
-    if (typeof page.init === 'function') page.init();
+    if (typeof page.init === 'function') {
+      try {
+        page.init();
+      } catch (err) {
+        console.error(`Error initializing page "${id}":`, err);
+      }
+    }
 
-    applyGlobalTableSearch(currentSearchQuery);
+    if (typeof applyGlobalTableSearch === 'function') {
+      applyGlobalTableSearch(currentSearchQuery);
+    }
 
-    closeSidebar();
+    if (typeof closeSidebar === 'function') closeSidebar();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Auto-remove page-entering class after animation completes
     setTimeout(() => {
-      content.classList.remove('page-entering');
+      if (contentEl) contentEl.classList.remove('page-entering');
     }, 400);
 
     // Remember which page is open by writing it into the URL hash (e.g.
-    // "#sales"). On a refresh/reopen, the startup code below reads this
+    // "#sales"). On a refresh/reopen, the startup code reads this
     // hash to restore the same page instead of always falling back to
     // Dashboard. history.replaceState (not pushState) so navigating
     // between tabs doesn't pile up entries in the browser's Back history.
@@ -4779,39 +4799,20 @@ window.attachColumnFilters = function (table) {
     const openModals = document.querySelectorAll(
       '.modal-overlay.show, .confirm-overlay.show, .egs-popup-overlay.active, .egs-onboard-overlay, .sidebar.open, #statementOverlay.show, #ledgerFormOverlay.show'
     );
+    const isLocked = document.documentElement.classList.contains('egs-modal-locked');
     if (openModals.length > 0) {
-      document.documentElement.classList.add('egs-modal-locked', 'no-scroll');
-      document.body.classList.add('egs-modal-locked', 'no-scroll');
+      if (!isLocked) {
+        document.documentElement.classList.add('egs-modal-locked', 'no-scroll');
+        document.body.classList.add('egs-modal-locked', 'no-scroll');
+      }
     } else {
       activeModalLockCount = 0;
-      document.documentElement.classList.remove('egs-modal-locked', 'no-scroll');
-      document.body.classList.remove('egs-modal-locked', 'no-scroll');
+      if (isLocked) {
+        document.documentElement.classList.remove('egs-modal-locked', 'no-scroll');
+        document.body.classList.remove('egs-modal-locked', 'no-scroll');
+      }
     }
   };
-
-  // Automatic DOM Observer: Ensures scroll lock stays 100% synchronized anywhere in the app
-  if (typeof MutationObserver !== 'undefined') {
-    const modalScrollObserver = new MutationObserver(() => {
-      window.syncModalScrollLock();
-    });
-    if (document.body) {
-      modalScrollObserver.observe(document.body, {
-        attributes: true,
-        attributeFilter: ['class', 'style'],
-        subtree: true,
-        childList: true
-      });
-    } else {
-      window.addEventListener('DOMContentLoaded', () => {
-        modalScrollObserver.observe(document.body, {
-          attributes: true,
-          attributeFilter: ['class', 'style'],
-          subtree: true,
-          childList: true
-        });
-      });
-    }
-  }
 
   // Wheel and Touch Event Trap: Prevents background scrolling when hovering backdrop or hitting modal boundaries
   document.addEventListener('wheel', (e) => {
