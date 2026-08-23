@@ -4886,7 +4886,7 @@ window.attachColumnFilters = function (table) {
     }
   }
 
-  function updateTier1Selection(index) {
+  function updateTier1Selection(index, openNested = false) {
     const flyout = document.getElementById('egsActiveSidebarFlyout');
     if (!flyout) return;
     const items = Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item'));
@@ -4899,12 +4899,14 @@ window.attachColumnFilters = function (table) {
     items.forEach((it, idx) => {
       const isSel = (idx === index);
       it.classList.toggle('selected', isSel);
-      if (isSel && it.classList.contains('has-nested')) {
+      if (isSel && it.classList.contains('has-nested') && openNested) {
         setNestedSubmenuOpen(it, true);
-      } else if (isSel && !it.classList.contains('has-nested')) {
-        setNestedSubmenuOpen(null, false);
       }
     });
+
+    if (!openNested) {
+      setNestedSubmenuOpen(null, false);
+    }
   }
 
   function updateTier2Selection(index) {
@@ -5066,7 +5068,7 @@ window.attachColumnFilters = function (table) {
     });
 
     if (selectFirst && tier1Els.length > 0) {
-      updateTier1Selection(0);
+      updateTier1Selection(0, false);
     }
   }
 
@@ -5218,7 +5220,7 @@ window.attachColumnFilters = function (table) {
           }
         }
 
-        // Party Ledger filter & action switching
+        // Party Ledger filter & action switching (No autofocus on search)
         if (id === 'partyledger') {
           if (opts.filter) {
             const typeFilter = document.getElementById('plTypeFilter');
@@ -5230,19 +5232,13 @@ window.attachColumnFilters = function (table) {
           if (opts.action === 'create') {
             const btn = document.getElementById('btnCreateLedger');
             if (btn) btn.click();
-          } else if (opts.action === 'display' || opts.action === 'alter') {
-            const search = document.getElementById('plSearch');
-            if (search) search.focus();
           }
         }
 
-        // Masters actions switching
+        // Masters actions switching (No autofocus on search)
         if (id === 'masters') {
           if (opts.action === 'create') {
-            if (subKey === 'item-reg') {
-              const brandInp = document.getElementById('mItemBrandInput') || document.getElementById('mItemCatDropdown');
-              if (brandInp) brandInp.focus();
-            } else if (subKey === 'category') {
+            if (subKey === 'category') {
               const catInp = document.getElementById('mInputCatName');
               if (catInp) catInp.focus();
             } else if (subKey === 'uom') {
@@ -5251,11 +5247,6 @@ window.attachColumnFilters = function (table) {
             } else if (subKey === 'warehouse') {
               const whInp = document.getElementById('mInputWhName');
               if (whInp) whInp.focus();
-            }
-          } else if (opts.action === 'display' || opts.action === 'alter') {
-            if (subKey === 'item-reg') {
-              const itemSearch = document.getElementById('mItemSearchInput');
-              if (itemSearch) itemSearch.focus();
             }
           }
         }
@@ -5325,7 +5316,7 @@ window.attachColumnFilters = function (table) {
         setNestedSubmenuOpen(null, false);
         navState.focusTier = 'flyout_tier1';
         navState.tier2Index = -1;
-        updateTier1Selection(navState.tier1Index);
+        updateTier1Selection(navState.tier1Index, false);
         return true;
       }
       if (key === 'Enter') {
@@ -5357,14 +5348,14 @@ window.attachColumnFilters = function (table) {
         e.preventDefault();
         e.stopPropagation();
         navState.tier1Index = (navState.tier1Index + 1) % tier1Items.length;
-        updateTier1Selection(navState.tier1Index);
+        updateTier1Selection(navState.tier1Index, false);
         return true;
       }
       if (key === 'ArrowUp') {
         e.preventDefault();
         e.stopPropagation();
         navState.tier1Index = (navState.tier1Index - 1 + tier1Items.length) % tier1Items.length;
-        updateTier1Selection(navState.tier1Index);
+        updateTier1Selection(navState.tier1Index, false);
         return true;
       }
       if (key === 'ArrowRight') {

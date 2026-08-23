@@ -564,7 +564,22 @@ window.PAGES.masters = {
       if (modelField) modelField.style.display = showModel ? '' : 'none';
       if (!showModel && clearIfHidden) $('mItemModelInput').value = '';
 
-      renderSubtypeInfo(cat ? cat.name : '');
+      // Update Brand suggestions dynamically for this category
+      const catName = cat ? cat.name : '';
+      const catBrands = Array.from(
+        new Set(
+          cachedItems
+            .filter((it) => it.category === catName && it.brand_name && it.brand_name.trim())
+            .map((it) => it.brand_name.trim())
+        )
+      ).sort();
+
+      const existingBrandsList = $('mExistingBrandsList');
+      if (existingBrandsList) {
+        existingBrandsList.innerHTML = catBrands.map((b) => `<option value="${b}">`).join('');
+      }
+
+      renderSubtypeInfo(catName);
     }
     $('mItemCatDropdown').addEventListener('change', () => syncWattMandatoryUI(true));
 
