@@ -3266,10 +3266,10 @@ window.attachColumnFilters = function (table) {
           <div class="settings-card egs-about-hero-clean">
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
               <div style="display:flex; align-items:center; gap:14px;">
-                <img src="assets/icons/icon-192.png" style="width:52px; height:52px; border-radius:12px; box-shadow:0 4px 14px rgba(0,0,0,0.35); flex-shrink:0;" alt="Eco Green Solar Logo">
+                <img src="assets/logo.png" style="height:42px; max-width:180px; object-fit:contain; flex-shrink:0;" alt="Eco Green Solar Logo">
                 <div>
-                  <div style="font-size:17px; font-weight:700; color:var(--txt); letter-spacing:-0.01em;">Eco Green Solar ERP</div>
-                  <div style="font-size:12.5px; color:var(--txt-muted); margin-top:2px;">Enterprise Operations &amp; Inventory Suite</div>
+                  <div style="font-size:16px; font-weight:700; color:var(--txt); letter-spacing:-0.01em;">Eco Green Solar ERP</div>
+                  <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">Enterprise Operations &amp; Inventory Suite</div>
                   <div style="display:flex; align-items:center; gap:6px; margin-top:8px;">
                     <span class="pill pill-gold" style="font-size:11px; padding:2px 10px;">v1.10.0 Enterprise</span>
                     <span class="pill pill-green" style="font-size:11px; padding:2px 10px;">Build 112 (Live)</span>
@@ -3290,7 +3290,7 @@ window.attachColumnFilters = function (table) {
             <div class="egs-about-specs-table">
               <div class="egs-about-spec-row">
                 <div class="egs-spec-key"><i class="fa-solid fa-code-branch"></i> Release Track</div>
-                <div class="egs-spec-val" style="color:var(--gold);">v1.10.0 Enterprise Monolith</div>
+                <div class="egs-spec-val" style="color:var(--blue); font-weight:600;">v1.10.0 Enterprise Monolith</div>
               </div>
               <div class="egs-about-spec-row">
                 <div class="egs-spec-key"><i class="fa-solid fa-server"></i> Backend Engine</div>
@@ -3318,7 +3318,7 @@ window.attachColumnFilters = function (table) {
               </div>
               <div class="egs-about-spec-row">
                 <div class="egs-spec-key"><i class="fa-solid fa-user-tie"></i> Lead Developer</div>
-                <div class="egs-spec-val" style="color:var(--gold);">Sumit Chauhan</div>
+                <div class="egs-spec-val" style="color:var(--blue); font-weight:600;">Sumit Chauhan</div>
               </div>
             </div>
           </div>

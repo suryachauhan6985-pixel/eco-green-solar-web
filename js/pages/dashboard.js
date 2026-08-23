@@ -604,27 +604,16 @@ window.PAGES.dashboard = {
 
     if (window.topbarExtra) {
       window.topbarExtra.innerHTML = `
-        <div style="display:flex; align-items:center; gap:8px;">
-          <button class="topbar-live-btn" id="topbarBtnLiveUsers" type="button">
-            <span class="dot"></span>
-            <span>
-              <strong>Loading…</strong>
-              <small>Live session status</small>
-            </span>
-            <i class="fa-solid fa-chevron-right chevron"></i>
-          </button>
-          <button class="topbar-live-btn" id="topbarBtnCustomize" type="button" title="Customize Dashboard Metrics &amp; Layout" style="padding:6px 12px; border-color:rgba(59,142,208,0.4);">
-            <i class="fa-solid fa-sliders" style="color:var(--gold); font-size:13px;"></i>
-            <span>
-              <strong style="font-size:12px;">Customize</strong>
-              <small style="font-size:10px;">Widgets &amp; Layout</small>
-            </span>
-          </button>
-        </div>`;
+        <button class="topbar-live-btn" id="topbarBtnLiveUsers" type="button">
+          <span class="dot"></span>
+          <span>
+            <strong>Loading…</strong>
+            <small>Live session status</small>
+          </span>
+          <i class="fa-solid fa-chevron-right chevron"></i>
+        </button>`;
       const topbarBtn = document.getElementById('topbarBtnLiveUsers');
       if (topbarBtn) topbarBtn.addEventListener('click', openLiveUsersModal);
-      const topbarCustBtn = document.getElementById('topbarBtnCustomize');
-      if (topbarCustBtn) topbarCustBtn.addEventListener('click', openCustomizerModal);
       updateSummaryLabels();
     }
 
