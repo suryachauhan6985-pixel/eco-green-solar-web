@@ -10,7 +10,7 @@
   padding:10px 16px; border-bottom:2px solid transparent;
 }
 .ss-tab:hover{color:var(--txt);}
-.ss-tab.active{color:var(--gold); border-bottom-color:var(--gold);}
+.ss-tab.active{color:var(--blue); border-bottom-color:var(--blue);}
 
 .ss-body{min-width:0;}
 
@@ -20,7 +20,7 @@
   padding:60px 20px; background:var(--panel); border:1px dashed var(--border-light); border-radius:var(--radius);
 }
 .ss-empty-icon{
-  width:74px; height:74px; border-radius:50%; background:rgba(212,175,55,.12); color:var(--gold);
+  width:74px; height:74px; border-radius:50%; background:rgba(59,142,208,.12); color:var(--blue);
   display:flex; align-items:center; justify-content:center; font-size:30px; margin-bottom:16px;
 }
 .ss-empty h3{margin:0 0 8px; color:var(--txt); font-size:17px;}
@@ -54,7 +54,7 @@
 .ss-icon-btn:hover{border-color:var(--blue); color:var(--blue);}
 .ss-icon-btn.light{background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.25); color:#fff;}
 .ss-icon-btn.light:hover{background:rgba(255,255,255,.22); color:#fff;}
-.ss-icon-btn.light.active{background:var(--gold); color:#1a1a1a; border-color:var(--gold);}
+.ss-icon-btn.light.active{background:var(--blue); color:#fff; border-color:var(--blue);}
 .ss-icon-btn.active{background:var(--green); color:#fff; border-color:var(--green);}
 
 /* ---------- FAB + Go Pro ---------- */
@@ -66,7 +66,7 @@
 .ss-fab:hover{filter:brightness(1.1);}
 .ss-gopro{
   position:fixed; left:calc(var(--sidebar-w) + 26px); bottom:26px; z-index:30;
-  background:var(--gold); color:#1a1a1a; border:none; border-radius:24px; padding:10px 18px;
+  background:var(--blue); color:#fff; border:none; border-radius:24px; padding:10px 18px;
   font-weight:800; font-size:12.5px; display:inline-flex; align-items:center; gap:8px;
   box-shadow:0 8px 20px rgba(0,0,0,.35);
 }

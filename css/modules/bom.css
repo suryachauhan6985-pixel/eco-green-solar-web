@@ -397,7 +397,7 @@ td.bom-challan-footer-caption{
 
 /* Dark-theme category divider row used in the ON-SCREEN "Kit Items" preview table */
 .bom-screen-cat td{
-  background:var(--table-header); color:var(--gold); font-weight:800; text-align:center;
+  background:var(--table-header); color:var(--blue); font-weight:700; text-align:center;
 }
 /* Section-title field inside that divider row: still a real <input> (so the
    name stays editable) but restyled to look like the highlighted, bold,
@@ -408,7 +408,7 @@ td.bom-challan-footer-caption{
 .bom-screen-cat .bom-section-title-input{
   flex:1; min-width:0; max-width:none;
   background:transparent; border:1px solid transparent;
-  color:var(--gold); font-weight:800; font-size:13px; text-align:center;
+  color:var(--blue); font-weight:700; font-size:13px; text-align:center;
   text-transform:none; padding:6px 8px; border-radius:5px;
 }
 .bom-screen-cat .bom-section-title-input:hover{
@@ -637,9 +637,9 @@ td.bom-challan-footer-caption{
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(212, 175, 55, 0.15);
-  border: 1px solid rgba(212, 175, 55, 0.35);
-  color: var(--gold);
+  background: rgba(59, 142, 208, 0.12);
+  border: 1px solid rgba(59, 142, 208, 0.28);
+  color: var(--blue);
   padding: 3px 10px;
   border-radius: 8px;
   font-size: 12px;

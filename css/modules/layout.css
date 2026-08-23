@@ -75,14 +75,14 @@ html[data-theme="light"] .brand-logo-img{
 }
 .avatar{
   width:40px;height:40px;border-radius:50%;
-  background:var(--avatar-bg, linear-gradient(135deg, #D4AF37, #B6952C)) !important;
-  color:var(--avatar-txt, #1A1A1A) !important;
-  border:2px solid var(--avatar-border, #D4AF37) !important;
+  background:var(--avatar-bg, linear-gradient(135deg, #3B8ED0, #2563EB)) !important;
+  color:var(--avatar-txt, #FFFFFF) !important;
+  border:2px solid var(--avatar-border, #3B8ED0) !important;
   display:flex;align-items:center;justify-content:center; font-weight:800;
   flex-shrink:0; box-shadow:0 2px 10px rgba(0,0,0,.35);
   transition:all .22s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.profile-box .role{color:var(--gold); font-size:12px; font-weight:700;}
+.profile-box .role{color:var(--blue); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px;}
 .profile-box .user{color:var(--txt-muted); font-size:10.5px;}
 
 .mobile-topbar{
@@ -133,7 +133,7 @@ html[data-theme="light"] .brand-logo-img{
 
 /* ---------- Info button ---------- */
 .info-btn{display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; border:1px solid var(--border-light); background:transparent; color:var(--txt-muted); font-size:10.5px; line-height:1; padding:0; margin-left:6px; cursor:pointer; vertical-align:middle; flex:0 0 auto; transition:all .15s ease;}
-.info-btn:hover{color:var(--gold); border-color:var(--gold); background:rgba(212,175,55,0.14); transform:scale(1.1);}
+.info-btn:hover{color:var(--blue); border-color:var(--blue); background:rgba(59,142,208,0.14); transform:scale(1.1);}
 .info-btn i{font-size:10px; pointer-events:none;}
 
 /* =====================================================================

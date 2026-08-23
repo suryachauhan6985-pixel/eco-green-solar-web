@@ -48,7 +48,7 @@
       'amber': { bg: 'linear-gradient(135deg, #F39C12, #E67E22)', txt: '#FFFFFF', border: '#F39C12' },
       'slate': { bg: 'linear-gradient(135deg, #64748B, #475569)', txt: '#FFFFFF', border: '#64748B' }
     };
-    var a = localStorage.getItem('egs-avatar') || 'gold';
+    var a = localStorage.getItem('egs-avatar') || 'blue';
     if (avatarPalette[a]) {
       document.documentElement.style.setProperty('--avatar-bg', avatarPalette[a].bg);
       document.documentElement.style.setProperty('--avatar-txt', avatarPalette[a].txt);
@@ -59,7 +59,7 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=97">
+<link rel="stylesheet" href="css/style.css?v=98">
 <!-- Barcode/QR camera scanning (Sheets feature) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <!-- XLSX parsing for Sheets "Import CSV/XLSX" (CSV import needs no library) -->

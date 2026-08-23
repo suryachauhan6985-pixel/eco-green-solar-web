@@ -39,8 +39,8 @@
   }
 
   function currentAvatarColor() {
-    const a = localStorage.getItem(AVATAR_KEY) || 'gold';
-    return AVATAR_PALETTE[a] ? a : 'gold';
+    const a = localStorage.getItem(AVATAR_KEY) || 'blue';
+    return AVATAR_PALETTE[a] ? a : 'blue';
   }
 
   function applyTheme(name, opts) {
@@ -87,7 +87,7 @@
   }
 
   function applyAvatarColor(colorKey, opts) {
-    const key = AVATAR_PALETTE[colorKey] ? colorKey : 'gold';
+    const key = AVATAR_PALETTE[colorKey] ? colorKey : 'blue';
     const pal = AVATAR_PALETTE[key];
     document.documentElement.style.setProperty('--avatar-bg', pal.bg);
     document.documentElement.style.setProperty('--avatar-txt', pal.txt);
