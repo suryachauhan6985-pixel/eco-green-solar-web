@@ -4671,35 +4671,28 @@ window.attachColumnFilters = function (table) {
     return text.substring(0, idx) + `<span class="erp-hk-char">${match}</span>` + text.substring(idx + 1);
   }
 
-  const ERP_NAV_GROUPS = [
-    {
-      type: 'single',
-      id: 'dashboard',
-      name: 'Gateway / Dashboard',
-      hotkey: 'G',
-      icon: 'fa-house-chimney',
-      page: 'dashboard'
-    },
-    {
-      type: 'group',
-      id: 'grp-accounts',
-      name: 'Accounts Info',
-      flyoutTitle: 'A/c Info',
-      hotkey: 'A',
-      icon: 'fa-folder-open',
-      items: [
-        {
-          name: 'Ledger Info',
-          hotkey: 'L',
-          icon: 'fa-address-book',
-          hasNested: true,
-          nestedTitle: 'Ledger Info',
-          nestedItems: [
-            { name: 'Create', hotkey: 'C', icon: 'fa-plus', page: 'partyledger', action: 'create' },
-            { name: 'Display', hotkey: 'D', icon: 'fa-eye', page: 'partyledger', action: 'display' },
-            { name: 'Alter', hotkey: 'A', icon: 'fa-pen-to-square', page: 'partyledger', action: 'alter' }
-          ]
-        },
+  function getErpNavGroups() {
+    const isAcc = window.ERP && window.ERP.isAccountingMode();
+    const isFinOnly = window.ERP && window.ERP.isFinancialOnly();
+    const isQtyOnly = window.ERP && window.ERP.isQuantityOnly();
+
+    const accountsItems = [
+      {
+        name: 'Ledger Info',
+        hotkey: 'L',
+        icon: 'fa-address-book',
+        hasNested: true,
+        nestedTitle: 'Ledger Info',
+        nestedItems: [
+          { name: 'Create', hotkey: 'C', icon: 'fa-plus', page: 'partyledger', action: 'create' },
+          { name: 'Display', hotkey: 'D', icon: 'fa-eye', page: 'partyledger', action: 'display' },
+          { name: 'Alter', hotkey: 'A', icon: 'fa-pen-to-square', page: 'partyledger', action: 'alter' }
+        ]
+      }
+    ];
+
+    if (!isFinOnly) {
+      accountsItems.push(
         {
           name: 'Item / Product Info',
           hotkey: 'I',
@@ -4733,8 +4726,11 @@ window.attachColumnFilters = function (table) {
             { name: 'Create', hotkey: 'C', icon: 'fa-plus', page: 'masters', sub: 'uom', action: 'create' },
             { name: 'Display / Alter', hotkey: 'D', icon: 'fa-list-check', page: 'masters', sub: 'uom', action: 'display' }
           ]
-        },
-        {
+        }
+      );
+
+      if (window.ERP && window.ERP.isWarehouseEnabled()) {
+        accountsItems.push({
           name: 'Warehouse / Godown Info',
           hotkey: 'W',
           icon: 'fa-warehouse',
@@ -4745,98 +4741,168 @@ window.attachColumnFilters = function (table) {
             { name: 'Create', hotkey: 'C', icon: 'fa-plus', page: 'masters', sub: 'warehouse', action: 'create' },
             { name: 'Display / Alter', hotkey: 'D', icon: 'fa-list-check', page: 'masters', sub: 'warehouse', action: 'display' }
           ]
-        },
-        {
-          name: 'Brand Directory',
-          hotkey: 'B',
-          icon: 'fa-tags',
-          hasNested: true,
-          nestedTitle: 'Brand Directory',
-          nestedItems: [
-            { name: 'Display / Alter', hotkey: 'D', icon: 'fa-list-check', page: 'masters', sub: 'brand', action: 'display' }
-          ]
-        },
-        {
-          name: 'Customer & Supplier Directory',
-          hotkey: 'C',
-          icon: 'fa-users',
-          hasNested: true,
-          nestedTitle: 'Parties Directory',
-          nestedItems: [
-            { name: 'Customer Directory', hotkey: 'C', icon: 'fa-hand-holding-dollar', page: 'partyledger', filter: 'Customer' },
-            { name: 'Supplier Directory', hotkey: 'S', icon: 'fa-truck-ramp-box', page: 'partyledger', filter: 'Supplier' }
-          ]
-        }
-      ]
-    },
-    {
-      type: 'group',
-      id: 'grp-transactions',
-      name: 'Transaction Entry',
-      flyoutTitle: 'Transaction Entry',
-      hotkey: 'T',
-      icon: 'fa-receipt',
-      items: [
-        { name: 'Purchase Inward (Stock In)', hotkey: 'P', icon: 'fa-truck-ramp-box', page: 'purchase' },
-        { name: 'Project Sales & Dispatch', hotkey: 'S', icon: 'fa-handshake', page: 'sales' },
-        { name: 'BOM Kit Assembly & Dispatch', hotkey: 'B', icon: 'fa-boxes-packing', page: 'bom', action: 'create', requires: 'bom' },
-        { name: 'Custom Delivery Challan', hotkey: 'C', icon: 'fa-pen-nib', page: 'bom', action: 'custom-challan', requires: 'bom' },
-        { name: 'Stock Allocation & Journal', hotkey: 'A', icon: 'fa-tag', page: 'stockassign', requires: 'stock' },
-        { name: 'Sales Return & Damage', hotkey: 'R', icon: 'fa-arrow-rotate-left', page: 'returns' },
-        { name: 'Serial Number Scan Sheet', hotkey: 'N', icon: 'fa-barcode', page: 'scansheet', requires: 'serial' }
-      ]
-    },
-    {
-      type: 'group',
-      id: 'grp-display',
-      name: 'Display / Print',
-      flyoutTitle: 'Display / Print',
-      hotkey: 'D',
-      icon: 'fa-chart-pie',
-      items: [
-        {
-          name: 'Account Books',
-          hotkey: 'A',
-          icon: 'fa-book',
-          hasNested: true,
-          nestedTitle: 'Account Books',
-          nestedItems: [
-            { name: 'Party Ledger Statement', hotkey: 'L', icon: 'fa-money-check-dollar', page: 'partyledger' },
-            { name: 'Purchase Register', hotkey: 'P', icon: 'fa-cart-shopping', page: 'purchaseregister' },
-            { name: 'Sale Register', hotkey: 'S', icon: 'fa-money-bill-transfer', page: 'saleregister' }
-          ]
-        },
-        {
-          name: 'Stock Books',
-          hotkey: 'S',
-          icon: 'fa-boxes-stacked',
-          requires: 'stock',
-          hasNested: true,
-          nestedTitle: 'Stock Books',
-          nestedItems: [
-            { name: 'Master Inventory Report', hotkey: 'M', icon: 'fa-clipboard-list', page: 'reports', requires: 'stock' },
-            { name: 'Low Stock Alert', hotkey: 'L', icon: 'fa-triangle-exclamation', page: 'lowstock', requires: 'stock' },
-            { name: 'BOM Dispatch Register', hotkey: 'B', icon: 'fa-clipboard-list', page: 'bom', action: 'register', requires: 'bom' },
-            { name: 'Delivery Challans Register', hotkey: 'C', icon: 'fa-file-invoice', page: 'bom', action: 'challan', requires: 'bom' },
-            { name: 'Track BOM Order Progress', hotkey: 'T', icon: 'fa-route', page: 'bom', action: 'track', requires: 'bom' }
-          ]
-        }
-      ]
-    },
-    {
-      type: 'group',
-      id: 'grp-utilities',
-      name: 'Utilities & Setup',
-      flyoutTitle: 'Utilities & Setup',
-      hotkey: 'U',
-      icon: 'fa-gear',
-      items: [
-        { name: 'ERP Mode & Feature Controls', hotkey: 'S', icon: 'fa-sliders', action: 'openSettings', sub: 'tab-erp-mode' },
-        { name: 'User Accounts & Roles', hotkey: 'U', icon: 'fa-users-gear', action: 'openSettings', sub: 'tab-users' },
-        { name: 'Backup & Restore', hotkey: 'B', icon: 'fa-cloud-arrow-up', page: 'backup' }
-      ]
+        });
+      }
+
+      accountsItems.push({
+        name: 'Brand Directory',
+        hotkey: 'B',
+        icon: 'fa-tags',
+        hasNested: true,
+        nestedTitle: 'Brand Directory',
+        nestedItems: [
+          { name: 'Display / Alter', hotkey: 'D', icon: 'fa-list-check', page: 'masters', sub: 'brand', action: 'display' }
+        ]
+      });
     }
-  ];
+
+    accountsItems.push({
+      name: 'Customer & Supplier Directory',
+      hotkey: 'C',
+      icon: 'fa-users',
+      hasNested: true,
+      nestedTitle: 'Parties Directory',
+      nestedItems: [
+        { name: 'Customer Directory', hotkey: 'C', icon: 'fa-hand-holding-dollar', page: 'partyledger', filter: 'Customer' },
+        { name: 'Supplier Directory', hotkey: 'S', icon: 'fa-truck-ramp-box', page: 'partyledger', filter: 'Supplier' }
+      ]
+    });
+
+    const transactionItems = [];
+    if (isAcc) {
+      transactionItems.push(
+        { name: 'Payment Voucher (F5)', hotkey: 'V', icon: 'fa-arrow-up-from-bracket', page: 'vouchers', action: 'Payment' },
+        { name: 'Receipt Voucher (F6)', hotkey: 'R', icon: 'fa-arrow-down-to-bracket', page: 'vouchers', action: 'Receipt' },
+        { name: 'Journal Voucher (F7)', hotkey: 'J', icon: 'fa-scale-balanced', page: 'vouchers', action: 'Journal' },
+        { name: 'Debit Note (Alt+F5)', hotkey: 'E', icon: 'fa-file-circle-minus', page: 'vouchers', action: 'DebitNote' },
+        { name: 'Credit Note (Alt+F6)', hotkey: 'O', icon: 'fa-file-circle-plus', page: 'vouchers', action: 'CreditNote' }
+      );
+    }
+
+    if (!isFinOnly) {
+      transactionItems.push(
+        { name: 'Purchase Inward (Stock In)', hotkey: 'P', icon: 'fa-truck-ramp-box', page: 'purchase' },
+        { name: 'Project Sales & Dispatch', hotkey: 'S', icon: 'fa-handshake', page: 'sales' }
+      );
+      if (window.ERP && window.ERP.isBomEnabled()) {
+        transactionItems.push(
+          { name: 'BOM Kit Assembly & Dispatch', hotkey: 'B', icon: 'fa-boxes-packing', page: 'bom', action: 'create', requires: 'bom' },
+          { name: 'Custom Delivery Challan', hotkey: 'C', icon: 'fa-pen-nib', page: 'bom', action: 'custom-challan', requires: 'bom' }
+        );
+      }
+      transactionItems.push(
+        { name: 'Stock Allocation & Journal', hotkey: 'A', icon: 'fa-tag', page: 'stockassign', requires: 'stock' },
+        { name: 'Sales Return & Damage', hotkey: 'M', icon: 'fa-arrow-rotate-left', page: 'returns' }
+      );
+      if (!isQtyOnly) {
+        transactionItems.push(
+          { name: 'Serial Number Scan Sheet', hotkey: 'N', icon: 'fa-barcode', page: 'scansheet', requires: 'serial' }
+        );
+      }
+    }
+
+    const accountBookItems = [
+      { name: 'Party Ledger Statement', hotkey: 'L', icon: 'fa-money-check-dollar', page: 'partyledger' },
+      { name: 'Purchase Register', hotkey: 'P', icon: 'fa-cart-shopping', page: 'purchaseregister' },
+      { name: 'Sale Register', hotkey: 'S', icon: 'fa-money-bill-transfer', page: 'saleregister' }
+    ];
+
+    if (isAcc) {
+      accountBookItems.push(
+        { name: 'Trial Balance', hotkey: 'T', icon: 'fa-list-ol', page: 'financialreports', tab: 'trial-balance' },
+        { name: 'Profit & Loss Statement', hotkey: 'O', icon: 'fa-chart-line', page: 'financialreports', tab: 'profit-loss' },
+        { name: 'Balance Sheet', hotkey: 'B', icon: 'fa-building-columns', page: 'financialreports', tab: 'balance-sheet' },
+        { name: 'Day Book Journal', hotkey: 'D', icon: 'fa-calendar-day', page: 'financialreports', tab: 'day-book' }
+      );
+    }
+
+    const displayItems = [
+      {
+        name: 'Account Books',
+        hotkey: 'A',
+        icon: 'fa-book',
+        hasNested: true,
+        nestedTitle: 'Account Books',
+        nestedItems: accountBookItems
+      }
+    ];
+
+    if (!isFinOnly) {
+      const stockBookItems = [
+        { name: 'Master Inventory Report', hotkey: 'M', icon: 'fa-clipboard-list', page: 'reports', requires: 'stock' },
+        { name: 'Low Stock Alert', hotkey: 'L', icon: 'fa-triangle-exclamation', page: 'lowstock', requires: 'stock' }
+      ];
+      if (window.ERP && window.ERP.isBomEnabled()) {
+        stockBookItems.push(
+          { name: 'BOM Dispatch Register', hotkey: 'B', icon: 'fa-clipboard-list', page: 'bom', action: 'register', requires: 'bom' },
+          { name: 'Delivery Challans Register', hotkey: 'C', icon: 'fa-file-invoice', page: 'bom', action: 'challan', requires: 'bom' },
+          { name: 'Track BOM Order Progress', hotkey: 'T', icon: 'fa-route', page: 'bom', action: 'track', requires: 'bom' }
+        );
+      }
+      displayItems.push({
+        name: 'Stock Books',
+        hotkey: 'S',
+        icon: 'fa-boxes-stacked',
+        requires: 'stock',
+        hasNested: true,
+        nestedTitle: 'Stock Books',
+        nestedItems: stockBookItems
+      });
+    }
+
+    return [
+      {
+        type: 'single',
+        id: 'dashboard',
+        name: 'Gateway / Dashboard',
+        hotkey: 'G',
+        icon: 'fa-house-chimney',
+        page: 'dashboard'
+      },
+      {
+        type: 'group',
+        id: 'grp-accounts',
+        name: 'Accounts Info',
+        flyoutTitle: 'A/c Info',
+        hotkey: 'A',
+        icon: 'fa-folder-open',
+        items: accountsItems
+      },
+      {
+        type: 'group',
+        id: 'grp-transactions',
+        name: 'Transaction Entry',
+        flyoutTitle: 'Transaction Entry',
+        hotkey: 'T',
+        icon: 'fa-receipt',
+        items: transactionItems
+      },
+      {
+        type: 'group',
+        id: 'grp-display',
+        name: 'Display / Print',
+        flyoutTitle: 'Display / Print',
+        hotkey: 'D',
+        icon: 'fa-chart-pie',
+        items: displayItems
+      },
+      {
+        type: 'group',
+        id: 'grp-utilities',
+        name: 'Utilities & Setup',
+        flyoutTitle: 'Utilities & Setup',
+        hotkey: 'U',
+        icon: 'fa-gear',
+        items: [
+          { name: 'ERP Mode & Feature Controls', hotkey: 'S', icon: 'fa-sliders', action: 'openSettings', sub: 'tab-erp-mode' },
+          { name: 'User Accounts & Roles', hotkey: 'U', icon: 'fa-users-gear', action: 'openSettings', sub: 'tab-users' },
+          { name: 'Backup & Restore', hotkey: 'B', icon: 'fa-cloud-arrow-up', page: 'backup' }
+        ]
+      }
+    ];
+  }
+
+  let ERP_NAV_GROUPS = getErpNavGroups();
 
   function shouldShowNavItem(item) {
     if (!item.requires) return true;
@@ -5086,6 +5152,8 @@ window.attachColumnFilters = function (table) {
     if (!navEl) return;
     navEl.innerHTML = '';
 
+    ERP_NAV_GROUPS = getErpNavGroups();
+
     ERP_NAV_GROUPS.forEach((grp, gIdx) => {
       const labelHtml = formatHkLabel(grp.name, grp.hotkey);
 
@@ -5130,6 +5198,7 @@ window.attachColumnFilters = function (table) {
       navEl.appendChild(btn);
     });
   }
+  window.renderNavButtons = renderNavButtons;
   renderNavButtons();
 
   function go(id, opts = {}) {
@@ -5259,6 +5328,21 @@ window.attachColumnFilters = function (table) {
               const whInp = document.getElementById('mInputWhName');
               if (whInp) whInp.focus();
             }
+          }
+        }
+
+        // Vouchers Fast-switch
+        if (id === 'vouchers') {
+          if (opts.action && typeof window.setVoucherTypeMode === 'function') {
+            window.setVoucherTypeMode(opts.action);
+          }
+        }
+
+        // Financial Reports Fast-switch
+        if (id === 'financialreports') {
+          if (opts.tab) {
+            const tabBtn = document.querySelector(`#finReportTabs .subtab[data-tab="${opts.tab}"]`);
+            if (tabBtn) tabBtn.click();
           }
         }
       }, 70);
@@ -6397,6 +6481,12 @@ window.attachColumnFilters = function (table) {
   }
 
   function applyErpModeRules() {
+    const mode = window.ERP ? window.ERP.getMode() : (window.ERP_CONFIG ? window.ERP_CONFIG.erp_mode : 'hybrid');
+    document.body.setAttribute('data-erp-mode', mode);
+    document.body.classList.toggle('erp-mode-quantity-only', window.ERP ? window.ERP.isQuantityOnly() : false);
+    document.body.classList.toggle('erp-mode-financial-only', window.ERP ? window.ERP.isAccountsOnly() : false);
+    document.body.classList.toggle('erp-mode-full-accounting', window.ERP ? window.ERP.isAccountingMode() : false);
+
     if (typeof window.renderNavButtons === 'function') {
       window.renderNavButtons();
     }

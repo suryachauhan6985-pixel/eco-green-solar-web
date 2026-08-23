@@ -38,6 +38,7 @@ const registerChallanRoutes = require('./routes/challan.routes');
 const registerBomRoutes = require('./routes/bom.routes');
 const registerBomKitsRoutes = require('./routes/bom_kits.routes');
 const registerSerialExcelRoutes = require('./routes/serial_excel.routes');
+const registerVouchersRoutes = require('./routes/vouchers.routes');
 
 // =====================================================================
 // PROCESS SAFETY & CRASH GUARDS
@@ -146,6 +147,7 @@ registerChallanRoutes(app, deps);
 registerBomRoutes(app, deps);
 registerBomKitsRoutes(app, deps);
 registerSerialExcelRoutes(app, deps);
+registerVouchersRoutes(app, deps);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {

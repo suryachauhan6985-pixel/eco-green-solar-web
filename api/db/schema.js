@@ -63,6 +63,7 @@ async function ensureStartupSchema(pool) {
   await ensureBomOrderSchema(pool);
   await ensureChallanCategoryMapSchema(pool);
   await ensureBomKitTemplatesSchema(pool);
+  await ensureAccountingVouchersSchema(pool);
 }
 async function ensureSessionSchema(pool) { try { await pool.query(`ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS last_seen DATETIME NULL`); } catch (e) { console.warn('[Session schema] Could not ensure last_seen column (will retry lazily on first use):', e.message); } }
 async function ensureSerialRuleSchema(pool) { try { await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS serial_mandatory TINYINT(1) NOT NULL DEFAULT 0`); } catch (e) { console.warn('[Serial rule schema] Could not ensure serial_mandatory column (will retry lazily on first use):', e.message); } }
@@ -389,6 +390,29 @@ async function ensureBomKitTemplatesSchema(pool) {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )`);
   } catch (e) { console.warn('[BOM kit templates schema] Could not ensure bom_kit_templates table:', e.message); }
+}
+
+async function ensureAccountingVouchersSchema(pool) {
+  try {
+    await pool.query(`CREATE TABLE IF NOT EXISTS accounting_vouchers (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      voucher_type VARCHAR(30) NOT NULL,
+      voucher_no VARCHAR(60) NOT NULL,
+      voucher_date DATE NOT NULL,
+      debit_ledger VARCHAR(150) NOT NULL,
+      credit_ledger VARCHAR(150) NOT NULL,
+      amount DECIMAL(15, 2) NOT NULL DEFAULT 0,
+      tax_amount DECIMAL(15, 2) NOT NULL DEFAULT 0,
+      narration TEXT NULL,
+      ref_no VARCHAR(100) NULL,
+      created_by VARCHAR(100) NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_vouch_date (voucher_date),
+      INDEX idx_vouch_type (voucher_type),
+      INDEX idx_vouch_dr (debit_ledger),
+      INDEX idx_vouch_cr (credit_ledger)
+    )`);
+  } catch (e) { console.warn('[Accounting vouchers schema] Could not ensure accounting_vouchers table:', e.message); }
 }
 
 module.exports = { ensureStartupSchema };
