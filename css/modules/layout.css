@@ -411,189 +411,178 @@ html[data-theme="light"] .egs-top-progress {
 }
 
 /* ==========================================================================
-   ACCOUNTING ERP HIERARCHICAL SIDEBAR & HOTKEYS (Tally / Shree Sava Style)
+   SHREE SAVA / TALLY STYLE SIDEBAR & FLOATING FLYOUT MENUS
    ========================================================================== */
-.erp-nav-group {
-  margin-bottom: 6px;
-  display: flex;
-  flex-direction: column;
-}
-
-.erp-nav-group-header {
+.erp-sidebar-btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
+  gap: 10px;
+  background: var(--nav-btn-bg);
   color: var(--txt);
-  font-size: 11.5px;
-  font-weight: 700;
+  border: 1px solid var(--border-light);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
   user-select: none;
-  transition: all 0.15s ease;
 }
-.erp-nav-group-header:hover {
+.erp-sidebar-btn:hover,
+.erp-sidebar-btn.flyout-open {
   background: var(--panel-alt);
   border-color: var(--blue);
   color: var(--blue);
+  transform: translateX(3px);
 }
-.erp-nav-group-header .grp-title {
+.erp-sidebar-btn.active {
+  background: linear-gradient(135deg, var(--blue), var(--blue-hover));
+  border-color: var(--blue);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(59, 142, 208, 0.35);
+}
+.erp-sidebar-btn.active i {
+  color: #fff !important;
+}
+.erp-sidebar-btn .btn-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
-.erp-nav-group-header .grp-arrow {
-  font-size: 10px;
-  color: var(--txt-muted);
-  transition: transform 0.2s ease;
+.erp-sidebar-btn .btn-arrow {
+  font-size: 11px;
+  opacity: 0.6;
+  transition: transform 0.15s ease;
 }
-.erp-nav-group.open .erp-nav-group-header .grp-arrow {
-  transform: rotate(90deg);
-}
-.erp-nav-group.open .erp-nav-group-header {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  border-color: var(--border);
-  background: rgba(59, 142, 208, 0.08);
+.erp-sidebar-btn:hover .btn-arrow,
+.erp-sidebar-btn.flyout-open .btn-arrow {
+  opacity: 1;
+  transform: translateX(2px);
 }
 
-.erp-nav-group-items {
-  display: none;
-  flex-direction: column;
-  gap: 3px;
-  padding: 4px 4px 6px 8px;
-  background: rgba(0, 0, 0, 0.15);
-  border: 1px solid var(--border-light);
-  border-top: none;
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
+/* Floating Flyout Menu System (Tally / Shree Sava) */
+.egs-flyout-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9990;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(1px);
 }
-.erp-nav-group.open .erp-nav-group-items {
+
+.egs-flyout-box {
+  position: fixed;
+  z-index: 9995;
+  background: var(--panel);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  min-width: 250px;
+  max-width: 300px;
   display: flex;
+  flex-direction: column;
+  overflow: visible;
+  animation: egsFlyoutIn 0.12s ease-out;
 }
 
-.erp-nav-sub-btn {
+@keyframes egsFlyoutIn {
+  from { opacity: 0; transform: translateX(-6px) scale(0.98); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.egs-flyout-header {
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(218, 165, 32, 0.18), rgba(218, 165, 32, 0.06));
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--txt-muted);
-  border: 1px solid transparent;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.15s ease;
 }
-.erp-nav-sub-btn:hover {
-  background: var(--panel-alt);
-  color: var(--txt);
-  border-color: var(--border-light);
-  transform: translateX(2px);
-}
-.erp-nav-sub-btn.active {
-  background: linear-gradient(135deg, rgba(59, 142, 208, 0.25), rgba(37, 99, 235, 0.35));
-  border-color: var(--blue);
-  color: #fff;
-  font-weight: 700;
-}
-.erp-nav-sub-btn.active i {
-  color: var(--gold) !important;
-}
-.erp-nav-sub-btn .sub-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Hotkey Letter Highlighting */
-.hk-badge {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+.egs-flyout-header .flyout-hint {
   font-size: 10px;
-  font-weight: 800;
-  color: var(--gold);
-  background: rgba(218, 165, 32, 0.12);
-  border: 1px solid rgba(218, 165, 32, 0.35);
-  padding: 1px 5px;
-  border-radius: 4px;
-  letter-spacing: 0.5px;
-}
-.erp-nav-sub-btn.active .hk-badge {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-/* Section Header Divider in Sub-items (e.g. Account Books vs Stock Books) */
-.erp-nav-subhead {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  font-weight: 800;
-  color: var(--txt-muted);
-  padding: 6px 8px 2px;
-  opacity: 0.8;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.erp-nav-subhead::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border-light);
-}
-
-/* Global Hotkey HUD Bubble */
-.egs-hotkey-hud {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 9999;
-  background: rgba(15, 23, 42, 0.95);
-  border: 1.5px solid var(--gold);
-  border-radius: 10px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), 0 0 14px rgba(218, 165, 32, 0.35);
-  padding: 10px 16px;
-  color: #fff;
-  font-family: system-ui, -apple-system, sans-serif;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  backdrop-filter: blur(12px);
-  animation: egsHudPop 0.15s ease-out;
-}
-@keyframes egsHudPop {
-  from { opacity: 0; transform: translateY(10px) scale(0.95); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-.egs-hotkey-hud .hud-keys {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.egs-hotkey-hud .hud-key {
-  font-family: monospace;
-  font-size: 13px;
-  font-weight: 800;
-  color: #000;
-  background: var(--gold);
-  padding: 2px 7px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-.egs-hotkey-hud .hud-desc {
-  font-size: 12.5px;
   font-weight: 600;
+  opacity: 0.7;
+  font-family: monospace;
+}
+
+.egs-flyout-list {
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: relative;
+}
+
+.egs-flyout-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 7px;
   color: var(--txt);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.12s ease;
+  background: transparent;
+  border: 1px solid transparent;
+  position: relative;
+}
+.egs-flyout-item:hover,
+.egs-flyout-item.active,
+.egs-flyout-item.selected {
+  background: linear-gradient(135deg, var(--blue), var(--blue-hover));
+  color: #fff;
+  transform: translateX(3px);
+  box-shadow: 0 3px 10px rgba(59, 142, 208, 0.35);
+}
+.egs-flyout-item:hover i,
+.egs-flyout-item.active i,
+.egs-flyout-item.selected i {
+  color: #fff !important;
+}
+.egs-flyout-item .item-text {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  white-space: nowrap;
+}
+.egs-flyout-item .item-arrow {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* Tier 2 Nested Flyout */
+.egs-nested-flyout-box {
+  position: absolute;
+  top: -6px;
+  left: calc(100% + 6px);
+  z-index: 9998;
+  background: var(--panel);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  min-width: 230px;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  animation: egsFlyoutIn 0.12s ease-out;
+}
+.egs-flyout-item:hover > .egs-nested-flyout-box,
+.egs-flyout-item.selected > .egs-nested-flyout-box {
+  display: flex;
 }
 
 

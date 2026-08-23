@@ -4657,7 +4657,7 @@ window.attachColumnFilters = function (table) {
   document.addEventListener('click', closeProfileMenu);
 
   // =====================================================================
-  // ACCOUNTING ERP HIERARCHICAL SIDEBAR & STRUCTURE (Tally / Shree Sava Style)
+  // SHREE SAVA / TALLY STYLE SIDEBAR NAVIGATION & FLOATING FLYOUT SYSTEM
   // =====================================================================
   const ERP_NAV_GROUPS = [
     {
@@ -4672,6 +4672,7 @@ window.attachColumnFilters = function (table) {
       type: 'group',
       id: 'grp-accounts',
       name: 'Accounts Info',
+      flyoutTitle: 'A/c Info',
       hotkey: 'A',
       icon: 'fa-folder-open',
       items: [
@@ -4686,14 +4687,15 @@ window.attachColumnFilters = function (table) {
     {
       type: 'group',
       id: 'grp-transactions',
-      name: 'Transaction Entry (Vouchers)',
+      name: 'Transaction Entry',
+      flyoutTitle: 'Transaction Entry',
       hotkey: 'T',
       icon: 'fa-receipt',
       items: [
-        { name: 'Purchase Inward Voucher', hotkey: 'P', icon: 'fa-truck-ramp-box', page: 'purchase' },
-        { name: 'Sales / Project Invoice', hotkey: 'S', icon: 'fa-handshake', page: 'sales' },
+        { name: 'Purchase Inward (Stock In)', hotkey: 'P', icon: 'fa-truck-ramp-box', page: 'purchase' },
+        { name: 'Project Sales & Dispatch', hotkey: 'S', icon: 'fa-handshake', page: 'sales' },
         { name: 'BOM Kit Assembly & Challan', hotkey: 'B', icon: 'fa-boxes-packing', page: 'bom', requires: 'bom' },
-        { name: 'Stock Allocation / Journal', hotkey: 'A', icon: 'fa-tag', page: 'stockassign', requires: 'stock' },
+        { name: 'Stock Allocation & Journal', hotkey: 'A', icon: 'fa-tag', page: 'stockassign', requires: 'stock' },
         { name: 'Sales Return & Damage', hotkey: 'R', icon: 'fa-arrow-rotate-left', page: 'returns' },
         { name: 'Serial Number Scan Sheet', hotkey: 'C', icon: 'fa-barcode', page: 'scansheet', requires: 'serial' }
       ]
@@ -4702,27 +4704,46 @@ window.attachColumnFilters = function (table) {
       type: 'group',
       id: 'grp-display',
       name: 'Display / Print',
+      flyoutTitle: 'Display / Print',
       hotkey: 'D',
       icon: 'fa-chart-pie',
       items: [
-        { subhead: 'Account Books (D ➔ A)' },
-        { name: 'Ledger Statement', hotkey: 'D A L', icon: 'fa-money-check-dollar', page: 'partyledger' },
-        { name: 'Purchase Register', hotkey: 'D A P', icon: 'fa-cart-shopping', page: 'purchaseregister' },
-        { name: 'Sale Register', hotkey: 'D A S', icon: 'fa-money-bill-transfer', page: 'saleregister' },
-        { subhead: 'Stock Books (D ➔ S)' },
-        { name: 'Stock Summary / Master', hotkey: 'D S M', icon: 'fa-clipboard-list', page: 'reports', requires: 'stock' },
-        { name: 'Low Stock Alert', hotkey: 'D S L', icon: 'fa-triangle-exclamation', page: 'lowstock', requires: 'stock' },
-        { name: 'BOM Track Register', hotkey: 'D S B', icon: 'fa-route', page: 'bom', tab: 'tab-track', requires: 'bom' }
+        {
+          name: 'Account Books',
+          hotkey: 'A',
+          icon: 'fa-book',
+          hasNested: true,
+          nestedTitle: 'Account Books',
+          nestedItems: [
+            { name: 'Party Ledger Statement', hotkey: 'L', icon: 'fa-money-check-dollar', page: 'partyledger' },
+            { name: 'Purchase Register', hotkey: 'P', icon: 'fa-cart-shopping', page: 'purchaseregister' },
+            { name: 'Sale Register', hotkey: 'S', icon: 'fa-money-bill-transfer', page: 'saleregister' }
+          ]
+        },
+        {
+          name: 'Stock Books',
+          hotkey: 'S',
+          icon: 'fa-boxes-stacked',
+          requires: 'stock',
+          hasNested: true,
+          nestedTitle: 'Stock Books',
+          nestedItems: [
+            { name: 'Master Inventory Report', hotkey: 'M', icon: 'fa-clipboard-list', page: 'reports', requires: 'stock' },
+            { name: 'Low Stock Alert', hotkey: 'L', icon: 'fa-triangle-exclamation', page: 'lowstock', requires: 'stock' },
+            { name: 'BOM Track Register', hotkey: 'B', icon: 'fa-route', page: 'bom', tab: 'tab-track', requires: 'bom' }
+          ]
+        }
       ]
     },
     {
       type: 'group',
       id: 'grp-utilities',
       name: 'Utilities & Setup',
+      flyoutTitle: 'Utilities & Setup',
       hotkey: 'U',
       icon: 'fa-gear',
       items: [
-        { name: 'ERP Mode & Features', hotkey: 'S', icon: 'fa-sliders', action: 'openSettings', tab: 'tab-erp-mode' },
+        { name: 'ERP Mode & Feature Controls', hotkey: 'S', icon: 'fa-sliders', action: 'openSettings', tab: 'tab-erp-mode' },
         { name: 'Master Catalog', hotkey: 'M', icon: 'fa-cube', page: 'masters' },
         { name: 'User Accounts & Roles', hotkey: 'U', icon: 'fa-users-gear', action: 'openSettings', tab: 'tab-users' },
         { name: 'Backup & Restore', hotkey: 'B', icon: 'fa-cloud-arrow-up', page: 'backup' }
@@ -4739,7 +4760,113 @@ window.attachColumnFilters = function (table) {
     return true;
   }
 
-  // Build hierarchical sidebar buttons with groups and hotkeys
+  let activeFlyoutGroup = null;
+
+  function closeSidebarFlyout() {
+    activeFlyoutGroup = null;
+    const existing = document.getElementById('egsActiveSidebarFlyout');
+    if (existing) existing.remove();
+    const backdrop = document.getElementById('egsActiveFlyoutBackdrop');
+    if (backdrop) backdrop.remove();
+    document.querySelectorAll('.erp-sidebar-btn').forEach((b) => b.classList.remove('flyout-open'));
+  }
+
+  function openSidebarFlyout(grp, anchorEl) {
+    closeSidebarFlyout();
+    if (!grp) return;
+    activeFlyoutGroup = grp;
+
+    if (anchorEl) anchorEl.classList.add('flyout-open');
+
+    // Create Backdrop
+    const backdrop = document.createElement('div');
+    backdrop.id = 'egsActiveFlyoutBackdrop';
+    backdrop.className = 'egs-flyout-backdrop';
+    backdrop.onclick = closeSidebarFlyout;
+    document.body.appendChild(backdrop);
+
+    // Create Flyout Box
+    const flyout = document.createElement('div');
+    flyout.id = 'egsActiveSidebarFlyout';
+    flyout.className = 'egs-flyout-box';
+
+    const rect = anchorEl ? anchorEl.getBoundingClientRect() : { top: 120, right: 260, bottom: 160 };
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      flyout.style.left = '16px';
+      flyout.style.right = '16px';
+      flyout.style.top = Math.min(rect.bottom + 6, window.innerHeight - 340) + 'px';
+    } else {
+      flyout.style.left = (rect.right + 10) + 'px';
+      flyout.style.top = Math.min(Math.max(rect.top, 60), window.innerHeight - 380) + 'px';
+    }
+
+    let itemsHtml = '';
+    grp.items.forEach((item) => {
+      if (!shouldShowNavItem(item)) return;
+
+      if (item.hasNested) {
+        let nestedRows = '';
+        item.nestedItems.forEach((sub) => {
+          if (!shouldShowNavItem(sub)) return;
+          nestedRows += `
+            <div class="egs-flyout-item" data-page="${sub.page || ''}" data-tab="${sub.tab || ''}" data-hotkey="${sub.hotkey || ''}">
+              <span class="item-text"><i class="fa-solid ${sub.icon}" style="color:var(--blue); font-size:12px;"></i> ${sub.name}</span>
+            </div>
+          `;
+        });
+
+        itemsHtml += `
+          <div class="egs-flyout-item has-nested" data-hotkey="${item.hotkey || ''}">
+            <span class="item-text"><i class="fa-solid ${item.icon}" style="color:var(--gold); font-size:12px;"></i> ${item.name}</span>
+            <i class="fa-solid fa-chevron-right item-arrow"></i>
+            <div class="egs-nested-flyout-box">
+              <div class="egs-flyout-header"><span>${item.nestedTitle || item.name}</span></div>
+              <div class="egs-flyout-list">${nestedRows}</div>
+            </div>
+          </div>
+        `;
+      } else {
+        itemsHtml += `
+          <div class="egs-flyout-item" data-page="${item.page || ''}" data-tab="${item.tab || ''}" data-action="${item.action || ''}" data-hotkey="${item.hotkey || ''}">
+            <span class="item-text"><i class="fa-solid ${item.icon}" style="color:var(--blue); font-size:12px;"></i> ${item.name}</span>
+          </div>
+        `;
+      }
+    });
+
+    flyout.innerHTML = `
+      <div class="egs-flyout-header">
+        <span>${grp.flyoutTitle || grp.name}</span>
+        <span class="flyout-hint"><kbd>Esc</kbd></span>
+      </div>
+      <div class="egs-flyout-list">${itemsHtml}</div>
+    `;
+
+    document.body.appendChild(flyout);
+
+    // Wire clicks on flyout items
+    flyout.querySelectorAll('.egs-flyout-item').forEach((row) => {
+      row.addEventListener('click', (e) => {
+        if (row.classList.contains('has-nested') && !e.target.closest('.egs-nested-flyout-box .egs-flyout-item')) return;
+        e.stopPropagation();
+        const page = row.dataset.page;
+        const tab = row.dataset.tab;
+        const action = row.dataset.action;
+
+        closeSidebarFlyout();
+        if (action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
+          window.openSystemSettingsModal(tab || 'tab-erp-mode');
+        } else if (page) {
+          go(page, { tab });
+        }
+      });
+    });
+  }
+
+  window.openSidebarFlyout = openSidebarFlyout;
+  window.closeSidebarFlyout = closeSidebarFlyout;
+
   function renderNavButtons() {
     const navEl = document.getElementById('navScroll') || navScroll;
     if (!navEl) return;
@@ -4749,87 +4876,40 @@ window.attachColumnFilters = function (table) {
       if (grp.type === 'single') {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'nav-btn' + (grp.id === 'dashboard' ? ' active' : '');
+        btn.className = 'erp-sidebar-btn' + (grp.id === 'dashboard' ? ' active' : '');
+        btn.id = 'btnNav_' + grp.id;
         btn.dataset.tab = grp.id;
         btn.innerHTML = `
-          <i class="fa-solid ${grp.icon}"></i>
-          <span style="flex:1;">${grp.name}</span>
-          <span class="hk-badge">${grp.hotkey}</span>
+          <span class="btn-label"><i class="fa-solid ${grp.icon}"></i> <span>${grp.name}</span></span>
         `;
-        btn.onclick = () => go(grp.page);
+        btn.onclick = () => {
+          closeSidebarFlyout();
+          go(grp.page);
+        };
         navEl.appendChild(btn);
         return;
       }
 
-      // Group Container
-      const grpEl = document.createElement('div');
-      grpEl.className = 'erp-nav-group';
-      grpEl.id = grp.id;
-
-      // Group Header
-      const header = document.createElement('div');
-      header.className = 'erp-nav-group-header';
-      header.innerHTML = `
-        <span class="grp-title"><i class="fa-solid ${grp.icon}" style="color:var(--gold);"></i> <span>${grp.name}</span></span>
-        <div style="display:flex; align-items:center; gap:6px;">
-          <span class="hk-badge">${grp.hotkey}</span>
-          <i class="fa-solid fa-chevron-right grp-arrow"></i>
-        </div>
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'erp-sidebar-btn';
+      btn.id = 'btnNav_' + grp.id;
+      btn.dataset.groupId = grp.id;
+      btn.innerHTML = `
+        <span class="btn-label"><i class="fa-solid ${grp.icon}" style="color:var(--gold);"></i> <span>${grp.name}</span></span>
+        <i class="fa-solid fa-chevron-right btn-arrow"></i>
       `;
-      header.onclick = () => grpEl.classList.toggle('open');
-      grpEl.appendChild(header);
 
-      // Group Items
-      const itemsWrap = document.createElement('div');
-      itemsWrap.className = 'erp-nav-group-items';
-
-      grp.items.forEach((item) => {
-        if (item.subhead) {
-          const subHeadEl = document.createElement('div');
-          subHeadEl.className = 'erp-nav-subhead';
-          subHeadEl.textContent = item.subhead;
-          itemsWrap.appendChild(subHeadEl);
-          return;
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        if (activeFlyoutGroup === grp) {
+          closeSidebarFlyout();
+        } else {
+          openSidebarFlyout(grp, btn);
         }
+      };
 
-        if (!shouldShowNavItem(item)) return;
-
-        const subBtn = document.createElement('button');
-        subBtn.type = 'button';
-        subBtn.className = 'erp-nav-sub-btn';
-        if (item.page) subBtn.dataset.tab = item.page;
-        if (item.tab) subBtn.dataset.subtab = item.tab;
-
-        subBtn.innerHTML = `
-          <span class="sub-label"><i class="fa-solid ${item.icon}" style="color:var(--blue); font-size:12px;"></i> <span>${item.name}</span></span>
-          <span class="hk-badge">${item.hotkey}</span>
-        `;
-
-        subBtn.onclick = (e) => {
-          e.stopPropagation();
-          if (item.action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
-            window.openSystemSettingsModal(item.tab || 'tab-erp-mode');
-          } else if (item.page) {
-            go(item.page, { tab: item.tab });
-          }
-        };
-
-        // Hover Pre-fetching
-        subBtn.addEventListener('mouseenter', () => {
-          if (!window.Api || !window.currentAuthToken) return;
-          if (['masters', 'purchase', 'sales', 'bom', 'stockassign'].includes(item.page)) {
-            window.Api.get('/masters/categories', { silent: true }).catch(() => {});
-            window.Api.get('/masters/brands', { silent: true }).catch(() => {});
-            window.Api.get('/masters/items', { silent: true }).catch(() => {});
-            window.Api.get('/masters/warehouses', { silent: true }).catch(() => {});
-          }
-        }, { passive: true });
-
-        itemsWrap.appendChild(subBtn);
-      });
-
-      grpEl.appendChild(itemsWrap);
-      navEl.appendChild(grpEl);
+      navEl.appendChild(btn);
     });
   }
   renderNavButtons();
@@ -4838,34 +4918,39 @@ window.attachColumnFilters = function (table) {
     const page = window.PAGES[id];
     if (!page) return;
 
+    closeSidebarFlyout();
+
     const contentEl = document.getElementById('content') || content;
     const pageTitleEl = document.getElementById('pageTitle') || pageTitle;
     const pageSubEl = document.getElementById('pageSub') || pageSub;
 
     if (contentEl) {
-      // Trigger smooth page transition animation
       contentEl.classList.remove('page-entering');
-      void contentEl.offsetWidth; // force reflow
+      void contentEl.offsetWidth;
       contentEl.innerHTML = page.html || '';
       contentEl.classList.add('page-entering');
     }
 
     if (pageTitleEl) pageTitleEl.textContent = page.name || 'Dashboard';
     if (pageSubEl) pageSubEl.textContent = page.sub || '';
-    if (window.topbarExtra) window.topbarExtra.innerHTML = ''; // reset header widget before each page's init()
+    if (window.topbarExtra) window.topbarExtra.innerHTML = '';
 
-    // Highlight active nav item and auto-open group
-    document.querySelectorAll('.erp-nav-sub-btn, .nav-btn').forEach((b) => {
-      const match = (b.dataset.tab === id) && (!opts.tab || b.dataset.subtab === opts.tab);
-      b.classList.toggle('active', match);
-      if (match) {
-        const grp = b.closest('.erp-nav-group');
-        if (grp) grp.classList.add('open');
+    // Mark active sidebar parent group or single item
+    document.querySelectorAll('.erp-sidebar-btn').forEach((b) => {
+      let isMatch = (b.dataset.tab === id);
+      if (!isMatch && b.dataset.groupId) {
+        const grp = ERP_NAV_GROUPS.find((g) => g.id === b.dataset.groupId);
+        if (grp && grp.items) {
+          isMatch = grp.items.some((item) => {
+            if (item.page === id) return true;
+            if (item.nestedItems && item.nestedItems.some((sub) => sub.page === id)) return true;
+            return false;
+          });
+        }
       }
+      b.classList.toggle('active', isMatch);
     });
 
-    // Page-specific wiring (subtab clicks, form buttons, etc.) runs after
-    // its HTML is in the DOM.
     if (typeof page.init === 'function') {
       try {
         page.init();
@@ -4874,7 +4959,6 @@ window.attachColumnFilters = function (table) {
       }
     }
 
-    // Switch specific subtab if requested
     if (opts.tab) {
       setTimeout(() => {
         const subTabBtn = document.querySelector(`[data-tab="${opts.tab}"]`);
@@ -4889,7 +4973,6 @@ window.attachColumnFilters = function (table) {
     if (typeof closeSidebar === 'function') closeSidebar();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Auto-remove page-entering class after animation completes
     setTimeout(() => {
       if (contentEl) contentEl.classList.remove('page-entering');
     }, 400);
@@ -4899,7 +4982,7 @@ window.attachColumnFilters = function (table) {
       if (window.location.hash !== newHash) {
         history.replaceState(null, '', newHash);
       }
-    } catch (e) { /* ignore (e.g. sandboxed iframe) */ }
+    } catch (e) {}
   }
 
   window.goPage = go;
@@ -4907,129 +4990,93 @@ window.attachColumnFilters = function (table) {
   window.renderNavButtons = renderNavButtons;
 
   // =========================================================================
-  // TALLY / SHREE SAVA ACCOUNTING HOTKEY SEQUENCER ENGINE
+  // SHREE SAVA / TALLY KEYBOARD HOTKEY ROUTER
   // =========================================================================
-  let erpHotkeyBuffer = [];
-  let erpHotkeyTimer = null;
-
-  function showHotkeyHud(text, keys = []) {
-    let hud = document.getElementById('egsHotkeyHud');
-    if (!hud) {
-      hud = document.createElement('div');
-      hud.id = 'egsHotkeyHud';
-      hud.className = 'egs-hotkey-hud';
-      document.body.appendChild(hud);
-    }
-    hud.innerHTML = `
-      <div class="hud-keys">${keys.map((k) => `<span class="hud-key">${k}</span>`).join('')}</div>
-      <div class="hud-desc">${text}</div>
-    `;
-    hud.style.display = 'flex';
-  }
-
-  function hideHotkeyHud() {
-    const hud = document.getElementById('egsHotkeyHud');
-    if (hud) hud.style.display = 'none';
-  }
-
   function processAccountingHotkey(key) {
-    clearTimeout(erpHotkeyTimer);
-    erpHotkeyBuffer.push(key);
+    key = key.toUpperCase();
 
-    // Root Level Keys
-    if (erpHotkeyBuffer.length === 1) {
-      const k = erpHotkeyBuffer[0];
-      if (k === 'G') {
-        showHotkeyHud('Gateway / Dashboard', ['G']);
+    // 1. If NO flyout is currently open:
+    if (!activeFlyoutGroup) {
+      if (key === 'G') {
         go('dashboard');
-        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 900);
         return;
       }
-      if (k === 'D') {
-        showHotkeyHud('Display / Print ➔ (A: Account Books, S: Stock Books)', ['D']);
-        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 2200);
+      if (key === 'A') {
+        const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-accounts');
+        const anchor = document.getElementById('btnNav_grp-accounts');
+        openSidebarFlyout(grp, anchor);
         return;
       }
-      if (k === 'T' || k === 'V') {
-        showHotkeyHud('Transaction Entry ➔ (P: Purchase, S: Sales, B: BOM, A: Stock, R: Returns, C: Scan)', [k]);
-        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 2200);
+      if (key === 'T' || key === 'V') {
+        const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-transactions');
+        const anchor = document.getElementById('btnNav_grp-transactions');
+        openSidebarFlyout(grp, anchor);
         return;
       }
-      if (k === 'A') {
-        showHotkeyHud('Accounts Info ➔ (L: Ledger, C: Customer, I: Items, G: Groups, W: Warehouses, B: Brands)', ['A']);
-        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 2200);
+      if (key === 'D') {
+        const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-display');
+        const anchor = document.getElementById('btnNav_grp-display');
+        openSidebarFlyout(grp, anchor);
         return;
       }
-      if (k === 'U') {
-        showHotkeyHud('Utilities ➔ (S: ERP Settings, M: Catalog, U: Users, B: Backup)', ['U']);
-        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 2200);
+      if (key === 'U') {
+        const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-utilities');
+        const anchor = document.getElementById('btnNav_grp-utilities');
+        openSidebarFlyout(grp, anchor);
         return;
       }
-    }
-
-    // 2-Key Sequences
-    if (erpHotkeyBuffer.length === 2) {
-      const [k1, k2] = erpHotkeyBuffer;
-      if (k1 === 'T' || k1 === 'V') {
-        if (k2 === 'P') { showHotkeyHud('Purchase Inward Voucher', ['T', 'P']); go('purchase'); }
-        else if (k2 === 'S') { showHotkeyHud('Sales / Project Invoice', ['T', 'S']); go('sales'); }
-        else if (k2 === 'B') { showHotkeyHud('BOM Kit Assembly & Challan', ['T', 'B']); go('bom'); }
-        else if (k2 === 'A') { showHotkeyHud('Stock Allocation', ['T', 'A']); go('stockassign'); }
-        else if (k2 === 'R') { showHotkeyHud('Sales Return & Damage', ['T', 'R']); go('returns'); }
-        else if (k2 === 'C') { showHotkeyHud('Serial Scan Sheet', ['T', 'C']); go('scansheet'); }
-        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 900);
-        return;
-      }
-      if (k1 === 'A') {
-        if (k2 === 'L') { showHotkeyHud('Party Master & Ledgers', ['A', 'L']); go('partyledger'); }
-        else if (k2 === 'C') { showHotkeyHud('Customer & Supplier Info', ['A', 'C']); go('masters', { tab: 'tab-party' }); }
-        else if (k2 === 'I') { showHotkeyHud('Item & Product Master', ['A', 'I']); go('masters', { tab: 'tab-items' }); }
-        else if (k2 === 'G') { showHotkeyHud('Category & Group Info', ['A', 'G']); go('masters', { tab: 'tab-categories' }); }
-        else if (k2 === 'W') { showHotkeyHud('Warehouse / Godown Info', ['A', 'W']); go('masters', { tab: 'tab-warehouses' }); }
-        else if (k2 === 'B') { showHotkeyHud('Brand Master', ['A', 'B']); go('masters', { tab: 'tab-brands' }); }
-        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 900);
-        return;
-      }
-      if (k1 === 'D') {
-        if (k2 === 'A') {
-          showHotkeyHud('Account Books ➔ (L: Ledger Statement, P: Purchase Reg, S: Sale Reg)', ['D', 'A']);
-          erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 2200);
-          return;
-        }
-        if (k2 === 'S') {
-          showHotkeyHud('Stock Books ➔ (M: Master Stock Report, L: Low Stock Alert, B: BOM Track)', ['D', 'S']);
-          erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 2200);
-          return;
-        }
-      }
-      if (k1 === 'U') {
-        if (k2 === 'S') { showHotkeyHud('ERP Mode & Features', ['U', 'S']); window.openSystemSettingsModal('tab-erp-mode'); }
-        else if (k2 === 'M') { showHotkeyHud('Master Catalog', ['U', 'M']); go('masters'); }
-        else if (k2 === 'U') { showHotkeyHud('User Accounts', ['U', 'U']); window.openSystemSettingsModal('tab-users'); }
-        else if (k2 === 'B') { showHotkeyHud('Backup & Restore', ['U', 'B']); go('backup'); }
-        erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 900);
-        return;
-      }
-    }
-
-    // 3-Key Sequences (D A L, D A P, D A S, D S M, D S L, D S B)
-    if (erpHotkeyBuffer.length === 3) {
-      const [k1, k2, k3] = erpHotkeyBuffer;
-      if (k1 === 'D' && k2 === 'A') {
-        if (k3 === 'L') { showHotkeyHud('Party Ledger Statement', ['D', 'A', 'L']); go('partyledger'); }
-        else if (k3 === 'P') { showHotkeyHud('Purchase Register', ['D', 'A', 'P']); go('purchaseregister'); }
-        else if (k3 === 'S') { showHotkeyHud('Sale Register', ['D', 'A', 'S']); go('saleregister'); }
-      } else if (k1 === 'D' && k2 === 'S') {
-        if (k3 === 'M') { showHotkeyHud('Master Stock Report', ['D', 'S', 'M']); go('reports'); }
-        else if (k3 === 'L') { showHotkeyHud('Low Stock Alert', ['D', 'S', 'L']); go('lowstock'); }
-        else if (k3 === 'B') { showHotkeyHud('BOM Track Register', ['D', 'S', 'B']); go('bom', { tab: 'tab-track' }); }
-      }
-      erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 900);
       return;
     }
 
-    // Fallback reset
-    erpHotkeyTimer = setTimeout(() => { erpHotkeyBuffer = []; hideHotkeyHud(); }, 600);
+    // 2. If a flyout IS OPEN:
+    const curId = activeFlyoutGroup.id;
+
+    if (curId === 'grp-accounts') {
+      if (key === 'L') { closeSidebarFlyout(); go('partyledger'); }
+      else if (key === 'C') { closeSidebarFlyout(); go('masters', { tab: 'tab-party' }); }
+      else if (key === 'I') { closeSidebarFlyout(); go('masters', { tab: 'tab-items' }); }
+      else if (key === 'G') { closeSidebarFlyout(); go('masters', { tab: 'tab-categories' }); }
+      else if (key === 'W') { closeSidebarFlyout(); go('masters', { tab: 'tab-warehouses' }); }
+      else if (key === 'B') { closeSidebarFlyout(); go('masters', { tab: 'tab-brands' }); }
+      return;
+    }
+
+    if (curId === 'grp-transactions') {
+      if (key === 'P') { closeSidebarFlyout(); go('purchase'); }
+      else if (key === 'S') { closeSidebarFlyout(); go('sales'); }
+      else if (key === 'B') { closeSidebarFlyout(); go('bom'); }
+      else if (key === 'A') { closeSidebarFlyout(); go('stockassign'); }
+      else if (key === 'R') { closeSidebarFlyout(); go('returns'); }
+      else if (key === 'C') { closeSidebarFlyout(); go('scansheet'); }
+      return;
+    }
+
+    if (curId === 'grp-display') {
+      // Account Books subkeys or direct
+      if (key === 'A') {
+        const nestedItem = document.querySelector('.egs-flyout-item.has-nested[data-hotkey="A"]');
+        if (nestedItem) nestedItem.classList.add('selected');
+        return;
+      }
+      if (key === 'S') {
+        const nestedItem = document.querySelector('.egs-flyout-item.has-nested[data-hotkey="S"]');
+        if (nestedItem) nestedItem.classList.add('selected');
+        return;
+      }
+      if (key === 'L') { closeSidebarFlyout(); go('partyledger'); }
+      else if (key === 'P') { closeSidebarFlyout(); go('purchaseregister'); }
+      else if (key === 'M') { closeSidebarFlyout(); go('reports'); }
+      else if (key === 'B') { closeSidebarFlyout(); go('bom', { tab: 'tab-track' }); }
+      return;
+    }
+
+    if (curId === 'grp-utilities') {
+      if (key === 'S') { closeSidebarFlyout(); window.openSystemSettingsModal('tab-erp-mode'); }
+      else if (key === 'M') { closeSidebarFlyout(); go('masters'); }
+      else if (key === 'U') { closeSidebarFlyout(); window.openSystemSettingsModal('tab-users'); }
+      else if (key === 'B') { closeSidebarFlyout(); go('backup'); }
+      return;
+    }
   }
 
   // =====================================================================
@@ -5169,6 +5216,9 @@ window.attachColumnFilters = function (table) {
       }
 
       let handled = false;
+      if (typeof closeSidebarFlyout === 'function') {
+        closeSidebarFlyout();
+      }
       const modalOverlay = document.getElementById('modalOverlay');
       if (modalOverlay && modalOverlay.classList.contains('show')) {
         window.closeModal();
