@@ -23,7 +23,7 @@ window.PAGES.masters = {
     <div class="subtab-panel active" data-panel="item-reg">
 
       <!-- TOP PANEL: 3-STEP ITEM PROFILER -->
-      <div class="panel" style="margin-bottom:18px;">
+      <div class="panel" id="mItemCreatePanel" style="margin-bottom:18px;">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
           <h3 id="mItemFormHeading" style="margin:0;"><i class="fa-solid fa-box-open" style="color:var(--gold);"></i> Item Profiler &amp; Registration</h3>
           <button type="button" class="info-btn" data-info="Create product master templates. Subtypes (DCR, Non-DCR, Hybrid, etc.) are selected dynamically during Purchase Inward."><i class="fa-solid fa-circle-info"></i></button>
@@ -91,7 +91,7 @@ window.PAGES.masters = {
       </div>
 
       <!-- BOTTOM PANEL: REGISTERED CATALOG & QUICK SEARCH -->
-      <div class="panel">
+      <div class="panel" id="mItemCatalogPanel">
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
           <h3 style="margin:0;"><i class="fa-solid fa-table-list" style="color:var(--gold);"></i> Registered Inventory Catalog</h3>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -624,6 +624,13 @@ window.PAGES.masters = {
       $("mBtnSaveItem").innerHTML =
         `<i class="fa-solid fa-save"></i> Save Product Profile`;
       $("mBtnCancelItemEdit").style.display = "none";
+
+      if (window.CURRENT_MASTER_MODE === 'alter' || window.CURRENT_MASTER_MODE === 'display') {
+        const createPanel = $("mItemCreatePanel");
+        if (createPanel) createPanel.style.display = "none";
+        const catalogPanel = $("mItemCatalogPanel");
+        if (catalogPanel) catalogPanel.style.display = "";
+      }
     }
     $("mBtnCancelItemEdit").addEventListener("click", resetItemFormState);
 
@@ -1059,6 +1066,12 @@ window.PAGES.masters = {
       $("mBtnSaveItem").innerHTML =
         '<i class="fa-solid fa-floppy-disk"></i> Update Product Profile';
       $("mBtnCancelItemEdit").style.display = "inline-block";
+
+      const createPanel = $("mItemCreatePanel");
+      if (createPanel) {
+        createPanel.style.display = "";
+        createPanel.scrollIntoView({ behavior: 'smooth' });
+      }
     });
 
     // --- Item Registration: single-click Delete button (per row) ---
@@ -1500,6 +1513,35 @@ window.PAGES.masters = {
         }
       });
     }
+
+    window.setMasterViewMode = function(mode) {
+      window.CURRENT_MASTER_MODE = mode;
+      const createPanel = $("mItemCreatePanel");
+      const catalogPanel = $("mItemCatalogPanel");
+      const headTitle = document.getElementById("mastersPageHeadTitle");
+      const headIcon = document.getElementById("mastersPageHeadIcon");
+
+      if (mode === "create") {
+        if (createPanel) createPanel.style.display = "";
+        if (catalogPanel) catalogPanel.style.display = "none";
+        if (headTitle) headTitle.innerHTML = "Create Product Profile";
+        if (headIcon) headIcon.className = "fa-solid fa-plus-circle";
+        resetItemFormState();
+      } else if (mode === "display") {
+        if (createPanel) createPanel.style.display = "none";
+        if (catalogPanel) catalogPanel.style.display = "";
+        if (headTitle) headTitle.innerHTML = "Registered Inventory Catalog";
+        if (headIcon) headIcon.className = "fa-solid fa-boxes-stacked";
+      } else if (mode === "alter") {
+        if (createPanel) createPanel.style.display = "none";
+        if (catalogPanel) catalogPanel.style.display = "";
+        if (headTitle) headTitle.innerHTML = "Alter &amp; Modify Product Master";
+        if (headIcon) headIcon.className = "fa-solid fa-pen-to-square";
+      } else {
+        if (createPanel) createPanel.style.display = "";
+        if (catalogPanel) catalogPanel.style.display = "";
+      }
+    };
 
     loadMastersSystemEngine();
   },

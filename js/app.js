@@ -4776,10 +4776,11 @@ window.attachColumnFilters = function (table) {
       items: [
         { name: 'Purchase Inward (Stock In)', hotkey: 'P', icon: 'fa-truck-ramp-box', page: 'purchase' },
         { name: 'Project Sales & Dispatch', hotkey: 'S', icon: 'fa-handshake', page: 'sales' },
-        { name: 'BOM Kit Assembly & Challan', hotkey: 'B', icon: 'fa-boxes-packing', page: 'bom', action: 'create', requires: 'bom' },
+        { name: 'BOM Kit Assembly & Dispatch', hotkey: 'B', icon: 'fa-boxes-packing', page: 'bom', action: 'create', requires: 'bom' },
+        { name: 'Custom Delivery Challan', hotkey: 'C', icon: 'fa-pen-nib', page: 'bom', action: 'custom-challan', requires: 'bom' },
         { name: 'Stock Allocation & Journal', hotkey: 'A', icon: 'fa-tag', page: 'stockassign', requires: 'stock' },
         { name: 'Sales Return & Damage', hotkey: 'R', icon: 'fa-arrow-rotate-left', page: 'returns' },
-        { name: 'Serial Number Scan Sheet', hotkey: 'C', icon: 'fa-barcode', page: 'scansheet', requires: 'serial' }
+        { name: 'Serial Number Scan Sheet', hotkey: 'N', icon: 'fa-barcode', page: 'scansheet', requires: 'serial' }
       ]
     },
     {
@@ -4812,7 +4813,9 @@ window.attachColumnFilters = function (table) {
           nestedItems: [
             { name: 'Master Inventory Report', hotkey: 'M', icon: 'fa-clipboard-list', page: 'reports', requires: 'stock' },
             { name: 'Low Stock Alert', hotkey: 'L', icon: 'fa-triangle-exclamation', page: 'lowstock', requires: 'stock' },
-            { name: 'BOM Track Register', hotkey: 'B', icon: 'fa-route', page: 'bom', action: 'track', requires: 'bom' }
+            { name: 'BOM Dispatch Register', hotkey: 'B', icon: 'fa-clipboard-list', page: 'bom', action: 'register', requires: 'bom' },
+            { name: 'Delivery Challans Register', hotkey: 'C', icon: 'fa-file-invoice', page: 'bom', action: 'challan', requires: 'bom' },
+            { name: 'Track BOM Order Progress', hotkey: 'T', icon: 'fa-route', page: 'bom', action: 'track', requires: 'bom' }
           ]
         }
       ]
@@ -5217,6 +5220,9 @@ window.attachColumnFilters = function (table) {
           } else if (opts.action === 'challan' || opts.tab === 'challan') {
             const btn = document.getElementById('bomHomeBtnChallanReg');
             if (btn) btn.click();
+          } else if (opts.action === 'custom-challan' || opts.tab === 'custom-challan') {
+            const btn = document.getElementById('bomHomeBtnCustomChallan');
+            if (btn) btn.click();
           }
         }
 
@@ -5237,6 +5243,9 @@ window.attachColumnFilters = function (table) {
 
         // Masters actions switching (No autofocus on search)
         if (id === 'masters') {
+          if (opts.action && typeof window.setMasterViewMode === 'function') {
+            window.setMasterViewMode(opts.action);
+          }
           if (opts.action === 'create') {
             if (subKey === 'category') {
               const catInp = document.getElementById('mInputCatName');
@@ -5284,9 +5293,115 @@ window.attachColumnFilters = function (table) {
     if (e.repeat) return false;
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     const isTyping = tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable);
+
+    // ESCAPE KEY: UNIVERSAL STEP-BY-STEP EXIT & BACK ENGINE (Tally / Shree Sava Standard)
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Step 1: If typing in any input/textarea/select, blur it immediately so focus returns to the page root!
+      if (isTyping && document.activeElement) {
+        document.activeElement.blur();
+        if (e.target && (e.target.id === 'egsQuickSearch' || e.target.id === 'egsQuickSearchMobile')) {
+          e.target.value = '';
+          applyGlobalTableSearch('');
+        }
+      }
+
+      // Step 2: If Tier 2 flyout is open, step back to Tier 1
+      if (navState.focusTier === 'flyout_tier2') {
+        setNestedSubmenuOpen(null, false);
+        navState.focusTier = 'flyout_tier1';
+        navState.tier2Index = -1;
+        updateTier1Selection(navState.tier1Index, false);
+        return true;
+      }
+
+      // Step 3: If Tier 1 flyout is open, close all flyouts
+      if (navState.focusTier === 'flyout_tier1' || document.getElementById('egsActiveSidebarFlyout')) {
+        closeAllFlyouts();
+        return true;
+      }
+
+      // Step 4: If any Modal / Overlay / Statement / Popup is open, close it!
+      const modalOverlay = document.getElementById('modalOverlay');
+      if (modalOverlay && modalOverlay.classList.contains('show')) {
+        window.closeModal();
+        return true;
+      }
+      const popupOverlay = document.getElementById('egsPopupOverlay');
+      if (popupOverlay && popupOverlay.classList.contains('show')) {
+        popupOverlay.classList.remove('show');
+        return true;
+      }
+      const stOverlay = document.getElementById('statementOverlay');
+      if (stOverlay && stOverlay.classList.contains('show')) {
+        const stmtBack = document.getElementById('stmtBack');
+        if (stmtBack && stmtBack.style.display !== 'none') {
+          stmtBack.click();
+        } else {
+          const closeStmt = document.getElementById('closeStatement');
+          if (closeStmt) closeStmt.click();
+        }
+        return true;
+      }
+      const lfOverlay = document.getElementById('ledgerFormOverlay');
+      if (lfOverlay && lfOverlay.classList.contains('show')) {
+        const closeLf = document.getElementById('closeLedgerForm') || document.getElementById('lfCancel');
+        if (closeLf) closeLf.click();
+        return true;
+      }
+      const bomChallanOverlay = document.getElementById('bomChallanOverlay');
+      if (bomChallanOverlay && bomChallanOverlay.classList.contains('show')) {
+        const closeBtn = document.getElementById('bomChallanCloseBtn');
+        if (closeBtn) closeBtn.click();
+        return true;
+      }
+      const bomRegisterOverlay = document.getElementById('bomRegisterOverlay');
+      if (bomRegisterOverlay && bomRegisterOverlay.classList.contains('show')) {
+        const closeBtn = document.getElementById('bomRegisterCloseBtn');
+        if (closeBtn) closeBtn.click();
+        return true;
+      }
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar && sidebar.classList.contains('open')) {
+        window.closeSidebar();
+        return true;
+      }
+      const filterMenu = document.querySelector('.th-filter-menu');
+      if (filterMenu) {
+        filterMenu.remove();
+        return true;
+      }
+
+      // Step 5: If in BOM Entry view, step back to BOM Home
+      const bomEntryView = document.getElementById('bomEntryView');
+      const bomBtnBackHome = document.getElementById('bomBtnBackHome');
+      if (bomEntryView && bomEntryView.style.display !== 'none' && bomBtnBackHome) {
+        bomBtnBackHome.click();
+        return true;
+      }
+
+      // Step 6: If in Master Create view, step back to Master Display
+      if (window.CURRENT_PAGE_ID === 'masters' && window.CURRENT_MASTER_MODE === 'create') {
+        if (typeof window.setMasterViewMode === 'function') {
+          window.setMasterViewMode('display');
+          return true;
+        }
+      }
+
+      // Step 7: Step-by-step back to Gateway / Dashboard!
+      if (window.CURRENT_PAGE_ID && window.CURRENT_PAGE_ID !== 'dashboard') {
+        go('dashboard');
+        return true;
+      }
+
+      return true;
+    }
+
     if (isTyping) return false;
 
-    const modalOpen = document.querySelector('.modal-overlay.show, .settings-modal-box, #statementOverlay.show, #ledgerFormOverlay.show, #egsPopupOverlay.show');
+    const modalOpen = document.querySelector('.modal-overlay.show, .settings-modal-box, #statementOverlay.show, #ledgerFormOverlay.show, #egsPopupOverlay.show, #bomChallanOverlay.show, #bomRegisterOverlay.show');
     if (modalOpen) return false;
 
     const key = e.key;

@@ -336,3 +336,13 @@ body.no-scroll .content {
 .theme-switcher-top .theme-btn{
   flex:0 0 auto; padding:6px 8px; min-width:34px;
 }
+
+/* Universal Form Field & Placeholder Contrast */
+input, select, textarea {
+  color: var(--txt);
+  background: var(--input-bg);
+}
+input::placeholder, textarea::placeholder {
+  color: var(--txt-muted) !important;
+  opacity: 0.75 !important;
+}

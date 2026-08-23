@@ -475,13 +475,54 @@ html[data-theme="light"] .egs-top-progress {
   font-weight: 800;
   color: var(--gold);
 }
+html[data-theme="light"] .erp-hk-char {
+  text-decoration-color: #1D4ED8;
+  color: #1D4ED8;
+}
+html[data-theme="light"] .erp-sidebar-btn .erp-hk-char {
+  color: #1D4ED8;
+  text-decoration-color: #1D4ED8;
+}
 .erp-sidebar-btn.active .erp-hk-char,
 .erp-sidebar-btn:hover .erp-hk-char,
 .egs-flyout-item:hover .erp-hk-char,
 .egs-flyout-item.selected .erp-hk-char,
 .egs-flyout-item.active .erp-hk-char {
-  color: #fff;
-  text-decoration-color: #fff;
+  color: #fff !important;
+  text-decoration-color: #fff !important;
+}
+
+/* Light Theme Sidebar & Flyout Fixes */
+html[data-theme="light"] .erp-sidebar-btn {
+  background: #FFFFFF;
+  color: #0F172A;
+  border-color: #DDE3ED;
+}
+html[data-theme="light"] .erp-sidebar-btn:hover,
+html[data-theme="light"] .erp-sidebar-btn.selected,
+html[data-theme="light"] .erp-sidebar-btn.flyout-open {
+  background: #F1F5F9;
+  border-color: var(--blue);
+  color: var(--blue);
+}
+html[data-theme="light"] .egs-flyout-box,
+html[data-theme="light"] .egs-nested-flyout-box {
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+html[data-theme="light"] .egs-flyout-header {
+  background: #F1F5F9;
+  border-bottom: 1px solid #E2E8F0;
+  color: #1E40AF;
+}
+html[data-theme="light"] .egs-flyout-item {
+  color: #0F172A;
+}
+html[data-theme="light"] .egs-flyout-item:hover,
+html[data-theme="light"] .egs-flyout-item.selected {
+  background: linear-gradient(135deg, #2563EB, #1D4ED8);
+  color: #FFFFFF;
 }
 
 /* Floating Flyout Menu System (Tally / Shree Sava) */
