@@ -46,6 +46,7 @@ window.ERP = {
   isQuantityOnly() { return this.getMode() === 'quantity_only'; },
   isAccountingMode() { const m = this.getMode(); return m === 'full_accounting' || m === 'accounts_only'; },
   isAccountsOnly() { return this.getMode() === 'accounts_only'; },
+  isFinancialOnly() { return this.getMode() === 'accounts_only'; },
   isBomEnabled() { return !window.ERP_CONFIG || (window.ERP_CONFIG.feature_bom_enabled !== '0' && this.getMode() !== 'accounts_only'); },
   isPricingEnabled() { return !window.ERP_CONFIG || window.ERP_CONFIG.feature_pricing_enabled !== '0'; },
   isWarehouseEnabled() { return !window.ERP_CONFIG || (window.ERP_CONFIG.feature_warehouse_enabled !== '0' && this.getMode() !== 'accounts_only'); },
