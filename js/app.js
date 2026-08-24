@@ -1766,6 +1766,7 @@ window.attachColumnFilters = function (table) {
               <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
               <button type="button" class="login-toggle-pwd" id="loginTogglePwd"><i class="fa-solid fa-eye"></i></button>
             </div>
+          </div>
           <label class="login-remember checkbox">
             <input type="checkbox" id="loginRemember">
             <div class="checkmark">
@@ -1779,12 +1780,8 @@ window.attachColumnFilters = function (table) {
             </div>
           </label>
           <div class="login-error" id="loginError">Please enter both username/email and password.</div>
-          <button type="button" class="login-btn uiverse-submit-btn" id="loginSubmit">
-            <span class="txt"><span>Sign In</span> <i class="fa-solid fa-arrow-right"></i></span>
-            <span class="txt2"><i class="fa-solid fa-circle-check"></i> Authenticated</span>
-            <span class="loader-container">
-              <span class="loader"></span>
-            </span>
+          <button type="button" class="login-btn" id="loginSubmit">
+            <span>Sign In</span> <i class="fa-solid fa-arrow-right"></i>
           </button>
           <div class="login-links">
             <a href="#" id="loginGoForgot">Forgot Password?</a>
@@ -2254,7 +2251,7 @@ window.attachColumnFilters = function (table) {
       }
       errorBox.classList.remove('show');
       submitBtn.disabled = true;
-      submitBtn.classList.add('loading');
+      submitBtn.innerHTML = '<span>Signing In...</span> <i class="fa-solid fa-circle-notch fa-spin"></i>';
       try {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
@@ -2285,7 +2282,7 @@ window.attachColumnFilters = function (table) {
         errorBox.classList.add('show');
       } finally {
         submitBtn.disabled = false;
-        submitBtn.classList.remove('loading');
+        submitBtn.innerHTML = '<span>Sign In</span> <i class="fa-solid fa-arrow-right"></i>';
       }
     }
 
@@ -2299,7 +2296,7 @@ window.attachColumnFilters = function (table) {
       }
       otpError.classList.remove('show');
       otpSubmitBtn.disabled = true;
-      otpSubmitBtn.textContent = 'Verifying...';
+      otpSubmitBtn.innerHTML = '<span>Verifying...</span> <i class="fa-solid fa-circle-notch fa-spin"></i>';
       try {
         const res = await fetch('/api/auth/verify-otp', {
           method: 'POST',
@@ -2320,7 +2317,7 @@ window.attachColumnFilters = function (table) {
         otpError.classList.add('show');
       } finally {
         otpSubmitBtn.disabled = false;
-        otpSubmitBtn.textContent = 'Verify & Sign In';
+        otpSubmitBtn.innerHTML = '<span>Verify &amp; Continue</span> <i class="fa-solid fa-check"></i>';
       }
     }
 
