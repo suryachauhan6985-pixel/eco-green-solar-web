@@ -635,17 +635,69 @@ module.exports = function registerAuthRoutes(app, deps) {
     });
   }));
 
-  // App-wide settings (challan sequence, low stock thresholds, dispatch email alerts)
+  // App-wide settings & Configuration Engine
   app.get('/api/auth/app-settings', route(async (req, res) => {
     if (!req.user) return res.status(401).json({ error: 'Please log in.' });
     const [rows] = await pool.query(`SELECT setting_key, setting_value FROM app_settings`);
     const settings = {};
     (rows || []).forEach((r) => { settings[r.setting_key] = r.setting_value; });
-    // Defaults
-    if (settings.challan_prefix == null) settings.challan_prefix = '';
+
+    // 1. Company Profile Defaults
+    if (settings.company_name == null) settings.company_name = 'Eco Green Solar';
+    if (settings.company_gstin == null) settings.company_gstin = '24AAAAA0000A1Z5';
+    if (settings.company_pan == null) settings.company_pan = 'AAAAA0000A';
+    if (settings.company_state_code == null) settings.company_state_code = '24';
+    if (settings.company_address == null) settings.company_address = 'Plot No. 12, Industrial Area, Rajkot, Gujarat, India';
+    if (settings.company_currency == null) settings.company_currency = 'INR';
+    if (settings.company_fy_start == null) settings.company_fy_start = '2026-04-01';
+
+    // 2. Configuration Profile & Feature Flags
+    if (settings.config_profile == null) settings.config_profile = 'full_erp';
+    if (settings.inventory_tracking == null) settings.inventory_tracking = '1';
+    if (settings.serial_tracking == null) settings.serial_tracking = '1';
+    if (settings.warehouse_tracking == null) settings.warehouse_tracking = '1';
+    if (settings.batch_tracking == null) settings.batch_tracking = '0';
+    if (settings.expiry_tracking == null) settings.expiry_tracking = '0';
+    if (settings.stock_valuation == null) settings.stock_valuation = 'FIFO';
+
+    // 3. Accounting & GST Defaults
+    if (settings.accounting_enabled == null) settings.accounting_enabled = '1';
+    if (settings.double_entry == null) settings.double_entry = '1';
+    if (settings.cost_center == null) settings.cost_center = '1';
+    if (settings.multi_currency == null) settings.multi_currency = '0';
+
+    if (settings.gst_enabled == null) settings.gst_enabled = '1';
+    if (settings.cgst_sgst_enabled == null) settings.cgst_sgst_enabled = '1';
+    if (settings.igst_enabled == null) settings.igst_enabled = '1';
+    if (settings.hsn_sac_enabled == null) settings.hsn_sac_enabled = '1';
+
+    // 4. Document Numbering & Sequence Defaults
+    if (settings.purchase_prefix == null) settings.purchase_prefix = 'PUR-';
+    if (settings.purchase_next == null) settings.purchase_next = '1001';
+    if (settings.sales_prefix == null) settings.sales_prefix = 'SAL-';
+    if (settings.sales_next == null) settings.sales_next = '1001';
+    if (settings.challan_prefix == null) settings.challan_prefix = 'CHL-';
     if (settings.challan_suffix == null) settings.challan_suffix = '';
-    if (settings.challan_next == null) settings.challan_next = '1';
-    if (settings.challan_pad == null) settings.challan_pad = '3';
+    if (settings.challan_next == null) settings.challan_next = '1001';
+    if (settings.challan_pad == null) settings.challan_pad = '4';
+
+    if (settings.payment_prefix == null) settings.payment_prefix = 'PMT-';
+    if (settings.payment_next == null) settings.payment_next = '1001';
+    if (settings.receipt_prefix == null) settings.receipt_prefix = 'RCT-';
+    if (settings.receipt_next == null) settings.receipt_next = '1001';
+    if (settings.journal_prefix == null) settings.journal_prefix = 'JV-';
+    if (settings.journal_next == null) settings.journal_next = '1001';
+    if (settings.debitnote_prefix == null) settings.debitnote_prefix = 'DRN-';
+    if (settings.debitnote_next == null) settings.debitnote_next = '1001';
+    if (settings.creditnote_prefix == null) settings.creditnote_prefix = 'CRN-';
+    if (settings.creditnote_next == null) settings.creditnote_next = '1001';
+
+    // 5. Workflows & Approvals
+    if (settings.approval_workflow_enabled == null) settings.approval_workflow_enabled = '0';
+    if (settings.purchase_approval_threshold == null) settings.purchase_approval_threshold = '50000';
+    if (settings.discount_approval_threshold == null) settings.discount_approval_threshold = '10';
+
+    // 6. Alerts & UI Settings
     if (settings.low_stock_threshold == null) settings.low_stock_threshold = '5';
     if (settings.low_stock_alert_enabled == null) settings.low_stock_alert_enabled = '1';
     if (settings.low_stock_alert_emails == null) settings.low_stock_alert_emails = '';
@@ -660,24 +712,57 @@ module.exports = function registerAuthRoutes(app, deps) {
     if (settings.feature_attachment_mandatory == null) settings.feature_attachment_mandatory = '0';
     if (settings.feature_wattage_mandatory == null) settings.feature_wattage_mandatory = 'auto';
     if (settings.nav_style == null) settings.nav_style = 'both';
+
     res.json({ settings });
   }));
 
   app.put('/api/auth/app-settings', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     if (!req.user) return res.status(401).json({ error: 'Please log in.' });
     const body = (req.body && req.body.settings) ? req.body.settings : (req.body || {});
+
+    // Dependency Rule Validations
+    if (body.serial_tracking === '1' && body.inventory_tracking === '0') {
+      return res.status(400).json({ error: 'Serial tracking cannot be enabled because Inventory tracking is disabled.' });
+    }
+    if (body.expiry_tracking === '1' && body.batch_tracking === '0') {
+      return res.status(400).json({ error: 'Expiry tracking cannot be enabled because Batch tracking is disabled.' });
+    }
+    if (body.gst_enabled === '1' && body.accounting_enabled === '0') {
+      return res.status(400).json({ error: 'GST tax engine cannot be enabled because Accounting is disabled.' });
+    }
+
     const allowed = [
+      'company_name', 'company_gstin', 'company_pan', 'company_state_code', 'company_address',
+      'company_currency', 'company_fy_start', 'config_profile',
+      'inventory_tracking', 'serial_tracking', 'warehouse_tracking', 'batch_tracking', 'expiry_tracking', 'stock_valuation',
+      'accounting_enabled', 'double_entry', 'cost_center', 'multi_currency',
+      'gst_enabled', 'cgst_sgst_enabled', 'igst_enabled', 'hsn_sac_enabled',
+      'purchase_prefix', 'purchase_next', 'sales_prefix', 'sales_next',
       'challan_prefix', 'challan_suffix', 'challan_next', 'challan_pad',
+      'payment_prefix', 'payment_next', 'receipt_prefix', 'receipt_next',
+      'journal_prefix', 'journal_next', 'debitnote_prefix', 'debitnote_next',
+      'creditnote_prefix', 'creditnote_next',
+      'approval_workflow_enabled', 'purchase_approval_threshold', 'discount_approval_threshold',
       'low_stock_threshold', 'low_stock_alert_enabled', 'low_stock_alert_emails',
       'dispatch_alert_enabled', 'dispatch_alert_emails', 'scanner_sound',
       'erp_mode', 'feature_bom_enabled', 'feature_pricing_enabled',
       'feature_warehouse_enabled', 'feature_pallet_enabled',
       'feature_attachment_mandatory', 'feature_wattage_mandatory', 'nav_style'
     ];
+
+    // Read current settings for Audit Log comparison
+    const [currentRows] = await pool.query(`SELECT setting_key, setting_value FROM app_settings`);
+    const currentSettings = {};
+    (currentRows || []).forEach(r => { currentSettings[r.setting_key] = r.setting_value; });
+
+    const auditChanges = [];
+
     for (const key of allowed) {
       if (body[key] == null) continue;
       let val = String(body[key]).trim();
-      if (key === 'challan_next' || key === 'low_stock_threshold') {
+
+      // Integer fields
+      if (['challan_next', 'purchase_next', 'sales_next', 'payment_next', 'receipt_next', 'journal_next', 'debitnote_next', 'creditnote_next', 'low_stock_threshold'].includes(key)) {
         const n = parseInt(val, 10);
         if (!Number.isFinite(n) || n < 1) return res.status(400).json({ error: `${key} must be a positive integer.` });
         val = String(n);
@@ -687,16 +772,82 @@ module.exports = function registerAuthRoutes(app, deps) {
         if (!Number.isFinite(n) || n < 0 || n > 10) return res.status(400).json({ error: 'Pad length must be 0–10.' });
         val = String(n);
       }
-      if (key === 'challan_prefix' && val.length > 30) return res.status(400).json({ error: 'Prefix too long (max 30 chars).' });
-      if (key === 'challan_suffix' && val.length > 30) return res.status(400).json({ error: 'Suffix too long (max 30 chars).' });
-      if (val.length > 500) return res.status(400).json({ error: 'Setting value too long.' });
+      if (val.length > 500) return res.status(400).json({ error: `Setting value for ${key} is too long.` });
+
+      const oldVal = currentSettings[key] || '';
+      if (oldVal !== val) {
+        auditChanges.push({ key, oldVal, val });
+      }
+
       await pool.query(
         `INSERT INTO app_settings (setting_key, setting_value, updated_by) VALUES (?, ?, ?)
          ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value), updated_by=VALUES(updated_by)`,
         [key, val, req.user.username]
       );
     }
-    res.json({ success: true });
+
+    // Record in Audit Logs if changes occurred
+    if (auditChanges.length > 0) {
+      try {
+        await pool.query(
+          `INSERT INTO audit_logs (transaction_type, reference_no, action_by, action_timestamp, old_details, new_details)
+           VALUES (?, ?, ?, NOW(), ?, ?)`,
+          [
+            'SYSTEM_SETTINGS_UPDATE',
+            body.config_profile || 'SETTINGS',
+            req.user.username,
+            JSON.stringify(auditChanges.map(c => ({ key: c.key, old: c.oldVal }))),
+            JSON.stringify(auditChanges.map(c => ({ key: c.key, new: c.val })))
+          ]
+        );
+      } catch (e) {
+        console.warn('[Audit Log] Failed to record settings change:', e.message);
+      }
+    }
+
+    res.json({ success: true, changesCount: auditChanges.length });
+  }));
+
+  // Auto-generate consecutive document number preview & increment
+  app.get('/api/auth/next-doc-number', route(async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Please log in.' });
+    const docType = String(req.query.type || 'purchase').toLowerCase();
+    const [rows] = await pool.query(`SELECT setting_key, setting_value FROM app_settings WHERE setting_key IN ('${docType}_prefix', '${docType}_next', 'challan_pad', 'company_fy_start')`);
+    const map = {};
+    (rows || []).forEach(r => { map[r.setting_key] = r.setting_value; });
+
+    const prefix = map[`${docType}_prefix`] || (docType === 'purchase' ? 'PUR-' : docType === 'sales' ? 'SAL-' : docType === 'challan' ? 'CHL-' : `${docType.toUpperCase()}-`);
+    const nextSeq = parseInt(map[`${docType}_next`] || '1001', 10);
+    const padLen = parseInt(map.challan_pad || '4', 10);
+    const padded = String(nextSeq).padStart(padLen, '0');
+    const curYear = new Date().getFullYear();
+    const formatted = `${prefix}${curYear}-${padded}`;
+
+    res.json({
+      type: docType,
+      prefix,
+      sequence: nextSeq,
+      formatted
+    });
+  }));
+
+  // Audit Logs query endpoint
+  app.get('/api/auth/audit-logs', route(async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Please log in.' });
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '50', 10)));
+    const search = req.query.search ? `%${req.query.search.trim()}%` : null;
+
+    let query = `SELECT id, transaction_type, reference_no, action_by, action_timestamp, old_details, new_details, created_at FROM audit_logs`;
+    let params = [];
+    if (search) {
+      query += ` WHERE transaction_type LIKE ? OR reference_no LIKE ? OR action_by LIKE ?`;
+      params = [search, search, search];
+    }
+    query += ` ORDER BY id DESC LIMIT ?`;
+    params.push(limit);
+
+    const [rows] = await pool.query(query, params);
+    res.json({ logs: rows || [] });
   }));
 
   // Send a test verification email to confirm email address format & delivery

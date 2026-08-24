@@ -207,6 +207,11 @@ window.PAGES.purchase = {
     const currentRole = window.currentUserRole || 'SuperAdmin';
     const isAdmin = currentRole === 'SuperAdmin' || currentRole === 'Admin';
 
+    // Auto-populate next invoice sequence number from CONFIG if empty
+    if ($('purInv') && !$('purInv').value && window.CONFIG && window.CONFIG.getNextDocNumberPreview) {
+      $('purInv').value = window.CONFIG.getNextDocNumberPreview('purchase');
+    }
+
     // ---------------- Date fields: click anywhere to open the native
     // calendar (not just the small icon), and block manual keyboard/paste
     // entry so the date can only ever be set by picking it from the
@@ -370,6 +375,7 @@ window.PAGES.purchase = {
     let purCategorySerialMandatory = {};
     let purCategoryWattMandatory = {};
     function purCategoryNeedsSerial(cat) {
+      if (window.CONFIG && !window.CONFIG.isSerialTrackingEnabled()) return false;
       return !!purCategorySerialMandatory[cat];
     }
     // Mirrors masters.js's syncWattMandatoryUI(): when NEITHER Wattage nor

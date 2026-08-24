@@ -41,17 +41,17 @@ window.ERP_CONFIG = window.ERP_CONFIG || {
 };
 
 window.ERP = {
-  getMode() { return (window.ERP_CONFIG && window.ERP_CONFIG.erp_mode) || 'hybrid'; },
-  isSerialEnabled() { const m = this.getMode(); return m !== 'quantity_only' && m !== 'accounts_only'; },
-  isQuantityOnly() { return this.getMode() === 'quantity_only'; },
-  isAccountingMode() { const m = this.getMode(); return m === 'full_accounting' || m === 'accounts_only'; },
-  isAccountsOnly() { return this.getMode() === 'accounts_only'; },
-  isFinancialOnly() { return this.getMode() === 'accounts_only'; },
-  isBomEnabled() { return !window.ERP_CONFIG || (window.ERP_CONFIG.feature_bom_enabled !== '0' && this.getMode() !== 'accounts_only'); },
-  isPricingEnabled() { return !window.ERP_CONFIG || window.ERP_CONFIG.feature_pricing_enabled !== '0'; },
-  isWarehouseEnabled() { return !window.ERP_CONFIG || (window.ERP_CONFIG.feature_warehouse_enabled !== '0' && this.getMode() !== 'accounts_only'); },
-  isPalletEnabled() { return !window.ERP_CONFIG || (window.ERP_CONFIG.feature_pallet_enabled !== '0' && this.getMode() !== 'accounts_only'); },
-  isProofMandatory() { return !!(window.ERP_CONFIG && window.ERP_CONFIG.feature_attachment_mandatory === '1'); }
+  getMode() { return (window.CONFIG && window.CONFIG.get('config_profile')) || 'full_erp'; },
+  isSerialEnabled() { return window.CONFIG ? window.CONFIG.isSerialTrackingEnabled() : true; },
+  isQuantityOnly() { return !this.isSerialEnabled(); },
+  isAccountingMode() { return window.CONFIG ? window.CONFIG.isAccountingEnabled() : true; },
+  isAccountsOnly() { return !this.isSerialEnabled() && this.isAccountingMode() && (window.CONFIG && window.CONFIG.get('inventory_tracking') === '0'); },
+  isFinancialOnly() { return this.isAccountsOnly(); },
+  isBomEnabled() { return window.CONFIG ? window.CONFIG.isBomEnabled() : true; },
+  isPricingEnabled() { return window.CONFIG ? (window.CONFIG.get('feature_pricing_enabled') !== '0') : true; },
+  isWarehouseEnabled() { return window.CONFIG ? window.CONFIG.isWarehouseTrackingEnabled() : true; },
+  isPalletEnabled() { return window.CONFIG ? (window.CONFIG.get('feature_pallet_enabled') !== '0') : true; },
+  isProofMandatory() { return window.CONFIG ? (window.CONFIG.get('feature_attachment_mandatory') === '1') : false; }
 };
 
 window.debounce = function(fn, delayMs = 150) {
@@ -3209,50 +3209,65 @@ window.attachColumnFilters = function (table) {
           </div>
         </div>` : ''}
 
-        <!-- 3. Challan & Print Config Tab -->
+        <!-- 3. Document Sequences & Numbering Series Tab -->
         <div class="settings-panel" id="tab-challan">
           <div class="settings-card">
             <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between;">
-              <span><i class="fa-solid fa-barcode" style="color:var(--gold);"></i> Challan Serial Numbering Series</span>
-              ${isAdmin ? '<span class="pill pill-green" style="font-size:11px; padding:2px 8px;">Admin Configurable</span>' : '<span class="pill pill-muted" style="font-size:11px; padding:2px 8px;">Read Only</span>'}
+              <span><i class="fa-solid fa-list-ol" style="color:var(--gold);"></i> Document Numbering &amp; Sequences</span>
+              ${isAdmin ? '<span class="pill pill-green" style="font-size:11px; padding:2px 8px;">Configurable</span>' : '<span class="pill pill-muted" style="font-size:11px; padding:2px 8px;">Read Only</span>'}
             </div>
             <p style="margin:0 0 12px 0; font-size:12.5px; color:var(--txt-muted);">
-              Configure how automatic sequential delivery challan numbers are generated (Prefix, Starting Sequence, Zero-Padding, Suffix).
+              Configure custom prefix codes, starting sequences, and digit padding for all transaction documents.
             </p>
-            <div class="form-grid cols-2" style="margin-top:10px;">
-              <div class="field">
-                <label>Challan Prefix (Optional)</label>
-                <input type="text" id="setChallanPrefix" placeholder="e.g. RF- or EGS-" ${isAdmin ? '' : 'readonly'}>
-              </div>
-              <div class="field">
-                <label>Next Sequence Number <span class="req">*</span></label>
-                <input type="number" id="setChallanNext" min="1" placeholder="e.g. 1 or 1001" ${isAdmin ? '' : 'readonly'}>
-              </div>
-              <div class="field">
-                <label>Number Digit Padding</label>
-                <select id="setChallanPad" ${isAdmin ? '' : 'disabled'}>
-                  <option value="0">No Padding (1, 2, ...)</option>
-                  <option value="2">2 Digits (01, 02, ...)</option>
-                  <option value="3" selected>3 Digits (001, 002, ...)</option>
-                  <option value="4">4 Digits (0001, 0002, ...)</option>
-                  <option value="5">5 Digits (00001, 00002, ...)</option>
-                </select>
-              </div>
-              <div class="field">
-                <label>Challan Suffix (Optional)</label>
-                <input type="text" id="setChallanSuffix" placeholder="e.g. /2026 or -A" ${isAdmin ? '' : 'readonly'}>
-              </div>
-            </div>
 
-            <!-- Live Preview Display -->
-            <div style="margin-top:14px; padding:12px 16px; background:rgba(218,165,32,0.08); border:1px solid rgba(218,165,32,0.25); border-radius:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-              <span style="font-size:13px; color:var(--txt);">Next Generated Challan Preview:</span>
-              <strong id="setChallanPreview" style="font-size:16px; color:var(--gold); letter-spacing:0.5px;">...</strong>
+            <div class="form-grid cols-2" style="margin-top:12px; gap:16px;">
+              <!-- Purchase Inward -->
+              <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; padding:12px;">
+                <h4 style="margin:0 0 10px; color:var(--green); font-size:13px;"><i class="fa-solid fa-truck-ramp-box"></i> Purchase Inward Series</h4>
+                <div class="field"><label>Prefix</label><input type="text" id="setPurPrefix" placeholder="PUR-" ${isAdmin ? '' : 'readonly'}></div>
+                <div class="field"><label>Next Sequence</label><input type="number" id="setPurNext" min="1" placeholder="1001" ${isAdmin ? '' : 'readonly'}></div>
+                <div style="font-size:12px; color:var(--txt-muted); margin-top:6px;">Next: <strong id="previewPurSeq" style="color:var(--green);">...</strong></div>
+              </div>
+
+              <!-- Sales Invoices -->
+              <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; padding:12px;">
+                <h4 style="margin:0 0 10px; color:var(--orange); font-size:13px;"><i class="fa-solid fa-handshake"></i> Sales / Dispatch Series</h4>
+                <div class="field"><label>Prefix</label><input type="text" id="setSalePrefix" placeholder="SAL-" ${isAdmin ? '' : 'readonly'}></div>
+                <div class="field"><label>Next Sequence</label><input type="number" id="setSaleNext" min="1" placeholder="1001" ${isAdmin ? '' : 'readonly'}></div>
+                <div style="font-size:12px; color:var(--txt-muted); margin-top:6px;">Next: <strong id="previewSaleSeq" style="color:var(--orange);">...</strong></div>
+              </div>
+
+              <!-- Delivery Challans -->
+              <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; padding:12px;">
+                <h4 style="margin:0 0 10px; color:var(--gold); font-size:13px;"><i class="fa-solid fa-file-invoice"></i> Delivery Challan Series</h4>
+                <div class="field"><label>Prefix</label><input type="text" id="setChallanPrefix" placeholder="CHL-" ${isAdmin ? '' : 'readonly'}></div>
+                <div class="field"><label>Next Sequence</label><input type="number" id="setChallanNext" min="1" placeholder="1001" ${isAdmin ? '' : 'readonly'}></div>
+                <div class="field"><label>Digit Padding</label>
+                  <select id="setChallanPad" ${isAdmin ? '' : 'disabled'}>
+                    <option value="0">No Padding (1, 2, ...)</option>
+                    <option value="2">2 Digits (01, 02, ...)</option>
+                    <option value="3">3 Digits (001, 002, ...)</option>
+                    <option value="4" selected>4 Digits (0001, 0002, ...)</option>
+                    <option value="5">5 Digits (00001, 00002, ...)</option>
+                  </select>
+                </div>
+                <div class="field"><label>Suffix (Optional)</label><input type="text" id="setChallanSuffix" placeholder="e.g. /26" ${isAdmin ? '' : 'readonly'}></div>
+                <div style="font-size:12px; color:var(--txt-muted); margin-top:6px;">Next: <strong id="setChallanPreview" style="color:var(--gold);">...</strong></div>
+              </div>
+
+              <!-- Payment & Receipt Vouchers -->
+              <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; padding:12px;">
+                <h4 style="margin:0 0 10px; color:var(--blue); font-size:13px;"><i class="fa-solid fa-money-bill-transfer"></i> Accounting Vouchers Series</h4>
+                <div class="field"><label>Payment Prefix (F5)</label><input type="text" id="setPaymentPrefix" placeholder="PMT-" ${isAdmin ? '' : 'readonly'}></div>
+                <div class="field"><label>Receipt Prefix (F6)</label><input type="text" id="setReceiptPrefix" placeholder="RCT-" ${isAdmin ? '' : 'readonly'}></div>
+                <div class="field"><label>Journal Prefix (F7)</label><input type="text" id="setJournalPrefix" placeholder="JV-" ${isAdmin ? '' : 'readonly'}></div>
+                <div style="font-size:12px; color:var(--txt-muted); margin-top:6px;">Format: <strong style="color:var(--blue);">[PREFIX]-YYYY-0001</strong></div>
+              </div>
             </div>
 
             ${isAdmin ? `
-            <div class="actions-row" style="margin-top:14px; justify-content:flex-end;">
-              <button type="button" class="btn btn-green" id="setBtnSaveChallan"><i class="fa-solid fa-floppy-disk"></i> Save Challan Configuration</button>
+            <div class="actions-row" style="margin-top:16px; justify-content:flex-end; border-top:1px solid var(--border-light); padding-top:12px;">
+              <button type="button" class="btn btn-green" id="setBtnSaveChallan"><i class="fa-solid fa-floppy-disk"></i> Save Document Numbering</button>
             </div>` : ''}
           </div>
         </div>
@@ -3372,28 +3387,50 @@ window.attachColumnFilters = function (table) {
           </div>
         </div>
 
-        <!-- 5. Company Profile Tab -->
+        <!-- Company Profile & Taxation Tab -->
         <div class="settings-panel" id="tab-company">
           <div class="settings-card">
-            <div class="settings-card-title"><i class="fa-solid fa-building" style="color:var(--blue);"></i> Enterprise Identity</div>
+            <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between;">
+              <span><i class="fa-solid fa-building" style="color:var(--gold);"></i> Enterprise &amp; Company Profile</span>
+              ${isAdmin ? '<span class="pill pill-green" style="font-size:11px; padding:2px 8px;">SuperAdmin Configurable</span>' : '<span class="pill pill-muted" style="font-size:11px; padding:2px 8px;">Read Only</span>'}
+            </div>
+            <p style="margin:0 0 12px 0; font-size:12.5px; color:var(--txt-muted);">
+              Company business details, GSTIN, PAN, and State Code for automatic Intra-State (CGST+SGST) vs Inter-State (IGST) tax calculation.
+            </p>
             <div class="form-grid cols-2" style="margin-top:10px;">
               <div class="field">
-                <label>Company Name</label>
-                <input type="text" value="Eco Green Solar" readonly style="font-weight:700; color:var(--gold);">
+                <label>Company Legal Name <span class="req">*</span></label>
+                <input type="text" id="setCompanyName" placeholder="e.g. Eco Green Solar Pvt. Ltd." ${isAdmin ? '' : 'readonly'}>
               </div>
               <div class="field">
-                <label>Default Warehouse Hub</label>
-                <input type="text" value="Main Warehouse (Surat)" readonly>
+                <label>Company GSTIN <span class="req">*</span></label>
+                <input type="text" id="setCompanyGstin" placeholder="e.g. 24AAAAA0000A1Z5" ${isAdmin ? '' : 'readonly'}>
               </div>
               <div class="field">
-                <label>Operating State &amp; City</label>
-                <input type="text" value="Gujarat — Surat" readonly>
+                <label>Company PAN</label>
+                <input type="text" id="setCompanyPan" placeholder="e.g. AAAAA0000A" ${isAdmin ? '' : 'readonly'}>
               </div>
               <div class="field">
-                <label>Default Currency</label>
-                <input type="text" value="INR (₹)" readonly>
+                <label>State Code (2-Digit) <span class="req">*</span></label>
+                <input type="text" id="setCompanyStateCode" placeholder="e.g. 24 for Gujarat" maxlength="2" ${isAdmin ? '' : 'readonly'}>
+              </div>
+              <div class="field span-full">
+                <label>Operating Business Address</label>
+                <input type="text" id="setCompanyAddress" placeholder="e.g. Plot 12, Industrial Estate, Rajkot, Gujarat" ${isAdmin ? '' : 'readonly'}>
+              </div>
+              <div class="field">
+                <label>Currency Code</label>
+                <input type="text" id="setCompanyCurrency" placeholder="INR" ${isAdmin ? '' : 'readonly'}>
+              </div>
+              <div class="field">
+                <label>Financial Year Start Date</label>
+                <input type="date" id="setCompanyFyStart" ${isAdmin ? '' : 'readonly'}>
               </div>
             </div>
+            ${isAdmin ? `
+            <div class="actions-row" style="margin-top:16px; justify-content:flex-end; border-top:1px solid var(--border-light); padding-top:12px;">
+              <button type="button" class="btn btn-green" id="btnSaveCompanyProfile"><i class="fa-solid fa-floppy-disk"></i> Save Company Profile</button>
+            </div>` : ''}
           </div>
           <div class="settings-card">
             <div class="settings-card-title"><i class="fa-solid fa-code" style="color:var(--gold);"></i> System Attribution</div>
@@ -3771,106 +3808,131 @@ window.attachColumnFilters = function (table) {
 
         <!-- ERP Mode & Feature Switches Tab -->
         <div class="settings-panel" id="tab-erp-mode">
-          <!-- Card 1: ERP Core Operating Mode -->
+          <!-- Card 1: ERP Configuration Profile Presets -->
           <div class="settings-card">
             <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between;">
-              <span><i class="fa-solid fa-layer-group" style="color:var(--gold);"></i> Core ERP Operating Mode</span>
-              <span class="pill pill-green" style="font-size:11px; padding:2px 8px;">Instant Switch</span>
+              <span><i class="fa-solid fa-layer-group" style="color:var(--gold);"></i> Operating Profiles &amp; Presets</span>
+              <span class="pill pill-green" style="font-size:11px; padding:2px 8px;">1-Click Preset</span>
             </div>
             <p style="margin:0 0 14px; font-size:12.5px; color:var(--txt-muted);">
-              Select how your enterprise tracks inventory, serial numbers, and accounting across the entire software. Switching modes applies dynamically without code modifications.
+              Select an enterprise configuration preset. Each preset instantly adjusts feature flags while keeping full fine-grained customization below.
             </p>
 
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap:12px;" id="erpModeRadioGroup">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap:12px;" id="erpPresetCardGroup">
               
               <label class="egs-mode-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:var(--panel-alt); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.15s ease;">
-                <input type="radio" name="setErpMode" value="hybrid" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
+                <input type="radio" name="setErpPreset" value="full_erp" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
                 <div>
-                  <div style="font-weight:700; color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-solar-panel" style="color:var(--gold); margin-right:4px;"></i> Hybrid (Serial + Quantity) <span class="pill pill-gold" style="font-size:10px; padding:1px 6px;">Recommended</span></div>
-                  <div style="font-size:12px; color:var(--txt-muted); margin-top:3px;">Track high-value items (Panels, Inverters) by unique Serial Numbers, and cables, hardware, civil items by Quantity &amp; UOM.</div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-crown" style="color:var(--gold); margin-right:4px;"></i> Full ERP + Accounting <span class="pill pill-gold" style="font-size:10px; padding:1px 6px;">All Features</span></div>
+                  <div style="font-size:12px; color:var(--txt-muted); margin-top:3px;">Quantity + Serial scanning + Godowns + BOM kits + Double-entry accounting + GST calculation.</div>
                 </div>
               </label>
 
               <label class="egs-mode-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:var(--panel-alt); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.15s ease;">
-                <input type="radio" name="setErpMode" value="serial_only" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
+                <input type="radio" name="setErpPreset" value="trading_erp" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
                 <div>
-                  <div style="font-weight:700; color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-barcode" style="color:var(--blue); margin-right:4px;"></i> Strict Serial-Only Inventory</div>
-                  <div style="font-size:12px; color:var(--txt-muted); margin-top:3px;">Every single inward/outward item requires an individual barcode / serial scan for strict warranty management.</div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-store" style="color:var(--blue); margin-right:4px;"></i> Trading ERP (No Serials)</div>
+                  <div style="font-size:12px; color:var(--txt-muted); margin-top:3px;">Purchase + Sales invoices + Vouchers + Ledgers + GST. Serial number inputs hidden.</div>
                 </div>
               </label>
 
               <label class="egs-mode-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:var(--panel-alt); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.15s ease;">
-                <input type="radio" name="setErpMode" value="quantity_only" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
+                <input type="radio" name="setErpPreset" value="serial_inventory" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
                 <div>
-                  <div style="font-weight:700; color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-cubes-stacked" style="color:#2ecc71; margin-right:4px;"></i> Quantity &amp; UOM Bulk Mode</div>
-                  <div style="font-size:12px; color:var(--txt-muted); margin-top:3px;">No serial number scans required anywhere. High-speed bulk inward/dispatch using decimals (Kg, Feet, Meters, Sets).</div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-barcode" style="color:#2ecc71; margin-right:4px;"></i> Serial Tracked Inventory</div>
+                  <div style="font-size:12px; color:var(--txt-muted); margin-top:3px;">Strict barcode/serial tracking + Delivery challans + Stock registers. Financial accounting disabled.</div>
                 </div>
               </label>
 
               <label class="egs-mode-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:var(--panel-alt); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.15s ease;">
-                <input type="radio" name="setErpMode" value="full_accounting" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
+                <input type="radio" name="setErpPreset" value="simple_inventory" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
                 <div>
-                  <div style="font-weight:700; color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-file-invoice-dollar" style="color:#a855f7; margin-right:4px;"></i> Full Accounting + Inventory ERP</div>
-                  <div style="font-size:12px; color:var(--txt-muted); margin-top:3px;">Complete item stock control + Rate, Price, GST/Tax computation, and Debit/Credit party ledger accounting.</div>
-                </div>
-              </label>
-
-              <label class="egs-mode-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:var(--panel-alt); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.15s ease;">
-                <input type="radio" name="setErpMode" value="accounts_only" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
-                <div>
-                  <div style="font-weight:700; color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-book" style="color:var(--red); margin-right:4px;"></i> Financial Accounting Only (No Stock)</div>
-                  <div style="font-size:12px; color:var(--txt-muted); margin-top:3px;">Hides physical warehouse &amp; stock allocation; operates as a pure financial ledger &amp; voucher accounting system.</div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13.5px;"><i class="fa-solid fa-boxes-stacked" style="color:#a855f7; margin-right:4px;"></i> Simple Inventory</div>
+                  <div style="font-size:12px; color:var(--txt-muted); margin-top:3px;">Pure quantity stock tracking with warehouse locations. No serial scans and no accounting vouchers.</div>
                 </div>
               </label>
 
             </div>
           </div>
 
-          <!-- Card 2: Feature Switchboard & Mandatory Rules -->
+          <!-- Card 2: Fine-Grained Feature Switches & Dependency Rules -->
           <div class="settings-card" style="margin-top:16px;">
-            <div class="settings-card-title"><i class="fa-solid fa-toggle-on" style="color:var(--blue);"></i> Feature Switchboard &amp; Mandatory Rules</div>
+            <div class="settings-card-title"><i class="fa-solid fa-toggle-on" style="color:var(--blue);"></i> Fine-Grained Feature Switchboard</div>
             
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap:14px; margin-top:12px;">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap:14px; margin-top:12px;">
               
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="setCheckInvTracking" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13px;">Quantity Stock Tracking</div>
+                  <div style="font-size:11.5px; color:var(--txt-muted);">Track physical product quantities, UOMs, and inward/outward ledger records.</div>
+                </div>
+              </label>
+
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="setCheckSerialTracking" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13px;">Individual Serial Scanning</div>
+                  <div style="font-size:11.5px; color:var(--txt-muted);">Prompt for unique serial/barcode numbers during Purchase &amp; Sales dispatch.</div>
+                </div>
+              </label>
+
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="setCheckWarehouseTracking" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13px;">Godown / Warehouse Hubs</div>
+                  <div style="font-size:11.5px; color:var(--txt-muted);">Track multi-warehouse locations and godowns for stock transactions.</div>
+                </div>
+              </label>
+
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="setCheckAccountingEnabled" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13px;">Double-Entry Accounting</div>
+                  <div style="font-size:11.5px; color:var(--txt-muted);">Enable Payments, Receipts, Journals, Trial Balance, P&amp;L, and Balance Sheet.</div>
+                </div>
+              </label>
+
+              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="setCheckGstEnabled" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
+                <div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13px;">GST Taxation Engine</div>
+                  <div style="font-size:11.5px; color:var(--txt-muted);">Auto-calculate Intra-State (CGST+SGST) vs Inter-State (IGST) taxes.</div>
+                </div>
+              </label>
+
               <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
                 <input type="checkbox" id="setCheckFeatureBom" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
                 <div>
-                  <div style="font-weight:700; color:var(--txt); font-size:13px;">BOM Kit Assembly &amp; Project Dispatch</div>
-                  <div style="font-size:11.5px; color:var(--txt-muted);">Enable multi-item Bill of Materials kits and automated customer dispatch challans.</div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13px;">BOM Kit Assembly &amp; Delivery</div>
+                  <div style="font-size:11.5px; color:var(--txt-muted);">Enable solar kit bundling, custom challans, and track order registers.</div>
                 </div>
               </label>
 
               <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
                 <input type="checkbox" id="setCheckFeaturePricing" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
                 <div>
-                  <div style="font-weight:700; color:var(--txt); font-size:13px;">Pricing &amp; Rate Valuation in Forms</div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13px;">Pricing &amp; Valuation in Forms</div>
                   <div style="font-size:11.5px; color:var(--txt-muted);">Show Unit Rate, Subtotal, and GST columns during Purchase Inward and Sales.</div>
-                </div>
-              </label>
-
-              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
-                <input type="checkbox" id="setCheckFeatureWarehouse" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
-                <div>
-                  <div style="font-weight:700; color:var(--txt); font-size:13px;">Warehouse &amp; Godown Hub Tracking</div>
-                  <div style="font-size:11.5px; color:var(--txt-muted);">Track specific godown / warehouse locations for all stock transactions.</div>
-                </div>
-              </label>
-
-              <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
-                <input type="checkbox" id="setCheckFeaturePallet" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
-                <div>
-                  <div style="font-weight:700; color:var(--txt); font-size:13px;">Pallet ID Allocation</div>
-                  <div style="font-size:11.5px; color:var(--txt-muted);">Enable Pallet / Box grouping for incoming solar panels &amp; modules.</div>
                 </div>
               </label>
 
               <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
                 <input type="checkbox" id="setCheckFeatureProofMandatory" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
                 <div>
-                  <div style="font-weight:700; color:var(--txt); font-size:13px;">Invoice / Challan Attachment Mandatory</div>
+                  <div style="font-weight:700; color:var(--txt); font-size:13px;">Proof Attachment Mandatory</div>
                   <div style="font-size:11.5px; color:var(--txt-muted);">Block saving inward/sales vouchers without an uploaded PDF/Photo proof.</div>
                 </div>
               </label>
+
+              <div class="field" style="margin:0;">
+                <label style="font-weight:700; color:var(--txt); font-size:13px; display:block; margin-bottom:4px;">Stock Valuation Method</label>
+                <select id="setStockValuation" class="form-control" style="width:100%; font-size:12.5px;">
+                  <option value="none">None (Simple Qty Counter)</option>
+                  <option value="fifo">FIFO (First-In, First-Out)</option>
+                  <option value="average_cost">Weighted Average Cost</option>
+                </select>
+              </div>
 
               <div class="field" style="margin:0;">
                 <label style="font-weight:700; color:var(--txt); font-size:13px; display:block; margin-bottom:4px;">Wattage Requirement Rule</label>
@@ -3885,7 +3947,7 @@ window.attachColumnFilters = function (table) {
 
             <div class="actions-row" style="margin-top:18px; justify-content:flex-end; border-top:1px solid var(--border-light); padding-top:14px;">
               <button type="button" class="btn btn-green" id="btnSaveErpModeSettings" style="padding:11px 24px; font-size:13.5px; font-weight:700; box-shadow:0 4px 14px rgba(46,204,113,0.3);">
-                <i class="fa-solid fa-floppy-disk"></i> Save ERP Operating Mode &amp; Features
+                <i class="fa-solid fa-floppy-disk"></i> Save Operating Mode &amp; Features
               </button>
             </div>
           </div>
@@ -4355,60 +4417,103 @@ window.attachColumnFilters = function (table) {
     }
 
     // -------------------------------------------------------------
-    // 2. Challan Tab Async Initialization & Live Preview
     // -------------------------------------------------------------
+    // 2. Document Sequences & Numbering Series Live Preview & Handlers
+    // -------------------------------------------------------------
+    const purPrefixInp = document.getElementById('setPurPrefix');
+    const purNextInp = document.getElementById('setPurNext');
+    const purPreviewEl = document.getElementById('previewPurSeq');
+
+    const salePrefixInp = document.getElementById('setSalePrefix');
+    const saleNextInp = document.getElementById('setSaleNext');
+    const salePreviewEl = document.getElementById('previewSaleSeq');
+
     const prefixInput = document.getElementById('setChallanPrefix');
     const nextInput = document.getElementById('setChallanNext');
     const padSelect = document.getElementById('setChallanPad');
     const suffixInput = document.getElementById('setChallanSuffix');
     const previewEl = document.getElementById('setChallanPreview');
 
-    function refreshChallanPreview() {
-      if (!previewEl) return;
-      const p = (prefixInput ? prefixInput.value : '');
-      const s = (suffixInput ? suffixInput.value : '');
-      const n = parseInt(nextInput ? nextInput.value : '1', 10) || 1;
-      const pad = parseInt(padSelect ? padSelect.value : '0', 10) || 0;
-      const padded = pad > 0 ? String(n).padStart(pad, '0') : String(n);
-      previewEl.textContent = `${p}${padded}${s}`;
+    const payPrefixInp = document.getElementById('setPaymentPrefix');
+    const rctPrefixInp = document.getElementById('setReceiptPrefix');
+    const jvPrefixInp = document.getElementById('setJournalPrefix');
+
+    function refreshDocPreviews() {
+      if (purPreviewEl) {
+        const p = purPrefixInp ? purPrefixInp.value : 'PUR-';
+        const n = parseInt(purNextInp ? purNextInp.value : '1001', 10) || 1;
+        purPreviewEl.textContent = `${p}${new Date().getFullYear()}-${String(n).padStart(4, '0')}`;
+      }
+      if (salePreviewEl) {
+        const p = salePrefixInp ? salePrefixInp.value : 'SAL-';
+        const n = parseInt(saleNextInp ? saleNextInp.value : '1001', 10) || 1;
+        salePreviewEl.textContent = `${p}${new Date().getFullYear()}-${String(n).padStart(4, '0')}`;
+      }
+      if (previewEl) {
+        const p = (prefixInput ? prefixInput.value : '');
+        const s = (suffixInput ? suffixInput.value : '');
+        const n = parseInt(nextInput ? nextInput.value : '1', 10) || 1;
+        const pad = parseInt(padSelect ? padSelect.value : '0', 10) || 0;
+        const padded = pad > 0 ? String(n).padStart(pad, '0') : String(n);
+        previewEl.textContent = `${p}${padded}${s}`;
+      }
     }
 
-    [prefixInput, nextInput, padSelect, suffixInput].forEach((el) => {
-      if (el) el.addEventListener('input', refreshChallanPreview);
-      if (el) el.addEventListener('change', refreshChallanPreview);
+    [purPrefixInp, purNextInp, salePrefixInp, saleNextInp, prefixInput, nextInput, padSelect, suffixInput, payPrefixInp, rctPrefixInp, jvPrefixInp].forEach((el) => {
+      if (el) {
+        el.addEventListener('input', refreshDocPreviews);
+        el.addEventListener('change', refreshDocPreviews);
+      }
     });
 
     if (window.Api) {
       window.Api.get('/auth/app-settings').then((res) => {
         const s = (res && res.settings) || {};
+        if (purPrefixInp && s.purchase_prefix != null) purPrefixInp.value = s.purchase_prefix;
+        if (purNextInp && s.purchase_next != null) purNextInp.value = s.purchase_next;
+        if (salePrefixInp && s.sales_prefix != null) salePrefixInp.value = s.sales_prefix;
+        if (saleNextInp && s.sales_next != null) saleNextInp.value = s.sales_next;
         if (prefixInput && s.challan_prefix != null) prefixInput.value = s.challan_prefix;
         if (nextInput && s.challan_next != null) nextInput.value = s.challan_next;
         if (padSelect && s.challan_pad != null) padSelect.value = s.challan_pad;
         if (suffixInput && s.challan_suffix != null) suffixInput.value = s.challan_suffix;
-        refreshChallanPreview();
-      }).catch(() => refreshChallanPreview());
+        if (payPrefixInp && s.payment_prefix != null) payPrefixInp.value = s.payment_prefix;
+        if (rctPrefixInp && s.receipt_prefix != null) rctPrefixInp.value = s.receipt_prefix;
+        if (jvPrefixInp && s.journal_prefix != null) jvPrefixInp.value = s.journal_prefix;
+        refreshDocPreviews();
+      }).catch(() => refreshDocPreviews());
     }
 
     const btnSaveChallan = document.getElementById('setBtnSaveChallan');
     if (btnSaveChallan) {
       btnSaveChallan.addEventListener('click', async () => {
-        const prefix = (prefixInput ? prefixInput.value.trim() : '');
-        const nextVal = (nextInput ? nextInput.value.trim() : '1');
-        const padVal = (padSelect ? padSelect.value : '3');
-        const suffixVal = (suffixInput ? suffixInput.value.trim() : '');
+        const payload = {
+          purchase_prefix: purPrefixInp ? purPrefixInp.value.trim() : 'PUR-',
+          purchase_next: purNextInp ? purNextInp.value.trim() : '1001',
+          sales_prefix: salePrefixInp ? salePrefixInp.value.trim() : 'SAL-',
+          sales_next: saleNextInp ? saleNextInp.value.trim() : '1001',
+          challan_prefix: prefixInput ? prefixInput.value.trim() : 'CHL-',
+          challan_next: nextInput ? nextInput.value.trim() : '1001',
+          challan_pad: padSelect ? padSelect.value : '4',
+          challan_suffix: suffixInput ? suffixInput.value.trim() : '',
+          payment_prefix: payPrefixInp ? payPrefixInp.value.trim() : 'PMT-',
+          receipt_prefix: rctPrefixInp ? rctPrefixInp.value.trim() : 'RCT-',
+          journal_prefix: jvPrefixInp ? jvPrefixInp.value.trim() : 'JV-'
+        };
 
         try {
-          await window.Api.put('/auth/app-settings', {
-            settings: {
-              challan_prefix: prefix,
-              challan_next: nextVal,
-              challan_pad: padVal,
-              challan_suffix: suffixVal
-            }
-          });
-          if (window.showToast) window.showToast('Challan numbering settings saved!');
+          if (window.CONFIG && window.CONFIG.saveSettings) {
+            await window.CONFIG.saveSettings(payload);
+          } else {
+            await window.Api.put('/auth/app-settings', { settings: payload });
+          }
+          if (window.showSuccess) {
+            window.showSuccess('Document Numbering Saved', 'All document prefixes and starting sequences have been successfully updated.');
+          } else if (window.showToast) {
+            window.showToast('Document numbering settings saved!', 'success');
+          }
         } catch (err) {
-          window.openModal('Save Failed', `<p style="color:var(--red);">${err.message || 'Could not save challan settings.'}</p>`);
+          window.showError('Save Failed', err.message || 'Could not save document numbering settings.');
         }
       });
     }
@@ -4698,6 +4803,89 @@ window.attachColumnFilters = function (table) {
       });
     }
 
+    // -------------------------------------------------------------
+    // Company Profile & Tax Identity Handlers
+    // -------------------------------------------------------------
+    const compNameInp = document.getElementById('setCompanyName');
+    const compGstinInp = document.getElementById('setCompanyGstin');
+    const compPanInp = document.getElementById('setCompanyPan');
+    const compStateCodeInp = document.getElementById('setCompanyStateCode');
+    const compAddressInp = document.getElementById('setCompanyAddress');
+    const compCurrencyInp = document.getElementById('setCompanyCurrency');
+    const compFyStartInp = document.getElementById('setCompanyFyStart');
+    const btnSaveCompany = document.getElementById('btnSaveCompanyProfile');
+
+    if (btnSaveCompany) {
+      btnSaveCompany.addEventListener('click', async () => {
+        const payload = {
+          company_name: (compNameInp ? compNameInp.value.trim() : '') || 'Eco Green Solar',
+          company_gstin: (compGstinInp ? compGstinInp.value.trim() : '') || '',
+          company_pan: (compPanInp ? compPanInp.value.trim() : '') || '',
+          company_state_code: (compStateCodeInp ? compStateCodeInp.value.trim() : '') || '24',
+          company_address: (compAddressInp ? compAddressInp.value.trim() : '') || '',
+          company_currency: (compCurrencyInp ? compCurrencyInp.value.trim() : '') || 'INR',
+          company_fy_start: (compFyStartInp ? compFyStartInp.value.trim() : '') || '2026-04-01'
+        };
+
+        try {
+          if (window.CONFIG && window.CONFIG.saveSettings) {
+            await window.CONFIG.saveSettings(payload);
+          } else {
+            await window.Api.put('/auth/app-settings', { settings: payload });
+          }
+          if (window.showSuccess) {
+            window.showSuccess('Company Profile Saved', 'Enterprise identity, GSTIN, and state code settings updated.');
+          } else if (window.showToast) {
+            window.showToast('Company profile settings saved!', 'success');
+          }
+        } catch (e) {
+          window.showError('Save Failed', (e && e.message) || 'Could not save company profile.');
+        }
+      });
+    }
+
+    // -------------------------------------------------------------
+    // ERP Operating Mode, Presets & Feature Switches
+    // -------------------------------------------------------------
+    const chkInvTracking = document.getElementById('setCheckInvTracking');
+    const chkSerialTracking = document.getElementById('setCheckSerialTracking');
+    const chkWarehouseTracking = document.getElementById('setCheckWarehouseTracking');
+    const chkAccountingEnabled = document.getElementById('setCheckAccountingEnabled');
+    const chkGstEnabled = document.getElementById('setCheckGstEnabled');
+    const chkFeatureBom = document.getElementById('setCheckFeatureBom');
+    const chkFeaturePricing = document.getElementById('setCheckFeaturePricing');
+    const chkFeatureProofMandatory = document.getElementById('setCheckFeatureProofMandatory');
+    const selStockValuation = document.getElementById('setStockValuation');
+    const selFeatureWattRule = document.getElementById('setFeatureWattRule');
+
+    function applyPresetToForm(presetKey) {
+      if (!window.CONFIG || !window.CONFIG.getPreset) return;
+      const p = window.CONFIG.getPreset(presetKey);
+      if (!p || !p.flags) return;
+      if (chkInvTracking) chkInvTracking.checked = (p.flags.inventory_tracking === '1');
+      if (chkSerialTracking) chkSerialTracking.checked = (p.flags.serial_tracking === '1');
+      if (chkWarehouseTracking) chkWarehouseTracking.checked = (p.flags.warehouse_tracking === '1');
+      if (chkAccountingEnabled) chkAccountingEnabled.checked = (p.flags.accounting_enabled === '1');
+      if (chkGstEnabled) chkGstEnabled.checked = (p.flags.gst_enabled === '1');
+      if (chkFeatureBom) chkFeatureBom.checked = (p.flags.feature_bom_enabled === '1');
+      if (selStockValuation && p.flags.stock_valuation) selStockValuation.value = p.flags.stock_valuation;
+    }
+
+    document.querySelectorAll('input[name="setErpPreset"]').forEach((r) => {
+      r.addEventListener('change', () => {
+        document.querySelectorAll('input[name="setErpPreset"]').forEach((other) => {
+          const card = other.closest('.egs-mode-card');
+          if (card) {
+            card.style.borderColor = other.checked ? 'var(--blue)' : 'var(--border)';
+            card.style.background = other.checked ? 'rgba(59,142,208,0.08)' : 'var(--panel-alt)';
+          }
+        });
+        if (r.checked) {
+          applyPresetToForm(r.value);
+        }
+      });
+    });
+
     if (window.Api) {
       window.Api.get('/auth/app-settings').then((res) => {
         const s = (res && res.settings) || {};
@@ -4708,100 +4896,81 @@ window.attachColumnFilters = function (table) {
         if (chkDispatchEmail) chkDispatchEmail.checked = s.dispatch_alert_enabled === '1';
         if (dispatchEmailsInp && s.dispatch_alert_emails != null) dispatchEmailsInp.value = s.dispatch_alert_emails;
 
-        // ERP Mode & Feature Switches population
-        const curMode = s.erp_mode || 'hybrid';
-        document.querySelectorAll('input[name="setErpMode"]').forEach((r) => {
-          r.checked = (r.value === curMode);
+        // Company Profile
+        if (compNameInp && s.company_name) compNameInp.value = s.company_name;
+        if (compGstinInp && s.company_gstin) compGstinInp.value = s.company_gstin;
+        if (compPanInp && s.company_pan) compPanInp.value = s.company_pan;
+        if (compStateCodeInp && s.company_state_code) compStateCodeInp.value = s.company_state_code;
+        if (compAddressInp && s.company_address) compAddressInp.value = s.company_address;
+        if (compCurrencyInp && s.company_currency) compCurrencyInp.value = s.company_currency;
+        if (compFyStartInp && s.company_fy_start) compFyStartInp.value = s.company_fy_start;
+
+        // ERP Mode & Presets
+        const curPreset = s.config_profile || 'full_erp';
+        document.querySelectorAll('input[name="setErpPreset"]').forEach((r) => {
+          r.checked = (r.value === curPreset);
           const card = r.closest('.egs-mode-card');
           if (card) {
             card.style.borderColor = r.checked ? 'var(--blue)' : 'var(--border)';
             card.style.background = r.checked ? 'rgba(59,142,208,0.08)' : 'var(--panel-alt)';
           }
         });
-        const chkFeatureBom = document.getElementById('setCheckFeatureBom');
-        const chkFeaturePricing = document.getElementById('setCheckFeaturePricing');
-        const chkFeatureWarehouse = document.getElementById('setCheckFeatureWarehouse');
-        const chkFeaturePallet = document.getElementById('setCheckFeaturePallet');
-        const chkFeatureProofMandatory = document.getElementById('setCheckFeatureProofMandatory');
-        const selFeatureWattRule = document.getElementById('setFeatureWattRule');
 
+        if (chkInvTracking) chkInvTracking.checked = (s.inventory_tracking !== '0');
+        if (chkSerialTracking) chkSerialTracking.checked = (s.serial_tracking !== '0');
+        if (chkWarehouseTracking) chkWarehouseTracking.checked = (s.warehouse_tracking !== '0');
+        if (chkAccountingEnabled) chkAccountingEnabled.checked = (s.accounting_enabled !== '0');
+        if (chkGstEnabled) chkGstEnabled.checked = (s.gst_enabled !== '0');
         if (chkFeatureBom) chkFeatureBom.checked = (s.feature_bom_enabled !== '0');
         if (chkFeaturePricing) chkFeaturePricing.checked = (s.feature_pricing_enabled !== '0');
-        if (chkFeatureWarehouse) chkFeatureWarehouse.checked = (s.feature_warehouse_enabled !== '0');
-        if (chkFeaturePallet) chkFeaturePallet.checked = (s.feature_pallet_enabled !== '0');
         if (chkFeatureProofMandatory) chkFeatureProofMandatory.checked = (s.feature_attachment_mandatory === '1');
+        if (selStockValuation && s.stock_valuation) selStockValuation.value = s.stock_valuation;
         if (selFeatureWattRule && s.feature_wattage_mandatory) selFeatureWattRule.value = s.feature_wattage_mandatory;
       }).catch(() => {});
     }
-
-    // ERP Mode Radio card highlight on change
-    document.querySelectorAll('input[name="setErpMode"]').forEach((r) => {
-      r.addEventListener('change', () => {
-        document.querySelectorAll('input[name="setErpMode"]').forEach((other) => {
-          const card = other.closest('.egs-mode-card');
-          if (card) {
-            card.style.borderColor = other.checked ? 'var(--blue)' : 'var(--border)';
-            card.style.background = other.checked ? 'rgba(59,142,208,0.08)' : 'var(--panel-alt)';
-          }
-        });
-      });
-    });
 
     // Save ERP Mode & Features Button
     const btnSaveErpMode = document.getElementById('btnSaveErpModeSettings');
     if (btnSaveErpMode) {
       btnSaveErpMode.addEventListener('click', async () => {
-        let selectedMode = 'hybrid';
-        document.querySelectorAll('input[name="setErpMode"]').forEach((r) => { if (r.checked) selectedMode = r.value; });
-        const chkFeatureBom = document.getElementById('setCheckFeatureBom');
-        const chkFeaturePricing = document.getElementById('setCheckFeaturePricing');
-        const chkFeatureWarehouse = document.getElementById('setCheckFeatureWarehouse');
-        const chkFeaturePallet = document.getElementById('setCheckFeaturePallet');
-        const chkFeatureProofMandatory = document.getElementById('setCheckFeatureProofMandatory');
-        const selFeatureWattRule = document.getElementById('setFeatureWattRule');
+        let selectedPreset = 'full_erp';
+        document.querySelectorAll('input[name="setErpPreset"]').forEach((r) => { if (r.checked) selectedPreset = r.value; });
 
-        const featureBom = (chkFeatureBom && chkFeatureBom.checked) ? '1' : '0';
-        const featurePricing = (chkFeaturePricing && chkFeaturePricing.checked) ? '1' : '0';
-        const featureWarehouse = (chkFeatureWarehouse && chkFeatureWarehouse.checked) ? '1' : '0';
-        const featurePallet = (chkFeaturePallet && chkFeaturePallet.checked) ? '1' : '0';
-        const featureProofMandatory = (chkFeatureProofMandatory && chkFeatureProofMandatory.checked) ? '1' : '0';
-        const featureWattRule = (selFeatureWattRule ? selFeatureWattRule.value : 'auto') || 'auto';
+        const payload = {
+          config_profile: selectedPreset,
+          inventory_tracking: (chkInvTracking && chkInvTracking.checked) ? '1' : '0',
+          serial_tracking: (chkSerialTracking && chkSerialTracking.checked) ? '1' : '0',
+          warehouse_tracking: (chkWarehouseTracking && chkWarehouseTracking.checked) ? '1' : '0',
+          accounting_enabled: (chkAccountingEnabled && chkAccountingEnabled.checked) ? '1' : '0',
+          gst_enabled: (chkGstEnabled && chkGstEnabled.checked) ? '1' : '0',
+          feature_bom_enabled: (chkFeatureBom && chkFeatureBom.checked) ? '1' : '0',
+          feature_pricing_enabled: (chkFeaturePricing && chkFeaturePricing.checked) ? '1' : '0',
+          feature_attachment_mandatory: (chkFeatureProofMandatory && chkFeatureProofMandatory.checked) ? '1' : '0',
+          stock_valuation: (selStockValuation ? selStockValuation.value : 'average_cost') || 'average_cost',
+          feature_wattage_mandatory: (selFeatureWattRule ? selFeatureWattRule.value : 'auto') || 'auto'
+        };
 
         try {
-          await window.Api.put('/auth/app-settings', {
-            settings: {
-              erp_mode: selectedMode,
-              feature_bom_enabled: featureBom,
-              feature_pricing_enabled: featurePricing,
-              feature_warehouse_enabled: featureWarehouse,
-              feature_pallet_enabled: featurePallet,
-              feature_attachment_mandatory: featureProofMandatory,
-              feature_wattage_mandatory: featureWattRule
-            }
-          });
-
-          // Sync into window.ERP_CONFIG
-          window.ERP_CONFIG = Object.assign(window.ERP_CONFIG || {}, {
-            erp_mode: selectedMode,
-            feature_bom_enabled: featureBom,
-            feature_pricing_enabled: featurePricing,
-            feature_warehouse_enabled: featureWarehouse,
-            feature_pallet_enabled: featurePallet,
-            feature_attachment_mandatory: featureProofMandatory,
-            feature_wattage_mandatory: featureWattRule
-          });
+          if (window.CONFIG && window.CONFIG.saveSettings) {
+            await window.CONFIG.saveSettings(payload);
+          } else {
+            await window.Api.put('/auth/app-settings', { settings: payload });
+          }
 
           if (typeof window.applyErpModeRules === 'function') {
             window.applyErpModeRules();
           }
+          if (typeof window.renderNavButtons === 'function') {
+            window.renderNavButtons();
+          }
 
           if (window.showSuccess) {
-            window.showSuccess('ERP Operating Mode Updated', `Active ERP mode set to '${selectedMode.toUpperCase()}'. Features & validation rules applied across software.`);
+            window.showSuccess('Operating Mode & Features Updated', `Enterprise configuration profile set to '${selectedPreset.toUpperCase()}'. Features dynamically updated across system.`);
           } else if (window.showToast) {
             window.showToast('ERP mode and feature settings saved!', 'success');
           }
         } catch (e) {
-          window.showError('Save Failed', (e && e.message) || 'Could not save ERP mode settings.');
+          window.showError('Configuration Conflict', (e && e.message) || 'Could not save operating mode settings.');
         }
       });
     }

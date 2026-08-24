@@ -236,7 +236,7 @@ window.PAGES.returns = {
         btnAddLine.disabled = true;
         return;
       }
-      const serialMandatory = currentCategoryMeta ? !!currentCategoryMeta.serial_mandatory : true;
+      const serialMandatory = (window.CONFIG && !window.CONFIG.isSerialTrackingEnabled()) ? false : (currentCategoryMeta ? !!currentCategoryMeta.serial_mandatory : true);
       if (serialMandatory) {
         serialWrap.style.display = '';
         qtyWrap.style.display = 'none';
@@ -280,7 +280,7 @@ window.PAGES.returns = {
         window.openModal('Validation Error', '<p>Select Category, Brand, Wattage and Type first.</p>');
         return;
       }
-      const serialMandatory = currentCategoryMeta ? !!currentCategoryMeta.serial_mandatory : true;
+      const serialMandatory = (window.CONFIG && !window.CONFIG.isSerialTrackingEnabled()) ? false : (currentCategoryMeta ? !!currentCategoryMeta.serial_mandatory : true);
       if (serialMandatory) {
         const serials = splitSerials(serialsEl.value);
         if (!serials.length) {

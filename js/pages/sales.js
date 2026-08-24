@@ -188,6 +188,14 @@ window.PAGES.sales = {
 
     const saleSplit = $('saleSplit');
     const saleToggleLabel = $('saleToggleEditLabel');
+
+    // Auto-populate sequence previews from CONFIG if empty
+    if ($('saleChalanNo') && !$('saleChalanNo').value && window.CONFIG && window.CONFIG.getNextDocNumberPreview) {
+      $('saleChalanNo').value = window.CONFIG.getNextDocNumberPreview('challan');
+    }
+    if ($('saleInvNo') && !$('saleInvNo').value && window.CONFIG && window.CONFIG.getNextDocNumberPreview) {
+      $('saleInvNo').value = window.CONFIG.getNextDocNumberPreview('sales');
+    }
     const editPanelEl = $('saleEditPanel');
     const PD = window.PurchaseData;
 
@@ -274,7 +282,10 @@ window.PAGES.sales = {
     // Default true (serial required) if the category hasn't loaded yet or
     // isn't found — matches the existing behaviour so nothing changes until
     // the categories master explicitly says serial_mandatory=0.
-    function isSerialMandatory(cat) { return categorySerialRules[cat] !== false; }
+    function isSerialMandatory(cat) {
+      if (window.CONFIG && !window.CONFIG.isSerialTrackingEnabled()) return false;
+      return categorySerialRules[cat] !== false;
+    }
     // Mirrors masters.js's syncWattMandatoryUI() / purchase.js's
     // purCategoryNeedsModel(): when NEITHER Wattage nor Serial No. applies
     // to the selected category, Model replaces Wattage as the
