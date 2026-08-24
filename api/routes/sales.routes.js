@@ -850,48 +850,80 @@ module.exports = function registerSalesRoutes(app, deps) {
       return res.status(400).json({ error: 'Valid Order / Challan / Invoice reference is required.' });
     }
 
-    const whereClause = `(order_no = ? OR chalan_no = ? OR sales_invoice = ?) AND (status = 'Sold' OR status = 'Dispatched' OR bom_dispatch_id IS NOT NULL)`;
-    const params = [rawRef, rawRef, rawRef];
+    // Build candidate search references (e.g. "NP003700", "3700", "NP3700")
+    const candidates = new Set([rawRef]);
+    const numPart = rawRef.replace(/^NP0*/i, '');
+    if (numPart && numPart !== rawRef) {
+      candidates.add(numPart);
+      candidates.add(`NP${numPart}`);
+      candidates.add(`NP00${numPart}`);
+    }
+    const candList = [...candidates];
+
+    const whereStock = `(${candList.map(() => '(order_no = ? OR chalan_no = ? OR sales_invoice = ?)').join(' OR ')}) AND (status = 'Sold' OR status = 'Dispatched' OR bom_dispatch_id IS NOT NULL)`;
+    const stockParams = [];
+    candList.forEach((c) => { stockParams.push(c, c, c); });
 
     const [serialRows] = await pool.query(
-      `SELECT serial_no FROM stock_ledger WHERE ${whereClause} AND serial_no IS NOT NULL AND serial_no != ''`,
-      params
+      `SELECT serial_no FROM stock_ledger WHERE ${whereStock} AND serial_no IS NOT NULL AND serial_no != ''`,
+      stockParams
     );
     const [qtyRows] = await pool.query(
-      `SELECT id, quantity FROM stock_ledger WHERE ${whereClause} AND (serial_no IS NULL OR serial_no = '')`,
-      params
+      `SELECT id, quantity FROM stock_ledger WHERE ${whereStock} AND (serial_no IS NULL OR serial_no = '')`,
+      stockParams
     );
 
-    if (!serialRows.length && !qtyRows.length) {
+    // Also check bom_dispatches
+    let dispatchRows = [];
+    try {
+      const [dRows] = await pool.query(
+        `SELECT id, order_no FROM bom_dispatches WHERE order_no IN (?)`,
+        [candList]
+      );
+      dispatchRows = dRows || [];
+    } catch (e) { /* ignore */ }
+
+    if (!serialRows.length && !qtyRows.length && !dispatchRows.length) {
       return res.status(404).json({ error: `No active sold/dispatched records found for reference: ${rawRef}` });
     }
 
-    // Revert serial items and quantity items back to Available stock
-    await pool.query(
-      `UPDATE stock_ledger
-       SET status='Available',
-           customer_name='-',
-           order_no='-',
-           sales_invoice='-',
-           invoice_date='-',
-           sales_date='-',
-           chalan_no='-',
-           chalan_date='-',
-           sales_attachment='-',
-           bom_dispatch_id=NULL,
-           edited_flag=1
-       WHERE ${whereClause}`,
-      params
-    );
+    // 1. Revert stock_ledger items back to Available
+    if (serialRows.length || qtyRows.length) {
+      await pool.query(
+        `UPDATE stock_ledger
+         SET status='Available',
+             customer_name='-',
+             order_no='-',
+             sales_invoice='-',
+             invoice_date='-',
+             sales_date='-',
+             chalan_no='-',
+             chalan_date='-',
+             sales_attachment='-',
+             bom_dispatch_id=NULL,
+             edited_flag=1
+         WHERE ${whereStock}`,
+        stockParams
+      );
+    }
 
-    // Also clean up any corresponding bom_dispatches or challans record
-    try {
-      await pool.query(`DELETE FROM bom_dispatches WHERE order_no = ? OR challan_no = ? OR invoice_no = ?`, [rawRef, rawRef, rawRef]);
-    } catch (e) { /* ignore if table doesn't exist */ }
+    // 2. Delete from bom_dispatches
+    if (dispatchRows.length) {
+      try {
+        await pool.query(
+          `DELETE FROM bom_dispatches WHERE order_no IN (?) OR id IN (?)`,
+          [candList, dispatchRows.map((r) => r.id)]
+        );
+      } catch (e) { /* ignore */ }
+    }
 
+    // 3. Revert BOM order status back to Open if applicable
     try {
-      await pool.query(`DELETE FROM challans WHERE challan_no = ? OR order_no = ?`, [rawRef, rawRef]);
-    } catch (e) { /* ignore if table doesn't exist */ }
+      await pool.query(
+        `UPDATE bom_orders SET status='Open' WHERE order_no IN (?)`,
+        [candList]
+      );
+    } catch (e) { /* ignore */ }
 
     const totalQtyReverted = qtyRows.reduce((sum, r) => sum + (r.quantity || 0), 0);
     if (typeof syncStockSummary === 'function') syncStockSummary(pool).catch(() => {});
@@ -902,11 +934,17 @@ module.exports = function registerSalesRoutes(app, deps) {
     try {
       await pool.query(
         `INSERT INTO audit_logs (transaction_type, reference_no, action_by, action_timestamp, old_details, new_details) VALUES ('SALE_DELETE', ?, 'User', ?, ?, ?)`,
-        [rawRef, ledgerTimestamp(), `Ref:${rawRef}`, `Sale transaction deleted | Serials reverted to Available: ${serialRows.map((r) => r.serial_no).join(', ') || 'none'} | Qty reverted to Available: ${totalQtyReverted}`]
+        [rawRef, ledgerTimestamp(), `Ref:${rawRef}`, `Sale transaction deleted | Serials reverted: ${serialRows.map((r) => r.serial_no).join(', ') || 'none'} | Qty reverted: ${totalQtyReverted} | Dispatches cleaned: ${dispatchRows.length}`]
       );
     } catch (e) { /* audit log is best-effort, never block the delete on it */ }
 
-    res.json({ success: true, revertedCount: serialRows.length, revertedQty: totalQtyReverted });
+    res.json({
+      success: true,
+      revertedCount: serialRows.length,
+      revertedQty: totalQtyReverted,
+      dispatchesDeleted: dispatchRows.length,
+      message: `Voucher / Dispatch #${rawRef} successfully deleted.`
+    });
   }));
 
   // GET /api/sales/register — mirrors ui/registers.py's SaleRegisterPage
