@@ -111,9 +111,13 @@ window.PAGES.partyledger = {
     <!-- Create / Edit Ledger Modal -->
     <div class="modal-overlay modal-fullscreen" id="ledgerFormOverlay">
       <div class="modal-box modal-md" onclick="event.stopPropagation()">
-        <div class="modal-head">
-          <h3 id="ledgerFormTitle"><i class="fa-solid fa-address-book"></i>&nbsp; Create New Ledger</h3>
-          <button class="modal-close" id="closeLedgerForm"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-head" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <h3 id="ledgerFormTitle" style="margin:0;"><i class="fa-solid fa-address-book"></i>&nbsp; Create New Ledger</h3>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button type="button" class="btn btn-green" id="btnModalImportLedgers" style="background:#10b981; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-file-import"></i> Upload Excel</button>
+            <button type="button" class="btn btn-blue" id="btnModalDownloadTemplate" style="background:#3b82f6; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-download"></i> Download Template</button>
+            <button type="button" class="modal-close" id="closeLedgerForm" title="Close"><i class="fa-solid fa-xmark"></i></button>
+          </div>
         </div>
         <div class="modal-body">
           <div class="form-grid" style="grid-template-columns:1fr;">
@@ -860,16 +864,23 @@ window.PAGES.partyledger = {
     let lfEscHandler = null;
     function attachLedgerFormEscape() {
       lfEscHandler = (e) => {
-        if (e.key === 'Escape') closeLedgerForm();
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          closeLedgerForm();
+        }
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
           e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
           document.getElementById('lfSave').click();
         }
       };
-      document.addEventListener('keydown', lfEscHandler);
+      document.addEventListener('keydown', lfEscHandler, true);
     }
     function detachLedgerFormEscape() {
-      if (lfEscHandler) { document.removeEventListener('keydown', lfEscHandler); lfEscHandler = null; }
+      if (lfEscHandler) { document.removeEventListener('keydown', lfEscHandler, true); lfEscHandler = null; }
     }
 
     // Fast Enter-key navigation between ledger form inputs (Tally style)
@@ -962,6 +973,21 @@ window.PAGES.partyledger = {
     });
     document.getElementById('lfCancel').addEventListener('click', closeLedgerForm);
     document.getElementById('closeLedgerForm').addEventListener('click', closeLedgerForm);
+    
+    const modalImportBtn = document.getElementById('btnModalImportLedgers');
+    if (modalImportBtn) {
+      modalImportBtn.addEventListener('click', () => {
+        const importInput = document.getElementById('plImportFile');
+        if (importInput) importInput.click();
+      });
+    }
+    const modalDownloadBtn = document.getElementById('btnModalDownloadTemplate');
+    if (modalDownloadBtn) {
+      modalDownloadBtn.addEventListener('click', () => {
+        downloadTemplate();
+      });
+    }
+
     let lfMouseDownTarget = null;
     if (lfOverlay) {
       lfOverlay.addEventListener('mousedown', (e) => { lfMouseDownTarget = e.target; });
@@ -1742,6 +1768,8 @@ window.PAGES.partyledger = {
           goBackLevel();
         } else if (e.key === 'Escape') {
           e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
           if (stMonth === null) closeStatement();
           else goBackLevel();
         } else if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
