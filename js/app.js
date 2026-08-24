@@ -5676,8 +5676,9 @@ window.attachColumnFilters = function (table) {
     flyout.className = 'egs-flyout-box';
 
     const rect = anchorEl ? anchorEl.getBoundingClientRect() : { top: 120, right: 260, bottom: 160 };
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = window.innerWidth <= 900;
     if (isMobile) {
+      if (typeof window.closeSidebar === 'function') window.closeSidebar();
       flyout.style.left = '50%';
       flyout.style.top = '50%';
       flyout.style.transform = 'translate(-50%, -50%)';
@@ -5685,7 +5686,8 @@ window.attachColumnFilters = function (table) {
       flyout.style.maxWidth = 'calc(100vw - 28px)';
       flyout.style.maxHeight = 'calc(100vh - 60px)';
       flyout.style.overflowY = 'auto';
-      flyout.style.zIndex = '10005';
+      flyout.style.zIndex = '20000';
+      backdrop.style.zIndex = '19999';
     } else {
       flyout.style.left = (rect.right + 10) + 'px';
       flyout.style.top = Math.min(Math.max(rect.top, 60), window.innerHeight - 380) + 'px';
@@ -5859,6 +5861,7 @@ window.attachColumnFilters = function (table) {
         `;
         btn.onclick = () => {
           closeAllFlyouts();
+          if (typeof window.closeSidebar === 'function') window.closeSidebar();
           go(grp.page);
         };
         navEl.appendChild(btn);
@@ -5876,16 +5879,86 @@ window.attachColumnFilters = function (table) {
         <i class="fa-solid fa-chevron-right btn-arrow"></i>
       `;
 
+      // Build Mobile Inline Accordion Subpanel
+      const subPanel = document.createElement('div');
+      subPanel.className = 'mobile-nav-subpanel';
+      subPanel.id = 'mobileSubpanel_' + grp.id;
+
+      let subHtml = '';
+      grp.items.forEach((item) => {
+        if (!shouldShowNavItem(item)) return;
+        const itemLabelHtml = formatHkLabel(item.name, item.hotkey);
+
+        if (item.hasNested) {
+          let nestedItemsHtml = '';
+          item.nestedItems.forEach((sub) => {
+            if (!shouldShowNavItem(sub)) return;
+            const subLabelHtml = formatHkLabel(sub.name, sub.hotkey);
+            nestedItemsHtml += `
+              <div class="mobile-nav-item mobile-leaf" data-page="${sub.page || ''}" data-sub="${sub.sub || sub.tab || ''}" data-action="${sub.action || ''}" data-filter="${sub.filter || ''}" data-group-id="${grp.id}">
+                <span class="btn-label"><i class="fa-solid ${sub.icon}" style="color:var(--blue); font-size:12px;"></i> <span>${subLabelHtml}</span></span>
+              </div>
+            `;
+          });
+          subHtml += `
+            <div class="mobile-nested-group">
+              <div class="mobile-nested-title"><i class="fa-solid ${item.icon}"></i> ${item.nestedTitle || item.name}</div>
+              ${nestedItemsHtml}
+            </div>
+          `;
+        } else {
+          subHtml += `
+            <div class="mobile-nav-item mobile-leaf" data-page="${item.page || ''}" data-sub="${item.sub || item.tab || ''}" data-action="${item.action || ''}" data-filter="${item.filter || ''}" data-group-id="${grp.id}">
+              <span class="btn-label"><i class="fa-solid ${item.icon}" style="color:var(--blue); font-size:12px;"></i> <span>${itemLabelHtml}</span></span>
+            </div>
+          `;
+        }
+      });
+      subPanel.innerHTML = subHtml;
+
+      // Wire leaf clicks inside subPanel
+      subPanel.querySelectorAll('.mobile-leaf').forEach((leaf) => {
+        leaf.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const page = leaf.dataset.page;
+          const sub = leaf.dataset.sub;
+          const action = leaf.dataset.action;
+          const filter = leaf.dataset.filter;
+          const groupId = leaf.dataset.groupId;
+          if (typeof window.closeSidebar === 'function') window.closeSidebar();
+          closeAllFlyouts();
+          if (action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
+            window.openSystemSettingsModal(sub || 'tab-erp-mode');
+          } else if (page) {
+            go(page, { sub, action, filter, groupId });
+          }
+        });
+      });
+
       btn.onclick = (e) => {
         e.stopPropagation();
-        if (navState.activeFlyoutGroup === grp) {
-          closeAllFlyouts();
+        const isMobile = window.innerWidth <= 900;
+        if (isMobile) {
+          const isOpen = subPanel.classList.contains('open');
+          document.querySelectorAll('.mobile-nav-subpanel.open').forEach((p) => {
+            if (p !== subPanel) p.classList.remove('open');
+          });
+          document.querySelectorAll('.erp-sidebar-btn.accordion-open').forEach((b) => {
+            if (b !== btn) b.classList.remove('accordion-open');
+          });
+          subPanel.classList.toggle('open', !isOpen);
+          btn.classList.toggle('accordion-open', !isOpen);
         } else {
-          openSidebarFlyout(grp, btn, true);
+          if (navState.activeFlyoutGroup === grp) {
+            closeAllFlyouts();
+          } else {
+            openSidebarFlyout(grp, btn, true);
+          }
         }
       };
 
       navEl.appendChild(btn);
+      navEl.appendChild(subPanel);
     });
   }
   window.renderNavButtons = renderNavButtons;
@@ -5900,6 +5973,9 @@ window.attachColumnFilters = function (table) {
     if (!page) return;
 
     closeAllFlyouts();
+    if (window.innerWidth <= 900 && typeof window.closeSidebar === 'function') {
+      window.closeSidebar();
+    }
 
     // Prevent redundant reload spam if key is held down
     if (window.CURRENT_PAGE_ID === id && !opts.sub && !opts.tab && !opts.action && !opts.filter && !opts.force) {

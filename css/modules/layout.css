@@ -461,10 +461,67 @@ html[data-theme="light"] .egs-top-progress {
   opacity: 0.6;
   transition: transform 0.15s ease;
 }
-.erp-sidebar-btn:hover .btn-arrow,
-.erp-sidebar-btn.flyout-open .btn-arrow {
-  opacity: 1;
-  transform: translateX(2px);
+/* Inline Mobile Accordion Drawer (<= 900px) */
+.mobile-nav-subpanel {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 6px 6px 12px;
+  background: var(--panel-alt);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--blue);
+  margin-top: 4px;
+  margin-bottom: 6px;
+}
+.mobile-nav-subpanel.open {
+  display: flex;
+  animation: egsSlideDown 0.16s ease-out;
+}
+@keyframes egsSlideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.mobile-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: var(--txt);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  transition: all 0.14s ease;
+  user-select: none;
+}
+.mobile-nav-item:hover,
+.mobile-nav-item:active {
+  background: var(--input-bg);
+  color: var(--blue);
+}
+.mobile-nested-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 4px 6px;
+  padding-left: 8px;
+  border-left: 1.5px dashed var(--border-light);
+}
+.mobile-nested-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 8px 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.erp-sidebar-btn.accordion-open .btn-arrow {
+  transform: rotate(90deg);
 }
 
 /* Hotkey Letter Underline (Tally / Shree Sava Style) */
