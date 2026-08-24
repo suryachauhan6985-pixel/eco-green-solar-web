@@ -763,18 +763,18 @@ window.PAGES.bom = {
         ctx.setVerified(true);
         ctx.updateVerifyButtonState();
 
-        // Collect scanned serials ONLY from Solar Panel section (Inverter serials excluded)
+        // Collect scanned serials ONLY from Solar Panel items (Inverter serials excluded)
         const allSerials = [];
+        const isNonPanel = (name, cat) => {
+          const s = `${name || ''} ${cat || ''}`.toUpperCase();
+          return s.includes('INVERTER') || s.includes('DEYE') || s.includes('GROWATT') || s.includes('POLYCAB') || s.includes('SOLIS') || s.includes('STRUCTURE') || s.includes('WIRE') || s.includes('ACDB') || s.includes('DCDB');
+        };
+
+        // 1. Check current kit state sections
         if (ctx.currentKitState && Array.isArray(ctx.currentKitState.sections)) {
           for (const sec of ctx.currentKitState.sections) {
-            const secTitle = String(sec.title || '').trim().toUpperCase();
-            const isPanelSection = secTitle.includes('PANEL') || (!secTitle.includes('INVERTER') && !secTitle.includes('STRUCTURE') && !secTitle.includes('WIRE') && !secTitle.includes('ACDB'));
-            if (!isPanelSection) continue;
-
             for (const it of (sec.items || [])) {
-              const itName = String(it.name || '').trim().toUpperCase();
-              if (itName.includes('INVERTER') || itName.includes('DEYE') || itName.includes('GROWATT') || itName.includes('POLYCAB') || itName.includes('SOLIS')) continue;
-
+              if (isNonPanel(it.name, sec.title || it.category)) continue;
               if (it && it.serials) {
                 const list = typeof bomSplitSerials === 'function'
                   ? bomSplitSerials(it.serials)
@@ -788,10 +788,26 @@ window.PAGES.bom = {
           }
         }
 
-        // Also check any serial textareas on screen for panel items (exclude inverters)
-        document.querySelectorAll('textarea[data-cont-kind="serial"]').forEach((box) => {
-          const itemName = String(box.getAttribute('data-cont-name') || '').trim().toUpperCase();
-          if (itemName.includes('INVERTER') || itemName.includes('DEYE') || itemName.includes('GROWATT') || itemName.includes('POLYCAB') || itemName.includes('SOLIS')) return;
+        // 2. Check Continue Order items if active
+        if (ctx.currentContinueOrder && Array.isArray(ctx.currentContinueOrder.items)) {
+          for (const it of ctx.currentContinueOrder.items) {
+            if (isNonPanel(it.item_name || it.name, it.category)) continue;
+            if (it && it.serials) {
+              const list = typeof bomSplitSerials === 'function'
+                ? bomSplitSerials(it.serials)
+                : (Array.isArray(it.serials) ? it.serials : String(it.serials).split(/[\r\n,;]+/));
+              list.forEach((s) => {
+                const trimmed = String(s || '').trim();
+                if (trimmed && !allSerials.includes(trimmed)) allSerials.push(trimmed);
+              });
+            }
+          }
+        }
+
+        // 3. Also check any serial textareas on screen for panel items (exclude inverters)
+        document.querySelectorAll('textarea[data-cont-kind="serial"], textarea#bomSerialModalBox').forEach((box) => {
+          const itemName = String(box.getAttribute('data-cont-name') || '').trim();
+          if (isNonPanel(itemName)) return;
 
           const list = typeof bomSplitSerials === 'function'
             ? bomSplitSerials(box.value || '')

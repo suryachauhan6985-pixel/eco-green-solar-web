@@ -825,8 +825,9 @@ window.saveSerialExcelDirectly = async function(params) {
 
   const cleanOrder = String(orderNo || '').replace(/[/\\?%*:|"<>]/g, '-').trim();
   const cleanShort = String(shortName || customerName || '').replace(/[/\\?%*:|"<>]/g, '-').trim();
+  const fileName = cleanOrder && cleanShort && cleanOrder !== cleanShort ? `${cleanOrder} - ${cleanShort}.xlsx` : `${cleanOrder || 'Serials'}.xlsx`;
 
-  // Send to backend API to auto-save to network folder silently
+  // Send to backend API to auto-save to NAS network folder
   if (window.Api && typeof window.Api.post === 'function') {
     window.Api.post('/serials/save-excel', {
       orderNo: cleanOrder,
@@ -835,10 +836,35 @@ window.saveSerialExcelDirectly = async function(params) {
       date: date || new Date().toISOString(),
       serials: list
     }, { silent: true }).then((res) => {
-      if (res && res.success) {
-        if (window.showToast) window.showToast(`✔ Scanned Serials Excel saved (${res.fileName})`, 'success');
+      if (res && res.success && res.savedPath) {
+        if (window.showToast) window.showToast(`✔ Scanned Serials Excel saved to NAS (${res.fileName})`, 'success');
+      } else {
+        // When running on Cloud / Remote Render VM where NAS is unreachable, offer automatic download
+        if (typeof bomBuildSerialExcelBlob === 'function' && typeof XLSX !== 'undefined') {
+          const blob = bomBuildSerialExcelBlob(list);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = (res && res.fileName) ? res.fileName : fileName;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+          if (window.showToast) window.showToast(`✔ Scanned Serials Excel generated: ${a.download}`, 'success');
+        }
       }
-    }).catch(() => {});
+    }).catch(() => {
+      // Local client fallback
+      if (typeof bomBuildSerialExcelBlob === 'function' && typeof XLSX !== 'undefined') {
+        const blob = bomBuildSerialExcelBlob(list);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+      }
+    });
   }
   return true;
 };

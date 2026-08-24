@@ -2,10 +2,20 @@ const fs = require('fs');
 const path = require('path');
 const ExcelJS = require('exceljs');
 
-const DEFAULT_NETWORK_BASE_PATH = '\\\\As6302t-989d\\work\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB\\SERAIL NO. (ORD. & CHLN)';
+const CANDIDATE_NETWORK_PATHS = [
+  process.env.SERIAL_EXCEL_NETWORK_PATH,
+  'Z:\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB\\SERAIL NO. (ORD. & CHLN)',
+  '\\\\As6302t-989d\\work\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB\\SERAIL NO. (ORD. & CHLN)',
+  'D:\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB\\SERAIL NO. (ORD. & CHLN)'
+].filter(Boolean);
 
 function getNetworkBasePath() {
-  return process.env.SERIAL_EXCEL_NETWORK_PATH || DEFAULT_NETWORK_BASE_PATH;
+  for (const p of CANDIDATE_NETWORK_PATHS) {
+    try {
+      if (fs.existsSync(p)) return p;
+    } catch (e) { /* ignore and try next */ }
+  }
+  return CANDIDATE_NETWORK_PATHS[0] || CANDIDATE_NETWORK_PATHS[1];
 }
 
 function sanitizeFileName(name) {

@@ -55,11 +55,27 @@ const CHALLAN_CATEGORIES = [
   'Reti Bag', 'Kapchi Bag', 'Cement Bag', 'Ferma',
 ];
 
-// NAS root (same machine path used by backup.routes.js). Override with
-// BACKUP_NAS_PATH if the server runs elsewhere.
-const NAS_ROOT = process.env.BACKUP_NAS_PATH
-  || '\\\\As6302t-989d\\work\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB';
+const CANDIDATE_NAS_ROOTS = [
+  process.env.BACKUP_NAS_PATH,
+  'Z:\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB',
+  '\\\\As6302t-989d\\work\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB',
+  'D:\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB'
+].filter(Boolean);
+
 const PANEL_SERIALS_FOLDER = 'SERAIL NO. (ORD. & CHLN)';
+
+function resolveNasSerialsDir(folderKey) {
+  for (const root of CANDIDATE_NAS_ROOTS) {
+    try {
+      if (fs.existsSync(root)) {
+        const target = path.join(root, PANEL_SERIALS_FOLDER, folderKey);
+        if (!fs.existsSync(target)) fs.mkdirSync(target, { recursive: true });
+        return target;
+      }
+    } catch (e) { /* try next */ }
+  }
+  return null;
+}
 
 // Sanitize a folder/file name so Windows path separators / reserved chars
 // cannot escape the target directory.
@@ -123,20 +139,19 @@ async function writePanelSerialsExcel({ orderNo, challanNo, serials }) {
   sheet.getColumn(2).width = 36;
   await workbook.xlsx.writeFile(filePath);
 
-  // Optional background copy to NAS if configured
-  if (process.env.BACKUP_NAS_PATH) {
-    setImmediate(async () => {
-      try {
-        const nasDir = path.join(process.env.BACKUP_NAS_PATH, PANEL_SERIALS_FOLDER, folderKey);
-        await fsp.mkdir(nasDir, { recursive: true });
+  // Background copy to NAS if reachable
+  setImmediate(async () => {
+    try {
+      const nasDir = resolveNasSerialsDir(folderKey);
+      if (nasDir) {
         const nasFilePath = path.join(nasDir, path.basename(filePath));
         await fsp.copyFile(filePath, nasFilePath);
         console.log(`[Challan] Panel serials copied to NAS: ${nasFilePath}`);
-      } catch (err) {
-        // NAS copy warning (does not affect local save)
       }
-    });
-  }
+    } catch (err) {
+      // NAS copy warning (does not affect local save)
+    }
+  });
 
   return {
     ok: true,

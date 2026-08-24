@@ -7,8 +7,13 @@ module.exports = function registerBackupRoutes(app, deps) {
   const BACKUP_FOLDER_NAME = 'EcoGreenSolar_Backups';
   // Override with env var BACKUP_NAS_PATH if this server runs on a different
   // machine than the desktop app (same idea as NAS_BACKUP_PATH in backup.py).
-  const NAS_BACKUP_PATH = process.env.BACKUP_NAS_PATH
-    || '\\\\As6302t-989d\\work\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB';
+  const CANDIDATE_NAS_BACKUP_PATHS = [
+    process.env.BACKUP_NAS_PATH,
+    'Z:\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB',
+    '\\\\As6302t-989d\\work\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB',
+    'D:\\2023-24\\Solar Rooftop\\NP - Site Visit, 3D\\SUMIT\\Solar_ERP_DB'
+  ].filter(Boolean);
+
   const BACKUP_AUTO_CHECK_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
   const RECENT_BACKUPS_TO_SHOW = 12;
   const TABLES_TO_BACKUP = [
@@ -42,12 +47,15 @@ module.exports = function registerBackupRoutes(app, deps) {
   // server file if the NAS path isn't reachable right now (offline/network
   // issue) — backup never fails just because the NAS is down.
   function resolveBackupDir() {
-    try {
-      fs.mkdirSync(NAS_BACKUP_PATH, { recursive: true });
-      const target = path.join(NAS_BACKUP_PATH, BACKUP_FOLDER_NAME);
-      fs.mkdirSync(target, { recursive: true });
-      return { dir: target, onNas: true };
-    } catch (e) { /* fall through to local */ }
+    for (const basePath of CANDIDATE_NAS_BACKUP_PATHS) {
+      try {
+        if (fs.existsSync(basePath)) {
+          const target = path.join(basePath, BACKUP_FOLDER_NAME);
+          if (!fs.existsSync(target)) fs.mkdirSync(target, { recursive: true });
+          return { dir: target, onNas: true };
+        }
+      } catch (e) { /* try next */ }
+    }
     const localTarget = path.join(__dirname, BACKUP_FOLDER_NAME);
     fs.mkdirSync(localTarget, { recursive: true });
     return { dir: localTarget, onNas: false };
