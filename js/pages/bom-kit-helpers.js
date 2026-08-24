@@ -819,11 +819,11 @@ function bomPrintKitDirectly(kit, header) {
 <html lang="en" style="background:#ffffff !important;">
 <head>
   <meta charset="utf-8">
-  <title>Bill of Material - ${bomEsc((header && (header.orderNo || header.customerName)) || 'BOM')}</title>
+  <title></title>
   <style>
     @page {
       size: A4 portrait;
-      margin: 12mm 10mm 12mm 10mm;
+      margin: 8mm 8mm 8mm 8mm;
     }
     * {
       box-sizing: border-box;
@@ -857,17 +857,17 @@ function bomPrintKitDirectly(kit, header) {
     }
     .bom-table th, .bom-table td {
       border: 1px solid #000000 !important;
-      padding: 2.2px 4px !important;
-      font-size: 11pt !important;
-      line-height: 1.25 !important;
+      padding: 1.2px 3.5px !important;
+      font-size: 9.2pt !important;
+      line-height: 1.16 !important;
       vertical-align: middle !important;
       background: #ffffff !important;
       color: #000000 !important;
       white-space: nowrap !important;
       overflow: hidden !important;
     }
-    .bom-col-sr { width: 7.00% !important; }
-    .bom-col-name { width: 31.00% !important; }
+    .bom-col-sr { width: 6.50% !important; }
+    .bom-col-name { width: 31.50% !important; }
     .bom-col-model { width: 17.00% !important; }
     .bom-col-qty { width: 11.00% !important; }
     .bom-col-checked { width: 8.00% !important; }
@@ -882,24 +882,24 @@ function bomPrintKitDirectly(kit, header) {
 
     .bom-info-cell {
       border: 1px solid #000000 !important;
-      font-size: 10.5pt !important;
+      font-size: 9pt !important;
       font-weight: 700 !important;
       color: #000000 !important;
       background: #ffffff !important;
-      padding: 3px 5px !important;
-      line-height: 1.25 !important;
+      padding: 1.8px 4px !important;
+      line-height: 1.18 !important;
     }
     .bom-spacer {
       border: 1px solid #000000 !important;
-      height: 4pt !important;
+      height: 2.5pt !important;
       padding: 0 !important;
       background: #ffffff !important;
     }
     .bom-kw-cell {
       border: 1px solid #000000 !important;
       text-align: right !important;
-      font-weight: 800 !important;
-      font-size: 12pt !important;
+      font-weight: 700 !important;
+      font-size: 11pt !important;
       color: #000000 !important;
       background: #ffffff !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
@@ -907,8 +907,8 @@ function bomPrintKitDirectly(kit, header) {
     .bom-kw-unit {
       border: 1px solid #000000 !important;
       text-align: left !important;
-      font-weight: 800 !important;
-      font-size: 12pt !important;
+      font-weight: 700 !important;
+      font-size: 11pt !important;
       color: #000000 !important;
       background: #ffffff !important;
     }
@@ -916,21 +916,21 @@ function bomPrintKitDirectly(kit, header) {
       background: #666699 !important;
       background-color: #666699 !important;
       color: #ffffff !important;
-      font-weight: 800 !important;
+      font-weight: 700 !important;
       text-align: center !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
-      font-size: 11.5pt !important;
-      padding: 3.5px 4px !important;
+      font-size: 9.8pt !important;
+      padding: 2.2px 3.5px !important;
     }
     .bom-cat-row td {
       background: #f2f2f2 !important;
       background-color: #f2f2f2 !important;
       color: #000000 !important;
-      font-weight: 800 !important;
+      font-weight: 700 !important;
       text-align: center !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
-      font-size: 11.5pt !important;
-      padding: 3px 4px !important;
+      font-size: 9.5pt !important;
+      padding: 1.5px 3.5px !important;
     }
     .bom-table tr {
       page-break-inside: avoid !important;
@@ -938,11 +938,11 @@ function bomPrintKitDirectly(kit, header) {
     }
     .bom-print-footer {
       text-align: center !important;
-      font-size: 8.5pt !important;
+      font-size: 7.5pt !important;
       color: #555555 !important;
-      margin-top: 8px !important;
+      margin-top: 4px !important;
       font-family: 'Calibri Light', Calibri, 'Segoe UI', Arial, sans-serif !important;
-      letter-spacing: 0.3px !important;
+      letter-spacing: 0.2px !important;
     }
   </style>
 </head>
@@ -958,13 +958,12 @@ function bomPrintKitDirectly(kit, header) {
       const sheet = doc.getElementById('bomSheet');
       if (sheet) {
         const naturalHeight = sheet.scrollHeight || sheet.offsetHeight || sheet.getBoundingClientRect().height;
-        const usableHeightPx = 1032;
+        const usableHeightPx = 1060;
         
-        let scale = usableHeightPx / naturalHeight;
-        if (scale > 1) scale = 1;
-        if (scale < 0.76) scale = 0.77;
-        
-        sheet.style.zoom = scale;
+        if (naturalHeight > usableHeightPx) {
+          const scale = usableHeightPx / naturalHeight;
+          sheet.style.zoom = scale;
+        }
       }
       iframe.contentWindow.focus();
       iframe.contentWindow.print();
