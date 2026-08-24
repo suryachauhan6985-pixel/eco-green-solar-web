@@ -22,25 +22,13 @@
 function bomRenderHomeViewHtml() {
   return `
     <div id="bomHomeView">
-      <div class="page-head"><i class="fa-solid fa-list-check" style="color:var(--gold);"></i><h2>Bill of Material (BOM)</h2></div>
-      <div class="panel">
-        <h3><i class="fa-solid fa-box-open"></i> BOM</h3>
-        <p class="note" style="margin-bottom:12px;">
-          <i class="fa-solid fa-circle-info"></i> Start a new BOM, track any Order No.'s dispatch progress, or open the full register.
-        </p>
-        <div class="actions-row">
-          <button type="button" class="btn btn-green" id="bomHomeBtnCreate"><i class="fa-solid fa-plus-circle"></i> Create BOM</button>
-          <button type="button" class="btn btn-ghost" id="bomHomeBtnTrack"><i class="fa-solid fa-route"></i> Track BOM</button>
-          <button type="button" class="btn btn-ghost" id="bomHomeBtnRegister"><i class="fa-solid fa-clipboard-list"></i> BOM Register</button>
-          <button type="button" class="btn btn-ghost" id="bomHomeBtnChallanReg"><i class="fa-solid fa-file-invoice" style="color:var(--gold);"></i> Challan Register</button>
-          <button type="button" class="btn btn-ghost" id="bomHomeBtnCustomChallan"><i class="fa-solid fa-pen-nib"></i> Custom Challan</button>
-          <button type="button" class="btn btn-ghost" id="bomHomeBtnChallanMap" style="display:none;" title="Decide which BOM item folds into which Challan line"><i class="fa-solid fa-sitemap"></i> Challan Category Mapping</button>
-        </div>
-      </div>
+      <div class="page-head"><i class="fa-solid fa-truck-fast" style="color:var(--gold);"></i><h2>BOM Order Dispatch & Processing Workstation</h2></div>
       <div class="panel">
         <h3 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-          <span><i class="fa-solid fa-hourglass-half"></i> Pending BOM Orders <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(double-click a row to open it)</span></span>
-          <button type="button" class="btn btn-ghost bom-mini-btn" id="bomHomeBtnRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          <span><i class="fa-solid fa-hourglass-half"></i> Active &amp; Pending BOM Orders <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(Double-click or click Open to process dispatch)</span></span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button type="button" class="btn btn-ghost bom-mini-btn" id="bomHomeBtnRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button>
+          </div>
         </h3>
         <div id="bomHomePendingWrap">
           ${window.Skeleton ? '<div class="table-wrap"><table><tbody>' + window.Skeleton.tableRows(6, 3, { pillCols: [3] }) + '</tbody></table></div>' : '<div style="padding:20px; text-align:center; color:var(--txt-muted); font-size:12.5px;">Loading pending orders...</div>'}
@@ -371,7 +359,17 @@ window.PAGES.bom = {
       if (ctx.refreshItemsPreview) ctx.refreshItemsPreview();
       ctx.showBomEntry();
     }
-    if (ctx.btnBackHome) ctx.btnBackHome.addEventListener('click', ctx.showBomHome);
+    if (ctx.btnBackHome) {
+      ctx.btnBackHome.addEventListener('click', () => {
+        if (ctx.bomInlineContinueOrderId) {
+          ctx.showBomHome();
+        } else if (typeof window.stepBackFromFlyoutTrail === 'function') {
+          window.stepBackFromFlyoutTrail();
+        } else {
+          ctx.showBomHome();
+        }
+      });
+    }
 
     function bomOverallStatusFromItems(items) {
       const total = (items || []).reduce((s, it) => s + (it.total || 0), 0);
@@ -1063,7 +1061,14 @@ window.PAGES.bom = {
 
     // Fast workspace action router
     if (opts.action === 'create' || opts.tab === 'create') {
-      ctx.showBomEntryForNewKit();
+      if (!ctx.bomIsAdmin) {
+        if (window.showToast) window.showToast('ℹ️ Standard Users can dispatch and process existing BOM orders.', 'info');
+        ctx.showBomHome();
+      } else {
+        ctx.showBomEntryForNewKit();
+      }
+    } else if (opts.action === 'dispatch' || opts.action === 'pending' || opts.tab === 'dispatch') {
+      ctx.showBomHome();
     } else if (opts.action === 'track' || opts.tab === 'track') {
       if (typeof ctx.openTrackModal === 'function') ctx.openTrackModal();
     } else if (opts.action === 'register' || opts.tab === 'register') {
@@ -1072,6 +1077,12 @@ window.PAGES.bom = {
       if (typeof window.openChallanRegisterModal === 'function') window.openChallanRegisterModal();
     } else if (opts.action === 'custom-challan' || opts.tab === 'custom-challan') {
       if (typeof window.openCustomChallanModal === 'function') window.openCustomChallanModal();
+    } else {
+      if (ctx.bomIsAdmin) {
+        ctx.showBomEntryForNewKit();
+      } else {
+        ctx.showBomHome();
+      }
     }
   },
 };

@@ -5607,6 +5607,8 @@ window.attachColumnFilters = function (table) {
   }
 
   function getErpNavGroups() {
+    const curRole = (window.CURRENT_USER_ROLE || (window.CURRENT_USER && window.CURRENT_USER.role) || localStorage.getItem('user_role') || 'SuperAdmin').toLowerCase();
+    const isAdmin = curRole === 'superadmin' || curRole === 'admin' || curRole === 'super_admin';
     const isAcc = window.ERP && window.ERP.isAccountingMode();
     const isFinOnly = window.ERP && window.ERP.isFinancialOnly();
     const isQtyOnly = window.ERP && window.ERP.isQuantityOnly();
@@ -5705,10 +5707,18 @@ window.attachColumnFilters = function (table) {
         { name: 'Project Sales & Dispatch', hotkey: 'S', icon: 'fa-handshake', page: 'sales' }
       );
       if (window.ERP && window.ERP.isBomEnabled()) {
-        transactionItems.push(
-          { name: 'BOM Kit Assembly & Dispatch', hotkey: 'B', icon: 'fa-boxes-packing', page: 'bom', action: 'create', requires: 'bom' },
-          { name: 'Custom Delivery Challan', hotkey: 'C', icon: 'fa-pen-nib', page: 'bom', action: 'custom-challan', requires: 'bom' }
-        );
+        if (isAdmin) {
+          transactionItems.push(
+            { name: 'BOM Kit Assembly & Creation', hotkey: 'B', icon: 'fa-boxes-packing', page: 'bom', action: 'create', requires: 'bom' },
+            { name: 'BOM Order Dispatch & Processing', hotkey: 'O', icon: 'fa-truck-fast', page: 'bom', action: 'dispatch', requires: 'bom' },
+            { name: 'Custom Delivery Challan', hotkey: 'C', icon: 'fa-pen-nib', page: 'bom', action: 'custom-challan', requires: 'bom' }
+          );
+        } else {
+          transactionItems.push(
+            { name: 'BOM Order Dispatch & Processing', hotkey: 'B', icon: 'fa-truck-fast', page: 'bom', action: 'dispatch', requires: 'bom' },
+            { name: 'Custom Delivery Challan', hotkey: 'C', icon: 'fa-pen-nib', page: 'bom', action: 'custom-challan', requires: 'bom' }
+          );
+        }
       }
       transactionItems.push(
         { name: 'Stock Allocation & Journal', hotkey: 'A', icon: 'fa-tag', page: 'stockassign', requires: 'stock' },
@@ -6267,7 +6277,8 @@ window.attachColumnFilters = function (table) {
     'sales': { name: 'Project Sales & Dispatch', sub: 'Sales outward, serial assignment & delivery', icon: 'fa-handshake' },
     'saleregister': { name: 'Sale Register', sub: 'Project sales records & dispatch log archive', icon: 'fa-money-bill-transfer' },
     'bom': { name: 'Bill of Material (BOM)', sub: 'Kit assembly, serial allocation & delivery challans', icon: 'fa-list-check' },
-    'bom:create': { name: 'BOM Kit Assembly & Dispatch', sub: 'Assemble kits, verify components & generate dispatches', icon: 'fa-boxes-packing' },
+    'bom:create': { name: 'BOM Kit Assembly & Creation', sub: 'Assemble kits, verify components & configure BOM', icon: 'fa-boxes-packing' },
+    'bom:dispatch': { name: 'BOM Order Dispatch & Processing', sub: 'Process pending dispatches, scan serials & continue orders', icon: 'fa-truck-fast' },
     'bom:register': { name: 'BOM Dispatch Register', sub: 'Saved BOM orders and dispatch history', icon: 'fa-clipboard-list' },
     'bom:challan': { name: 'Delivery Challans Register', sub: 'Saved delivery challans and reprint center', icon: 'fa-file-invoice' },
     'bom:custom-challan': { name: 'Custom Delivery Challan', sub: 'Direct custom delivery challan entry form', icon: 'fa-pen-nib' },
@@ -6581,12 +6592,14 @@ window.attachColumnFilters = function (table) {
         return true;
       }
 
-      // Step 5: If in BOM Entry view, step back to BOM Home
-      const bomEntryView = document.getElementById('bomEntryView');
-      const bomBtnBackHome = document.getElementById('bomBtnBackHome');
-      if (bomEntryView && bomEntryView.style.display !== 'none' && bomBtnBackHome) {
-        bomBtnBackHome.click();
-        return true;
+      // Step 5: If in inline continue dispatch order, step back to BOM pending list
+      const bomContinuePanel = document.getElementById('bomContinuePanel');
+      if (bomContinuePanel && bomContinuePanel.style.display !== 'none') {
+        const bomBtnBackHome = document.getElementById('bomBtnBackHome');
+        if (bomBtnBackHome) {
+          bomBtnBackHome.click();
+          return true;
+        }
       }
 
       // Step 6: If in Master Create view, step back to Master Display
