@@ -858,16 +858,20 @@ td.bom-challan-footer-caption{
 }
 
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
   html, body {
     width: 100% !important;
-    height: auto !important;
-    min-height: 100% !important;
+    height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
+    background-color: #ffffff !important;
     color: #000000 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
 
   /* Hide app UI elements */
@@ -875,13 +879,13 @@ td.bom-challan-footer-caption{
   .modal-backdrop, .modal-close, #toastContainer, #bomHomeView,
   #bomEntryView > .page-head, #bomEntryView > .panel,
   .egs-flyout-box, .egs-flyout-backdrop, .erp-sidebar-btn,
-  .btn, button, .search-box, .masters-filter-bar {
+  .btn, button, .search-box, .masters-filter-bar, #navScroll {
     display: none !important;
     visibility: hidden !important;
   }
 
   /* Unhide parent containers so #bomPrintRoot and #bomChallanPrintRoot can render */
-  .shell, .main, #mainView, #bomEntryView {
+  .shell, .main, #content, #mainView, #bomEntryView {
     display: block !important;
     position: static !important;
     width: 100% !important;
@@ -889,6 +893,8 @@ td.bom-challan-footer-caption{
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
     overflow: visible !important;
     box-shadow: none !important;
     border: none !important;
@@ -900,25 +906,56 @@ td.bom-challan-footer-caption{
     position: static !important;
     width: 100% !important;
     margin: 0 auto !important;
-  }
-
-  #bomPrintRoot, #bomPrintRoot *,
-  #bomChallanPrintRoot, #bomChallanPrintRoot * {
-    visibility: visible !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
   }
 
   #bomPrintRoot {
     display: block !important;
     width: 100% !important;
     margin: 0 auto !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  #bomPrintRoot * {
+    visibility: visible !important;
+    color: #000000 !important;
+  }
+
+  #bomPrintRoot .bom-sheet {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+  }
+
+  #bomPrintRoot .bom-head-row th {
+    background: #666699 !important;
+    background-color: #666699 !important;
+    color: #ffffff !important;
+  }
+
+  #bomPrintRoot .bom-cat-row td {
+    background: #f2f2f2 !important;
+    background-color: #f2f2f2 !important;
+    color: #000000 !important;
+    font-weight: bold !important;
+  }
+
+  #bomPrintRoot table, #bomPrintRoot th, #bomPrintRoot td {
+    border: 1px solid #000000 !important;
+  }
+
+  #bomChallanPrintRoot, #bomChallanPrintRoot * {
+    visibility: visible !important;
   }
 
   #bomChallanPrintRoot {
     display: block !important;
     width: 100% !important;
     margin: 0 auto !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
   }
 
   #bomChallanPrintRoot .bom-challan-sheet {
