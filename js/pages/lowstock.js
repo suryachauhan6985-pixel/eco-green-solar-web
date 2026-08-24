@@ -91,6 +91,9 @@ window.PAGES.lowstock = {
       // stop polling — app.js has no page-teardown hook, so the interval
       // has to notice this on its own instead of leaking forever.
       if (!document.body.contains(tbody)) { if (refreshTimer) clearInterval(refreshTimer); return; }
+      if (!allRows.length && window.Skeleton) {
+        tbody.innerHTML = window.Skeleton.tableRows(6, 5);
+      }
       try {
         // silent: true — this runs every 15s in the background (and can
         // keep firing for a few seconds after the user has navigated to a
@@ -100,7 +103,12 @@ window.PAGES.lowstock = {
         allRows = await window.Api.get('/lowstock', { silent: true });
       } catch (e) {
         allRows = [];
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load low stock data from the database.</td></tr>`;
+        if (window.Skeleton) {
+          tbody.innerHTML = window.Skeleton.tableError(6, e.message || 'Could not load low stock data from the database.', { retryId: 'btnRetryLowStock' });
+          window.Skeleton.wireRetry('btnRetryLowStock', () => loadData());
+        } else {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load low stock data from the database.</td></tr>`;
+        }
         return;
       }
       renderTable();
@@ -109,7 +117,11 @@ window.PAGES.lowstock = {
     function renderTable() {
       const visible = allRows.filter((r) => matchesSearch(rowToValues(r)) && isRowVisible(rowToValues(r)));
       if (!visible.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--txt-muted); font-style:italic;">No low stock items found for the selected filters.</td></tr>`;
+        if (window.Skeleton) {
+          tbody.innerHTML = window.Skeleton.tableEmpty(6, 'All inventory items are well-stocked', { icon: 'fa-solid fa-circle-check', desc: 'No items currently breach minimum reorder threshold levels.' });
+        } else {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--txt-muted); font-style:italic;">No low stock items found for the selected filters.</td></tr>`;
+        }
         return;
       }
       tbody.innerHTML = visible.map((r) => `

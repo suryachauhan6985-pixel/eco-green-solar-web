@@ -401,7 +401,7 @@ window.PAGES.dashboard = {
                 </tr>
               </thead>
               <tbody id="dashSnapshotBody">
-                <tr><td colspan="7" style="text-align:center;color:var(--txt-muted);padding:24px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading live data…</td></tr>
+                ${window.Skeleton ? window.Skeleton.tableRows(7, 5, { pillCols: [2, 3, 4, 5] }) : '<tr><td colspan="7" style="text-align:center;color:var(--txt-muted);padding:24px;">Loading live data…</td></tr>'}
               </tbody>
             </table>
           </div>
@@ -868,7 +868,12 @@ window.PAGES.dashboard = {
         console.warn('[Dashboard] Could not reach API:', err.message);
         const snapshotBody = document.getElementById('dashSnapshotBody');
         if (snapshotBody) {
-          snapshotBody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--txt-muted);padding:20px;">No data available.</td></tr>`;
+          if (window.Skeleton) {
+            snapshotBody.innerHTML = window.Skeleton.tableError(7, err.message || 'Could not load inventory summary.', { retryId: 'btnRetryDashSnapshot' });
+            window.Skeleton.wireRetry('btnRetryDashSnapshot', () => loadRealDashboardData());
+          } else {
+            snapshotBody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--txt-muted);padding:20px;">No data available.</td></tr>`;
+          }
         }
       }
     }
@@ -878,7 +883,11 @@ window.PAGES.dashboard = {
       if (!snapshotBody) return;
 
       if (!cats || !cats.length) {
-        snapshotBody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--txt-muted);padding:24px;">No categories found.</td></tr>`;
+        if (window.Skeleton) {
+          snapshotBody.innerHTML = window.Skeleton.tableEmpty(7, 'No category stock records found', { icon: 'fa-solid fa-boxes-stacked', desc: 'Add items or inward stock to populate the dashboard.' });
+        } else {
+          snapshotBody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--txt-muted);padding:24px;">No categories found.</td></tr>`;
+        }
         return;
       }
 

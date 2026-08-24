@@ -3925,7 +3925,11 @@ window.attachColumnFilters = function (table) {
       const moduleFilter = document.getElementById('auditModuleFilter');
       if (!container) return;
 
-      container.innerHTML = `<div style="text-align:center; padding:24px; color:var(--txt-muted); font-size:13px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading live activity feed...</div>`;
+      if (window.Skeleton) {
+        container.innerHTML = window.Skeleton.list(4);
+      } else {
+        container.innerHTML = `<div style="text-align:center; padding:24px; color:var(--txt-muted); font-size:13px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading live activity feed...</div>`;
+      }
 
       try {
         const search = searchInput ? searchInput.value.trim() : '';
@@ -3935,12 +3939,16 @@ window.attachColumnFilters = function (table) {
         const logs = (res && res.logs) || [];
 
         if (!logs.length) {
-          container.innerHTML = `
-            <div style="text-align:center; padding:30px 10px; color:var(--txt-muted);">
-              <i class="fa-solid fa-clock-rotate-left" style="font-size:28px; opacity:0.3; margin-bottom:8px;"></i>
-              <div style="font-weight:600; font-size:13px;">No activity records found matching the criteria.</div>
-            </div>
-          `;
+          if (window.Skeleton) {
+            container.innerHTML = window.Skeleton.empty('No activity records found', { icon: 'fa-solid fa-clock-rotate-left', desc: 'No transaction or mutation logs match your filter criteria.' });
+          } else {
+            container.innerHTML = `
+              <div style="text-align:center; padding:30px 10px; color:var(--txt-muted);">
+                <i class="fa-solid fa-clock-rotate-left" style="font-size:28px; opacity:0.3; margin-bottom:8px;"></i>
+                <div style="font-weight:600; font-size:13px;">No activity records found matching the criteria.</div>
+              </div>
+            `;
+          }
           return;
         }
 
@@ -4018,7 +4026,12 @@ window.attachColumnFilters = function (table) {
           });
         });
       } catch (err) {
-        container.innerHTML = `<div style="padding:14px; color:var(--red); font-size:12.5px;"><i class="fa-solid fa-triangle-exclamation"></i> Error loading audit logs: ${err.message}</div>`;
+        if (window.Skeleton) {
+          container.innerHTML = window.Skeleton.error(err.message || 'Error loading audit logs.', { retryId: 'btnRetryAuditFeed' });
+          window.Skeleton.wireRetry('btnRetryAuditFeed', () => loadActivityAuditFeed());
+        } else {
+          container.innerHTML = `<div style="padding:14px; color:var(--red); font-size:12.5px;"><i class="fa-solid fa-triangle-exclamation"></i> Error loading audit logs: ${err.message}</div>`;
+        }
       }
     }
 
@@ -4041,7 +4054,11 @@ window.attachColumnFilters = function (table) {
     async function loadPerformanceTelemetry() {
       const container = document.getElementById('perfTelemetryContainer');
       if (!container) return;
-      container.innerHTML = `<div style="text-align:center; padding:20px; color:var(--txt-muted); font-size:13px;"><i class="fa-solid fa-spinner fa-spin"></i> Fetching real-time telemetry metrics...</div>`;
+      if (window.Skeleton) {
+        container.innerHTML = window.Skeleton.chart(6);
+      } else {
+        container.innerHTML = `<div style="text-align:center; padding:20px; color:var(--txt-muted); font-size:13px;"><i class="fa-solid fa-spinner fa-spin"></i> Fetching real-time telemetry metrics...</div>`;
+      }
       try {
         const start = performance.now();
         const data = await window.Api.get('/system/performance', { bypassCache: true });
@@ -4115,9 +4132,13 @@ window.attachColumnFilters = function (table) {
               </tbody>
             </table>
           </div>
-        `;
       } catch (e) {
-        container.innerHTML = `<div style="padding:14px; color:var(--red); font-size:12.5px;"><i class="fa-solid fa-triangle-exclamation"></i> Telemetry unavailable: ${e.message}</div>`;
+        if (window.Skeleton) {
+          container.innerHTML = window.Skeleton.error(e.message || 'Telemetry unavailable.', { retryId: 'btnRetryTelemetry' });
+          window.Skeleton.wireRetry('btnRetryTelemetry', () => loadPerformanceTelemetry());
+        } else {
+          container.innerHTML = `<div style="padding:14px; color:var(--red); font-size:12.5px;"><i class="fa-solid fa-triangle-exclamation"></i> Telemetry unavailable: ${e.message}</div>`;
+        }
       }
     }
 

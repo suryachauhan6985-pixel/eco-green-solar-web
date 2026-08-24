@@ -107,13 +107,21 @@ window.PAGES.purchaseregister = {
     async function loadData() {
       const selectedCat = catEl.value;
       let rows = [];
+      if (window.Skeleton) {
+        tbody.innerHTML = window.Skeleton.tableRows(9, 6);
+      }
       try {
         const path = selectedCat && selectedCat !== 'All Categories'
           ? `/purchase/register?category=${encodeURIComponent(selectedCat)}`
           : '/purchase/register';
         rows = await window.Api.get(path);
       } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load purchase records from the database.</td></tr>`;
+        if (window.Skeleton) {
+          tbody.innerHTML = window.Skeleton.tableError(9, e.message || 'Could not load purchase records from the database.', { retryId: 'btnRetryPurchRegister' });
+          window.Skeleton.wireRetry('btnRetryPurchRegister', () => loadData());
+        } else {
+          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load purchase records from the database.</td></tr>`;
+        }
         allRows = [];
         return;
       }
@@ -135,7 +143,11 @@ window.PAGES.purchaseregister = {
     function renderTable() {
       const visible = allRows.filter((r) => isRowVisible(rowToValues(r)));
       if (!visible.length) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--txt-muted); font-style:italic;">No purchase records found for the selected filters.</td></tr>`;
+        if (window.Skeleton) {
+          tbody.innerHTML = window.Skeleton.tableEmpty(9, 'No purchase records found', { icon: 'fa-solid fa-truck-ramp-box', desc: 'Try adjusting your date range, category, or search filters.' });
+        } else {
+          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--txt-muted); font-style:italic;">No purchase records found for the selected filters.</td></tr>`;
+        }
         return;
       }
       tbody.innerHTML = visible.map((r) => `

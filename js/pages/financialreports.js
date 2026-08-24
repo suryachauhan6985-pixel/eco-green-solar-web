@@ -93,13 +93,31 @@ window.PAGES.financialreports = {
             </div>
           </div>
         </div>
-
-        <div style="margin-top:20px; padding:16px 20px; background:rgba(37,99,235,0.08); border:1.5px solid var(--blue); border-radius:12px; display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <div style="font-size:12px; color:var(--txt-muted); font-weight:700; text-transform:uppercase;">Net Financial Result</div>
-            <h3 style="margin:4px 0 0; font-size:18px; color:var(--blue);" id="plNetTitle">Net Profit</h3>
+        <div class="grid-2">
+          <!-- Income Side -->
+          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; padding:16px;">
+            <h4 style="margin:0 0 12px 0; color:#22c55e;"><i class="fa-solid fa-arrow-trend-up"></i> Revenues / Incomes</h4>
+            <div id="plIncomesList"></div>
+            <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--border); padding-top:10px; margin-top:10px; font-weight:700;">
+              <span>Total Revenue:</span>
+              <span id="plTotalRevenue" style="color:#22c55e; font-family:monospace;">₹0.00</span>
+            </div>
           </div>
-          <div style="font-size:24px; font-weight:900; color:#22c55e;" id="plNetValue">₹0.00</div>
+
+          <!-- Expense Side -->
+          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; padding:16px;">
+            <h4 style="margin:0 0 12px 0; color:#ef4444;"><i class="fa-solid fa-arrow-trend-down"></i> Operating Expenses</h4>
+            <div id="plExpensesList"></div>
+            <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--border); padding-top:10px; margin-top:10px; font-weight:700;">
+              <span>Total Expenses:</span>
+              <span id="plTotalExpenses" style="color:#ef4444; font-family:monospace;">₹0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px; padding:14px 18px; border-radius:10px; background:var(--panel-alt); border:1.5px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="margin:0;">Net Operating Profit / (Loss):</h3>
+          <h2 id="plNetProfit" style="margin:0; font-family:monospace;">₹0.00</h2>
         </div>
       </div>
     </div>
@@ -107,56 +125,46 @@ window.PAGES.financialreports = {
     <!-- 3. BALANCE SHEET PANEL -->
     <div class="subtab-panel" id="pnlBalanceSheet" style="display:none;">
       <div class="panel">
-        <h3 style="margin-bottom:16px;"><i class="fa-solid fa-building-columns" style="color:var(--gold);"></i> Balance Sheet</h3>
-
-        <div class="grid-2" style="gap:20px; align-items:start;">
-          <!-- Liabilities -->
-          <div style="background:var(--panel-alt); border:1px solid var(--border); border-radius:12px; padding:16px;">
-            <h4 style="margin:0 0 12px; color:var(--gold); border-bottom:1px solid var(--border); padding-bottom:8px;">Liabilities &amp; Equities</h4>
-            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border-light); font-size:13px;">
-              <span>Capital Account + Retained Earnings</span>
-              <strong id="bsCapital">₹0.00</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border-light); font-size:13px;">
-              <span>Sundry Creditors (Suppliers Payable)</span>
-              <strong id="bsCreditors">₹0.00</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; padding:12px 0 0; font-size:14px; font-weight:800; color:var(--gold);">
-              <span>Total Liabilities</span>
-              <span id="bsTotalLiab">₹0.00</span>
+        <h3 style="margin-bottom:16px;"><i class="fa-solid fa-scale-balanced" style="color:var(--gold);"></i> Balance Sheet</h3>
+        
+        <div class="grid-2">
+          <!-- Liabilities & Capital -->
+          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; padding:16px;">
+            <h4 style="margin:0 0 12px 0; color:#eab308;"><i class="fa-solid fa-hand-holding-dollar"></i> Capital &amp; Liabilities</h4>
+            <div id="bsLiabilitiesList"></div>
+            <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--border); padding-top:10px; margin-top:10px; font-weight:700;">
+              <span>Total Liabilities:</span>
+              <span id="bsTotalLiabilities" style="color:#eab308; font-family:monospace;">₹0.00</span>
             </div>
           </div>
 
           <!-- Assets -->
-          <div style="background:var(--panel-alt); border:1px solid var(--border); border-radius:12px; padding:16px;">
-            <h4 style="margin:0 0 12px; color:var(--blue); border-bottom:1px solid var(--border); padding-bottom:8px;">Assets &amp; Receivables</h4>
-            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border-light); font-size:13px;">
-              <span>Sundry Debtors (Customer Receivables)</span>
-              <strong id="bsDebtors">₹0.00</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--border-light); font-size:13px;">
-              <span>Cash &amp; Bank Balances</span>
-              <strong id="bsCashBank">₹0.00</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; padding:12px 0 0; font-size:14px; font-weight:800; color:var(--blue);">
-              <span>Total Assets</span>
-              <span id="bsTotalAssets">₹0.00</span>
+          <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; padding:16px;">
+            <h4 style="margin:0 0 12px 0; color:#3b82f6;"><i class="fa-solid fa-building-columns"></i> Fixed &amp; Current Assets</h4>
+            <div id="bsAssetsList"></div>
+            <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--border); padding-top:10px; margin-top:10px; font-weight:700;">
+              <span>Total Assets:</span>
+              <span id="bsTotalAssets" style="color:#3b82f6; font-family:monospace;">₹0.00</span>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 4. DAY BOOK PANEL -->
+    <!-- 4. DAY BOOK REGISTER -->
     <div class="subtab-panel" id="pnlDayBook" style="display:none;">
       <div class="panel">
-        <h3 style="margin-bottom:14px;"><i class="fa-solid fa-calendar-day" style="color:var(--purple);"></i> Daily Transaction Journal (Day Book)</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+          <h3 style="margin:0;"><i class="fa-solid fa-calendar-day" style="color:var(--blue);"></i> Real-Time Day Book Transactions</h3>
+          <input type="date" id="dayBookFilterDate" style="padding:6px 12px; font-size:13px; font-weight:600;">
+        </div>
+
         <div class="table-wrap">
-          <table class="pl-table">
+          <table>
             <thead>
               <tr>
-                <th>Date</th>
                 <th>Voucher No</th>
+                <th>Time / Date</th>
                 <th>Type</th>
                 <th>Debit (Dr)</th>
                 <th>Credit (Cr)</th>
@@ -165,7 +173,7 @@ window.PAGES.financialreports = {
               </tr>
             </thead>
             <tbody id="dayBookTbody">
-              <tr><td colspan="7" style="text-align:center; padding:18px; color:var(--txt-muted);">Loading Day Book entries...</td></tr>
+              ${window.Skeleton ? window.Skeleton.tableRows(7, 6, { pillCols: [2] }) : '<tr><td colspan="7" style="text-align:center; padding:18px; color:var(--txt-muted);">Loading Day Book entries...</td></tr>'}
             </tbody>
           </table>
         </div>

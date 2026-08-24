@@ -77,11 +77,19 @@ window.PAGES.backup = {
 
     async function refreshStatus() {
       let data;
+      if (window.Skeleton) {
+        tbody.innerHTML = window.Skeleton.tableRows(6, 4, { pillCols: [3] });
+      }
       try {
         data = await window.Api.get('/backup/status');
       } catch (e) {
         lastBackupEl.textContent = 'Last Backup: Could not load backup status.';
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load backup history.</td></tr>`;
+        if (window.Skeleton) {
+          tbody.innerHTML = window.Skeleton.tableError(6, e.message || 'Could not load backup history.', { retryId: 'btnRetryBackup' });
+          window.Skeleton.wireRetry('btnRetryBackup', () => refreshStatus());
+        } else {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load backup history.</td></tr>`;
+        }
         return;
       }
 
@@ -97,7 +105,11 @@ window.PAGES.backup = {
 
       const rows = data.recent || [];
       if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--txt-muted); font-style:italic;">No backups recorded yet.</td></tr>`;
+        if (window.Skeleton) {
+          tbody.innerHTML = window.Skeleton.tableEmpty(6, 'No database backups recorded yet', { icon: 'fa-solid fa-database', desc: 'Click "Back Up Database Now" above to trigger an immediate snapshot.' });
+        } else {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--txt-muted); font-style:italic;">No backups recorded yet.</td></tr>`;
+        }
         return;
       }
       tbody.innerHTML = rows.map((r) => `

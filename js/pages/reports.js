@@ -49,7 +49,9 @@ window.PAGES.reports = {
         <th data-col="Challan Date">Challan Date <button class="th-filter-btn" data-col="Challan Date" type="button"><i class="fa-solid fa-filter"></i></button></th>
         <th data-col="Edited?">Edited? <button class="th-filter-btn" data-col="Edited?" type="button"><i class="fa-solid fa-filter"></i></button></th>
       </tr></thead>
-      <tbody id="repBody"><tr><td colspan="20" style="text-align:center;color:var(--txt-muted);">Loading live data…</td></tr></tbody>
+      <tbody id="repBody">
+        ${window.Skeleton ? window.Skeleton.tableRows(20, 8, { pillCols: [8] }) : '<tr><td colspan="20" style="text-align:center;color:var(--txt-muted);">Loading live data…</td></tr>'}
+      </tbody>
     </table></div>
     <div id="repBulkBar"></div>
   `,
@@ -119,13 +121,21 @@ window.PAGES.reports = {
     async function loadData() {
       const selectedCat = catEl.value;
       let rows = [];
+      if (window.Skeleton) {
+        tbody.innerHTML = window.Skeleton.tableRows(20, 8, { pillCols: [8] });
+      }
       try {
         const path = selectedCat && selectedCat !== 'All Categories'
           ? `/reports/master?category=${encodeURIComponent(selectedCat)}`
           : '/reports/master';
         rows = await window.Api.get(path);
       } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="19" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load report data from the database.</td></tr>`;
+        if (window.Skeleton) {
+          tbody.innerHTML = window.Skeleton.tableError(20, e.message || 'Could not load report data from the database.', { retryId: 'btnRetryReports' });
+          window.Skeleton.wireRetry('btnRetryReports', () => loadData());
+        } else {
+          tbody.innerHTML = `<tr><td colspan="20" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load report data from the database.</td></tr>`;
+        }
         allRows = [];
         return;
       }
@@ -156,7 +166,11 @@ window.PAGES.reports = {
     function renderTable() {
       const visible = allRows.filter((r) => matchesSearch(r) && isRowVisible(rowToValues(r)));
       if (!visible.length) {
-        tbody.innerHTML = `<tr><td colspan="20" style="text-align:center; color:var(--txt-muted); font-style:italic;">No records found for the selected filters.</td></tr>`;
+        if (window.Skeleton) {
+          tbody.innerHTML = window.Skeleton.tableEmpty(20, 'No stock records found', { icon: 'fa-solid fa-boxes-stacked', desc: 'Try changing category, search terms, or column filters.' });
+        } else {
+          tbody.innerHTML = `<tr><td colspan="20" style="text-align:center; color:var(--txt-muted); font-style:italic;">No records found for the selected filters.</td></tr>`;
+        }
         return;
       }
       tbody.innerHTML = visible.map((r) => {

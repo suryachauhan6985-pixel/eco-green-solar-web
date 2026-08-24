@@ -42,7 +42,9 @@ function bomRenderHomeViewHtml() {
           <span><i class="fa-solid fa-hourglass-half"></i> Pending BOM Orders <span style="font-weight:400;color:var(--txt-muted);font-size:11.5px;">(double-click a row to open it)</span></span>
           <button type="button" class="btn btn-ghost bom-mini-btn" id="bomHomeBtnRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button>
         </h3>
-        <div id="bomHomePendingWrap"><div style="padding:20px; text-align:center; color:var(--txt-muted); font-size:12.5px;">Loading pending orders...</div></div>
+        <div id="bomHomePendingWrap">
+          ${window.Skeleton ? '<div class="table-wrap"><table><tbody>' + window.Skeleton.tableRows(6, 3, { pillCols: [3] }) + '</tbody></table></div>' : '<div style="padding:20px; text-align:center; color:var(--txt-muted); font-size:12.5px;">Loading pending orders...</div>'}
+        </div>
       </div>
     </div>
   `;
@@ -397,20 +399,23 @@ window.PAGES.bom = {
     async function bomLoadHomePendingTable() {
       const wrap = ctx.$('bomHomePendingWrap');
       if (!wrap) return;
-      const spinTimer = setTimeout(() => {
-        if (wrap && !wrap.querySelector('table')) {
-          wrap.innerHTML = '<p class="note" style="color:var(--txt-muted); padding:16px; text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Loading pending BOM orders...</p>';
-        }
-      }, 150);
+      if (window.Skeleton) {
+        wrap.innerHTML = '<div class="table-wrap"><table><tbody>' + window.Skeleton.tableRows(6, 3, { pillCols: [3] }) + '</tbody></table></div>';
+      }
       let orders;
       try {
         orders = await window.Api.get('/bom/orders?status=Open', { silent: true });
       } catch (e) {
-        clearTimeout(spinTimer);
-        wrap.innerHTML = `<p class="note" style="color:var(--red);">Could not load pending BOM orders — ${bomEsc((e && e.message) || 'server error')}.</p>`;
+        if (wrap) {
+          if (window.Skeleton) {
+            wrap.innerHTML = window.Skeleton.error(e.message || 'Could not load pending BOM orders.', { retryId: 'btnRetryBomPendingHome' });
+            window.Skeleton.wireRetry('btnRetryBomPendingHome', () => bomLoadHomePendingTable());
+          } else {
+            wrap.innerHTML = `<p class="note" style="color:var(--red);">Could not load pending BOM orders — ${bomEsc((e && e.message) || 'server error')}.</p>`;
+          }
+        }
         return;
       }
-      clearTimeout(spinTimer);
       // BOM Home's own "Pending BOM Orders" list is deliberately narrower
       // than the full BOM Register: it only shows Open orders that are
       // still completely untouched — created (Admin/SuperAdmin only, so

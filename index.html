@@ -59,7 +59,7 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=156">
+<link rel="stylesheet" href="css/style.css?v=157">
 <!-- Barcode/QR camera scanning (Sheets feature) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <!-- XLSX parsing for Sheets "Import CSV/XLSX" (CSV import needs no library) -->
@@ -187,22 +187,24 @@
 <script src="js/data/vehicle-validator.js?v=1"></script>
 <!-- Offline GSTIN and Indian Mobile Number Validators -->
 <script src="js/data/validators.js?v=1"></script>
+<!-- Enterprise Skeleton Loading & UI State Machine -->
+<script src="js/ui/skeleton.js?v=1"></script>
 <!-- Each page's markup + data lives in its own file, like dashboard.py / masters.py in the desktop app -->
-<script src="js/pages/dashboard.js?v=15"></script>
+<script src="js/pages/dashboard.js?v=17"></script>
 <script src="js/pages/scansheet.js?v=25"></script>
-<script src="js/pages/masters.js?v=14"></script>
+<script src="js/pages/masters.js?v=15"></script>
 <script src="js/pages/purchase.js?v=10"></script>
 <script src="js/pages/sales.js?v=9"></script>
 <script src="js/pages/stockassign.js?v=3"></script>
-<script src="js/pages/purchaseregister.js?v=5"></script>
-<script src="js/pages/saleregister.js?v=5"></script>
-<script src="js/pages/reports.js?v=5"></script>
+<script src="js/pages/purchaseregister.js?v=6"></script>
+<script src="js/pages/saleregister.js?v=6"></script>
+<script src="js/pages/reports.js?v=6"></script>
 <script src="js/pages/returns.js?v=4"></script>
-<script src="js/pages/vouchers.js?v=2"></script>
-<script src="js/pages/financialreports.js?v=1"></script>
-<script src="js/pages/partyledger.js?v=28"></script>
-<script src="js/pages/lowstock.js?v=5"></script>
-<script src="js/pages/backup.js?v=4"></script>
+<script src="js/pages/vouchers.js?v=3"></script>
+<script src="js/pages/financialreports.js?v=2"></script>
+<script src="js/pages/partyledger.js?v=29"></script>
+<script src="js/pages/lowstock.js?v=6"></script>
+<script src="js/pages/backup.js?v=5"></script>
 <!-- bom.js was split into multiple files (was 3340 lines) — helpers/Challan
      logic must load BEFORE the new bom-*.js modules, and all of those must
      load BEFORE the main bom.js page module, which wires them together via
@@ -216,9 +218,9 @@
 <script src="js/pages/bom-serial-scan.js?v=3"></script>
 <script src="js/pages/bom-serial-modal.js?v=4"></script>
 <script src="js/pages/bom-dispatch.js?v=15"></script>
-<script src="js/pages/bom.js?v=33"></script>
+<script src="js/pages/bom.js?v=34"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
-<script src="js/app.js?v=78"></script>
+<script src="js/app.js?v=79"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

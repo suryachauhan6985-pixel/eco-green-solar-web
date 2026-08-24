@@ -259,7 +259,13 @@ window.PAGES.partyledger = {
 
     // ---------------- Directory (table) ----------------
     async function loadDirectory() {
-      if (tbodyEl) tbodyEl.innerHTML = `<tr><td colspan="7" class="pl-empty-hint"><i class="fa-solid fa-spinner fa-spin" style="margin-right:6px; color:var(--purple);"></i> Loading party directory…</td></tr>`;
+      if (tbodyEl) {
+        if (window.Skeleton) {
+          tbodyEl.innerHTML = window.Skeleton.tableRows(7, 6, { pillCols: [1] });
+        } else {
+          tbodyEl.innerHTML = `<tr><td colspan="7" class="pl-empty-hint"><i class="fa-solid fa-spinner fa-spin" style="margin-right:6px; color:var(--purple);"></i> Loading party directory…</td></tr>`;
+        }
+      }
       try {
         const params = new URLSearchParams({
           search: searchEl.value.trim(),
@@ -270,7 +276,14 @@ window.PAGES.partyledger = {
         directory = await res.json();
         renderList();
       } catch (err) {
-        if (tbodyEl) tbodyEl.innerHTML = `<tr><td colspan="7" class="pl-empty-hint" style="color:var(--red);">${err.message}</td></tr>`;
+        if (tbodyEl) {
+          if (window.Skeleton) {
+            tbodyEl.innerHTML = window.Skeleton.tableError(7, err.message || 'Could not load party directory.', { retryId: 'btnRetryPartyDirectory' });
+            window.Skeleton.wireRetry('btnRetryPartyDirectory', () => loadDirectory());
+          } else {
+            tbodyEl.innerHTML = `<tr><td colspan="7" class="pl-empty-hint" style="color:var(--red);">${err.message}</td></tr>`;
+          }
+        }
       }
     }
 
@@ -298,7 +311,11 @@ window.PAGES.partyledger = {
       if (statUnreg) statUnreg.textContent = unregCount;
 
       if (!directory.length) {
-        tbodyEl.innerHTML = `<tr><td colspan="7" class="pl-empty-hint">No party accounts match this search or filter criteria.</td></tr>`;
+        if (window.Skeleton) {
+          tbodyEl.innerHTML = window.Skeleton.tableEmpty(7, 'No party accounts match search criteria', { icon: 'fa-solid fa-address-book', desc: 'Try clearing the search query or selecting All Types.' });
+        } else {
+          tbodyEl.innerHTML = `<tr><td colspan="7" class="pl-empty-hint">No party accounts match this search or filter criteria.</td></tr>`;
+        }
         return;
       }
 

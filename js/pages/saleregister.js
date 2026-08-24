@@ -114,13 +114,21 @@ window.PAGES.saleregister = {
     async function loadData() {
       const selectedCat = catEl.value;
       let rows = [];
+      if (window.Skeleton) {
+        tbody.innerHTML = window.Skeleton.tableRows(10, 6);
+      }
       try {
         const path = selectedCat && selectedCat !== 'All Categories'
           ? `/sales/register?category=${encodeURIComponent(selectedCat)}`
           : '/sales/register';
         rows = await window.Api.get(path);
       } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load sales records from the database.</td></tr>`;
+        if (window.Skeleton) {
+          tbody.innerHTML = window.Skeleton.tableError(10, e.message || 'Could not load sales records from the database.', { retryId: 'btnRetrySaleRegister' });
+          window.Skeleton.wireRetry('btnRetrySaleRegister', () => loadData());
+        } else {
+          tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--txt-muted); font-style:italic;">Could not load sales records from the database.</td></tr>`;
+        }
         allRows = [];
         return;
       }
@@ -142,7 +150,11 @@ window.PAGES.saleregister = {
     function renderTable() {
       const visible = allRows.filter((r) => isRowVisible(rowToValues(r)));
       if (!visible.length) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--txt-muted); font-style:italic;">No sales records found for the selected filters.</td></tr>`;
+        if (window.Skeleton) {
+          tbody.innerHTML = window.Skeleton.tableEmpty(10, 'No sales records found', { icon: 'fa-solid fa-cart-shopping', desc: 'Try adjusting your date range, category, or search filters.' });
+        } else {
+          tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--txt-muted); font-style:italic;">No sales records found for the selected filters.</td></tr>`;
+        }
         return;
       }
       tbody.innerHTML = visible.map((r) => `

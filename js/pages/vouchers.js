@@ -102,7 +102,7 @@ window.PAGES.vouchers = {
               </tr>
             </thead>
             <tbody id="vouchTableBody">
-              <tr><td colspan="6" style="text-align:center; padding:18px; color:var(--txt-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading vouchers...</td></tr>
+              ${window.Skeleton ? window.Skeleton.tableRows(6, 5, { pillCols: [5] }) : '<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--txt-muted);">Loading vouchers...</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -154,22 +154,38 @@ window.PAGES.vouchers = {
 
     // Load Vouchers Audit Register
     async function loadVouchersRegister() {
+      if (tbody && window.Skeleton) {
+        tbody.innerHTML = window.Skeleton.tableRows(6, 5, { pillCols: [5] });
+      }
       try {
         const res = await fetch(`${API_BASE}/vouchers?type=${currentVoucherType}`);
         if (res.ok) {
           const data = await res.json();
           cachedVouchers = data.vouchers || [];
           renderVoucherTable(cachedVouchers);
+        } else {
+          throw new Error('Server returned ' + res.status);
         }
       } catch (e) {
-        if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--red);">Could not load vouchers.</td></tr>`;
+        if (tbody) {
+          if (window.Skeleton) {
+            tbody.innerHTML = window.Skeleton.tableError(6, e.message || 'Could not load vouchers.', { retryId: 'btnRetryVouchers' });
+            window.Skeleton.wireRetry('btnRetryVouchers', () => loadVouchersRegister());
+          } else {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--red);">Could not load vouchers.</td></tr>`;
+          }
+        }
       }
     }
 
     function renderVoucherTable(list) {
       if (!tbody) return;
       if (!list.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--txt-muted);">No ${currentVoucherType} vouchers recorded yet.</td></tr>`;
+        if (window.Skeleton) {
+          tbody.innerHTML = window.Skeleton.tableEmpty(6, `No ${currentVoucherType} vouchers recorded yet`, { icon: 'fa-solid fa-book-journal-whills', desc: 'Post a new voucher using the left entry form.' });
+        } else {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--txt-muted);">No ${currentVoucherType} vouchers recorded yet.</td></tr>`;
+        }
         return;
       }
       tbody.innerHTML = list.map(v => `

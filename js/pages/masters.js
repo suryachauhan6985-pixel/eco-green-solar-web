@@ -124,7 +124,9 @@ window.PAGES.masters = {
 
         <div class="table-wrap" style="overflow-x:auto;"><table>
           <thead><tr><th>Category</th><th>Brand</th><th>Watt / Model</th><th>Subtype</th><th>Alert Stock</th><th>UOM</th><th>Actions</th></tr></thead>
-          <tbody id="mastersItemBody"></tbody>
+          <tbody id="mastersItemBody">
+            ${window.Skeleton ? window.Skeleton.tableRows(7, 6, { pillCols: [0, 3] }) : ''}
+          </tbody>
         </table></div>
       </div>
 
@@ -444,6 +446,11 @@ window.PAGES.masters = {
         });
       } catch (err) {
         console.error('Error synchronizing core fields dataset:', err);
+        const itemBody = $('mastersItemBody');
+        if (itemBody && window.Skeleton) {
+          itemBody.innerHTML = window.Skeleton.tableError(7, err.message || 'Could not synchronize product masters.', { retryId: 'btnRetryMastersCatalog' });
+          window.Skeleton.wireRetry('btnRetryMastersCatalog', () => syncCoreFields());
+        }
       }
     }
 
@@ -478,7 +485,11 @@ window.PAGES.masters = {
       if (!body) return;
 
       if (!filtered.length) {
-        body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--txt-muted); padding:16px;">${q || filterCat ? 'No matching products found.' : 'No recorded profiles found.'}</td></tr>`;
+        if (window.Skeleton) {
+          body.innerHTML = window.Skeleton.tableEmpty(7, q || filterCat ? 'No matching products found.' : 'No recorded product profiles found.', { icon: 'fa-solid fa-boxes-stacked', desc: 'Try adjusting your search query or category filter.' });
+        } else {
+          body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--txt-muted); padding:16px;">${q || filterCat ? 'No matching products found.' : 'No recorded profiles found.'}</td></tr>`;
+        }
       } else {
         body.innerHTML = filtered.map(it => `
           <tr class="m-item-row" data-id="${it.id}" style="cursor:pointer;" title="Double-click to edit this product profile">
