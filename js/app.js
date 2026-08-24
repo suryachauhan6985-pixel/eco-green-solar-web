@@ -2808,6 +2808,7 @@ window.attachColumnFilters = function (table) {
   function closeProfileMenu() {
     if (profileMenuEl) { profileMenuEl.remove(); profileMenuEl = null; }
     if (profileMenuBackdrop) { profileMenuBackdrop.remove(); profileMenuBackdrop = null; }
+    document.querySelectorAll('.profile-menu, .profile-menu-mobile, .profile-menu-backdrop').forEach((el) => el.remove());
   }
   window.closeProfileMenu = closeProfileMenu;
 

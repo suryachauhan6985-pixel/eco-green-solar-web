@@ -266,7 +266,7 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
 
 /* ---------- Modern Modal ---------- */
 .modal-overlay{
-  display:none; position:fixed; inset:0; background:var(--overlay-bg, rgba(0,0,0,.75)); z-index:20000;
+  display:none; position:fixed; inset:0; background:var(--overlay-bg, rgba(0,0,0,.75)); z-index:30000;
   align-items:center; justify-content:center; padding:clamp(8px, 2.5vw, 18px);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   transition: opacity .25s ease;
@@ -519,28 +519,47 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
 @media (max-width: 768px) {
   .modal-box.settings-modal-box,
   .modal-box:has(.settings-layout) {
-    height: 90vh;
-    max-height: 90vh;
+    height: 92vh !important;
+    max-height: 92vh !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
   .settings-layout {
-    flex-direction: column;
+    flex-direction: column !important;
+    height: 100% !important;
+    min-height: 0 !important;
   }
   .settings-tabs {
-    width: 100%;
-    min-width: 100%;
-    max-width: 100%;
-    flex: 0 0 auto;
-    height: auto;
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    padding: 10px 14px;
-    gap: 8px;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 auto !important;
+    height: auto !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 8px 10px !important;
+    gap: 6px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin !important;
+    background: var(--panel-alt) !important;
+  }
+  .settings-tab-btn {
+    flex: 0 0 auto !important;
+    padding: 7px 11px !important;
+    font-size: 12px !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
   }
   .settings-content-wrap {
-    padding: 14px 16px;
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 14px 14px 28px 14px !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 }
 .settings-card-title {

@@ -236,62 +236,128 @@
 
   /* Modal on Mobile */
   .modal-overlay {
-    padding: clamp(8px, 2vw, 14px);
+    z-index: 30000 !important;
+    padding: clamp(6px, 2vw, 14px);
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
   }
   .modal-box {
+    z-index: 30005 !important;
     max-width: 100%;
     width: 100%;
-    border-radius: 12px;
-    padding: clamp(14px, 3vw, 18px);
-    max-height: 90vh;
+    border-radius: 14px;
+    padding: 0;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
   .modal-head {
-    padding-bottom: 10px;
-    margin-bottom: 12px;
+    flex: 0 0 auto;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
   .modal-head h3 {
+    font-size: 13.5px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .modal-close {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
     font-size: 14px;
   }
+  .modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 14px 16px;
+    -webkit-overflow-scrolling: touch;
+  }
 
-  /* Navigation Flyout on Mobile - True Cascading Floating Window */
+  /* Navigation Flyout on Mobile - True Responsive Centered Window with Accordion Submenus */
   .egs-flyout-backdrop {
-    z-index: 20000 !important;
-    background: var(--overlay-bg, rgba(0, 0, 0, 0.5)) !important;
-    backdrop-filter: blur(3px) !important;
+    z-index: 19990 !important;
+    background: var(--overlay-bg, rgba(0, 0, 0, 0.65)) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
   }
   .egs-flyout-box {
     position: fixed !important;
-    left: clamp(8px, 2.5vw, 20px) !important;
-    top: clamp(60px, 10vh, 90px) !important;
-    transform: none !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
     right: auto !important;
-    width: clamp(180px, 47vw, 240px) !important;
-    min-width: 170px !important;
-    max-width: 250px !important;
-    max-height: calc(100vh - 80px) !important;
+    bottom: auto !important;
+    width: min(340px, calc(100vw - 28px)) !important;
+    max-width: calc(100vw - 28px) !important;
+    max-height: calc(100vh - 60px) !important;
     overflow-y: auto !important;
-    z-index: 20005 !important;
+    overflow-x: hidden !important;
+    z-index: 20000 !important;
     box-sizing: border-box;
-    border-radius: 12px !important;
+    border-radius: 14px !important;
     background: var(--panel) !important;
     border: 1.5px solid var(--border) !important;
-    box-shadow: 0 20px 60px var(--shadow, rgba(0, 0, 0, 0.75)), 0 0 0 1px var(--border-light) !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--border-light) !important;
+  }
+  .egs-flyout-item.has-nested {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    height: auto !important;
+    position: relative !important;
+  }
+  .egs-flyout-item.has-nested > .item-text {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  .egs-flyout-item.has-nested .item-arrow {
+    position: absolute !important;
+    right: 12px !important;
+    top: 12px !important;
+    transition: transform 0.2s ease !important;
+  }
+  .egs-flyout-item.has-nested.nested-open .item-arrow {
+    transform: rotate(90deg) !important;
   }
   .egs-nested-flyout-box {
-    position: absolute !important;
-    top: -4px !important;
-    left: calc(100% + 4px) !important;
-    width: clamp(145px, 42vw, 200px) !important;
-    min-width: 140px !important;
-    max-width: 210px !important;
+    position: static !important;
+    display: none !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    margin-top: 6px !important;
+    margin-bottom: 4px !important;
     border-radius: 10px !important;
-    background: var(--panel) !important;
-    border: 1.5px solid var(--border) !important;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--border-light) !important;
-    z-index: 20010 !important;
+    background: var(--input-bg, rgba(255, 255, 255, 0.04)) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: none !important;
+    z-index: auto !important;
+    transform: none !important;
+    left: auto !important;
+    top: auto !important;
+    padding: 6px !important;
+    box-sizing: border-box !important;
+  }
+  .egs-flyout-item.has-nested.nested-open > .egs-nested-flyout-box {
+    display: block !important;
+    animation: egsFadeIn 0.18s ease-out !important;
+  }
+  .egs-nested-flyout-box .egs-flyout-header {
+    display: none !important;
+  }
+  .egs-nested-flyout-box .egs-flyout-item {
+    padding: 8px 10px !important;
+    font-size: 12.5px !important;
+    border-radius: 6px !important;
   }
 
   /* Toolbars & Filter Bars */
