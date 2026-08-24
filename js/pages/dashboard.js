@@ -115,7 +115,6 @@ window.PAGES.dashboard = {
             <div class="stat-slider-viewport" id="viewport-avail">
               <div class="stat-slider-track" id="track-avail"></div>
             </div>
-            <div class="stat-chips-bar" id="chips-avail" onclick="event.stopPropagation();"></div>
             <div class="stat-footer-bar">
               <span class="stat-badge-tag available"><span class="pulse-dot"></span> Ready for Project Dispatch</span>
               <span class="stat-drill-link" onclick="go('reports'); event.stopPropagation();">View Report <i class="fa-solid fa-arrow-right"></i></span>
@@ -141,7 +140,6 @@ window.PAGES.dashboard = {
             <div class="stat-slider-viewport" id="viewport-assigned">
               <div class="stat-slider-track" id="track-assigned"></div>
             </div>
-            <div class="stat-chips-bar" id="chips-assigned" onclick="event.stopPropagation();"></div>
             <div class="stat-footer-bar">
               <span class="stat-badge-tag assigned"><i class="fa-solid fa-diagram-project"></i> Project Site Allocation</span>
               <span class="stat-drill-link" onclick="go('saleregister'); event.stopPropagation();">View Register <i class="fa-solid fa-arrow-right"></i></span>
@@ -167,7 +165,6 @@ window.PAGES.dashboard = {
             <div class="stat-slider-viewport" id="viewport-sold">
               <div class="stat-slider-track" id="track-sold"></div>
             </div>
-            <div class="stat-chips-bar" id="chips-sold" onclick="event.stopPropagation();"></div>
             <div class="stat-footer-bar">
               <span class="stat-badge-tag sold"><i class="fa-solid fa-truck-fast"></i> Dispatched &amp; Invoiced</span>
               <span class="stat-drill-link" onclick="go('saleregister'); event.stopPropagation();">View Register <i class="fa-solid fa-arrow-right"></i></span>
@@ -193,7 +190,6 @@ window.PAGES.dashboard = {
             <div class="stat-slider-viewport" id="viewport-damaged">
               <div class="stat-slider-track" id="track-damaged"></div>
             </div>
-            <div class="stat-chips-bar" id="chips-damaged" onclick="event.stopPropagation();"></div>
             <div class="stat-footer-bar">
               <span class="stat-badge-tag damaged"><i class="fa-solid fa-circle-check"></i> Quality Inspected</span>
               <span class="stat-drill-link" onclick="go('returns'); event.stopPropagation();">View Returns <i class="fa-solid fa-arrow-right"></i></span>
@@ -473,22 +469,49 @@ window.PAGES.dashboard = {
       return Number(n || 0).toLocaleString('en-IN');
     }
 
-    // Fast, ultra-smooth cubic count-up animation
-    function animateCountUp(el, endValue, duration = 320) {
+    // High-grade smooth executive count-up animation
+    function animateCountUp(el, endValue, duration = 950) {
       if (!el) return;
       const target = Number(endValue) || 0;
-      const gap = Math.min(60, Math.max(5, Math.round(target * 0.15)));
-      const start = Math.max(0, target - gap);
+      const isFloat = String(endValue).includes('.') && !Number.isInteger(target);
+      const decimals = isFloat ? 2 : 0;
+      
+      const rawCurrent = String(el.textContent || '').replace(/[^\d.-]/g, '');
+      const start = Number(rawCurrent) && !isNaN(Number(rawCurrent)) ? Math.min(Number(rawCurrent), target) : 0;
+
+      if (target === 0) {
+        el.textContent = isFloat ? '0.00' : '0';
+        return;
+      }
+
+      if (el._animRaf) cancelAnimationFrame(el._animRaf);
+
       const startTime = performance.now();
       function tick(now) {
-        const progress = Math.min((now - startTime) / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        const current = Math.round(start + (target - start) * eased);
-        el.textContent = current.toLocaleString('en-IN');
-        if (progress < 1) requestAnimationFrame(tick);
-        else el.textContent = target.toLocaleString('en-IN');
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Smooth ease-out exponential curve: fast start, soft elegant deceleration
+        const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+        const current = start + (target - start) * eased;
+
+        if (isFloat) {
+          el.textContent = current.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+        } else {
+          el.textContent = Math.round(current).toLocaleString('en-IN');
+        }
+
+        if (progress < 1) {
+          el._animRaf = requestAnimationFrame(tick);
+        } else {
+          if (isFloat) {
+            el.textContent = target.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+          } else {
+            el.textContent = target.toLocaleString('en-IN');
+          }
+          el._animRaf = null;
+        }
       }
-      requestAnimationFrame(tick);
+      el._animRaf = requestAnimationFrame(tick);
     }
 
     function goToSlide(cardKey, targetIndex, animate = true) {
@@ -505,10 +528,10 @@ window.PAGES.dashboard = {
         trackEl.style.transform = `translateX(-${newIndex * 100}%)`;
       }
 
-      // 2. Fast smooth count-up animation on the active slide's number
+      // 2. Smooth count-up animation on the active slide's number
       const valEl = document.getElementById(`val-${cardKey}-${newIndex}`);
       if (valEl) {
-        if (animate) animateCountUp(valEl, slide.count, 320);
+        if (animate) animateCountUp(valEl, slide.count, 900);
         else valEl.textContent = formatNumber(slide.count);
       }
 
@@ -518,18 +541,6 @@ window.PAGES.dashboard = {
 
       const idxEl = document.getElementById(`idx-${cardKey}`);
       if (idxEl) idxEl.textContent = `${newIndex + 1} / ${slides.length}`;
-
-      // 4. Update and center active chip in bottom chip bar
-      const chipsBar = document.getElementById(`chips-${cardKey}`);
-      if (chipsBar) {
-        chipsBar.querySelectorAll('.stat-chip').forEach((chip, i) => {
-          const isActive = i === newIndex;
-          chip.classList.toggle('active', isActive);
-          if (isActive) {
-            chip.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-          }
-        });
-      }
     }
 
     function setupCardCarousel(cardKey, totalCount, categories) {
@@ -576,26 +587,6 @@ window.PAGES.dashboard = {
             </div>
           </div>
         `).join('');
-      }
-
-      // Render Horizontal Interactive Chips Bar
-      const chipsBar = document.getElementById(`chips-${cardKey}`);
-      if (chipsBar) {
-        chipsBar.innerHTML = slides.map((s, idx) => `
-          <button type="button" class="stat-chip${idx === 0 ? ' active' : ''}" data-card="${cardKey}" data-index="${idx}" title="${s.name}: ${formatNumber(s.count)}">
-            <i class="fa-solid ${s.icon}"></i>
-            <span>${idx === 0 ? 'All' : s.name}</span>
-            <span class="stat-chip-count">${s.count > 0 ? formatNumber(s.count) : '0'}</span>
-          </button>
-        `).join('');
-
-        chipsBar.querySelectorAll('.stat-chip').forEach((chip) => {
-          chip.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const idx = Number(chip.dataset.index || 0);
-            goToSlide(cardKey, idx, true);
-          });
-        });
       }
 
       const cardEl = document.getElementById(`card-${cardKey}`);
@@ -824,18 +815,18 @@ window.PAGES.dashboard = {
         const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
         // Top Solar Bar
-        animateCountUp(document.getElementById('dashSolarKwVal'), data.solarKw || 0, 400);
-        animateCountUp(document.getElementById('dashInvertersVal'), data.invertersCount || 0, 400);
-        animateCountUp(document.getElementById('dashBatteriesVal'), data.batteriesCount || 0, 400);
-        animateCountUp(document.getElementById('dashTotalItemsVal'), data.totalItems || 0, 400);
+        animateCountUp(document.getElementById('dashSolarKwVal'), data.solarKw || 0, 950);
+        animateCountUp(document.getElementById('dashInvertersVal'), data.invertersCount || 0, 950);
+        animateCountUp(document.getElementById('dashBatteriesVal'), data.batteriesCount || 0, 950);
+        animateCountUp(document.getElementById('dashTotalItemsVal'), data.totalItems || 0, 950);
         setText('dashLowStockCount', `${data.lowStockCount || 0} items`);
 
         // Daily Operations Pulse
-        animateCountUp(document.getElementById('dashTodayInwardQty'), data.todayInwardQty || 0, 400);
+        animateCountUp(document.getElementById('dashTodayInwardQty'), data.todayInwardQty || 0, 900);
         setText('dashTodayInwardInvoices', data.todayInwardInvoices || 0);
-        animateCountUp(document.getElementById('dashTodayDispatchQty'), data.todayDispatchQty || 0, 400);
+        animateCountUp(document.getElementById('dashTodayDispatchQty'), data.todayDispatchQty || 0, 900);
         setText('dashTodayDispatchChallans', data.todayDispatchChallans || 0);
-        animateCountUp(document.getElementById('dashActiveChallans'), data.activeChallans || 0, 400);
+        animateCountUp(document.getElementById('dashActiveChallans'), data.activeChallans || 0, 900);
         setText('dashWarehousesCount', data.warehousesCount || 1);
 
         const cats = Array.isArray(data.categorySnapshot) ? data.categorySnapshot : [];
@@ -855,6 +846,11 @@ window.PAGES.dashboard = {
         setupCardCarousel('assigned', data.assigned, cats);
         setupCardCarousel('sold', data.sold, cats);
         setupCardCarousel('damaged', data.damaged, cats);
+
+        goToSlide('avail', 0, true);
+        goToSlide('assigned', 0, true);
+        goToSlide('sold', 0, true);
+        goToSlide('damaged', 0, true);
 
         // Render Presentation Mode
         renderPresentationCharts(data);

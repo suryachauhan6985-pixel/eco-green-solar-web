@@ -425,26 +425,27 @@
   letter-spacing: 0.05em;
 }
 
+/* Category Badge Wrap */
 .stat-category-badge-wrap {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .stat-category-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 2.5px 8px;
+  padding: 3px 9px;
   background: var(--input-bg);
   border: 1px solid var(--border-light);
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--txt);
-  max-width: 160px;
+  max-width: 180px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -452,59 +453,18 @@
 
 .stat-category-badge i {
   color: var(--blue);
-  font-size: 11px;
+  font-size: 11.5px;
 }
 
 .stat-pct-badge {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 800;
   color: var(--txt-muted);
 }
 
-/* Horizontal Chips Bar */
+/* Horizontal Chips Bar (Removed for clean single-source category display) */
 .stat-chips-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-  scrollbar-width: none;
-}
-.stat-chips-bar::-webkit-scrollbar { display: none; }
-
-.stat-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: var(--input-bg);
-  border: 1px solid var(--border-light);
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--txt-muted);
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: all 0.18s ease;
-}
-
-.stat-chip:hover {
-  color: var(--txt);
-  border-color: var(--blue);
-}
-
-.stat-chip.active {
-  background: rgba(56, 189, 248, 0.12);
-  border-color: var(--blue);
-  color: var(--blue);
-  font-weight: 800;
-}
-
-.stat-chip-count {
-  font-weight: 800;
-  font-size: 10px;
-  opacity: 0.85;
+  display: none !important;
 }
 
 .stat-footer-bar {
