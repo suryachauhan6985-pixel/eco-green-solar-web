@@ -6779,9 +6779,28 @@ window.attachColumnFilters = function (table) {
     window.openModal('⌨️ Keyboard Shortcuts & Quick Navigation Guide', html, { size: 'large' });
   };
 
+  // Dedicated F1 interceptor: Runs in CAPTURE phase to unconditionally block Chrome Help redirect on Windows
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'F1' || e.code === 'F1' || e.keyCode === 112) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      window.showKeyboardShortcutsModal();
+    }
+  }, true);
+
   document.addEventListener('keydown', (e) => {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     const isTyping = tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable);
+
+    // 0. Universal Help / Shortcuts: F1 or Shift + ?
+    if (e.key === 'F1' || e.code === 'F1' || e.keyCode === 112 || (!isTyping && e.shiftKey && e.key === '?')) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      window.showKeyboardShortcutsModal();
+      return;
+    }
 
     // 1. Universal Quick Search: Ctrl + K (or Cmd + K) -> Always focus top global search bar
     if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
@@ -6863,13 +6882,6 @@ window.attachColumnFilters = function (table) {
         e.stopImmediatePropagation();
         return;
       }
-    }
-
-    // 3. F1 or Shift + ? -> Shortcuts help
-    if (!isTyping && (e.key === 'F1' || (e.shiftKey && e.key === '?'))) {
-      e.preventDefault();
-      window.showKeyboardShortcutsModal();
-      return;
     }
 
     // 4. Active Page Search: Global '/' outside typing inputs
