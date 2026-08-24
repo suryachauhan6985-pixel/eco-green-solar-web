@@ -479,6 +479,160 @@ html[data-theme="light"] .otp-boxes .otp-box{
 .login-btn:active{ transform:translateY(1px); }
 .login-btn:disabled{ opacity:.65; cursor:default; filter:none; transform:none; }
 
+/* Uiverse Animated Login Submit Button */
+.login-btn.uiverse-submit-btn {
+  background-color: transparent !important;
+  height: 48px;
+  border: 2px solid var(--blue, #3B8ED0) !important;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 13.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--blue, #3B8ED0) !important;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  margin-top: 6px;
+  box-shadow: 0 6px 20px rgba(59, 142, 208, 0.18);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.login-btn.uiverse-submit-btn .txt {
+  transition: transform 0.35s ease-in-out, opacity 0.35s ease-in-out;
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--blue, #3B8ED0);
+  font-weight: 800;
+}
+
+.login-btn.uiverse-submit-btn .txt2 {
+  transform: translateY(1.5em) scale(0);
+  color: #ffffff !important;
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  opacity: 0;
+  transition: all 0.3s ease-in-out;
+}
+
+.login-btn.uiverse-submit-btn .loader-container {
+  height: 100%;
+  width: 100%;
+  background-color: transparent;
+  border-radius: inherit;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.login-btn.uiverse-submit-btn .loader-container .loader {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(135deg, var(--blue, #3B8ED0), var(--blue-hover, #2563EB));
+  border-radius: inherit;
+  transform: translateX(-100%);
+  transition: transform 0.5s cubic-bezier(0, 0.4, 1, 0.28);
+}
+
+.login-btn.uiverse-submit-btn:hover {
+  background-color: rgba(59, 142, 208, 0.08) !important;
+  box-shadow: 0 8px 24px rgba(59, 142, 208, 0.35);
+  transform: translateY(-2px);
+}
+
+.login-btn.uiverse-submit-btn.loading .txt,
+.login-btn.uiverse-submit-btn:focus .txt {
+  transform: translateY(-3.5em);
+  opacity: 0;
+}
+
+.login-btn.uiverse-submit-btn.loading .loader,
+.login-btn.uiverse-submit-btn:focus .loader {
+  transform: translateX(0);
+}
+
+.login-btn.uiverse-submit-btn.loading .txt2,
+.login-btn.uiverse-submit-btn:focus .txt2 {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  transition-delay: 0.3s;
+}
+
+.login-btn.uiverse-submit-btn:active {
+  transform: translateY(1px);
+}
+
+/* Uiverse Animated Logout Button */
+.uiverse-logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  height: 40px;
+  border: 1px solid rgba(231, 76, 60, 0.4);
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(231, 76, 60, 0.22);
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  margin-top: 6px;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+
+.uiverse-logout-btn .sign {
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.uiverse-logout-btn .sign svg {
+  width: 16px;
+  height: 16px;
+}
+
+.uiverse-logout-btn .sign svg path {
+  fill: #ffffff;
+}
+
+.uiverse-logout-btn .text {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  margin-left: 8px;
+  transition: transform 0.3s ease;
+}
+
+.uiverse-logout-btn:hover {
+  background: linear-gradient(135deg, #ff4757, #e74c3c);
+  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.45);
+  transform: translateY(-1px);
+}
+
+.uiverse-logout-btn:hover .sign {
+  transform: translateX(4px);
+}
+
+.uiverse-logout-btn:active {
+  transform: translateY(1px);
+}
+
 .login-error{
   display:none; color:var(--red); font-size:12px;
   background:rgba(231,76,60,.1);

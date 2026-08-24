@@ -264,6 +264,116 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
 .live-btn i.chevron{margin-left:auto; color:var(--txt-muted);}
 .live-btn:hover{border-color:var(--blue);}
 
+/* ---------- Uiverse Animated Print Button ---------- */
+.uiverse-print-btn,
+.print-btn,
+.btn-print,
+#bomBtnPrint,
+#bomChallanPrintBtn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 38px !important;
+  padding: 0 16px !important;
+  background-color: var(--card, #1f2937) !important;
+  border: 1px solid var(--border, #374151) !important;
+  border-radius: 10px !important;
+  gap: 10px !important;
+  font-size: 13px !important;
+  color: var(--txt, #ffffff) !important;
+  cursor: pointer !important;
+  overflow: hidden !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 12px var(--shadow, rgba(0, 0, 0, 0.15)) !important;
+  transition: all 0.25s ease !important;
+}
+
+.uiverse-print-btn .printer-wrapper,
+.print-btn .printer-wrapper,
+.btn-print .printer-wrapper,
+#bomBtnPrint .printer-wrapper,
+#bomChallanPrintBtn .printer-wrapper {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.uiverse-print-btn .printer-container,
+.print-btn .printer-container,
+.btn-print .printer-container,
+#bomBtnPrint .printer-container,
+#bomChallanPrintBtn .printer-container {
+  height: 12px;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.uiverse-print-btn .printer-container svg,
+.print-btn .printer-container svg,
+.btn-print .printer-container svg,
+#bomBtnPrint .printer-container svg,
+#bomChallanPrintBtn .printer-container svg {
+  width: 100%;
+  height: auto;
+  transform: translateY(2px);
+  color: var(--blue, #3B8ED0);
+  fill: none;
+}
+
+.uiverse-print-btn .printer-page-wrapper,
+.print-btn .printer-page-wrapper,
+.btn-print .printer-page-wrapper,
+#bomBtnPrint .printer-page-wrapper,
+#bomChallanPrintBtn .printer-page-wrapper {
+  width: 100%;
+  height: 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.uiverse-print-btn .printer-page,
+.print-btn .printer-page,
+.btn-print .printer-page,
+#bomBtnPrint .printer-page,
+#bomChallanPrintBtn .printer-page {
+  width: 70%;
+  height: 5px;
+  border: 1px solid var(--txt-muted, #888);
+  background-color: var(--panel, #ffffff);
+  transform: translateY(0px);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top;
+  border-radius: 1px;
+}
+
+.uiverse-print-btn:hover .printer-page,
+.print-btn:hover .printer-page,
+.btn-print:hover .printer-page,
+#bomBtnPrint:hover .printer-page,
+#bomChallanPrintBtn:hover .printer-page {
+  height: 11px;
+  background-color: var(--gold, #d4af37);
+  border-color: var(--gold, #d4af37);
+}
+
+.uiverse-print-btn:hover,
+.print-btn:hover,
+.btn-print:hover,
+#bomBtnPrint:hover,
+#bomChallanPrintBtn:hover {
+  background-color: var(--panel-alt, #374151) !important;
+  border-color: var(--blue, #3B8ED0) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(59, 142, 208, 0.28) !important;
+}
+
 /* ---------- Modern Modal ---------- */
 .modal-overlay{
   display:none; position:fixed; inset:0; background:var(--overlay-bg, rgba(0,0,0,.75)); z-index:30000;

@@ -94,7 +94,21 @@ window.PAGES.bom = {
         <div class="field"><label>Ch. Date</label><input id="bomChallanDate" type="date"></div>
       </div>
       <div class="actions-row">
-        <button class="btn btn-ghost" type="button" id="bomBtnPrint"><i class="fa-solid fa-print"></i> Print BOM (Excel format, 1 page)</button>
+        <button class="print-btn" type="button" id="bomBtnPrint">
+          <span class="printer-wrapper">
+            <span class="printer-container">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 92 75">
+                <path stroke-width="5" stroke="currentColor" d="M12 37.5H80C85.2467 37.5 89.5 41.7533 89.5 47V69C89.5 70.933 87.933 72.5 86 72.5H6C4.067 72.5 2.5 70.933 2.5 69V47C2.5 41.7533 6.75329 37.5 12 37.5Z"></path>
+                <path fill="currentColor" d="M12 12C12 5.37258 17.3726 0 24 0H57C70.2548 0 81 10.7452 81 24V29H12V12Z"></path>
+                <circle fill="currentColor" r="3" cy="49" cx="78"></circle>
+              </svg>
+            </span>
+            <span class="printer-page-wrapper">
+              <span class="printer-page"></span>
+            </span>
+          </span>
+          <span>Print BOM</span>
+        </button>
         <button class="btn btn-blue" type="button" id="bomBtnVerify" disabled><i class="fa-solid fa-check-double"></i> Verify BOM</button>
         <button class="btn btn-green" type="button" id="bomBtnChallan" disabled><i class="fa-solid fa-file-invoice"></i> Convert into Challan</button>
         <button class="btn btn-green" type="button" id="bomBtnDispatch" disabled><i class="fa-solid fa-truck"></i> Create Dispatch</button>
