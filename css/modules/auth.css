@@ -485,19 +485,31 @@ html[data-theme="light"] .otp-boxes .otp-box{
    matching the desktop .py app's show_profile_menu(): header with
    @username/role, then "Switch User" and "Logout". Positioned via JS
    (fixed, anchored above the avatar) so it isn't clipped by the sidebar. */
-.profile-box{cursor:pointer;}
+.profile-box{cursor:pointer; transition:all .15s ease;}
 .profile-box:hover{background:var(--nav-btn-bg); border-radius:8px;}
 .profile-menu{
-  position:fixed; z-index:90; min-width:220px;
-  background:var(--panel); border:1px solid var(--border-light); border-radius:10px;
-  padding:6px; box-shadow:var(--shadow), 0 10px 30px rgba(0,0,0,.35);
+  position:fixed; z-index:25000; min-width:220px;
+  background:var(--panel); border:1.5px solid var(--border); border-radius:14px;
+  padding:8px; box-shadow:0 20px 60px rgba(0,0,0,.65), 0 0 0 1px var(--border-light);
+  box-sizing:border-box; animation:egsProfileMenuIn .15s ease-out;
+}
+@keyframes egsProfileMenuIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.profile-menu.profile-menu-mobile {
+  animation: egsProfileMenuPopIn .18s ease-out !important;
+}
+@keyframes egsProfileMenuPopIn {
+  from { opacity: 0; transform: translate(-50%, -46%) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 .profile-menu-header{padding:8px 12px 9px; border-bottom:1px solid var(--border); margin-bottom:5px;}
-.profile-menu-header .name{color:var(--txt); font-size:13px; font-weight:800;}
+.profile-menu-header .name{color:var(--txt); font-size:13.5px; font-weight:800;}
 .profile-menu-header .role{color:var(--blue); font-size:11px; font-weight:700; text-transform:uppercase; margin-top:2px;}
 .profile-menu-item{
   display:flex; align-items:center; gap:10px; width:100%; background:transparent; border:none;
-  color:var(--txt); font-size:12px; font-weight:600; padding:9px 12px; border-radius:6px; cursor:pointer; text-align:left;
+  color:var(--txt); font-size:12.5px; font-weight:600; padding:9px 12px; border-radius:8px; cursor:pointer; text-align:left;
   transition: background .15s ease, color .15s ease;
 }
 .profile-menu-item i{width:14px; text-align:center; color:var(--txt-muted); transition: color .15s ease;}
@@ -511,7 +523,7 @@ html[data-theme="light"] .otp-boxes .otp-box{
 /* ---- Instagram-style profile menu / accounts / login activity ---- */
 .profile-menu-wide{min-width:260px; max-width:320px;}
 .profile-menu-section-label{
-  padding:8px 12px 4px; font-size:10px; font-weight:800;
+  padding:8px 12px 4px; font-size:10.5px; font-weight:800;
   text-transform:uppercase; letter-spacing:.4px; color:var(--txt-muted);
 }
 .profile-menu-divider{height:1px; background:var(--border); margin:6px 0;}
@@ -519,10 +531,10 @@ html[data-theme="light"] .otp-boxes .otp-box{
 .profile-account-row{
   display:flex; align-items:center; gap:10px; width:100%;
   padding:8px 12px; border:none; background:transparent; color:var(--txt);
-  text-align:left; cursor:pointer; font:inherit;
+  text-align:left; cursor:pointer; font:inherit; border-radius:8px;
 }
 .profile-account-row:hover{background:var(--nav-btn-bg);}
-.profile-account-row.current{background:rgba(59,142,208,.12);}
+.profile-account-row.current{background:var(--nav-btn-bg); border-left:3px solid var(--blue);}
 .pa-avatar{
   width:32px;height:32px;border-radius:50%;
   background:var(--avatar-bg, var(--blue)) !important;

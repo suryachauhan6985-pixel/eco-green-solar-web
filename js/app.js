@@ -2809,10 +2809,13 @@ window.attachColumnFilters = function (table) {
   // "Switch User" and "Logout" — instead of logging out directly.
   const profileBox = document.querySelector('.profile-box');
   let profileMenuEl = null;
+  let profileMenuBackdrop = null;
 
   function closeProfileMenu() {
     if (profileMenuEl) { profileMenuEl.remove(); profileMenuEl = null; }
+    if (profileMenuBackdrop) { profileMenuBackdrop.remove(); profileMenuBackdrop = null; }
   }
+  window.closeProfileMenu = closeProfileMenu;
 
   function endSessionAndShowLogin() {
     closeProfileMenu();
@@ -5193,8 +5196,13 @@ window.attachColumnFilters = function (table) {
 
   window.openSettingsModal = openAppSettingsPanel;
 
-  function openProfileMenu() {
+  function openProfileMenu(targetElement) {
     closeProfileMenu();
+    const isMobile = window.innerWidth <= 900;
+    if (isMobile) {
+      if (typeof window.closeSidebar === 'function') window.closeSidebar();
+      if (typeof closeAllFlyouts === 'function') closeAllFlyouts();
+    }
     const roleEl = document.querySelector('.profile-box .role');
     const userEl = document.querySelector('.profile-box .user');
     const roleTxt = roleEl ? roleEl.textContent : (window.currentRole || '');
@@ -5214,12 +5222,23 @@ window.attachColumnFilters = function (table) {
       </button>`;
     }).join('');
 
+    if (isMobile) {
+      profileMenuBackdrop = document.createElement('div');
+      profileMenuBackdrop.className = 'egs-flyout-backdrop';
+      profileMenuBackdrop.style.zIndex = '24999';
+      profileMenuBackdrop.onclick = closeProfileMenu;
+      document.body.appendChild(profileMenuBackdrop);
+    }
+
     const menu = document.createElement('div');
-    menu.className = 'profile-menu profile-menu-wide';
+    menu.className = 'profile-menu profile-menu-wide' + (isMobile ? ' profile-menu-mobile' : '');
     menu.innerHTML = `
-      <div class="profile-menu-header">
-        <div class="name">${userTxt}</div>
-        <div class="role">${roleTxt}</div>
+      <div class="profile-menu-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div class="name">${userTxt}</div>
+          <div class="role">${roleTxt}</div>
+        </div>
+        ${isMobile ? '<button type="button" class="modal-close" style="width:28px;height:28px;font-size:13px;border:none;background:transparent;color:var(--txt-muted);cursor:pointer;" onclick="window.closeProfileMenu()"><i class="fa-solid fa-xmark"></i></button>' : ''}
       </div>
       <div class="profile-menu-section-label">Accounts</div>
       <div class="profile-accounts">${accountRows || '<p class="note" style="padding:8px 12px;margin:0;">No saved accounts yet</p>'}</div>
@@ -5240,10 +5259,23 @@ window.attachColumnFilters = function (table) {
       <button type="button" class="profile-menu-item danger" id="profileLogout"><i class="fa-solid fa-right-from-bracket"></i> Log out</button>`;
     document.body.appendChild(menu);
 
-    const rect = profileBox.getBoundingClientRect();
-    const menuRect = menu.getBoundingClientRect();
-    menu.style.left = Math.max(10, rect.left) + 'px';
-    menu.style.top = Math.max(10, rect.top - menuRect.height - 8) + 'px';
+    if (isMobile) {
+      menu.style.position = 'fixed';
+      menu.style.left = '50%';
+      menu.style.top = '50%';
+      menu.style.transform = 'translate(-50%, -50%)';
+      menu.style.width = 'min(340px, calc(100vw - 28px))';
+      menu.style.maxHeight = 'calc(100vh - 40px)';
+      menu.style.overflowY = 'auto';
+      menu.style.zIndex = '25000';
+    } else {
+      const anchor = targetElement || profileBox;
+      const rect = anchor ? anchor.getBoundingClientRect() : { left: 10, top: 500 };
+      const menuRect = menu.getBoundingClientRect();
+      menu.style.left = Math.max(10, rect.left) + 'px';
+      menu.style.top = Math.max(10, rect.top - menuRect.height - 8) + 'px';
+      menu.style.zIndex = '25000';
+    }
     profileMenuEl = menu;
     if (window.wireThemeButtons) window.wireThemeButtons(menu);
     if (window.getAppTheme) {
@@ -5304,8 +5336,9 @@ window.attachColumnFilters = function (table) {
 
   function toggleProfileMenu(e) {
     if (e) e.stopPropagation();
+    const target = e ? (e.currentTarget || e.target) : null;
     if (profileMenuEl) closeProfileMenu();
-    else openProfileMenu();
+    else openProfileMenu(target);
   }
   if (profileBox) {
     profileBox.addEventListener('click', toggleProfileMenu);
