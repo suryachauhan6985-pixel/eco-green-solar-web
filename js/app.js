@@ -5925,24 +5925,108 @@ window.attachColumnFilters = function (table) {
     renderNavButtons();
   }
 
-  function go(id, opts = {}) {
+  // =========================================================================
+  // ERP WORKSPACE METADATA & SCREEN LIFECYCLE ROUTER
+  // =========================================================================
+  const WORKSPACE_METADATA = {
+    'dashboard': { name: 'Dashboard', sub: 'Live overview of stock & operations', icon: 'fa-house-chimney' },
+    'masters:item-create': { name: 'Item Master Registration', sub: 'Create new product profile and parameters', icon: 'fa-box-open' },
+    'masters:item-reg': { name: 'Item & Product Master', sub: 'Registered product catalog & specifications', icon: 'fa-boxes-stacked' },
+    'masters:item-catalog': { name: 'Item Catalog Directory', sub: 'View, search & manage registered products', icon: 'fa-table-list' },
+    'masters:category': { name: 'Group & Category Master', sub: 'Manage categories, wattage & serial rules', icon: 'fa-layer-group' },
+    'masters:warehouse': { name: 'Warehouse & Godown Master', sub: 'Manage inventory storage locations', icon: 'fa-warehouse' },
+    'masters:uom': { name: 'Units of Measure (UOM)', sub: 'Configure standard measurement units', icon: 'fa-ruler-combined' },
+    'masters:brand': { name: 'Brand Directory', sub: 'Registered solar and electrical equipment brands', icon: 'fa-tags' },
+    'masters:users': { name: 'User Accounts & Access', sub: 'Manage ERP system operators and security', icon: 'fa-user-shield' },
+    'partyledger': { name: 'Party Ledger Statement', sub: 'Account statements, debit/credit ledger & transactions', icon: 'fa-money-check-dollar' },
+    'partyledger:create': { name: 'Create Account / Ledger', sub: 'Add new customer, supplier, bank or expense account', icon: 'fa-user-plus' },
+    'partyledger:display': { name: 'Party Ledger Directory', sub: 'Search ledgers, view statements & balances', icon: 'fa-address-book' },
+    'partyledger:alter': { name: 'Alter Account Profile', sub: 'Modify party details, GSTIN & contact info', icon: 'fa-user-pen' },
+    'partyledger:customers': { name: 'Customer Accounts Directory', sub: 'Filter and manage customer ledgers & receivables', icon: 'fa-hand-holding-dollar' },
+    'partyledger:suppliers': { name: 'Supplier Accounts Directory', sub: 'Filter and manage supplier ledgers & payables', icon: 'fa-truck-ramp-box' },
+    'vouchers': { name: 'Accounting Vouchers', sub: 'Double-entry financial voucher system', icon: 'fa-money-bill-transfer' },
+    'vouchers:Payment': { name: 'Payment Voucher (F5)', sub: 'Record supplier payments & bank transfers', icon: 'fa-arrow-up-from-bracket' },
+    'vouchers:Receipt': { name: 'Receipt Voucher (F6)', sub: 'Record customer receipts & incoming payments', icon: 'fa-arrow-down-to-bracket' },
+    'vouchers:Journal': { name: 'Journal Voucher (F7)', sub: 'Record double-entry ledger adjustments', icon: 'fa-scale-balanced' },
+    'vouchers:DebitNote': { name: 'Debit Note (Alt+F5)', sub: 'Record purchase returns and debit adjustments', icon: 'fa-file-circle-minus' },
+    'vouchers:CreditNote': { name: 'Credit Note (Alt+F6)', sub: 'Record sales returns and credit adjustments', icon: 'fa-file-circle-plus' },
+    'financialreports': { name: 'Financial Statements', sub: 'Trial Balance, Profit & Loss, Balance Sheet & Day Book', icon: 'fa-scale-balanced' },
+    'financialreports:trial-balance': { name: 'Trial Balance Statement', sub: 'Trial balance ledger closing balances', icon: 'fa-list-ol' },
+    'financialreports:profit-loss': { name: 'Profit & Loss Account', sub: 'Statement of income, expenses & gross profit', icon: 'fa-chart-line' },
+    'financialreports:balance-sheet': { name: 'Balance Sheet Statement', sub: 'Statement of capital, assets & liabilities', icon: 'fa-building-columns' },
+    'financialreports:day-book': { name: 'Day Book Journal', sub: 'Chronological daily financial journal & vouchers', icon: 'fa-calendar-day' },
+    'purchase': { name: 'Purchase Inward', sub: 'Inward stock receipt, batch & invoice entry', icon: 'fa-truck-ramp-box' },
+    'purchaseregister': { name: 'Purchase Register', sub: 'Inward purchase records & tax invoice archive', icon: 'fa-cart-shopping' },
+    'sales': { name: 'Project Sales & Dispatch', sub: 'Sales outward, serial assignment & delivery', icon: 'fa-handshake' },
+    'saleregister': { name: 'Sale Register', sub: 'Project sales records & dispatch log archive', icon: 'fa-money-bill-transfer' },
+    'bom': { name: 'Bill of Material (BOM)', sub: 'Kit assembly, serial allocation & delivery challans', icon: 'fa-list-check' },
+    'bom:create': { name: 'BOM Kit Assembly & Dispatch', sub: 'Assemble kits, verify components & generate dispatches', icon: 'fa-boxes-packing' },
+    'bom:register': { name: 'BOM Dispatch Register', sub: 'Saved BOM orders and dispatch history', icon: 'fa-clipboard-list' },
+    'bom:challan': { name: 'Delivery Challans Register', sub: 'Saved delivery challans and reprint center', icon: 'fa-file-invoice' },
+    'bom:custom-challan': { name: 'Custom Delivery Challan', sub: 'Direct custom delivery challan entry form', icon: 'fa-pen-nib' },
+    'bom:track': { name: 'Track BOM Order Progress', sub: 'Real-time BOM order telemetry & delivery status', icon: 'fa-route' },
+    'stockassign': { name: 'Stock Allocation & Journal', sub: 'Godown reservation & release to firm/customer', icon: 'fa-warehouse' },
+    'returns': { name: 'Sales Return & Damage', sub: 'Process sales returns, damaged & scrapped stock', icon: 'fa-arrow-rotate-left' },
+    'scansheet': { name: 'Serial Number Scan Sheet', sub: 'Barcode scanner & serial sheets manager', icon: 'fa-barcode' },
+    'reports': { name: 'Master Inventory Report', sub: 'Real-time godown stock summary & inventory explorer', icon: 'fa-clipboard-list' },
+    'lowstock': { name: 'Low Stock Alert', sub: 'Items at or below reorder safety threshold', icon: 'fa-triangle-exclamation' },
+    'backup': { name: 'Backup & Restore Hub', sub: 'Cloud & local database archives & point-in-time recovery', icon: 'fa-cloud-arrow-up' }
+  };
+
+  window.__activeScreenCleanup = null;
+  function cleanupActiveScreen() {
+    if (typeof window.__activeScreenCleanup === 'function') {
+      try {
+        window.__activeScreenCleanup();
+      } catch (e) {
+        console.warn('Screen cleanup error:', e);
+      }
+      window.__activeScreenCleanup = null;
+    }
+  }
+  window.cleanupActiveScreen = cleanupActiveScreen;
+
+  function parseRouteHash(rawHash) {
+    const clean = String(rawHash || '').replace(/^#\/?/, '').trim();
+    if (!clean) return { id: 'dashboard', opts: {} };
+    const parts = clean.split(':');
+    const id = parts[0] || 'dashboard';
+    const sub = parts[1] || '';
+    const action = parts[2] || '';
+    const filter = parts[3] || '';
+    return { id, opts: { sub, action, filter, tab: sub } };
+  }
+  window.parseRouteHash = parseRouteHash;
+
+  function go(id, opts = {}, pushHistory = true) {
+    if (typeof id === 'string' && id.includes(':')) {
+      const parsed = parseRouteHash(id);
+      id = parsed.id;
+      opts = Object.assign({}, parsed.opts, opts);
+    }
+
     const page = window.PAGES[id];
     if (!page) return;
+
+    // Clean up previous active workspace
+    cleanupActiveScreen();
 
     closeAllFlyouts();
     if (window.innerWidth <= 900 && typeof window.closeSidebar === 'function') {
       window.closeSidebar();
     }
 
-    // Prevent redundant reload spam if key is held down
-    if (window.CURRENT_PAGE_ID === id && !opts.sub && !opts.tab && !opts.action && !opts.filter && !opts.force) {
-      return;
-    }
     window.CURRENT_PAGE_ID = id;
+    window.CURRENT_PAGE_OPTS = Object.assign({}, opts);
 
     const contentEl = document.getElementById('content') || content;
     const pageTitleEl = document.getElementById('pageTitle') || pageTitle;
     const pageSubEl = document.getElementById('pageSub') || pageSub;
+
+    // Resolve workspace key and metadata
+    const subKey = opts.sub || opts.tab || opts.action || '';
+    const workspaceKey = subKey ? `${id}:${subKey}` : id;
+    const meta = WORKSPACE_METADATA[workspaceKey] || WORKSPACE_METADATA[id] || { name: page.name, sub: page.sub, icon: page.icon };
 
     if (contentEl) {
       contentEl.classList.remove('page-entering');
@@ -5951,8 +6035,8 @@ window.attachColumnFilters = function (table) {
       contentEl.classList.add('page-entering');
     }
 
-    if (pageTitleEl) pageTitleEl.textContent = page.name || 'Dashboard';
-    if (pageSubEl) pageSubEl.textContent = page.sub || '';
+    if (pageTitleEl) pageTitleEl.textContent = meta.name || page.name || 'Dashboard';
+    if (pageSubEl) pageSubEl.textContent = meta.sub || page.sub || '';
     if (window.topbarExtra) window.topbarExtra.innerHTML = '';
 
     // Mark active sidebar parent group or single item strictly
@@ -5987,7 +6071,7 @@ window.attachColumnFilters = function (table) {
 
     if (typeof page.init === 'function') {
       try {
-        page.init();
+        page.init(opts);
       } catch (err) {
         console.error(`Error initializing page "${id}":`, err);
       }
@@ -6025,7 +6109,7 @@ window.attachColumnFilters = function (table) {
           }
         }
 
-        // Party Ledger filter & action switching (No autofocus on search)
+        // Party Ledger filter & action switching
         if (id === 'partyledger') {
           if (opts.filter) {
             const typeFilter = document.getElementById('plTypeFilter');
@@ -6039,7 +6123,7 @@ window.attachColumnFilters = function (table) {
           }
         }
 
-        // Masters actions switching (No autofocus on search)
+        // Masters actions switching
         if (id === 'masters') {
           if (opts.action && typeof window.setMasterViewMode === 'function') {
             window.setMasterViewMode(opts.action);
@@ -6087,10 +6171,13 @@ window.attachColumnFilters = function (table) {
     }, 400);
 
     try {
-      const subParam = opts.sub || opts.tab || opts.action;
-      const newHash = subParam ? `#${id}:${subParam}` : `#${id}`;
+      const newHash = workspaceKey ? `#${workspaceKey}` : `#${id}`;
       if (window.location.hash !== newHash) {
-        history.replaceState(null, '', newHash);
+        if (pushHistory) {
+          history.pushState({ id, opts }, '', newHash);
+        } else {
+          history.replaceState({ id, opts }, '', newHash);
+        }
       }
     } catch (e) {}
   }
@@ -6821,8 +6908,12 @@ window.attachColumnFilters = function (table) {
   // Only load a page when a session exists. If still on login, finishLogin
   // will call go() after the token is saved (avoids first paint of all zeros).
   if (restoredSession) {
-    const startPageId = (window.location.hash || '').replace('#', '');
-    go(window.PAGES[startPageId] ? startPageId : 'dashboard');
+    const startRoute = parseRouteHash(window.location.hash);
+    if (window.PAGES[startRoute.id]) {
+      go(startRoute.id, startRoute.opts, false);
+    } else {
+      go('dashboard', {}, false);
+    }
     setTimeout(() => {
       if (typeof window.requestNativeSystemPermissions === 'function') {
         window.requestNativeSystemPermissions();
@@ -6832,9 +6923,21 @@ window.attachColumnFilters = function (table) {
 
   // Also react to Back/Forward browser buttons and manual hash edits, so
   // the visible page always matches the URL hash, not just on first load.
+  window.addEventListener('popstate', () => {
+    const route = parseRouteHash(window.location.hash);
+    if (window.PAGES[route.id]) {
+      go(route.id, route.opts, false);
+    }
+  });
+
   window.addEventListener('hashchange', () => {
-    const id = (window.location.hash || '').replace('#', '');
-    if (window.PAGES[id]) go(id);
+    const route = parseRouteHash(window.location.hash);
+    if (window.PAGES[route.id]) {
+      const curSub = (window.CURRENT_PAGE_OPTS && (window.CURRENT_PAGE_OPTS.sub || window.CURRENT_PAGE_OPTS.tab || window.CURRENT_PAGE_OPTS.action)) || '';
+      const newSub = route.opts.sub || route.opts.tab || route.opts.action || '';
+      if (window.CURRENT_PAGE_ID === route.id && curSub === newSub) return;
+      go(route.id, route.opts, false);
+    }
   });
 
   // Footer credit line — always show the current year, no manual updates needed.

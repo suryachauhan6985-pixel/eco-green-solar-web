@@ -110,7 +110,11 @@ window.PAGES.vouchers = {
     </div>
   `,
 
-  init: function () {
+  init: function (opts = {}) {
+    window.__activeScreenCleanup = () => {
+      window.setVoucherTypeMode = null;
+    };
+
     let currentVoucherType = 'Payment';
     let cachedLedgers = [];
     let cachedVouchers = [];
@@ -121,6 +125,14 @@ window.PAGES.vouchers = {
     const dateInput = document.getElementById('vouchDate');
     const datalist = document.getElementById('vouchLedgersList');
     const tbody = document.getElementById('vouchTableBody');
+
+    const VOUCHER_TITLES = {
+      Payment: { title: 'Payment Voucher (F5)', sub: 'Record supplier payments & bank transfers' },
+      Receipt: { title: 'Receipt Voucher (F6)', sub: 'Record customer receipts & incoming payments' },
+      Journal: { title: 'Journal Voucher (F7)', sub: 'Record double-entry ledger adjustments' },
+      DebitNote: { title: 'Debit Note (Alt+F5)', sub: 'Record purchase returns and debit adjustments' },
+      CreditNote: { title: 'Credit Note (Alt+F6)', sub: 'Record sales returns and credit adjustments' }
+    };
 
     // Set today's date by default
     if (dateInput) {
@@ -221,12 +233,28 @@ window.PAGES.vouchers = {
       if (document.getElementById('lblDebitLedger')) document.getElementById('lblDebitLedger').innerHTML = `${cfg.dr} <span class="req">*</span>`;
       if (document.getElementById('lblCreditLedger')) document.getElementById('lblCreditLedger').innerHTML = `${cfg.cr} <span class="req">*</span>`;
 
+      const tMeta = VOUCHER_TITLES[type];
+      if (tMeta) {
+        const pt = document.getElementById('pageTitle');
+        const ps = document.getElementById('pageSub');
+        if (pt) pt.textContent = tMeta.title;
+        if (ps) ps.textContent = tMeta.sub;
+      }
+
       loadVouchersRegister();
     }
 
     tabs.forEach(t => {
-      t.addEventListener('click', () => setVoucherType(t.dataset.type));
+      t.addEventListener('click', () => {
+        setVoucherType(t.dataset.type);
+        try {
+          history.replaceState(null, '', `#vouchers:${t.dataset.type}`);
+        } catch (e) {}
+      });
     });
+
+    const initType = opts.action || opts.sub || 'Payment';
+    setVoucherType(initType);
 
     // Form Submit
     const form = document.getElementById('voucherEntryForm');

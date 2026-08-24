@@ -270,26 +270,18 @@ window.PAGES.masters = {
     </div>
   `,
 
-  init() {
+  init(opts = {}) {
     const $ = (id) => document.getElementById(id);
 
-    // Bulk-import row reports (Excel/CSV import validation errors, post-
-    // import failure summary) can run to 30-40+ lines — without a cap the
-    // modal (window.openModal/confirmDialog, shared across every page) just
-    // grows to fit the content and blows past the viewport. Wraps a list of
-    // already-HTML-escaped `<br>`-joined lines in a fixed-height box with
-    // its own internal scrollbar, so the OUTER modal never has to resize
-    // for this — same fixed footprint whether it's 3 rows or 300.
+    // Register active workspace cleanup
+    window.__activeScreenCleanup = () => {
+      window.setMasterViewMode = null;
+    };
+
     function scrollList(items) {
       return `<div style="max-height:260px; overflow-y:auto; margin-top:8px; padding:8px 10px; border:1px solid rgba(255,255,255,0.12); border-radius:6px; font-size:12.5px; line-height:1.6;">${items.join('<br>')}</div>`;
     }
 
-    // The `watt` column is stored as DECIMAL(8,2) so it can hold values
-    // like 3.3 or 0.5 — mysql2 returns decimal columns as fixed-2-place
-    // STRINGS ("545.00", "3.30"), not numbers, so displaying the raw value
-    // anywhere always padded it with trailing zeros. Number(...) + string
-    // coercion drops that padding so a value always shows exactly as it
-    // was typed: "545" stays "545", "3" stays "3", "3.3" stays "3.3".
     function mFormatWatt(v) {
       if (v === null || v === undefined || v === '') return '';
       const n = Number(v);
@@ -305,9 +297,6 @@ window.PAGES.masters = {
     let editingUomOldName = null;
     let editingSubOldName = null;
 
-    // Role-based visibility: "Users Accounts" subtab is only for Admin/SuperAdmin.
-    // Same role gate pattern used in purchase.js/sales.js/partyledger.js
-    // (window.currentUserRole set by app.js after login).
     const currentRole = window.currentUserRole || 'User';
     const isAdmin = currentRole === 'SuperAdmin' || currentRole === 'Admin';
     if (!isAdmin) {
@@ -320,6 +309,8 @@ window.PAGES.masters = {
     // Responsive Subtabs routing engine
     const MASTER_SUB_INFO = {
       'item-reg': { title: 'Item & Product Master', sub: 'Item classification, specifications & inventory rules', icon: 'fa-boxes-stacked' },
+      'item-create': { title: 'Create Product Profile', sub: 'New product registration & specifications', icon: 'fa-box-open' },
+      'item-catalog': { title: 'Registered Product Catalog', sub: 'View, search & manage registered products', icon: 'fa-table-list' },
       'category': { title: 'Category & Subtypes Master', sub: 'Manage product categories, wattage & serial rules', icon: 'fa-tags' },
       'brand': { title: 'Brand Directory Master', sub: 'Registered manufacturer and supplier brand names', icon: 'fa-trademark' },
       'warehouse': { title: 'Warehouse & Godown Master', sub: 'Storage godowns and dispatch hubs', icon: 'fa-warehouse' },
@@ -327,129 +318,160 @@ window.PAGES.masters = {
       'users': { title: 'User Authorization Master', sub: 'System access privileges and credentials', icon: 'fa-user-shield' }
     };
 
+    function activateSubtab(subKey) {
+      const targetSub = (subKey === 'item-create' || subKey === 'item-catalog') ? 'item-reg' : subKey;
+      const tabs = document.querySelectorAll("#mastersSubtabs .subtab");
+      const panels = document.querySelectorAll(".subtab-panel");
+      tabs.forEach((t) => t.classList.toggle("active", t.dataset.sub === targetSub));
+      panels.forEach((p) => p.classList.toggle("active", p.dataset.panel === targetSub));
+
+      const info = MASTER_SUB_INFO[subKey] || MASTER_SUB_INFO[targetSub];
+      if (info) {
+        const pt = document.getElementById('pageTitle');
+        const ps = document.getElementById('pageSub');
+        const mpt = document.getElementById('mastersPageHeadTitle');
+        const mpi = document.getElementById('mastersPageHeadIcon');
+        if (pt) pt.textContent = info.title;
+        if (ps) ps.textContent = info.sub;
+        if (mpt) mpt.textContent = info.title;
+        if (mpi && info.icon) mpi.className = `fa-solid ${info.icon}`;
+      }
+    }
+
     const tabs = document.querySelectorAll("#mastersSubtabs .subtab");
-    const panels = document.querySelectorAll(".subtab-panel");
     tabs.forEach((tab) => {
       tab.addEventListener("click", () => {
-        tabs.forEach((t) => t.classList.remove("active"));
-        panels.forEach((p) => p.classList.remove("active"));
-        tab.classList.add("active");
-        const target = document.querySelector(
-          `.subtab-panel[data-panel="${tab.dataset.sub}"]`,
-        );
-        if (target) target.classList.add("active");
-
-        const info = MASTER_SUB_INFO[tab.dataset.sub];
-        if (info) {
-          const pt = document.getElementById('pageTitle');
-          const ps = document.getElementById('pageSub');
-          const mpt = document.getElementById('mastersPageHeadTitle');
-          const mpi = document.getElementById('mastersPageHeadIcon');
-          if (pt) pt.textContent = info.title;
-          if (ps) ps.textContent = info.sub;
-          if (mpt) mpt.textContent = info.title;
-          if (mpi && info.icon) mpi.className = `fa-solid ${info.icon}`;
-        }
+        activateSubtab(tab.dataset.sub);
+        loadMastersSystemEngine(tab.dataset.sub);
+        try {
+          history.replaceState(null, '', `#masters:${tab.dataset.sub}`);
+        } catch (e) {}
       });
     });
 
-    // Sync Live Dataset from database cache pool
-    async function loadMastersSystemEngine() {
+    // Scoped Data Loading System
+    async function loadMastersSystemEngine(targetSub = 'item-reg') {
       subtypeInfoCache = {};
       try {
-        const [catsRes, itemsRes, whsRes, unitsRes, usersRes, brandsRes] = await Promise.all([
+        if (targetSub === 'category') {
+          const catsRes = await fetch(`${API_BASE}/masters/categories`).then(r => r.ok ? r.json() : []).catch(() => []);
+          const cats = Array.isArray(catsRes) ? catsRes : [];
+          cachedCategories = cats;
+          $('mSubTargetCat').innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+          $('mastersCategoryBody').innerHTML = cats.map(c => `
+            <tr>
+              <td class="gold-txt" style="font-weight:600;">${c.name}</td>
+              <td>${c.item_count} items</td>
+              <td>
+                <button type="button" class="btn-toggle-badge ${c.watt_mandatory ? 'active-gold' : 'inactive'}" data-action="toggle-watt" data-cat="${c.name}" title="Click to toggle Wattage Rule">
+                  <i class="fa-solid ${c.watt_mandatory ? 'fa-bolt' : 'fa-circle-dot'}"></i>
+                  <span>${c.watt_mandatory ? 'Mandatory' : 'Optional'}</span>
+                </button>
+              </td>
+              <td>
+                <button type="button" class="btn-toggle-badge ${c.serial_mandatory ? 'active-blue' : 'inactive'}" data-action="toggle-serial" data-cat="${c.name}" title="Click to toggle Serial Rule">
+                  <i class="fa-solid ${c.serial_mandatory ? 'fa-barcode' : 'fa-circle-dot'}"></i>
+                  <span>${c.serial_mandatory ? 'Mandatory' : 'Optional'}</span>
+                </button>
+              </td>
+              <td><button class="btn btn-red m-cat-delete" data-cat="${c.name}" style="padding:6px 10px; font-size:11px;" title="Delete Category"><i class="fa-solid fa-trash"></i></button></td>
+            </tr>
+          `).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--txt-muted);">No categories yet.</td></tr>`;
+          loadSubtypesForCategory($('mSubTargetCat').value);
+          const catTable = $('mastersCategoryBody') && $('mastersCategoryBody').closest('table');
+          if (catTable && window.attachColumnFilters) window.attachColumnFilters(catTable);
+          return;
+        }
+
+        if (targetSub === 'warehouse') {
+          const whsRes = await fetch(`${API_BASE}/masters/warehouses`).then(r => r.ok ? r.json() : []).catch(() => []);
+          const whs = Array.isArray(whsRes) ? whsRes : [];
+          $('mastersWarehouseBody').innerHTML = whs.map(w => `
+            <tr>
+              <td style="font-weight:600;">${w.name}</td>
+              <td class="gold-txt">${w.items_stored}</td>
+              <td>
+                <button class="btn btn-blue m-wh-edit" data-name="${w.name}" style="padding:6px 10px; font-size:11px;"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn btn-red m-wh-delete" data-name="${w.name}" style="padding:6px 10px; font-size:11px;"><i class="fa-solid fa-trash"></i></button>
+              </td>
+            </tr>
+          `).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--txt-muted);">No warehouses yet.</td></tr>`;
+          const whTable = $('mastersWarehouseBody') && $('mastersWarehouseBody').closest('table');
+          if (whTable && window.attachColumnFilters) window.attachColumnFilters(whTable);
+          return;
+        }
+
+        if (targetSub === 'uom') {
+          const unitsRes = await fetch(`${API_BASE}/masters/units`).then(r => r.ok ? r.json() : []).catch(() => []);
+          const units = Array.isArray(unitsRes) ? unitsRes : [];
+          $('mastersUomBody').innerHTML = units.map(u => `
+            <tr>
+              <td style="font-weight:600;">${u}</td>
+              <td>
+                <button class="btn btn-blue m-uom-edit" data-name="${u}" style="padding:6px 10px; font-size:11px;"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn btn-red m-uom-delete" data-name="${u}" style="padding:6px 10px; font-size:11px;"><i class="fa-solid fa-trash"></i></button>
+              </td>
+            </tr>
+          `).join('') || `<tr><td colspan="2" style="text-align:center;color:var(--txt-muted);">No units yet.</td></tr>`;
+          const uomTable = $('mastersUomBody') && $('mastersUomBody').closest('table');
+          if (uomTable && window.attachColumnFilters) window.attachColumnFilters(uomTable);
+          return;
+        }
+
+        if (targetSub === 'brand') {
+          const brandsRes = await fetch(`${API_BASE}/masters/brands`).then(r => r.ok ? r.json() : []).catch(() => []);
+          const brands = Array.isArray(brandsRes) ? brandsRes : [];
+          $('mastersBrandBody').innerHTML = brands.map(b => `<tr><td class="gold-txt" style="font-weight:600;">${b.brand_name}</td><td>${b.item_count} items</td></tr>`).join('') || `<tr><td colspan="2" style="text-align:center;color:var(--txt-muted);">No brands registered yet.</td></tr>`;
+          const existingBrandsList = $('mExistingBrandsList');
+          if (existingBrandsList) existingBrandsList.innerHTML = brands.map(b => `<option value="${b.brand_name}">`).join('');
+          const brandTable = $('mastersBrandBody') && $('mastersBrandBody').closest('table');
+          if (brandTable && window.attachColumnFilters) window.attachColumnFilters(brandTable);
+          return;
+        }
+
+        if (targetSub === 'users') {
+          const usersRes = await fetch(`${API_BASE}/masters/users`).then(r => r.ok ? r.json() : []).catch(() => []);
+          const users = Array.isArray(usersRes) ? usersRes : [];
+          $('mastersUsersBody').innerHTML = users.map(u => `<tr class="m-user-row" data-username="${u.username}" style="cursor:pointer;" title="Click to select this username for password/email update"><td><span class="badge" style="background:rgba(255,255,255,0.06); font-weight:600;">${u.username}</span></td><td>${u.email || '<span style="color:var(--txt-muted); font-style:italic;">Not set</span>'}</td><td><span class="badge" style="background:rgba(212,175,55,0.12); color:var(--gold); font-weight:700;">${u.role}</span></td></tr>`).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--txt-muted);">No users yet.</td></tr>`;
+          const existingUsersList = $('mExistingUsers');
+          if (existingUsersList) existingUsersList.innerHTML = users.map(u => `<option value="${u.username}">`).join('');
+          const usersTable = $('mastersUsersBody') && $('mastersUsersBody').closest('table');
+          if (usersTable && window.attachColumnFilters) window.attachColumnFilters(usersTable);
+          return;
+        }
+
+        // Full Items Workspace (Item creation + Catalog directory)
+        const [catsRes, itemsRes, unitsRes, brandsRes] = await Promise.all([
           fetch(`${API_BASE}/masters/categories`).then(r => r.ok ? r.json() : []).catch(() => []),
           fetch(`${API_BASE}/masters/items`).then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch(`${API_BASE}/masters/warehouses`).then(r => r.ok ? r.json() : []).catch(() => []),
           fetch(`${API_BASE}/masters/units`).then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch(`${API_BASE}/masters/users`).then(r => r.ok ? r.json() : []).catch(() => []),
           fetch(`${API_BASE}/masters/brands`).then(r => r.ok ? r.json() : []).catch(() => [])
         ]);
 
         const cats = Array.isArray(catsRes) ? catsRes : [];
         const items = Array.isArray(itemsRes) ? itemsRes : [];
-        const whs = Array.isArray(whsRes) ? whsRes : [];
         const units = Array.isArray(unitsRes) ? unitsRes : [];
-        const users = Array.isArray(usersRes) ? usersRes : [];
         const brands = Array.isArray(brandsRes) ? brandsRes : [];
 
         cachedCategories = cats;
-
         $('mItemCatDropdown').innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
         if ($('mItemFilterCatDropdown')) {
           $('mItemFilterCatDropdown').innerHTML = `<option value="">All Categories</option>` + cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
         }
-        $('mSubTargetCat').innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-
-        $('mastersCategoryBody').innerHTML = cats.map(c => `
-      <tr>
-        <td class="gold-txt" style="font-weight:600;">${c.name}</td>
-        <td>${c.item_count} items</td>
-        <td>
-          <button type="button" class="btn-toggle-badge ${c.watt_mandatory ? 'active-gold' : 'inactive'}" data-action="toggle-watt" data-cat="${c.name}" title="Click to toggle Wattage Rule">
-            <i class="fa-solid ${c.watt_mandatory ? 'fa-bolt' : 'fa-circle-dot'}"></i>
-            <span>${c.watt_mandatory ? 'Mandatory' : 'Optional'}</span>
-          </button>
-        </td>
-        <td>
-          <button type="button" class="btn-toggle-badge ${c.serial_mandatory ? 'active-blue' : 'inactive'}" data-action="toggle-serial" data-cat="${c.name}" title="Click to toggle Serial Rule">
-            <i class="fa-solid ${c.serial_mandatory ? 'fa-barcode' : 'fa-circle-dot'}"></i>
-            <span>${c.serial_mandatory ? 'Mandatory' : 'Optional'}</span>
-          </button>
-        </td>
-        <td><button class="btn btn-red m-cat-delete" data-cat="${c.name}" style="padding:6px 10px; font-size:11px;" title="Delete Category"><i class="fa-solid fa-trash"></i></button></td>
-      </tr>
-    `).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--txt-muted);">No categories yet.</td></tr>`;
-
         $('mItemUomDropdown').innerHTML = units.map(u => `<option>${u}</option>`).join('');
-        $('mastersUomBody').innerHTML = units.map(u => `
-      <tr>
-        <td style="font-weight:600;">${u}</td>
-        <td>
-          <button class="btn btn-blue m-uom-edit" data-name="${u}" style="padding:6px 10px; font-size:11px;"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn btn-red m-uom-delete" data-name="${u}" style="padding:6px 10px; font-size:11px;"><i class="fa-solid fa-trash"></i></button>
-        </td>
-      </tr>
-    `).join('') || `<tr><td colspan="2" style="text-align:center;color:var(--txt-muted);">No units yet.</td></tr>`;
 
-        $('mastersWarehouseBody').innerHTML = whs.map(w => `
-      <tr>
-        <td style="font-weight:600;">${w.name}</td>
-        <td class="gold-txt">${w.items_stored}</td>
-        <td>
-          <button class="btn btn-blue m-wh-edit" data-name="${w.name}" style="padding:6px 10px; font-size:11px;"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn btn-red m-wh-delete" data-name="${w.name}" style="padding:6px 10px; font-size:11px;"><i class="fa-solid fa-trash"></i></button>
-        </td>
-      </tr>
-    `).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--txt-muted);">No warehouses yet.</td></tr>`;
-
-        $('mastersUsersBody').innerHTML = users.map(u => `<tr class="m-user-row" data-username="${u.username}" style="cursor:pointer;" title="Click to select this username for password/email update"><td><span class="badge" style="background:rgba(255,255,255,0.06); font-weight:600;">${u.username}</span></td><td>${u.email || '<span style="color:var(--txt-muted); font-style:italic;">Not set</span>'}</td><td><span class="badge" style="background:rgba(212,175,55,0.12); color:var(--gold); font-weight:700;">${u.role}</span></td></tr>`).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--txt-muted);">No users yet.</td></tr>`;
-        const existingUsersList = $('mExistingUsers');
-        if (existingUsersList) existingUsersList.innerHTML = users.map(u => `<option value="${u.username}">`).join('');
-
-        $('mastersBrandBody').innerHTML = brands.map(b => `<tr><td class="gold-txt" style="font-weight:600;">${b.brand_name}</td><td>${b.item_count} items</td></tr>`).join('') || `<tr><td colspan="2" style="text-align:center;color:var(--txt-muted);">No brands registered yet.</td></tr>`;
         const existingBrandsList = $('mExistingBrandsList');
         if (existingBrandsList) existingBrandsList.innerHTML = brands.map(b => `<option value="${b.brand_name}">`).join('');
 
         cachedItems = items;
         renderItemsCatalog();
-
         syncWattMandatoryUI();
-        loadSubtypesForCategory($('mSubTargetCat').value);
-
-        // Excel-style column filters — Dashboard jaisa hi, ab har Masters
-        // table pe (idempotent hai, dobara render pe duplicate nahi hoga).
-        ['mastersCategoryBody', 'mastersWarehouseBody', 'mastersUomBody', 'mastersBrandBody', 'mastersUsersBody'].forEach((id) => {
-          const body = $(id);
-          const table = body && body.closest('table');
-          if (table && window.attachColumnFilters) window.attachColumnFilters(table);
-        });
       } catch (err) {
         console.error('Error synchronizing core fields dataset:', err);
         const itemBody = $('mastersItemBody');
         if (itemBody && window.Skeleton) {
           itemBody.innerHTML = window.Skeleton.tableError(7, err.message || 'Could not synchronize product masters.', { retryId: 'btnRetryMastersCatalog' });
-          window.Skeleton.wireRetry('btnRetryMastersCatalog', () => syncCoreFields());
+          window.Skeleton.wireRetry('btnRetryMastersCatalog', () => loadMastersSystemEngine(targetSub));
         }
       }
     }
@@ -1554,6 +1576,15 @@ window.PAGES.masters = {
       }
     };
 
-    loadMastersSystemEngine();
+    const initialSub = opts.sub || 'item-reg';
+    activateSubtab(initialSub);
+    if (opts.action && typeof window.setMasterViewMode === 'function') {
+      window.setMasterViewMode(opts.action);
+    } else if (opts.sub === 'item-create') {
+      window.setMasterViewMode('create');
+    } else if (opts.sub === 'item-catalog') {
+      window.setMasterViewMode('display');
+    }
+    loadMastersSystemEngine(initialSub);
   },
 };

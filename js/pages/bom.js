@@ -209,7 +209,7 @@ window.PAGES.bom = {
     </div>
   `,
 
-  async init() {
+  async init(opts = {}) {
     const ctx = {};
     // ctx.$ MUST exist before any of the createBom*Module(ctx) factory
     // calls below run — several of them (e.g. createBomChallanMapModule's
@@ -1023,14 +1023,25 @@ window.PAGES.bom = {
       });
     }
 
-    // ---------- Challan print: no runtime scaling ----------
-    // CHALLAN_SPEC.md §1/§15: the source sheet prints at a fixed, manual
-    // 96% scale (NOT "fit to page"), and its 28-row body is a fixed height
-    // by design — there is nothing here to measure. The @page size/margin
-    // is set once above (bomSetPrintPageSize, in the Print Challan click
-    // handler); the 96% scale and every column/row dimension live as
-    // static rules in bom.css. Unlike the BOM kit sheet above (a genuinely
-    // variable-length list that has to be measured and fitted every time),
-    // the Challan sheet never needs a beforeprint handler at all.
+    // Register active workspace cleanup
+    window.__activeScreenCleanup = () => {
+      if (window.__bomBeforePrintHandler) {
+        window.removeEventListener('beforeprint', window.__bomBeforePrintHandler);
+        window.__bomBeforePrintHandler = null;
+      }
+    };
+
+    // Fast workspace action router
+    if (opts.action === 'create' || opts.tab === 'create') {
+      ctx.showBomEntryForNewKit();
+    } else if (opts.action === 'track' || opts.tab === 'track') {
+      if (typeof ctx.openTrackModal === 'function') ctx.openTrackModal();
+    } else if (opts.action === 'register' || opts.tab === 'register') {
+      if (typeof ctx.openBomRegisterModal === 'function') ctx.openBomRegisterModal();
+    } else if (opts.action === 'challan' || opts.tab === 'challan') {
+      if (typeof window.openChallanRegisterModal === 'function') window.openChallanRegisterModal();
+    } else if (opts.action === 'custom-challan' || opts.tab === 'custom-challan') {
+      if (typeof window.openCustomChallanModal === 'function') window.openCustomChallanModal();
+    }
   },
 };

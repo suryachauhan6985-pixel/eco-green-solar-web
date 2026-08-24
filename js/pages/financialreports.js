@@ -181,7 +181,16 @@ window.PAGES.financialreports = {
     </div>
   `,
 
-  init: function () {
+  init: function (opts = {}) {
+    window.__activeScreenCleanup = () => {};
+
+    const FIN_TAB_META = {
+      'trial-balance': { title: 'Trial Balance Statement', sub: 'Trial balance ledger closing balances', icon: 'fa-list-ol' },
+      'profit-loss': { title: 'Profit & Loss Account', sub: 'Statement of income, expenses & gross profit', icon: 'fa-chart-line' },
+      'balance-sheet': { title: 'Balance Sheet Statement', sub: 'Statement of capital, assets & liabilities', icon: 'fa-building-columns' },
+      'day-book': { title: 'Day Book Journal', sub: 'Chronological daily financial journal & vouchers', icon: 'fa-calendar-day' }
+    };
+
     const tabs = document.querySelectorAll('#finReportTabs .subtab');
     const panels = {
       'trial-balance': document.getElementById('pnlTrialBalance'),
@@ -195,11 +204,26 @@ window.PAGES.financialreports = {
       Object.keys(panels).forEach(k => {
         if (panels[k]) panels[k].style.display = (k === tabKey) ? 'block' : 'none';
       });
+      const meta = FIN_TAB_META[tabKey];
+      if (meta) {
+        const pt = document.getElementById('pageTitle');
+        const ps = document.getElementById('pageSub');
+        if (pt) pt.textContent = meta.title;
+        if (ps) ps.textContent = meta.sub;
+      }
     }
 
     tabs.forEach(t => {
-      t.addEventListener('click', () => switchTab(t.dataset.tab));
+      t.addEventListener('click', () => {
+        switchTab(t.dataset.tab);
+        try {
+          history.replaceState(null, '', `#financialreports:${t.dataset.tab}`);
+        } catch (e) {}
+      });
     });
+
+    const activeTab = opts.tab || opts.sub || 'trial-balance';
+    switchTab(activeTab);
 
     async function loadStatements() {
       try {

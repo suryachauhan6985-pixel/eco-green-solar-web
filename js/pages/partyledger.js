@@ -240,7 +240,11 @@ window.PAGES.partyledger = {
     </div>
   `,
 
-  init() {
+  init(opts = {}) {
+    window.__activeScreenCleanup = () => {
+      window.setPartyLedgerMode = null;
+    };
+
     const API_BASE = window.API_BASE || 'http://192.168.0.123:5000/api';
     const currentRole = window.currentUserRole || 'SuperAdmin';
     const isAdmin = currentRole === 'SuperAdmin' || currentRole === 'Admin';
@@ -255,6 +259,13 @@ window.PAGES.partyledger = {
     if (searchEl) {
       searchEl.value = '';
       searchEl.defaultValue = '';
+    }
+    if (typeEl && opts.filter) {
+      if (opts.filter === 'Customer' || opts.filter === 'Customers Only') typeEl.value = 'Customers Only';
+      else if (opts.filter === 'Supplier' || opts.filter === 'Suppliers Only') typeEl.value = 'Suppliers Only';
+      else if (opts.filter === 'Dealers Only') typeEl.value = 'Dealers Only';
+      else if (opts.filter === 'Installers Only') typeEl.value = 'Installers Only';
+      else if (opts.filter === 'Fabricators Only') typeEl.value = 'Fabricators Only';
     }
 
     // ---------------- Directory (table) ----------------
@@ -2002,6 +2013,7 @@ window.PAGES.partyledger = {
       }
     };
 
-    window.setPartyLedgerMode(window.CURRENT_PARTY_LEDGER_MODE || 'display');
+    const initialMode = opts.action || window.CURRENT_PARTY_LEDGER_MODE || 'display';
+    window.setPartyLedgerMode(initialMode);
   },
 };
