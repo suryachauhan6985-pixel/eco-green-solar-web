@@ -793,6 +793,166 @@ function bomRenderPrintSheetHtml(kit, header) {
   `;
 }
 
+function bomPrintKitDirectly(kit, header) {
+  const sheetHtml = bomRenderPrintSheetHtml(kit, header);
+
+  let iframe = document.getElementById('bomKitPrintIframe');
+  if (iframe) iframe.remove();
+
+  iframe = document.createElement('iframe');
+  iframe.id = 'bomKitPrintIframe';
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  iframe.style.visibility = 'hidden';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(`<!DOCTYPE html>
+<html lang="en" style="background:#ffffff !important;">
+<head>
+  <meta charset="utf-8">
+  <title>Bill of Material - ${bomEsc((header && (header.orderNo || header.customerName)) || 'BOM')}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 14mm 10mm 14mm 10mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+    html, body {
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #ffffff !important;
+      background-color: #ffffff !important;
+      color: #000000 !important;
+      font-family: 'Calibri Light', Calibri, 'Segoe UI', Arial, sans-serif;
+    }
+    .bom-sheet {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 auto !important;
+      background: #ffffff !important;
+      background-color: #ffffff !important;
+    }
+    .bom-table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      table-layout: fixed !important;
+      background: #ffffff !important;
+      font-family: 'Calibri Light', Calibri, 'Segoe UI', Arial, sans-serif;
+      color: #000000 !important;
+    }
+    .bom-table th, .bom-table td {
+      border: 1px solid #000000 !important;
+      padding: 1.2px 3.5px !important;
+      font-size: 10pt !important;
+      line-height: 1.20 !important;
+      vertical-align: middle !important;
+      background: #ffffff !important;
+      color: #000000 !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+    }
+    .bom-col-sr { width: 7.00% !important; }
+    .bom-col-name { width: 31.00% !important; }
+    .bom-col-model { width: 17.00% !important; }
+    .bom-col-qty { width: 11.00% !important; }
+    .bom-col-checked { width: 8.00% !important; }
+    .bom-col-remarks { width: 26.00% !important; }
+
+    .bom-table .bom-c-sr { text-align: center !important; }
+    .bom-table .bom-c-name { text-align: left !important; }
+    .bom-table .bom-c-model { text-align: center !important; }
+    .bom-table .bom-c-qty { text-align: center !important; }
+    .bom-table .bom-c-checked { text-align: center !important; }
+    .bom-table .bom-c-remarks { text-align: center !important; }
+
+    .bom-info-cell {
+      border: 1px solid #000000 !important;
+      font-size: 9.5pt !important;
+      font-weight: 700 !important;
+      color: #000000 !important;
+      background: #ffffff !important;
+      padding: 2px 4px !important;
+      line-height: 1.22 !important;
+    }
+    .bom-spacer {
+      border: 1px solid #000000 !important;
+      height: 3.5pt !important;
+      padding: 0 !important;
+      background: #ffffff !important;
+    }
+    .bom-kw-cell {
+      border: 1px solid #000000 !important;
+      text-align: right !important;
+      font-weight: 800 !important;
+      font-size: 11.5pt !important;
+      color: #000000 !important;
+      background: #ffffff !important;
+      font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
+    }
+    .bom-kw-unit {
+      border: 1px solid #000000 !important;
+      text-align: left !important;
+      font-weight: 800 !important;
+      font-size: 11.5pt !important;
+      color: #000000 !important;
+      background: #ffffff !important;
+    }
+    .bom-head-row th {
+      background: #666699 !important;
+      background-color: #666699 !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      text-align: center !important;
+      font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
+      font-size: 10.5pt !important;
+      padding: 2.5px 3.5px !important;
+    }
+    .bom-cat-row td {
+      background: #f2f2f2 !important;
+      background-color: #f2f2f2 !important;
+      color: #000000 !important;
+      font-weight: 800 !important;
+      text-align: center !important;
+      font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
+      font-size: 10.5pt !important;
+      padding: 2px 3.5px !important;
+    }
+    .bom-table tr {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+  </style>
+</head>
+<body style="background:#ffffff !important; margin:0 !important; padding:0 !important;">
+  ${sheetHtml}
+</body>
+</html>`);
+  doc.close();
+
+  setTimeout(() => {
+    try {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } catch (e) {
+      console.warn('Iframe print fallback:', e);
+      window.print();
+    }
+  }, 200);
+}
+window.bomPrintKitDirectly = bomPrintKitDirectly;
+
 // -----------------------------------------------------------------------------
 // Direct Network & Background Serial Numbers Excel Handler
 // Automatically saves formatted Excel sheets (A1=Sr. No., B1=Serial No., NO blue fill)

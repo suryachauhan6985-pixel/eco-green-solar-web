@@ -1017,10 +1017,14 @@ window.PAGES.bom = {
           return;
         }
         const kw = bomGetAllKits()[ctx.kitSelect.value].kw;
-        ctx.printRoot.innerHTML = bomRenderPrintSheetHtml({ kw, sections: ctx.currentKitState }, ctx.getHeaderValues());
-        bomSetPrintPageSize('size:A4 portrait; margin:14mm 10mm;');
-        ctx.computeAndApplyFitZoom();
-        window.print();
+        if (typeof window.bomPrintKitDirectly === 'function') {
+          window.bomPrintKitDirectly({ kw, sections: ctx.currentKitState }, ctx.getHeaderValues());
+        } else {
+          ctx.printRoot.innerHTML = bomRenderPrintSheetHtml({ kw, sections: ctx.currentKitState }, ctx.getHeaderValues());
+          bomSetPrintPageSize('size:A4 portrait; margin:14mm 10mm;');
+          ctx.computeAndApplyFitZoom();
+          window.print();
+        }
       });
     }
 
