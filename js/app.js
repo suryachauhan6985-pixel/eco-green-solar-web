@@ -1702,8 +1702,18 @@ window.attachColumnFilters = function (table) {
               <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
               <button type="button" class="login-toggle-pwd" id="loginTogglePwd"><i class="fa-solid fa-eye"></i></button>
             </div>
-          </div>
-          <label class="login-remember"><input type="checkbox" id="loginRemember"> Remember Me on this device</label>
+          <label class="login-remember checkbox">
+            <input type="checkbox" id="loginRemember">
+            <div class="checkmark">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="1.5" y="1.5" width="21" height="21" rx="5" ry="5" stroke-width="2.5"></rect>
+                  <polyline points="7 10 12 16 22 2" stroke-width="3.5"></polyline>
+                </g>
+              </svg>
+              <span>Remember Me on this device</span>
+            </div>
+          </label>
           <div class="login-error" id="loginError">Please enter both username/email and password.</div>
           <button type="button" class="login-btn" id="loginSubmit"><span>Sign In</span> <i class="fa-solid fa-arrow-right"></i></button>
           <div class="login-links">

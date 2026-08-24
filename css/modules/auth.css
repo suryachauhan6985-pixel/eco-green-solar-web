@@ -389,12 +389,77 @@ html[data-theme="light"] .otp-boxes .otp-box{
 }
 .login-toggle-pwd.active{ color:var(--blue); }
 
-.login-remember{
-  display:flex; align-items:center; gap:8px;
-  font-size:12.5px; color:var(--txt-label); cursor:pointer; user-select:none;
-  margin-bottom:10px;
+.login-remember.checkbox {
+  --checkbox-color: var(--blue, #3B8ED0);
+  --checkbox-txt: var(--txt-label, var(--txt, #e0e0e0));
+  --checkbox-size: 1.22rem;
+  display: inline-flex;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--checkbox-txt);
+  margin-bottom: 12px;
+  margin-top: 2px;
+  align-items: center;
 }
-.login-remember input{ cursor:pointer; accent-color:var(--blue); }
+
+.login-remember.checkbox input {
+  position: absolute;
+  pointer-events: none;
+  inset: 0;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.login-remember.checkbox .checkmark {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  opacity: 0.78;
+  transition: opacity 150ms ease;
+}
+
+.login-remember.checkbox:hover .checkmark {
+  opacity: 1;
+}
+
+.login-remember.checkbox input:checked ~ .checkmark {
+  opacity: 1;
+}
+
+.login-remember.checkbox .checkmark svg {
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
+  color: var(--checkbox-color);
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.login-remember.checkbox .checkmark svg rect {
+  stroke-dasharray: 88 0;
+  stroke-dashoffset: 73;
+  transition: stroke-dasharray 160ms cubic-bezier(0.4, 0, 0.2, 1), stroke 160ms ease;
+  stroke: var(--border-light, #555);
+}
+
+.login-remember.checkbox input:checked ~ .checkmark svg rect {
+  stroke-dasharray: 80 18;
+  stroke: var(--checkbox-color);
+}
+
+.login-remember.checkbox .checkmark svg polyline {
+  stroke-dasharray: 0 30;
+  stroke-dashoffset: 1;
+  transition: stroke-dasharray 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  stroke: var(--checkbox-color);
+}
+
+.login-remember.checkbox input:checked ~ .checkmark svg polyline {
+  stroke-dasharray: 30 30;
+}
 
 .login-btn{
   width:100%; box-sizing:border-box;
