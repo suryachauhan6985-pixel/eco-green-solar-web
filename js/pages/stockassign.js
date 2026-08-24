@@ -578,6 +578,9 @@ window.PAGES.stockassign = {
     }
 
     async function loadAssignedRegister() {
+      if (window.Skeleton) {
+        assignRegBody.innerHTML = window.Skeleton.tableRows(7, 5);
+      }
       try {
         registerRows = await window.Api.get('/stockassign/register');
       } catch (e) {

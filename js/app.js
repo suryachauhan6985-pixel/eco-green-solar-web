@@ -337,7 +337,7 @@ const topProgress = {
   }
 };
 
-window.showLoader = function showLoader(title, sub) {
+window.showLoader = function showLoader(title, sub, forceOverlay = false) {
   __egsLoaderCount++;
   
   // Cancel pending completion if another call fires (cascading batching)
@@ -349,7 +349,7 @@ window.showLoader = function showLoader(title, sub) {
   // 1. Unidirectional Top Micro-Progress Bar (Single sweep across batched calls)
   topProgress.start();
 
-  // 2. Full-Screen Overlay (for long requests or explicit titled actions)
+  // 2. Full-Screen Overlay (ONLY for explicit titled actions or long-running operations)
   const el = document.getElementById('loaderOverlay');
   if (!el) return;
 
@@ -368,20 +368,14 @@ window.showLoader = function showLoader(title, sub) {
     textWrap.style.display = 'flex';
     if (__egsLoaderTimer) { clearTimeout(__egsLoaderTimer); __egsLoaderTimer = null; }
     el.classList.add('active');
-    return;
+  } else if (forceOverlay) {
+    textWrap.innerHTML = '';
+    textWrap.style.display = 'none';
+    if (__egsLoaderTimer) { clearTimeout(__egsLoaderTimer); __egsLoaderTimer = null; }
+    el.classList.add('active');
   } else {
     textWrap.innerHTML = '';
     textWrap.style.display = 'none';
-  }
-
-  // Fast background API calls (< 250ms) finish without showing the blocking dark overlay
-  if (!__egsLoaderTimer && !el.classList.contains('active')) {
-    __egsLoaderTimer = setTimeout(() => {
-      if (__egsLoaderCount > 0) {
-        el.classList.add('active');
-      }
-      __egsLoaderTimer = null;
-    }, 250);
   }
 };
 

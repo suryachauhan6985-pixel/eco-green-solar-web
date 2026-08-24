@@ -2022,69 +2022,76 @@ window.openCustomChallanModal = async function(prefillData) {
 
 // 2) Open Challan Register (View, Search, Re-print, Manage all saved Challans)
 window.openChallanRegisterModal = async function() {
-  const loadingHtml = `
-    <div style="padding:30px; text-align:center; color:var(--txt-muted);">
-      <i class="fa-solid fa-spinner fa-spin" style="font-size:24px; color:var(--gold); margin-bottom:10px;"></i>
-      <p>Loading Saved Challan Register...</p>
-    </div>
-  `;
-  window.openModal('Saved Challan Register', loadingHtml, { fullscreen: true });
-
   try {
-    const list = await window.Api.get('/challan');
-    let allChallans = Array.isArray(list) ? list : [];
-
     const isCurrentAdmin = (window.currentUserRole === 'SuperAdmin' || window.currentUserRole === 'Admin');
 
     const html = `
-      <div id="challanRegisterModalBody" style="padding:10px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
-          <div>
-            <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
-              <i class="fa-solid fa-clipboard-list" style="color:var(--gold);"></i> Saved Challan Register
-            </h3>
-            <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">All Challans generated via BOM, Sales, or Custom Direct Entry.</div>
-          </div>
-          <div style="display:flex; gap:10px;">
-            <button type="button" class="btn btn-green" id="challanRegBtnNewCustom"><i class="fa-solid fa-plus-circle"></i> Create Custom Challan</button>
-            <button type="button" class="btn btn-ghost" id="challanRegBtnRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button>
-          </div>
+    <div id="challanRegisterModalBody" style="padding:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+        <div>
+          <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-clipboard-list" style="color:var(--gold);"></i> Saved Challan Register
+          </h3>
+          <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">All Challans generated via BOM, Sales, or Custom Direct Entry.</div>
         </div>
-
-        <div class="masters-filter-bar" style="margin-bottom:14px;">
-          <div class="search-box" style="flex:1;">
-            <input type="text" id="challanRegSearchInput" placeholder="Search by Challan No, Customer, Order No, City, Vehicle..." style="width:100%;">
-          </div>
-          <div style="font-size:12.5px; color:var(--txt-muted); font-weight:600; padding:6px 12px; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid var(--border);">
-            Total Saved: <strong style="color:var(--gold);" id="challanRegCount">${allChallans.length}</strong>
-          </div>
-        </div>
-
-        <div class="table-wrap" style="max-height:calc(100vh - 230px); overflow-y:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:100px;">Challan No</th>
-                <th style="width:110px;">Date</th>
-                <th>Customer Name</th>
-                <th>City</th>
-                <th style="width:110px;">Order No</th>
-                <th style="width:90px;">Cap (kW)</th>
-                <th>Vehicle No</th>
-                <th style="width:110px;">Created By</th>
-                <th style="width:130px; text-align:center;">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="challanRegTableBody"></tbody>
-          </table>
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="btn btn-green" id="challanRegBtnNewCustom"><i class="fa-solid fa-plus-circle"></i> Create Custom Challan</button>
+          <button type="button" class="btn btn-ghost" id="challanRegBtnRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button>
         </div>
       </div>
-    `;
 
-    const modalBoxBody = document.querySelector('#modalOverlay .modal-body');
-    if (modalBoxBody) {
-      modalBoxBody.innerHTML = html;
+      <div class="masters-filter-bar" style="margin-bottom:14px;">
+        <div class="search-box" style="flex:1;">
+          <input type="text" id="challanRegSearchInput" placeholder="Search by Challan No, Customer, Order No, City, Vehicle..." style="width:100%;">
+        </div>
+        <div style="font-size:12.5px; color:var(--txt-muted); font-weight:600; padding:6px 12px; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid var(--border);">
+          Total Saved: <strong style="color:var(--gold);" id="challanRegCount">...</strong>
+        </div>
+      </div>
+
+      <div class="table-wrap" style="max-height:calc(100vh - 230px); overflow-y:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:100px;">Challan No</th>
+              <th style="width:110px;">Date</th>
+              <th>Customer Name</th>
+              <th>City</th>
+              <th style="width:110px;">Order No</th>
+              <th style="width:90px;">Cap (kW)</th>
+              <th>Vehicle No</th>
+              <th style="width:110px;">Created By</th>
+              <th style="width:130px; text-align:center;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="challanRegTableBody">
+            ${window.Skeleton ? window.Skeleton.tableRows(9, 6) : '<tr><td colspan="9" style="text-align:center;">Loading...</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  window.openModal('Saved Challan Register', html, { fullscreen: true });
+
+  let allChallans = [];
+  async function loadData() {
+    const tbody = document.getElementById('challanRegTableBody');
+    if (tbody && window.Skeleton) tbody.innerHTML = window.Skeleton.tableRows(9, 6);
+    try {
+      const list = await window.Api.get('/challan');
+      allChallans = Array.isArray(list) ? list : [];
+      renderChallanRows();
+    } catch (err) {
+      if (tbody) {
+        if (window.Skeleton) {
+          tbody.innerHTML = window.Skeleton.tableError(9, err.message || 'Failed to load Challan Register.', { retryId: 'btnRetryChallanReg' });
+          window.Skeleton.wireRetry('btnRetryChallanReg', loadData);
+        } else {
+          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--red);">${err.message || 'Failed to load Challan Register.'}</td></tr>`;
+        }
+      }
     }
+  }
 
     function renderChallanRows() {
       const q = (document.getElementById('challanRegSearchInput') ? document.getElementById('challanRegSearchInput').value.trim().toLowerCase() : '');
@@ -2130,8 +2137,6 @@ window.openChallanRegisterModal = async function() {
       `).join('');
     }
 
-    renderChallanRows();
-
     const searchInput = document.getElementById('challanRegSearchInput');
     if (searchInput) searchInput.addEventListener('input', renderChallanRows);
 
@@ -2139,8 +2144,9 @@ window.openChallanRegisterModal = async function() {
     if (newBtn) newBtn.addEventListener('click', () => window.openCustomChallanModal());
 
     const refreshBtn = document.getElementById('challanRegBtnRefresh');
-    if (refreshBtn) refreshBtn.addEventListener('click', () => window.openChallanRegisterModal());
+    if (refreshBtn) refreshBtn.addEventListener('click', () => loadData());
 
+    loadData();
   } catch (err) {
     window.openModal('Register Error', `<p>${(err && err.message) || 'Failed to load Challan Register.'}</p>`);
   }
