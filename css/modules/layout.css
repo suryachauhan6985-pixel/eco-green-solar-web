@@ -578,24 +578,24 @@ html[data-theme="gray"] .erp-sidebar-btn.selected {
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 9990;
-  background: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(1px);
+  z-index: 10001;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
 }
 
 .egs-flyout-box {
   position: fixed;
-  z-index: 9995;
+  z-index: 10005;
   background: var(--panel);
   border: 1.5px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.1);
   min-width: 250px;
-  max-width: 300px;
+  max-width: 320px;
   display: flex;
   flex-direction: column;
   overflow: visible;
-  animation: egsFlyoutIn 0.12s ease-out;
+  animation: egsFlyoutIn 0.14s ease-out;
 }
 
 @keyframes egsFlyoutIn {
@@ -675,7 +675,7 @@ html[data-theme="gray"] .erp-sidebar-btn.selected {
   position: absolute;
   top: -6px;
   left: calc(100% + 6px);
-  z-index: 9998;
+  z-index: 10010;
   background: var(--panel);
   border: 1.5px solid var(--border);
   border-radius: 10px;

@@ -5678,15 +5678,18 @@ window.attachColumnFilters = function (table) {
     const rect = anchorEl ? anchorEl.getBoundingClientRect() : { top: 120, right: 260, bottom: 160 };
     const isMobile = window.innerWidth <= 768;
     if (isMobile) {
-      flyout.style.left = '12px';
-      flyout.style.right = '12px';
-      flyout.style.maxWidth = 'calc(100vw - 24px)';
-      flyout.style.maxHeight = 'calc(100vh - 80px)';
+      flyout.style.left = '50%';
+      flyout.style.top = '50%';
+      flyout.style.transform = 'translate(-50%, -50%)';
+      flyout.style.width = 'min(340px, calc(100vw - 28px))';
+      flyout.style.maxWidth = 'calc(100vw - 28px)';
+      flyout.style.maxHeight = 'calc(100vh - 60px)';
       flyout.style.overflowY = 'auto';
-      flyout.style.top = Math.max(10, Math.min(rect.bottom + 6, window.innerHeight - 360)) + 'px';
+      flyout.style.zIndex = '10005';
     } else {
       flyout.style.left = (rect.right + 10) + 'px';
       flyout.style.top = Math.min(Math.max(rect.top, 60), window.innerHeight - 380) + 'px';
+      flyout.style.zIndex = '10005';
     }
 
     let itemsHtml = '';
@@ -5729,12 +5732,32 @@ window.attachColumnFilters = function (table) {
     flyout.innerHTML = `
       <div class="egs-flyout-header">
         <span>${grp.flyoutTitle || grp.name}</span>
-        <span class="flyout-hint"><kbd>Esc</kbd></span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="flyout-hint"><kbd>Esc</kbd></span>
+          <button type="button" class="btn-flyout-close" style="background:transparent; border:none; color:var(--txt-muted); font-size:14px; cursor:pointer; padding:2px 6px; display:inline-flex; align-items:center;" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
+        </div>
       </div>
       <div class="egs-flyout-list">${itemsHtml}</div>
     `;
 
     document.body.appendChild(flyout);
+
+    const closeBtn = flyout.querySelector('.btn-flyout-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeAllFlyouts();
+      });
+    }
+
+    function dismissMobileSidebar() {
+      if (window.innerWidth <= 900) {
+        const sidebar = document.querySelector('.sidebar');
+        if (sidebar) sidebar.classList.remove('open');
+        const overlay = document.getElementById('sidebarOverlay') || document.querySelector('.overlay');
+        if (overlay) overlay.classList.remove('show');
+      }
+    }
 
     // Wire mouseenter and clicks on flyout items
     const tier1Els = Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item'));
@@ -5771,6 +5794,7 @@ window.attachColumnFilters = function (table) {
         const groupId = row.dataset.groupId;
 
         closeAllFlyouts();
+        dismissMobileSidebar();
         if (action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
           window.openSystemSettingsModal(sub || 'tab-erp-mode');
         } else if (page) {
@@ -5800,6 +5824,7 @@ window.attachColumnFilters = function (table) {
         const filter = subRow.dataset.filter;
         const groupId = subRow.dataset.groupId;
         closeAllFlyouts();
+        dismissMobileSidebar();
         if (page) go(page, { sub, action, filter, groupId });
       });
     });
