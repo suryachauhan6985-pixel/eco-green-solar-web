@@ -47,7 +47,7 @@ window.PAGES.bom = {
     <div id="bomEntryView" style="display:none;">
     <div class="page-head" style="justify-content:space-between; flex-wrap:wrap; gap:10px;">
       <div style="display:flex; align-items:center; gap:10px;"><i class="fa-solid fa-list-check" style="color:var(--gold);"></i><h2>Bill of Material (BOM)</h2></div>
-      <button type="button" class="btn btn-ghost" id="bomBtnBackHome"><i class="fa-solid fa-arrow-left"></i> Back to BOM Home</button>
+      <button type="button" class="btn btn-ghost" id="bomBtnBackHome"><i class="fa-solid fa-arrow-left"></i> Back (Esc)</button>
     </div>
 
     <!-- Populated instead of the Kit Items panel when a pending order is

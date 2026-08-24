@@ -6183,7 +6183,7 @@ window.attachColumnFilters = function (table) {
       if (grp.type === 'single') {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'erp-sidebar-btn' + (grp.id === 'dashboard' ? ' active' : '');
+        btn.className = 'erp-sidebar-btn';
         btn.id = 'btnNav_' + grp.id;
         btn.dataset.tab = grp.id;
         btn.dataset.index = gIdx;
@@ -6222,6 +6222,9 @@ window.attachColumnFilters = function (table) {
 
       navEl.appendChild(btn);
     });
+
+    // Sync active state with currently open page
+    updateSidebarActiveState(window.CURRENT_PAGE_ID || 'dashboard', window.CURRENT_PAGE_OPTS || {});
 
     // Wire Brand Logo for direct Dashboard Teleportation
     document.querySelectorAll('.brand, .brand-inner, .brand-card, .mobile-topbar .brand').forEach((el) => {
@@ -6310,11 +6313,76 @@ window.attachColumnFilters = function (table) {
     const parts = clean.split(':');
     const id = parts[0] || 'dashboard';
     const sub = parts[1] || '';
-    const action = parts[2] || '';
+    const action = parts[2] || parts[1] || '';
     const filter = parts[3] || '';
     return { id, opts: { sub, action, filter, tab: sub } };
   }
   window.parseRouteHash = parseRouteHash;
+
+  function updateSidebarActiveState(pageId, opts = {}) {
+    const navButtons = document.querySelectorAll('.erp-sidebar-btn');
+    if (!navButtons.length) return;
+
+    const action = opts.action || opts.tab || opts.sub || '';
+    const sub = opts.sub || opts.tab || '';
+
+    // Find the correct group ID for this route
+    let matchedGroupId = opts.groupId || null;
+
+    if (!matchedGroupId && typeof ERP_NAV_GROUPS !== 'undefined' && ERP_NAV_GROUPS) {
+      for (const grp of ERP_NAV_GROUPS) {
+        if (grp.id === pageId) {
+          matchedGroupId = pageId;
+          break;
+        }
+        if (grp.items) {
+          const directMatch = grp.items.some((item) => {
+            if (item.page !== pageId) return false;
+            if (action && (item.action || item.sub || item.tab)) {
+              return (item.action === action || item.sub === sub || item.tab === sub);
+            }
+            return true;
+          });
+          if (directMatch) {
+            matchedGroupId = grp.id;
+            break;
+          }
+          const nestedMatch = grp.items.some((item) => {
+            if (!item.nestedItems) return false;
+            return item.nestedItems.some((nItem) => {
+              if (nItem.page !== pageId) return false;
+              if (action && (nItem.action || nItem.sub || nItem.tab)) {
+                return (nItem.action === action || nItem.sub === sub || nItem.tab === sub);
+              }
+              return true;
+            });
+          });
+          if (nestedMatch) {
+            matchedGroupId = grp.id;
+            break;
+          }
+        }
+      }
+    }
+
+    navButtons.forEach((b) => {
+      let isMatch = false;
+      if (pageId === 'dashboard') {
+        isMatch = (b.dataset.tab === 'dashboard' || b.dataset.groupId === 'dashboard');
+      } else {
+        if (b.dataset.tab === 'dashboard') {
+          isMatch = false;
+        } else if (matchedGroupId && b.dataset.groupId === matchedGroupId) {
+          isMatch = true;
+        } else if (b.dataset.tab === pageId) {
+          isMatch = true;
+        }
+      }
+      b.classList.toggle('active', isMatch);
+      b.classList.remove('selected');
+    });
+  }
+  window.updateSidebarActiveState = updateSidebarActiveState;
 
   function go(id, opts = {}, pushHistory = true) {
     if (typeof id === 'string' && id.includes(':')) {
@@ -6358,34 +6426,7 @@ window.attachColumnFilters = function (table) {
     if (window.topbarExtra) window.topbarExtra.innerHTML = '';
 
     // Mark active sidebar parent group or single item strictly
-    document.querySelectorAll('.erp-sidebar-btn').forEach((b) => {
-      let isMatch = false;
-      if (opts.groupId && b.dataset.groupId) {
-        isMatch = (b.dataset.groupId === opts.groupId);
-      } else if (b.dataset.tab === id) {
-        isMatch = true;
-      } else if (b.dataset.groupId) {
-        const grp = ERP_NAV_GROUPS.find((g) => g.id === b.dataset.groupId);
-        if (grp && grp.items) {
-          isMatch = grp.items.some((item) => {
-            if (item.page === id) {
-              if (opts.sub && item.sub) return item.sub === opts.sub;
-              return true;
-            }
-            if (item.nestedItems && item.nestedItems.some((sub) => {
-              if (sub.page === id) {
-                if (opts.sub && sub.sub) return sub.sub === opts.sub;
-                return true;
-              }
-              return false;
-            })) return true;
-            return false;
-          });
-        }
-      }
-      b.classList.toggle('active', isMatch);
-      b.classList.remove('selected');
-    });
+    updateSidebarActiveState(id, opts);
 
     if (typeof page.init === 'function') {
       try {
