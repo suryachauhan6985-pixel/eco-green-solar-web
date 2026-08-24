@@ -153,6 +153,26 @@
           });
         }
       }, 0);
+    },
+
+    /**
+     * Preview / Demo Helper: Simulates skeleton loading on the current page
+     * @param {number} durationMs - Duration in milliseconds (default: 4000ms)
+     */
+    demo(durationMs = 4000) {
+      const activeTbody = document.querySelector('.content table tbody');
+      if (activeTbody) {
+        const thCount = document.querySelectorAll('.content table thead th').length;
+        const colCount = thCount || 6;
+        const origHtml = activeTbody.innerHTML;
+        activeTbody.innerHTML = this.tableRows(colCount, 7, { pillCols: [1, 3] });
+        if (window.showToast) window.showToast(`✨ Skeleton Shimmer Preview Active (${durationMs / 1000}s)`);
+        setTimeout(() => {
+          activeTbody.innerHTML = origHtml;
+        }, durationMs);
+        return `Showing ${colCount}-column skeleton for ${durationMs / 1000} seconds.`;
+      }
+      return 'Navigate to any page with a table (Reports, Registers, Masters, etc.) and run Skeleton.demo() again.';
     }
   };
 
