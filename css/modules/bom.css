@@ -79,23 +79,23 @@
   font-family:'Calibri Light', Calibri, 'Segoe UI', Arial, sans-serif; color:#000;
 }
 .bom-table th, .bom-table td{
-  border:1px solid #000; padding:1px 4px; font-size:11pt; line-height:1.25; vertical-align:middle;
+  border:1px solid #000; padding:1.5px 4px; font-size:10.5pt; line-height:1.22; vertical-align:middle;
   background:#ffffff; color:#000;
   white-space:nowrap; overflow:hidden;
 }
-.bom-col-sr{width:8.00%;}
-.bom-col-name{width:28.59%;}
-.bom-col-model{width:15.53%;}
-.bom-col-qty{width:13.76%;}
-.bom-col-checked{width:10.47%;}
-.bom-col-remarks{width:23.65%;}
+.bom-col-sr{width:7.00%;}
+.bom-col-name{width:31.00%;}
+.bom-col-model{width:17.00%;}
+.bom-col-qty{width:11.00%;}
+.bom-col-checked{width:8.00%;}
+.bom-col-remarks{width:26.00%;}
 .bom-table .bom-c-sr{text-align:center;}
 .bom-table .bom-c-name{text-align:left;}
 .bom-table .bom-c-model{text-align:center;}
 .bom-table .bom-c-qty{text-align:center;}
 .bom-table .bom-c-checked{text-align:center;}
 .bom-table .bom-c-remarks{text-align:center;}
-.bom-info-cell{border:1px solid #000; font-size:10pt; font-weight:700; color:#000; background:#ffffff; padding:1px 4px; line-height:1.25;}
+.bom-info-cell{border:1px solid #000; font-size:10pt; font-weight:700; color:#000; background:#ffffff; padding:2px 5px; line-height:1.25;}
 .bom-spacer{border:1px solid #000; height:4pt; padding:0; background:#ffffff;}
 .bom-kw-cell{
   border:1px solid #000; text-align:right; font-weight:800; font-size:12pt; color:#000; background:#ffffff;
@@ -104,11 +104,11 @@
 .bom-kw-unit{border:1px solid #000; text-align:left; font-weight:800; font-size:12pt; color:#000; background:#ffffff;}
 .bom-head-row th{
   background:#666699; color:#ffffff; font-weight:800; text-align:center;
-  font-family:'Arial Rounded MT Bold','Segoe UI',Arial,sans-serif; font-size:12pt;
+  font-family:'Arial Rounded MT Bold','Segoe UI',Arial,sans-serif; font-size:11pt; padding:3px 4px;
 }
 .bom-cat-row td{
   background:#f2f2f2; color:#000000; font-weight:800; text-align:center;
-  font-family:'Arial Rounded MT Bold','Segoe UI',Arial,sans-serif; font-size:12pt;
+  font-family:'Arial Rounded MT Bold','Segoe UI',Arial,sans-serif; font-size:11pt; padding:2px 4px;
 }
 .bom-table tr{page-break-inside:avoid;}
 
@@ -874,12 +874,13 @@ td.bom-challan-footer-caption{
     color: #000000 !important;
   }
 
-  /* Hide app UI elements */
+  /* Hide app UI elements and footers/developer credits */
   .sidebar, .mobile-topbar, .page-head, .actions-row, .loader-overlay,
   .modal-backdrop, .modal-close, #toastContainer, #bomHomeView,
   #bomEntryView > .page-head, #bomEntryView > .panel,
   .egs-flyout-box, .egs-flyout-backdrop, .erp-sidebar-btn,
-  .btn, button, .search-box, .masters-filter-bar, #navScroll {
+  .btn, button, .search-box, .masters-filter-bar, #navScroll,
+  footer, footer.note, .note, #footerYear, .login-ticker-footer {
     display: none !important;
     visibility: hidden !important;
   }

@@ -980,19 +980,17 @@ window.PAGES.bom = {
 
       const PX_PER_MM = 96 / 25.4;
       const A4_HEIGHT_MM = 297;
-      const MARGIN_TB_MM = 8;
+      const MARGIN_TB_MM = 14;
       const A4_WIDTH_MM = 210;
-      const MARGIN_LR_MM = 6;
+      const MARGIN_LR_MM = 10;
 
-      // Scaling to 90% of usable height guarantees that even when Chrome's
-      // "Headers and footers" option is enabled, the entire BOM sheet fits
-      // on exactly 1 single page without spilling onto page 2.
-      const SAFETY_MARGIN_H = 0.90;
-      const usableHeightPx = (A4_HEIGHT_MM - MARGIN_TB_MM * 2) * PX_PER_MM * SAFETY_MARGIN_H;
-      const vScale = Math.min(1, usableHeightPx / naturalHeightPx);
+      // Excel reference: 53-54 items fit on 1 single page with balanced top & bottom margins (14mm).
+      // Scale calibrated to match Excel's 77% scale so up to 54 rows fit on Page 1; >54 rows flow to Page 2.
+      const usableHeightPx = (A4_HEIGHT_MM - MARGIN_TB_MM * 2) * PX_PER_MM;
+      const naturalScale = usableHeightPx / naturalHeightPx;
+      const vScale = Math.min(1, Math.max(0.76, naturalScale));
 
-      const SAFETY_MARGIN_W = 0.99;
-      const usableWidthPx = (A4_WIDTH_MM - MARGIN_LR_MM * 2) * PX_PER_MM * SAFETY_MARGIN_W;
+      const usableWidthPx = (A4_WIDTH_MM - MARGIN_LR_MM * 2) * PX_PER_MM;
       const baseWidthPx = usableWidthPx / vScale;
 
       const supportsZoom = window.CSS && CSS.supports && CSS.supports('zoom', '1');
@@ -1020,7 +1018,7 @@ window.PAGES.bom = {
         }
         const kw = bomGetAllKits()[ctx.kitSelect.value].kw;
         ctx.printRoot.innerHTML = bomRenderPrintSheetHtml({ kw, sections: ctx.currentKitState }, ctx.getHeaderValues());
-        bomSetPrintPageSize('size:A4 portrait; margin:8mm 6mm;');
+        bomSetPrintPageSize('size:A4 portrait; margin:14mm 10mm;');
         ctx.computeAndApplyFitZoom();
         window.print();
       });
