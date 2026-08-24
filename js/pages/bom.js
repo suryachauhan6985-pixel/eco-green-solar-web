@@ -109,12 +109,12 @@ window.PAGES.bom = {
           </span>
           <span>Print BOM</span>
         </button>
-        <button class="btn btn-blue btn-slide-icon" type="button" id="bomBtnVerify" disabled><i class="fa-solid fa-check-double"></i> <span>Verify BOM</span></button>
-        <button class="btn btn-green btn-slide-icon" type="button" id="bomBtnChallan" disabled><i class="fa-solid fa-file-invoice"></i> <span>Make Challan</span></button>
-        <button class="btn btn-green btn-slide-icon" type="button" id="bomBtnDispatch" disabled><i class="fa-solid fa-truck"></i> <span>Dispatch</span></button>
-        <button class="btn btn-green btn-slide-icon" type="button" id="bomBtnCreateBom" style="display:none;"><i class="fa-solid fa-plus-circle"></i> <span>Generate BOM</span></button>
-        <button class="btn btn-ghost btn-slide-icon" type="button" id="bomBtnTrackBom"><i class="fa-solid fa-route"></i> <span>Track Order</span></button>
-        <button type="button" class="btn btn-ghost btn-slide-icon" id="bomBtnNewKit" title="Create a new BOM Kit / Template"><i class="fa-solid fa-plus"></i> <span>New Kit</span></button>
+        <button class="btn btn-blue" type="button" id="bomBtnVerify" disabled><i class="fa-solid fa-check-double"></i> Verify BOM</button>
+        <button class="btn btn-green" type="button" id="bomBtnChallan" disabled><i class="fa-solid fa-file-invoice"></i> Convert into Challan</button>
+        <button class="btn btn-green" type="button" id="bomBtnDispatch" disabled><i class="fa-solid fa-truck"></i> Create Dispatch</button>
+        <button class="btn btn-green" type="button" id="bomBtnCreateBom" style="display:none;"><i class="fa-solid fa-plus-circle"></i> Generate BOM</button>
+        <button class="btn btn-ghost" type="button" id="bomBtnTrackBom"><i class="fa-solid fa-route"></i> Track BOM</button>
+        <button type="button" class="btn btn-ghost" id="bomBtnNewKit" title="Create a new BOM Kit / Template"><i class="fa-solid fa-plus"></i> New Kit</button>
       </div>
       <!-- "Pending BOM Register" and "Challan Category Mapping" used to be
            duplicated here AND on the BOM Home launcher screen

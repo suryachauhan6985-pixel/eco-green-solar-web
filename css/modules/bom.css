@@ -596,10 +596,79 @@ td.bom-challan-footer-caption{
   max-width:none !important;
   grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)) !important;
 }
-/* Belt-and-braces: make sure no ancestor between the grid and the
-   fullscreen modal box is quietly capping the available width either
-   (covers investigation candidate #1, in case any of these ever gains a
-   max-width elsewhere in the app). Harmless no-ops if already full-width. */
+
+/* Fullscreen Challan Modal: Fix cut-off footer and ensure Save/Print buttons are always visible */
+#bomChallanOverlay,
+#bomRegisterOverlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 30000 !important;
+  background: var(--overlay-bg, rgba(0, 0, 0, 0.85)) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  padding: 0 !important;
+}
+
+#bomChallanOverlay .modal-box,
+#bomRegisterOverlay .modal-box {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--panel, #1e293b) !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+#bomChallanOverlay .modal-head,
+#bomRegisterOverlay .modal-head {
+  flex: 0 0 auto !important;
+  padding: 14px 24px !important;
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--bg) !important;
+  z-index: 20;
+}
+
+#bomChallanOverlay .modal-body,
+#bomRegisterOverlay .modal-body {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 20px 24px 90px 24px !important; /* Plenty of bottom clearance so nothing is cut off */
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+#bomChallanOverlay .modal-body .table-wrap {
+  max-height: none !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  margin-bottom: 16px;
+}
+
+#bomChallanOverlay .actions-row {
+  position: sticky !important;
+  bottom: 0 !important;
+  background: var(--panel, #1e293b) !important;
+  padding: 14px 24px !important;
+  margin-left: -24px !important;
+  margin-right: -24px !important;
+  margin-top: 24px !important;
+  margin-bottom: -90px !important;
+  border-top: 1px solid var(--border) !important;
+  z-index: 30 !important;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
 /* BOM Stage Pipeline & Tracking Card Styles */
 .bom-track-container {
   display: flex;

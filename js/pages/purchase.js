@@ -140,8 +140,8 @@ window.PAGES.purchase = {
             </div>
           </div>
           <div class="actions-row">
-            <button class="btn btn-green btn-slide-icon" type="button" id="purBtnSave"><i class="fa-solid fa-arrow-down"></i> <span>Stock Inward</span></button>
-            <button class="btn btn-ghost btn-slide-icon" type="button" id="purBtnClearForm"><i class="fa-solid fa-eraser"></i> <span>Clear Form</span></button>
+            <button class="btn btn-green" type="button" id="purBtnSave"><i class="fa-solid fa-arrow-down"></i> Execute Stock Inward</button>
+            <button class="btn btn-ghost" type="button" id="purBtnClearForm"><i class="fa-solid fa-eraser"></i> Clear Form</button>
           </div>
         </div>
 
