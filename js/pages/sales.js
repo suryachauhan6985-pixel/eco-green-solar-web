@@ -131,10 +131,10 @@ window.PAGES.sales = {
             </div>
           </div>
           <div class="actions-row">
-            <button class="btn btn-red" type="button" id="saleBtnSave"><i class="fa-solid fa-truck"></i> Confirm Dispatch</button>
-            <button class="btn btn-blue" type="button" id="saleBtnChallan"><i class="fa-solid fa-file-invoice"></i> Create Challan</button>
-            <button class="btn btn-ghost" type="button" id="saleBtnOpenChallanReg"><i class="fa-solid fa-clipboard-list" style="color:var(--gold);"></i> Challan Register</button>
-            <button class="btn btn-ghost" type="button" id="saleBtnClearForm"><i class="fa-solid fa-eraser"></i> Clear Form</button>
+            <button class="btn btn-red btn-slide-icon" type="button" id="saleBtnSave"><i class="fa-solid fa-truck"></i> <span>Confirm Dispatch</span></button>
+            <button class="btn btn-blue btn-slide-icon" type="button" id="saleBtnChallan"><i class="fa-solid fa-file-invoice"></i> <span>Create Challan</span></button>
+            <button class="btn btn-ghost btn-slide-icon" type="button" id="saleBtnOpenChallanReg"><i class="fa-solid fa-clipboard-list" style="color:var(--gold);"></i> <span>Challan Register</span></button>
+            <button class="btn btn-ghost btn-slide-icon" type="button" id="saleBtnClearForm"><i class="fa-solid fa-eraser"></i> <span>Clear Form</span></button>
           </div>
         </div>
 

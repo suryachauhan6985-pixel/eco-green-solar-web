@@ -946,12 +946,19 @@ function createBomDispatchModule(ctx) {
         );
         if (!confirmed) return;
 
-        const originalLabel = ctx.btnDispatch.innerHTML;
-        ctx.btnDispatch.disabled = true;
-        ctx.btnDispatch.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Dispatching...';
-        const result = await ctx.bomRunDispatch();
-        ctx.btnDispatch.disabled = false;
-        ctx.btnDispatch.innerHTML = originalLabel;
+        let result = null;
+        if (typeof window.withButtonFeedback === 'function') {
+          result = await window.withButtonFeedback(ctx.btnDispatch, async () => {
+            return await ctx.bomRunDispatch();
+          }, { successText: 'Dispatched!' });
+        } else {
+          const originalLabel = ctx.btnDispatch.innerHTML;
+          ctx.btnDispatch.disabled = true;
+          ctx.btnDispatch.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Dispatching...';
+          result = await ctx.bomRunDispatch();
+          ctx.btnDispatch.disabled = false;
+          ctx.btnDispatch.innerHTML = originalLabel;
+        }
 
         if (result && result.success) {
           const pending = Array.isArray(result.pending) ? result.pending : [];

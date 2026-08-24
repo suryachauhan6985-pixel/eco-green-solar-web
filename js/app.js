@@ -408,6 +408,56 @@ window.hideLoader = function hideLoader(force) {
 };
 
 // ---------------------------------------------------------------------------
+// IN-BUTTON PROGRESSIVE MICRO-LOADING & FEEDBACK ENGINE
+// ---------------------------------------------------------------------------
+window.withButtonFeedback = async function withButtonFeedback(btnOrId, asyncFn, options = {}) {
+  const btn = typeof btnOrId === 'string' ? document.getElementById(btnOrId) : btnOrId;
+  if (!btn || typeof asyncFn !== 'function') return (asyncFn ? asyncFn() : null);
+
+  const minDuration = options.minDuration ?? 420; // Crisp human-satisfying duration (~420ms)
+  const originalHtml = btn.innerHTML;
+  const originalDisabled = btn.disabled;
+  const startTime = Date.now();
+
+  btn.classList.add('btn-loading');
+  btn.disabled = true;
+
+  try {
+    const result = await asyncFn();
+    const elapsed = Date.now() - startTime;
+    if (elapsed < minDuration) {
+      await new Promise(r => setTimeout(r, minDuration - elapsed));
+    }
+
+    if (options.showSuccess !== false) {
+      btn.classList.remove('btn-loading');
+      btn.classList.add('btn-success');
+      if (options.successText) {
+        btn.innerHTML = `<i class="fa-solid fa-check"></i> <span>${options.successText}</span>`;
+      }
+      await new Promise(r => setTimeout(r, options.successDuration || 350));
+    }
+    return result;
+  } catch (err) {
+    const elapsed = Date.now() - startTime;
+    if (elapsed < minDuration) {
+      await new Promise(r => setTimeout(r, minDuration - elapsed));
+    }
+    btn.classList.remove('btn-loading');
+    btn.classList.add('btn-error-shake');
+    if (options.errorText) {
+      btn.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> <span>${options.errorText}</span>`;
+    }
+    await new Promise(r => setTimeout(r, options.errorDuration || 600));
+    throw err;
+  } finally {
+    btn.classList.remove('btn-loading', 'btn-success', 'btn-error-shake');
+    btn.innerHTML = originalHtml;
+    btn.disabled = originalDisabled;
+  }
+};
+
+// ---------------------------------------------------------------------------
 // window.focusInvalidField(el) — generic "missing required field" UX used
 // across every page's forms (BOM, Sales, Purchase, Masters, ...): instead of
 // (or alongside) an openModal() popup, this scrolls the actual offending
