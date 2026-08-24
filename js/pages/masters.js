@@ -133,58 +133,77 @@ window.PAGES.masters = {
     </div>
 
     <div class="subtab-panel" data-panel="category">
-      <div class="grid-2">
-        <div class="panel">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-            <h3 id="mCatFormHeading" style="margin:0;"><i class="fa-solid fa-plus" style="color:var(--green);"></i> Add New Category</h3>
-          </div>
-          <div class="form-grid">
-            <div class="field span-2"><label>Category Name <span class="req">*</span></label><input id="mInputCatName" placeholder="e.g. Structure, Battery, Solar Panel..."></div>
-            <div class="field span-2">
-              <div style="display:flex; flex-direction:column; gap:10px; margin:6px 0 10px;">
-                <label class="master-toggle-pill" id="mToggleWattLabel" style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; cursor:pointer; transition:all .2s ease;">
-                  <input type="checkbox" id="mInputCatWattMandatory" style="accent-color:var(--gold); width:18px; height:18px; cursor:pointer;">
-                  <div style="flex:1;">
-                    <div style="font-weight:700; font-size:13px; color:var(--txt);"><i class="fa-solid fa-bolt" style="color:var(--gold); margin-right:6px;"></i> Wattage / Capacity Tracking</div>
-                    <div style="font-size:11.5px; color:var(--txt-muted);">Make Wattage/Capacity mandatory for items in this category</div>
-                  </div>
-                </label>
-                <label class="master-toggle-pill" id="mToggleSerialLabel" style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; cursor:pointer; transition:all .2s ease;">
-                  <input type="checkbox" id="mInputCatSerialMandatory" style="accent-color:var(--blue); width:18px; height:18px; cursor:pointer;">
-                  <div style="flex:1;">
-                    <div style="font-weight:700; font-size:13px; color:var(--txt);"><i class="fa-solid fa-barcode" style="color:var(--blue); margin-right:6px;"></i> Serial Number Tracking</div>
-                    <div style="font-size:11.5px; color:var(--txt-muted);">Make unique Serial Number scanning mandatory on inward &amp; dispatch</div>
-                  </div>
-                </label>
+      <div class="grid-2" style="align-items:start; gap:18px;">
+        
+        <!-- LEFT COLUMN: Category Form & Subtype Management -->
+        <div style="display:flex; flex-direction:column; gap:18px;">
+          <!-- Category Form Panel -->
+          <div class="panel">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+              <h3 id="mCatFormHeading" style="margin:0;"><i class="fa-solid fa-plus" style="color:var(--green);"></i> Add New Category</h3>
+            </div>
+            <div class="form-grid">
+              <div class="field span-2"><label>Category Name <span class="req">*</span></label><input id="mInputCatName" placeholder="e.g. Structure, Battery, Solar Panel..."></div>
+              <div class="field span-2">
+                <div style="display:flex; flex-direction:column; gap:10px; margin:6px 0 10px;">
+                  <label class="master-toggle-pill" id="mToggleWattLabel" style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; cursor:pointer; transition:all .2s ease;">
+                    <input type="checkbox" id="mInputCatWattMandatory" style="accent-color:var(--gold); width:18px; height:18px; cursor:pointer;">
+                    <div style="flex:1;">
+                      <div style="font-weight:700; font-size:13px; color:var(--txt);"><i class="fa-solid fa-bolt" style="color:var(--gold); margin-right:6px;"></i> Wattage / Capacity Tracking</div>
+                      <div style="font-size:11.5px; color:var(--txt-muted);">Make Wattage/Capacity mandatory for items in this category</div>
+                    </div>
+                  </label>
+                  <label class="master-toggle-pill" id="mToggleSerialLabel" style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; cursor:pointer; transition:all .2s ease;">
+                    <input type="checkbox" id="mInputCatSerialMandatory" style="accent-color:var(--blue); width:18px; height:18px; cursor:pointer;">
+                    <div style="flex:1;">
+                      <div style="font-weight:700; font-size:13px; color:var(--txt);"><i class="fa-solid fa-barcode" style="color:var(--blue); margin-right:6px;"></i> Serial Number Tracking</div>
+                      <div style="font-size:11.5px; color:var(--txt-muted);">Make unique Serial Number scanning mandatory on inward &amp; dispatch</div>
+                    </div>
+                  </label>
+                </div>
               </div>
             </div>
+            <div class="actions-row" style="margin-top:14px; display:flex; gap:8px;">
+              <button class="btn btn-blue" id="mBtnSaveCat" style="flex:1; justify-content:center;"><i class="fa-solid fa-floppy-disk"></i> Save Category</button>
+              <button type="button" class="btn btn-ghost" id="mBtnCancelCatEdit" style="display:none; justify-content:center;"><i class="fa-solid fa-xmark"></i> Cancel</button>
+            </div>
           </div>
-          <div class="actions-row" style="margin-top:14px; display:flex; gap:8px;">
-            <button class="btn btn-blue" id="mBtnSaveCat" style="flex:1; justify-content:center;"><i class="fa-solid fa-floppy-disk"></i> Save Category</button>
-            <button type="button" class="btn btn-ghost" id="mBtnCancelCatEdit" style="display:none; justify-content:center;"><i class="fa-solid fa-xmark"></i> Cancel</button>
+
+          <!-- Subtype / Variant Management Panel -->
+          <div class="panel">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+              <h3 id="mSubFormHeading" style="margin:0;"><i class="fa-solid fa-tags" style="color:var(--blue);"></i> Subtype / Variant Management</h3>
+            </div>
+            <div class="form-grid cols-2">
+              <div class="field"><label>Target Category <span class="req">*</span></label><select id="mSubTargetCat"></select></div>
+              <div class="field"><label>Subtype Name <span class="req">*</span></label><input id="mInputSubName" placeholder="e.g. DCR, Non-DCR, Hybrid..."></div>
+            </div>
+            <div class="actions-row" style="margin-top:12px; display:flex; gap:8px;">
+              <button class="btn btn-green" id="mBtnSaveSub" style="flex:1; justify-content:center;"><i class="fa-solid fa-plus"></i> Add Subtype</button>
+              <button type="button" class="btn btn-ghost" id="mBtnCancelSubEdit" style="display:none; justify-content:center;"><i class="fa-solid fa-xmark"></i> Cancel</button>
+            </div>
+            <div class="table-wrap" style="margin-top:14px; max-height:250px; overflow-y:auto;">
+              <table>
+                <thead><tr><th>Subtype / Type</th><th style="width:90px; text-align:right;">Actions</th></tr></thead>
+                <tbody id="mastersSubtypeBody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
-        <div class="panel">
+
+        <!-- RIGHT COLUMN: Category List Table -->
+        <div class="panel" style="display:flex; flex-direction:column;">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
             <h3 style="margin:0;"><i class="fa-solid fa-list" style="color:var(--gold);"></i> Category List</h3>
           </div>
-          <div class="table-wrap"><table><thead><tr><th>Category Name</th><th>Linked Products</th><th>Watt Rule</th><th>Serial Rule</th><th>Actions</th></tr></thead><tbody id="mastersCategoryBody"></tbody></table></div>
+          <div class="table-wrap" style="flex:1; max-height:calc(100vh - 230px); overflow-y:auto;">
+            <table>
+              <thead><tr><th>Category Name</th><th>Linked Products</th><th>Watt Rule</th><th>Serial Rule</th><th>Actions</th></tr></thead>
+              <tbody id="mastersCategoryBody"></tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      <div class="panel" style="margin-top:20px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-          <h3 style="margin:0;"><i class="fa-solid fa-tags" style="color:var(--blue);"></i> Subtype / Variant Management (per Category)</h3>
-        </div>
-        <div class="form-grid cols-2">
-          <div class="field"><label>Target Category <span class="req">*</span></label><select id="mSubTargetCat"></select></div>
-          <div class="field"><label>Subtype / Type Name <span class="req">*</span></label><input id="mInputSubName" placeholder="e.g. DCR, Non-DCR, Hybrid, Mono PERC..."></div>
-        </div>
-        <div class="actions-row" style="margin-top:12px;">
-          <button class="btn btn-green" id="mBtnSaveSub"><i class="fa-solid fa-plus"></i> Add Subtype</button>
-          <button class="btn btn-red" id="mBtnCancelSubEdit" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel</button>
-        </div>
-        <div class="table-wrap" style="margin-top:14px;"><table><thead><tr><th>Subtype / Type</th><th>Actions</th></tr></thead><tbody id="mastersSubtypeBody"></tbody></table></div>
       </div>
     </div>
 
@@ -1034,6 +1053,10 @@ window.PAGES.masters = {
       $("mCatFormHeading").innerHTML = `<i class="fa-solid fa-pen-to-square" style="color:var(--gold);"></i> Edit Category: ${catName}`;
       $("mBtnSaveCat").innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Update Category';
       $("mBtnCancelCatEdit").style.display = 'inline-flex';
+      if ($("mSubTargetCat")) {
+        $("mSubTargetCat").value = catName;
+        loadSubtypesForCategory(catName);
+      }
       $("mInputCatName").focus();
       $("mInputCatName").scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
