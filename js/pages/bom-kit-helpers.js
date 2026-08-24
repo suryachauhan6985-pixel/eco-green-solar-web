@@ -789,6 +789,9 @@ function bomRenderPrintSheetHtml(kit, header) {
         </tr>
         ${rows}
       </table>
+      <div class="bom-print-footer">
+        Eco Green Solar ERP &copy; 2026 &bull; Enterprise Operations &amp; Inventory Suite
+      </div>
     </div>
   `;
 }
@@ -820,7 +823,7 @@ function bomPrintKitDirectly(kit, header) {
   <style>
     @page {
       size: A4 portrait;
-      margin: 14mm 10mm 14mm 10mm;
+      margin: 12mm 10mm 12mm 10mm;
     }
     * {
       box-sizing: border-box;
@@ -839,10 +842,10 @@ function bomPrintKitDirectly(kit, header) {
     }
     .bom-sheet {
       width: 100% !important;
-      max-width: 100% !important;
       margin: 0 auto !important;
       background: #ffffff !important;
       background-color: #ffffff !important;
+      transform-origin: top center;
     }
     .bom-table {
       width: 100% !important;
@@ -854,9 +857,9 @@ function bomPrintKitDirectly(kit, header) {
     }
     .bom-table th, .bom-table td {
       border: 1px solid #000000 !important;
-      padding: 1.2px 3.5px !important;
-      font-size: 10pt !important;
-      line-height: 1.20 !important;
+      padding: 1.0px 3.0px !important;
+      font-size: 9.5pt !important;
+      line-height: 1.18 !important;
       vertical-align: middle !important;
       background: #ffffff !important;
       color: #000000 !important;
@@ -879,16 +882,16 @@ function bomPrintKitDirectly(kit, header) {
 
     .bom-info-cell {
       border: 1px solid #000000 !important;
-      font-size: 9.5pt !important;
+      font-size: 9pt !important;
       font-weight: 700 !important;
       color: #000000 !important;
       background: #ffffff !important;
-      padding: 2px 4px !important;
-      line-height: 1.22 !important;
+      padding: 1.5px 3.5px !important;
+      line-height: 1.20 !important;
     }
     .bom-spacer {
       border: 1px solid #000000 !important;
-      height: 3.5pt !important;
+      height: 3pt !important;
       padding: 0 !important;
       background: #ffffff !important;
     }
@@ -896,7 +899,7 @@ function bomPrintKitDirectly(kit, header) {
       border: 1px solid #000000 !important;
       text-align: right !important;
       font-weight: 800 !important;
-      font-size: 11.5pt !important;
+      font-size: 11pt !important;
       color: #000000 !important;
       background: #ffffff !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
@@ -905,7 +908,7 @@ function bomPrintKitDirectly(kit, header) {
       border: 1px solid #000000 !important;
       text-align: left !important;
       font-weight: 800 !important;
-      font-size: 11.5pt !important;
+      font-size: 11pt !important;
       color: #000000 !important;
       background: #ffffff !important;
     }
@@ -916,8 +919,8 @@ function bomPrintKitDirectly(kit, header) {
       font-weight: 800 !important;
       text-align: center !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
-      font-size: 10.5pt !important;
-      padding: 2.5px 3.5px !important;
+      font-size: 10pt !important;
+      padding: 2px 3px !important;
     }
     .bom-cat-row td {
       background: #f2f2f2 !important;
@@ -926,12 +929,20 @@ function bomPrintKitDirectly(kit, header) {
       font-weight: 800 !important;
       text-align: center !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
-      font-size: 10.5pt !important;
-      padding: 2px 3.5px !important;
+      font-size: 10pt !important;
+      padding: 1.5px 3px !important;
     }
     .bom-table tr {
       page-break-inside: avoid !important;
       break-inside: avoid !important;
+    }
+    .bom-print-footer {
+      text-align: center !important;
+      font-size: 7.5pt !important;
+      color: #555555 !important;
+      margin-top: 4px !important;
+      font-family: 'Calibri Light', Calibri, 'Segoe UI', Arial, sans-serif !important;
+      letter-spacing: 0.2px !important;
     }
   </style>
 </head>
@@ -941,8 +952,27 @@ function bomPrintKitDirectly(kit, header) {
 </html>`);
   doc.close();
 
+  // Apply fit-to-page zoom calculation inside iframe
   setTimeout(() => {
     try {
+      const sheet = doc.getElementById('bomSheet');
+      if (sheet) {
+        const naturalHeight = sheet.getBoundingClientRect().height;
+        const PX_PER_MM = 96 / 25.4;
+        const A4_HEIGHT_MM = 297;
+        const MARGIN_TB_MM = 12;
+        const A4_WIDTH_MM = 210;
+        const MARGIN_LR_MM = 10;
+        const usableHeightPx = (A4_HEIGHT_MM - MARGIN_TB_MM * 2) * PX_PER_MM;
+        
+        if (naturalHeight > usableHeightPx) {
+          const scale = Math.max(0.72, usableHeightPx / naturalHeight);
+          const usableWidthPx = (A4_WIDTH_MM - MARGIN_LR_MM * 2) * PX_PER_MM;
+          const baseWidthPx = usableWidthPx / scale;
+          sheet.style.width = baseWidthPx + 'px';
+          sheet.style.zoom = scale;
+        }
+      }
       iframe.contentWindow.focus();
       iframe.contentWindow.print();
     } catch (e) {
