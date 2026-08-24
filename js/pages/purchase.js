@@ -69,6 +69,44 @@ window.PAGES.purchase = {
               </div>
             </div>
 
+            <!-- Optional Pricing & Settlement Section (Dynamically shown only when Pricing/Accounting is enabled in Settings) -->
+            <div class="field span-full" id="purPricingSection" style="display:none; background:rgba(59,142,208,0.06); border:1px solid rgba(59,142,208,0.25); border-radius:10px; padding:14px;">
+              <div style="font-weight:700; color:var(--blue); font-size:13px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-indian-rupee-sign"></i> Pricing, Valuation &amp; Payment Settlement
+              </div>
+              <div class="form-grid cols-3" style="gap:10px;">
+                <div class="field" style="margin:0;">
+                  <label style="font-size:11.5px;">Unit Rate / Price (₹)</label>
+                  <input type="number" id="purUnitRate" placeholder="0.00" step="any" min="0">
+                </div>
+                <div class="field" style="margin:0;">
+                  <label style="font-size:11.5px;">GST Rate (%)</label>
+                  <select id="purGstRate">
+                    <option value="0">0% (Exempt / Nil)</option>
+                    <option value="5">5% (Solar Products)</option>
+                    <option value="12">12%</option>
+                    <option value="18" selected>18% (Standard)</option>
+                    <option value="28">28%</option>
+                  </select>
+                </div>
+                <div class="field" style="margin:0;">
+                  <label style="font-size:11.5px;">Total Amount with Tax (₹)</label>
+                  <input type="text" id="purTotalAmount" placeholder="₹0.00" readonly style="font-weight:700; color:var(--gold);">
+                </div>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px; padding-top:8px; border-top:1px solid var(--border-light);">
+                <div id="purGstBreakdownBadge" style="font-size:11.5px; color:var(--txt-muted);">Tax: Auto-calculating Intra/Inter state...</div>
+                <div class="field" style="margin:0; display:flex; align-items:center; gap:8px;">
+                  <label style="font-size:11.5px; margin:0;">Payment Mode:</label>
+                  <select id="purPaymentMode" style="font-size:12px; padding:3px 8px;">
+                    <option value="credit">On Account / Credit</option>
+                    <option value="bank">Bank Transfer / NEFT</option>
+                    <option value="cash">Cash Payment</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
             <div class="field span-full" id="purSerialWrap"><label>Serial Numbers <span class="req">*</span></label>
               <div class="ss-scan-input-wrap" style="position:relative;">
                 <textarea id="purSerials" placeholder="One serial per line, it auto-splits — or tap the scan icon"></textarea>
@@ -563,6 +601,43 @@ window.PAGES.purchase = {
       $('purSerialWrap').style.display = needsSerial ? '' : 'none';
       $('purQtyOnlyNote').style.display = needsSerial ? 'none' : '';
     }
+
+    function updatePurPricingVisibility() {
+      const showPricing = window.CONFIG && (window.CONFIG.isPricingEnabled() || window.CONFIG.isAccountingEnabled());
+      const pSec = $('purPricingSection');
+      if (pSec) pSec.style.display = showPricing ? '' : 'none';
+    }
+
+    function calculatePurTotal() {
+      const qty = parseFloat($('purQty') ? $('purQty').value : '0') || 0;
+      const rate = parseFloat($('purUnitRate') ? $('purUnitRate').value : '0') || 0;
+      const gstPercent = parseFloat($('purGstRate') ? $('purGstRate').value : '0') || 0;
+      const base = qty * rate;
+      const tax = base * (gstPercent / 100);
+      const total = base + tax;
+      if ($('purTotalAmount')) {
+        $('purTotalAmount').value = total > 0 ? `₹${total.toFixed(2)}` : '';
+      }
+      if ($('purGstBreakdownBadge') && window.CONFIG && window.CONFIG.determineGst) {
+        const suppGstin = $('purSuppGstin') ? $('purSuppGstin').value.trim() : '';
+        const gstInfo = window.CONFIG.determineGst(suppGstin, '', base, gstPercent);
+        if (gstInfo.isInterState) {
+          $('purGstBreakdownBadge').textContent = `Inter-State IGST (${gstPercent}%): ₹${tax.toFixed(2)}`;
+        } else {
+          $('purGstBreakdownBadge').textContent = `Intra-State CGST (${(gstPercent/2).toFixed(1)}%): ₹${(tax/2).toFixed(2)} + SGST (${(gstPercent/2).toFixed(1)}%): ₹${(tax/2).toFixed(2)}`;
+        }
+      }
+    }
+
+    ['purQty', 'purUnitRate', 'purGstRate', 'purSuppGstin'].forEach((id) => {
+      const el = $(id);
+      if (el) {
+        el.addEventListener('input', calculatePurTotal);
+        el.addEventListener('change', calculatePurTotal);
+      }
+    });
+
+    updatePurPricingVisibility();
 
     // ---------------- Warehouse dropdown(s) — fetched live from
     // /api/masters/warehouses (same Warehouses master the Masters page

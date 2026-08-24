@@ -651,25 +651,26 @@ module.exports = function registerAuthRoutes(app, deps) {
     if (settings.company_currency == null) settings.company_currency = 'INR';
     if (settings.company_fy_start == null) settings.company_fy_start = '2026-04-01';
 
-    // 2. Configuration Profile & Feature Flags
-    if (settings.config_profile == null) settings.config_profile = 'full_erp';
+    // 2. Configuration Profile & Feature Flags (Default: Quantity + Serial Tracking without financial accounting)
+    if (settings.config_profile == null) settings.config_profile = 'serial_inventory';
     if (settings.inventory_tracking == null) settings.inventory_tracking = '1';
     if (settings.serial_tracking == null) settings.serial_tracking = '1';
     if (settings.warehouse_tracking == null) settings.warehouse_tracking = '1';
     if (settings.batch_tracking == null) settings.batch_tracking = '0';
     if (settings.expiry_tracking == null) settings.expiry_tracking = '0';
-    if (settings.stock_valuation == null) settings.stock_valuation = 'FIFO';
+    if (settings.stock_valuation == null) settings.stock_valuation = 'none';
 
-    // 3. Accounting & GST Defaults
-    if (settings.accounting_enabled == null) settings.accounting_enabled = '1';
-    if (settings.double_entry == null) settings.double_entry = '1';
-    if (settings.cost_center == null) settings.cost_center = '1';
+    // 3. Accounting, Pricing & GST Defaults (Disabled by default, activate-able from Settings Studio)
+    if (settings.accounting_enabled == null) settings.accounting_enabled = '0';
+    if (settings.double_entry == null) settings.double_entry = '0';
+    if (settings.feature_pricing_enabled == null) settings.feature_pricing_enabled = '0';
+    if (settings.cost_center == null) settings.cost_center = '0';
     if (settings.multi_currency == null) settings.multi_currency = '0';
 
-    if (settings.gst_enabled == null) settings.gst_enabled = '1';
-    if (settings.cgst_sgst_enabled == null) settings.cgst_sgst_enabled = '1';
-    if (settings.igst_enabled == null) settings.igst_enabled = '1';
-    if (settings.hsn_sac_enabled == null) settings.hsn_sac_enabled = '1';
+    if (settings.gst_enabled == null) settings.gst_enabled = '0';
+    if (settings.cgst_sgst_enabled == null) settings.cgst_sgst_enabled = '0';
+    if (settings.igst_enabled == null) settings.igst_enabled = '0';
+    if (settings.hsn_sac_enabled == null) settings.hsn_sac_enabled = '0';
 
     // 4. Document Numbering & Sequence Defaults
     if (settings.purchase_prefix == null) settings.purchase_prefix = 'PUR-';

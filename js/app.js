@@ -5530,8 +5530,9 @@ window.attachColumnFilters = function (table) {
     const isFinOnly = window.ERP && window.ERP.isFinancialOnly();
     const isQtyOnly = window.ERP && window.ERP.isQuantityOnly();
 
-    const accountsItems = [
-      {
+    const accountsItems = [];
+    if (isAcc) {
+      accountsItems.push({
         name: 'Ledger Info',
         hotkey: 'L',
         icon: 'fa-address-book',
@@ -5542,8 +5543,8 @@ window.attachColumnFilters = function (table) {
           { name: 'Display', hotkey: 'D', icon: 'fa-eye', page: 'partyledger', action: 'display' },
           { name: 'Alter', hotkey: 'A', icon: 'fa-pen-to-square', page: 'partyledger', action: 'alter' }
         ]
-      }
-    ];
+      });
+    }
 
     if (!isFinOnly) {
       accountsItems.push(

@@ -149,15 +149,19 @@
     },
 
     isAccountingEnabled() {
-      return String(_settings.accounting_enabled ?? '1') === '1';
+      return String(_settings.accounting_enabled ?? '0') === '1';
+    },
+
+    isPricingEnabled() {
+      return String(_settings.feature_pricing_enabled ?? '0') === '1';
     },
 
     isDoubleEntryEnabled() {
-      return String(_settings.double_entry ?? '1') === '1';
+      return String(_settings.double_entry ?? '0') === '1';
     },
 
     isGstEnabled() {
-      return String(_settings.gst_enabled ?? '1') === '1';
+      return String(_settings.gst_enabled ?? '0') === '1';
     },
 
     isBomEnabled() {
@@ -165,7 +169,7 @@
     },
 
     getStockValuation() {
-      return String(_settings.stock_valuation || 'FIFO');
+      return String(_settings.stock_valuation || 'none');
     },
 
     getCompanyInfo() {

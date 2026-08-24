@@ -61,6 +61,44 @@ window.PAGES.sales = {
               </div>
             </div>
 
+            <!-- Optional Pricing & Settlement Section (Dynamically shown only when Pricing/Accounting is enabled in Settings) -->
+            <div class="field span-full" id="salePricingSection" style="display:none; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.25); border-radius:10px; padding:14px;">
+              <div style="font-weight:700; color:var(--gold); font-size:13px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-file-invoice-dollar"></i> Sales Pricing, Valuation &amp; Billing
+              </div>
+              <div class="form-grid cols-3" style="gap:10px;">
+                <div class="field" style="margin:0;">
+                  <label style="font-size:11.5px;">Unit Selling Rate (₹)</label>
+                  <input type="number" id="saleUnitRate" placeholder="0.00" step="any" min="0">
+                </div>
+                <div class="field" style="margin:0;">
+                  <label style="font-size:11.5px;">GST Rate (%)</label>
+                  <select id="saleGstRate">
+                    <option value="0">0% (Exempt)</option>
+                    <option value="5">5% (Solar Inverters/Panels)</option>
+                    <option value="12">12%</option>
+                    <option value="18" selected>18% (Standard)</option>
+                    <option value="28">28%</option>
+                  </select>
+                </div>
+                <div class="field" style="margin:0;">
+                  <label style="font-size:11.5px;">Total Invoice Value (₹)</label>
+                  <input type="text" id="saleTotalAmount" placeholder="₹0.00" readonly style="font-weight:700; color:var(--orange);">
+                </div>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px; padding-top:8px; border-top:1px solid var(--border-light);">
+                <div id="saleGstBreakdownBadge" style="font-size:11.5px; color:var(--txt-muted);">Tax: Auto-calculating Intra/Inter state...</div>
+                <div class="field" style="margin:0; display:flex; align-items:center; gap:8px;">
+                  <label style="font-size:11.5px; margin:0;">Payment Status:</label>
+                  <select id="salePaymentStatus" style="font-size:12px; padding:3px 8px;">
+                    <option value="pending">Pending / On Account</option>
+                    <option value="paid">Fully Paid</option>
+                    <option value="partial">Partial Received</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
             <div class="field span-full" id="saleSerialsField"><label>Scan Serial Numbers <span class="req">*</span></label>
               <div class="ss-scan-input-wrap" style="position:relative;">
                 <textarea id="saleSerials" placeholder="One serial per line, it auto-splits — or tap the scan icon"></textarea>
@@ -1044,6 +1082,42 @@ window.PAGES.sales = {
       $('saleSerialsField').style.display = needsSerial ? '' : 'none';
       $('saleQtyOnlyNote').style.display = needsSerial ? 'none' : '';
     }
+
+    function updateSalePricingVisibility() {
+      const showPricing = window.CONFIG && (window.CONFIG.isPricingEnabled() || window.CONFIG.isAccountingEnabled());
+      const pSec = $('salePricingSection');
+      if (pSec) pSec.style.display = showPricing ? '' : 'none';
+    }
+
+    function calculateSaleTotal() {
+      const qty = parseFloat($('saleQty') ? $('saleQty').value : '0') || 0;
+      const rate = parseFloat($('saleUnitRate') ? $('saleUnitRate').value : '0') || 0;
+      const gstPercent = parseFloat($('saleGstRate') ? $('saleGstRate').value : '0') || 0;
+      const base = qty * rate;
+      const tax = base * (gstPercent / 100);
+      const total = base + tax;
+      if ($('saleTotalAmount')) {
+        $('saleTotalAmount').value = total > 0 ? `₹${total.toFixed(2)}` : '';
+      }
+      if ($('saleGstBreakdownBadge') && window.CONFIG && window.CONFIG.determineGst) {
+        const gstInfo = window.CONFIG.determineGst('', '', base, gstPercent);
+        if (gstInfo.isInterState) {
+          $('saleGstBreakdownBadge').textContent = `Inter-State IGST (${gstPercent}%): ₹${tax.toFixed(2)}`;
+        } else {
+          $('saleGstBreakdownBadge').textContent = `Intra-State CGST (${(gstPercent/2).toFixed(1)}%): ₹${(tax/2).toFixed(2)} + SGST (${(gstPercent/2).toFixed(1)}%): ₹${(tax/2).toFixed(2)}`;
+        }
+      }
+    }
+
+    ['saleQty', 'saleUnitRate', 'saleGstRate'].forEach((id) => {
+      const el = $(id);
+      if (el) {
+        el.addEventListener('input', calculateSaleTotal);
+        el.addEventListener('change', calculateSaleTotal);
+      }
+    });
+
+    updateSalePricingVisibility();
 
     // Swaps the Wattage field for the Model field (or back) based on the
     // selected category's rule — mirrors purchase.js's
