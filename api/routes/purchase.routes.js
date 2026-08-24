@@ -457,10 +457,10 @@ module.exports = function registerPurchaseRoutes(app, deps) {
   // permanently removes every stock_ledger row for this invoice, but blocked
   // entirely if any of its serials have already been sold.
   app.delete('/api/purchase/:invoiceNo', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
-    const { invoiceNo } = req.params;
+    const invoiceNo = decodeURIComponent(req.params.invoiceNo || '').trim();
     const [rows] = await pool.query(`SELECT serial_no, status FROM stock_ledger WHERE purchase_invoice=?`, [invoiceNo]);
     if (!rows.length) {
-      return res.status(404).json({ error: 'No records found for this purchase invoice.' });
+      return res.status(404).json({ error: `No records found for purchase invoice: ${invoiceNo}` });
     }
     const soldSerials = rows.filter((r) => r.status === 'Sold').map((r) => r.serial_no);
     if (soldSerials.length) {

@@ -842,38 +842,67 @@ module.exports = function registerSalesRoutes(app, deps) {
   }));
 
   // DELETE /api/sales/delete/:orderNo — mirrors delete_sales_transaction():
-  // permanently reverts every Sold serial on this order back to Available
-  // stock (undoes the dispatch; does not delete the underlying purchase row).
+  // permanently reverts every Sold/Dispatched item on this order/challan/invoice
+  // back to Available stock (undoes the dispatch; does not delete the underlying purchase row).
   app.delete('/api/sales/delete/:orderNo', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
-    const { orderNo } = req.params;
-    const [serialRows] = await pool.query(`SELECT serial_no FROM stock_ledger WHERE order_no=? AND status='Sold' AND serial_no IS NOT NULL`, [orderNo]);
-    const [qtyRows] = await pool.query(`SELECT id, quantity FROM stock_ledger WHERE order_no=? AND status='Sold' AND serial_no IS NULL`, [orderNo]);
+    const rawRef = decodeURIComponent(req.params.orderNo || '').trim();
+    if (!rawRef || rawRef === '-') {
+      return res.status(400).json({ error: 'Valid Order / Challan / Invoice reference is required.' });
+    }
+
+    const whereClause = `(order_no = ? OR chalan_no = ? OR sales_invoice = ?) AND (status = 'Sold' OR status = 'Dispatched' OR bom_dispatch_id IS NOT NULL)`;
+    const params = [rawRef, rawRef, rawRef];
+
+    const [serialRows] = await pool.query(
+      `SELECT serial_no FROM stock_ledger WHERE ${whereClause} AND serial_no IS NOT NULL AND serial_no != ''`,
+      params
+    );
+    const [qtyRows] = await pool.query(
+      `SELECT id, quantity FROM stock_ledger WHERE ${whereClause} AND (serial_no IS NULL OR serial_no = '')`,
+      params
+    );
+
     if (!serialRows.length && !qtyRows.length) {
-      return res.status(404).json({ error: 'No active sold records found for this order/challan.' });
+      return res.status(404).json({ error: `No active sold/dispatched records found for reference: ${rawRef}` });
     }
-    if (serialRows.length) {
-      await pool.query(
-        `UPDATE stock_ledger SET status='Available', customer_name='-', order_no='-', sales_invoice='-', invoice_date='-', sales_date='-', chalan_no='-', chalan_date='-', sales_attachment='-', edited_flag=1
-         WHERE order_no=? AND status='Sold' AND serial_no IS NOT NULL`,
-        [orderNo]
-      );
-    }
-    if (qtyRows.length) {
-      // Quantity rows just flip back to Available in place — nothing to
-      // split here, the whole row belonged to this order.
-      await pool.query(
-        `UPDATE stock_ledger SET status='Available', customer_name='-', order_no='-', sales_invoice='-', invoice_date='-', sales_date='-', chalan_no='-', chalan_date='-', sales_attachment='-', edited_flag=1
-         WHERE order_no=? AND status='Sold' AND serial_no IS NULL`,
-        [orderNo]
-      );
-    }
+
+    // Revert serial items and quantity items back to Available stock
+    await pool.query(
+      `UPDATE stock_ledger
+       SET status='Available',
+           customer_name='-',
+           order_no='-',
+           sales_invoice='-',
+           invoice_date='-',
+           sales_date='-',
+           chalan_no='-',
+           chalan_date='-',
+           sales_attachment='-',
+           bom_dispatch_id=NULL,
+           edited_flag=1
+       WHERE ${whereClause}`,
+      params
+    );
+
+    // Also clean up any corresponding bom_dispatches or challans record
+    try {
+      await pool.query(`DELETE FROM bom_dispatches WHERE order_no = ? OR challan_no = ? OR invoice_no = ?`, [rawRef, rawRef, rawRef]);
+    } catch (e) { /* ignore if table doesn't exist */ }
+
+    try {
+      await pool.query(`DELETE FROM challans WHERE challan_no = ? OR order_no = ?`, [rawRef, rawRef]);
+    } catch (e) { /* ignore if table doesn't exist */ }
+
     const totalQtyReverted = qtyRows.reduce((sum, r) => sum + (r.quantity || 0), 0);
     if (typeof syncStockSummary === 'function') syncStockSummary(pool).catch(() => {});
     if (typeof invalidateStockCaches === 'function') invalidateStockCaches();
+    if (typeof deps.invalidateLedgerCaches === 'function') deps.invalidateLedgerCaches();
+    if (deps.reportCache && typeof deps.reportCache.flush === 'function') deps.reportCache.flush();
+
     try {
       await pool.query(
         `INSERT INTO audit_logs (transaction_type, reference_no, action_by, action_timestamp, old_details, new_details) VALUES ('SALE_DELETE', ?, 'User', ?, ?, ?)`,
-        [orderNo, ledgerTimestamp(), `Order:${orderNo}`, `Sale transaction deleted | Serials reverted to Available: ${serialRows.map((r) => r.serial_no).join(', ') || 'none'} | Qty reverted to Available: ${totalQtyReverted}`]
+        [rawRef, ledgerTimestamp(), `Ref:${rawRef}`, `Sale transaction deleted | Serials reverted to Available: ${serialRows.map((r) => r.serial_no).join(', ') || 'none'} | Qty reverted to Available: ${totalQtyReverted}`]
       );
     } catch (e) { /* audit log is best-effort, never block the delete on it */ }
 
