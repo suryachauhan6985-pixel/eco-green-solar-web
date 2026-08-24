@@ -857,9 +857,9 @@ function bomPrintKitDirectly(kit, header) {
     }
     .bom-table th, .bom-table td {
       border: 1px solid #000000 !important;
-      padding: 1.0px 3.0px !important;
-      font-size: 9.5pt !important;
-      line-height: 1.18 !important;
+      padding: 2.2px 4px !important;
+      font-size: 11pt !important;
+      line-height: 1.25 !important;
       vertical-align: middle !important;
       background: #ffffff !important;
       color: #000000 !important;
@@ -882,16 +882,16 @@ function bomPrintKitDirectly(kit, header) {
 
     .bom-info-cell {
       border: 1px solid #000000 !important;
-      font-size: 9pt !important;
+      font-size: 10.5pt !important;
       font-weight: 700 !important;
       color: #000000 !important;
       background: #ffffff !important;
-      padding: 1.5px 3.5px !important;
-      line-height: 1.20 !important;
+      padding: 3px 5px !important;
+      line-height: 1.25 !important;
     }
     .bom-spacer {
       border: 1px solid #000000 !important;
-      height: 3pt !important;
+      height: 4pt !important;
       padding: 0 !important;
       background: #ffffff !important;
     }
@@ -899,7 +899,7 @@ function bomPrintKitDirectly(kit, header) {
       border: 1px solid #000000 !important;
       text-align: right !important;
       font-weight: 800 !important;
-      font-size: 11pt !important;
+      font-size: 12pt !important;
       color: #000000 !important;
       background: #ffffff !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
@@ -908,7 +908,7 @@ function bomPrintKitDirectly(kit, header) {
       border: 1px solid #000000 !important;
       text-align: left !important;
       font-weight: 800 !important;
-      font-size: 11pt !important;
+      font-size: 12pt !important;
       color: #000000 !important;
       background: #ffffff !important;
     }
@@ -919,8 +919,8 @@ function bomPrintKitDirectly(kit, header) {
       font-weight: 800 !important;
       text-align: center !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
-      font-size: 10pt !important;
-      padding: 2px 3px !important;
+      font-size: 11.5pt !important;
+      padding: 3.5px 4px !important;
     }
     .bom-cat-row td {
       background: #f2f2f2 !important;
@@ -929,8 +929,8 @@ function bomPrintKitDirectly(kit, header) {
       font-weight: 800 !important;
       text-align: center !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
-      font-size: 10pt !important;
-      padding: 1.5px 3px !important;
+      font-size: 11.5pt !important;
+      padding: 3px 4px !important;
     }
     .bom-table tr {
       page-break-inside: avoid !important;
@@ -938,11 +938,11 @@ function bomPrintKitDirectly(kit, header) {
     }
     .bom-print-footer {
       text-align: center !important;
-      font-size: 7.5pt !important;
+      font-size: 8.5pt !important;
       color: #555555 !important;
-      margin-top: 4px !important;
+      margin-top: 8px !important;
       font-family: 'Calibri Light', Calibri, 'Segoe UI', Arial, sans-serif !important;
-      letter-spacing: 0.2px !important;
+      letter-spacing: 0.3px !important;
     }
   </style>
 </head>
@@ -963,10 +963,10 @@ function bomPrintKitDirectly(kit, header) {
         const MARGIN_TB_MM = 12;
         const A4_WIDTH_MM = 210;
         const MARGIN_LR_MM = 10;
-        const usableHeightPx = (A4_HEIGHT_MM - MARGIN_TB_MM * 2) * PX_PER_MM;
+        const usableHeightPx = (A4_HEIGHT_MM - MARGIN_TB_MM * 2) * PX_PER_MM * 0.98;
         
         if (naturalHeight > usableHeightPx) {
-          const scale = Math.max(0.72, usableHeightPx / naturalHeight);
+          const scale = usableHeightPx / naturalHeight;
           const usableWidthPx = (A4_WIDTH_MM - MARGIN_LR_MM * 2) * PX_PER_MM;
           const baseWidthPx = usableWidthPx / scale;
           sheet.style.width = baseWidthPx + 'px';
