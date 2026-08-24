@@ -461,67 +461,10 @@ html[data-theme="light"] .egs-top-progress {
   opacity: 0.6;
   transition: transform 0.15s ease;
 }
-/* Inline Mobile Accordion Drawer (<= 900px) */
-.mobile-nav-subpanel {
-  display: none;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px 6px 6px 12px;
-  background: var(--panel-alt);
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--blue);
-  margin-top: 4px;
-  margin-bottom: 6px;
-}
-.mobile-nav-subpanel.open {
-  display: flex;
-  animation: egsSlideDown 0.16s ease-out;
-}
-@keyframes egsSlideDown {
-  from { opacity: 0; transform: translateY(-6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.mobile-nav-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 9px 12px;
-  border-radius: 8px;
-  color: var(--txt);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  background: transparent;
-  transition: all 0.14s ease;
-  user-select: none;
-}
-.mobile-nav-item:hover,
-.mobile-nav-item:active {
-  background: var(--input-bg);
-  color: var(--blue);
-}
-.mobile-nested-group {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 4px 0 4px 6px;
-  padding-left: 8px;
-  border-left: 1.5px dashed var(--border-light);
-}
-.mobile-nested-title {
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--gold);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 6px 8px 2px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.erp-sidebar-btn.accordion-open .btn-arrow {
-  transform: rotate(90deg);
+.erp-sidebar-btn:hover .btn-arrow,
+.erp-sidebar-btn.flyout-open .btn-arrow {
+  opacity: 1;
+  transform: translateX(2px);
 }
 
 /* Hotkey Letter Underline (Tally / Shree Sava Style) */
@@ -534,18 +477,18 @@ html[data-theme="light"] .egs-top-progress {
   color: var(--gold);
 }
 html[data-theme="light"] .erp-hk-char {
-  text-decoration-color: #1D4ED8;
-  color: #1D4ED8;
+  text-decoration-color: #B45309;
+  color: #B45309;
 }
 html[data-theme="light"] .erp-sidebar-btn .erp-hk-char {
-  color: #1D4ED8;
-  text-decoration-color: #1D4ED8;
+  color: #B45309;
+  text-decoration-color: #B45309;
 }
 html[data-theme="light"] .erp-sidebar-btn:hover .erp-hk-char,
 html[data-theme="light"] .erp-sidebar-btn.selected .erp-hk-char,
 html[data-theme="light"] .erp-sidebar-btn.flyout-open .erp-hk-char {
-  color: #1E40AF !important;
-  text-decoration-color: #1E40AF !important;
+  color: #B45309 !important;
+  text-decoration-color: #B45309 !important;
 }
 
 html[data-theme="dark"] .erp-sidebar-btn.active .erp-hk-char,
@@ -557,14 +500,14 @@ html[data-theme="dark"] .egs-flyout-item.active .erp-hk-char {
   text-decoration-color: #fff !important;
 }
 
-/* Light Theme Sidebar & Flyout Fixes */
+/* Light Theme Sidebar & Flyout Fixes — Clean High-Contrast ERP Theme */
 html[data-theme="light"] .erp-sidebar-btn {
   background: #FFFFFF;
   color: #0F172A;
   border-color: #CBD5E1;
 }
 html[data-theme="light"] .erp-sidebar-btn .btn-label i {
-  color: #2563EB;
+  color: #D97706;
 }
 html[data-theme="light"] .erp-sidebar-btn.active,
 html[data-theme="light"] .nav-btn.active {
@@ -582,13 +525,13 @@ html[data-theme="light"] .nav-btn.active i {
 html[data-theme="light"] .erp-sidebar-btn:hover:not(.active),
 html[data-theme="light"] .erp-sidebar-btn.selected:not(.active),
 html[data-theme="light"] .erp-sidebar-btn.flyout-open:not(.active) {
-  background: #EFF6FF !important;
-  border-color: #2563EB !important;
-  color: #1E40AF !important;
+  background: #F1F5F9 !important;
+  border-color: #94A3B8 !important;
+  color: #0F172A !important;
 }
 html[data-theme="light"] .erp-sidebar-btn:hover:not(.active) i,
 html[data-theme="light"] .erp-sidebar-btn.selected:not(.active) i {
-  color: #1E40AF !important;
+  color: #D97706 !important;
 }
 html[data-theme="light"] .egs-flyout-box,
 html[data-theme="light"] .egs-nested-flyout-box {
@@ -597,9 +540,9 @@ html[data-theme="light"] .egs-nested-flyout-box {
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 html[data-theme="light"] .egs-flyout-header {
-  background: #F1F5F9;
-  border-bottom: 1px solid #CBD5E1;
-  color: #1E40AF;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+  color: #0F172A;
 }
 html[data-theme="light"] .egs-flyout-item {
   color: #0F172A;
