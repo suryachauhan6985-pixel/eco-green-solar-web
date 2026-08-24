@@ -457,30 +457,53 @@ module.exports = function registerPurchaseRoutes(app, deps) {
   // permanently removes every stock_ledger row for this invoice, but blocked
   // entirely if any of its serials have already been sold.
   app.delete('/api/purchase/:invoiceNo', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
-    const invoiceNo = decodeURIComponent(req.params.invoiceNo || '').trim();
-    const [rows] = await pool.query(`SELECT serial_no, status FROM stock_ledger WHERE purchase_invoice=?`, [invoiceNo]);
-    if (!rows.length) {
-      return res.status(404).json({ error: `No records found for purchase invoice: ${invoiceNo}` });
-    }
-    const soldSerials = rows.filter((r) => r.status === 'Sold').map((r) => r.serial_no);
-    if (soldSerials.length) {
-      return res.status(400).json({
-        error: `This purchase invoice cannot be deleted because the following Serial Number(s) have already been sold out: ${soldSerials.join(', ')}. Please first remove/reverse that sale from the Sales Order Modification panel (or process a Sales Return), then delete this purchase invoice again.`,
-      });
+    const rawInvoice = decodeURIComponent(req.params.invoiceNo || '').trim();
+    if (!rawInvoice || rawInvoice === '-') {
+      return res.status(400).json({ error: 'Valid Purchase Invoice reference is required.' });
     }
 
-    await pool.query(`DELETE FROM stock_ledger WHERE purchase_invoice=?`, [invoiceNo]);
+    const candidates = new Set([rawInvoice]);
+    const cleanNum = rawInvoice.replace(/^[a-zA-Z\-_/]+/i, '');
+    if (cleanNum && cleanNum !== rawInvoice) {
+      candidates.add(cleanNum);
+      candidates.add(`R-${cleanNum}`);
+      candidates.add(`R${cleanNum}`);
+    }
+    const candList = [...candidates];
+
+    const [rows] = await pool.query(
+      `SELECT serial_no, status FROM stock_ledger WHERE purchase_invoice IN (?)`,
+      [candList]
+    );
+
+    if (rows.length) {
+      const soldSerials = rows.filter((r) => r.status === 'Sold' || r.status === 'Dispatched').map((r) => r.serial_no).filter(Boolean);
+      if (soldSerials.length) {
+        return res.status(400).json({
+          error: `This purchase invoice cannot be deleted because the following Serial Number(s) have already been sold out: ${soldSerials.join(', ')}. Please first remove/reverse that sale from the Sales Order panel (or process a Sales Return), then delete this purchase invoice again.`,
+        });
+      }
+
+      await pool.query(`DELETE FROM stock_ledger WHERE purchase_invoice IN (?)`, [candList]);
+    }
+
     if (typeof syncStockSummary === 'function') syncStockSummary(pool).catch(() => {});
     if (typeof invalidateStockCaches === 'function') invalidateStockCaches();
+    if (typeof deps.invalidateLedgerCaches === 'function') deps.invalidateLedgerCaches();
+    if (deps.reportCache && typeof deps.reportCache.flush === 'function') deps.reportCache.flush();
 
     try {
       await pool.query(
         `INSERT INTO audit_logs (transaction_type, reference_no, action_by, action_timestamp, old_details, new_details) VALUES ('PURCHASE_DELETE', ?, 'User', ?, ?, ?)`,
-        [invoiceNo, ledgerTimestamp(), `Invoice:${invoiceNo}`, `Invoice permanently deleted | Serials: ${rows.map((r) => r.serial_no).join(', ')}`]
+        [rawInvoice, ledgerTimestamp(), `Invoice:${rawInvoice}`, `Invoice permanently deleted | Serials: ${rows.map((r) => r.serial_no).filter(Boolean).join(', ') || 'none'}`]
       );
     } catch (e) { /* audit log is best-effort, never block the delete on it */ }
 
-    res.json({ success: true });
+    res.json({
+      success: true,
+      deletedCount: rows.length,
+      message: `Purchase invoice #${rawInvoice} successfully deleted.`
+    });
   }));
 
   // GET /api/purchase/register — mirrors ui/registers.py's PurchaseRegisterPage

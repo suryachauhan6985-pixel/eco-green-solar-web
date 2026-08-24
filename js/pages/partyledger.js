@@ -1602,7 +1602,8 @@ window.PAGES.partyledger = {
           await window.Api.delete('/sales/delete/' + encodeURIComponent(refKey));
         }
         if (window.showToast) window.showToast('Voucher deleted.');
-        // Refresh statement data
+        // Clear local caches so fresh statement is fetched
+        partySummaryCache.clear();
         selectedRows = await fetchStatementRows(selected.partyName, selected.type);
         stRef = null;
         renderSummary();

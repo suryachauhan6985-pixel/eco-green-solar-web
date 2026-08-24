@@ -883,10 +883,6 @@ module.exports = function registerSalesRoutes(app, deps) {
       dispatchRows = dRows || [];
     } catch (e) { /* ignore */ }
 
-    if (!serialRows.length && !qtyRows.length && !dispatchRows.length) {
-      return res.status(404).json({ error: `No active sold/dispatched records found for reference: ${rawRef}` });
-    }
-
     // 1. Revert stock_ledger items back to Available
     if (serialRows.length || qtyRows.length) {
       await pool.query(
