@@ -479,30 +479,29 @@ async function ensureStockSummarySchema(pool) {
 
 async function syncStockSummary(pool) {
   try {
-    await pool.query(`
-      INSERT INTO stock_summary (category, brand_name, watt, solar_type, model, available_qty, assigned_qty, sold_qty, damaged_qty, total_qty, last_updated)
-      SELECT
-        COALESCE(category, '') AS category,
-        COALESCE(brand_name, '') AS brand_name,
-        COALESCE(watt, 0) AS watt,
-        COALESCE(solar_type, '') AS solar_type,
-        COALESCE(model, '') AS model,
-        COALESCE(SUM(CASE WHEN status='Available' THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS available_qty,
-        COALESCE(SUM(CASE WHEN status='Assigned' THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS assigned_qty,
-        COALESCE(SUM(CASE WHEN status='Sold' THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS sold_qty,
-        COALESCE(SUM(CASE WHEN status='Damaged' THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS damaged_qty,
-        COALESCE(SUM(COALESCE(quantity, 1)), 0) AS total_qty,
-        NOW() AS last_updated
-      FROM stock_ledger
-      GROUP BY category, brand_name, watt, solar_type, model
-      ON DUPLICATE KEY UPDATE
-        available_qty = VALUES(available_qty),
-        assigned_qty = VALUES(assigned_qty),
-        sold_qty = VALUES(sold_qty),
-        damaged_qty = VALUES(damaged_qty),
-        total_qty = VALUES(total_qty),
-        last_updated = NOW()
-    `);
+    const conn = await pool.getConnection();
+    try {
+      await conn.query(`DELETE FROM stock_summary`);
+      await conn.query(`
+        INSERT INTO stock_summary (category, brand_name, watt, solar_type, model, available_qty, assigned_qty, sold_qty, damaged_qty, total_qty, last_updated)
+        SELECT
+          COALESCE(category, '') AS category,
+          COALESCE(brand_name, '') AS brand_name,
+          COALESCE(watt, 0) AS watt,
+          COALESCE(solar_type, '') AS solar_type,
+          COALESCE(model, '') AS model,
+          COALESCE(SUM(CASE WHEN status='Available' THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS available_qty,
+          COALESCE(SUM(CASE WHEN status='Assigned' THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS assigned_qty,
+          COALESCE(SUM(CASE WHEN status='Sold' THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS sold_qty,
+          COALESCE(SUM(CASE WHEN status='Damaged' THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS damaged_qty,
+          COALESCE(SUM(COALESCE(quantity, 1)), 0) AS total_qty,
+          NOW() AS last_updated
+        FROM stock_ledger
+        GROUP BY category, brand_name, watt, solar_type, model
+      `);
+    } finally {
+      conn.release();
+    }
   } catch (e) {
     console.warn('[Stock Summary Sync] Warning:', e.message);
   }
