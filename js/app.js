@@ -5647,23 +5647,15 @@ window.attachColumnFilters = function (table) {
           name: 'Group / Category Info',
           hotkey: 'G',
           icon: 'fa-layer-group',
-          hasNested: true,
-          nestedTitle: 'Category Info',
-          nestedItems: [
-            { name: 'Create', hotkey: 'C', icon: 'fa-plus', page: 'masters', sub: 'category', action: 'create' },
-            { name: 'Display / Alter', hotkey: 'D', icon: 'fa-list-check', page: 'masters', sub: 'category', action: 'display' }
-          ]
+          page: 'masters',
+          sub: 'category'
         },
         {
           name: 'Unit of Measure (UOM)',
           hotkey: 'U',
           icon: 'fa-ruler-combined',
-          hasNested: true,
-          nestedTitle: 'UOM Info',
-          nestedItems: [
-            { name: 'Create', hotkey: 'C', icon: 'fa-plus', page: 'masters', sub: 'uom', action: 'create' },
-            { name: 'Display / Alter', hotkey: 'D', icon: 'fa-list-check', page: 'masters', sub: 'uom', action: 'display' }
-          ]
+          page: 'masters',
+          sub: 'uom'
         }
       );
 
@@ -5673,12 +5665,8 @@ window.attachColumnFilters = function (table) {
           hotkey: 'W',
           icon: 'fa-warehouse',
           requires: 'warehouse',
-          hasNested: true,
-          nestedTitle: 'Warehouse Info',
-          nestedItems: [
-            { name: 'Create', hotkey: 'C', icon: 'fa-plus', page: 'masters', sub: 'warehouse', action: 'create' },
-            { name: 'Display / Alter', hotkey: 'D', icon: 'fa-list-check', page: 'masters', sub: 'warehouse', action: 'display' }
-          ]
+          page: 'masters',
+          sub: 'warehouse'
         });
       }
 
@@ -5686,11 +5674,8 @@ window.attachColumnFilters = function (table) {
         name: 'Brand Directory',
         hotkey: 'B',
         icon: 'fa-tags',
-        hasNested: true,
-        nestedTitle: 'Brand Directory',
-        nestedItems: [
-          { name: 'Display / Alter', hotkey: 'D', icon: 'fa-list-check', page: 'masters', sub: 'brand', action: 'display' }
-        ]
+        page: 'masters',
+        sub: 'brand'
       });
     }
 

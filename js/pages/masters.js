@@ -143,7 +143,7 @@ window.PAGES.masters = {
               <h3 id="mCatFormHeading" style="margin:0;"><i class="fa-solid fa-plus" style="color:var(--green);"></i> Add New Category</h3>
             </div>
             <div class="form-grid">
-              <div class="field span-2"><label>Category Name <span class="req">*</span></label><input id="mInputCatName" placeholder="e.g. Structure, Battery, Solar Panel..."></div>
+              <div class="field span-2"><label>Category Name <span class="req">*</span></label><input id="mInputCatName" placeholder="e.g. Structure, Battery, Solar Panel..." autocomplete="off"></div>
               <div class="field span-2">
                 <div style="display:flex; flex-direction:column; gap:10px; margin:6px 0 10px;">
                   <label class="master-toggle-pill" id="mToggleWattLabel" style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--input-bg); border:1px solid var(--border-light); border-radius:10px; cursor:pointer; transition:all .2s ease;">
@@ -176,7 +176,7 @@ window.PAGES.masters = {
             </div>
             <div class="form-grid cols-2">
               <div class="field"><label>Target Category <span class="req">*</span></label><select id="mSubTargetCat"></select></div>
-              <div class="field"><label>Subtype Name <span class="req">*</span></label><input id="mInputSubName" placeholder="e.g. DCR, Non-DCR, Hybrid..."></div>
+              <div class="field"><label>Subtype Name <span class="req">*</span></label><input id="mInputSubName" placeholder="e.g. DCR, Non-DCR, Hybrid..." autocomplete="off"></div>
             </div>
             <div class="actions-row" style="margin-top:12px; display:flex; gap:8px;">
               <button class="btn btn-green" id="mBtnSaveSub" style="flex:1; justify-content:center;"><i class="fa-solid fa-plus"></i> Add Subtype</button>
@@ -221,8 +221,8 @@ window.PAGES.masters = {
         <div class="panel">
           <h3 id="mWhFormHeading"><i class="fa-solid fa-warehouse"></i> Add New Storage Warehouse</h3>
           <div class="form-grid">
-            <div class="field span-2"><label>Warehouse Name *</label><input id="mInputWhName" placeholder="e.g. Main Hub - Surat"></div>
-            <div class="field span-2"><label>Location Address</label><input id="mInputWhLoc" placeholder="e.g. GIDC Industrial Area"></div>
+            <div class="field span-2"><label>Warehouse Name *</label><input id="mInputWhName" placeholder="e.g. Main Hub - Surat" autocomplete="off"></div>
+            <div class="field span-2"><label>Location Address</label><input id="mInputWhLoc" placeholder="e.g. GIDC Industrial Area" autocomplete="off"></div>
           </div>
           <div class="actions-row">
             <button class="btn btn-blue" id="mBtnSaveWh"><i class="fa-solid fa-save"></i> Save Warehouse</button>
@@ -240,7 +240,7 @@ window.PAGES.masters = {
       <div class="grid-2">
         <div class="panel">
           <h3 id="mUomFormHeading"><i class="fa-solid fa-ruler-combined"></i> Add Unit of Measure</h3>
-          <div class="form-grid"><div class="field span-2"><label>Unit Name *</label><input id="mInputUomName" placeholder="e.g. Nos, Meters, Kg, Box, Bori, Set"></div></div>
+          <div class="form-grid"><div class="field span-2"><label>Unit Name *</label><input id="mInputUomName" placeholder="e.g. Nos, Meters, Kg, Box, Bori, Set" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div></div>
           <div class="actions-row">
             <button class="btn btn-blue" id="mBtnSaveUom"><i class="fa-solid fa-save"></i> Save Unit</button>
             <button class="btn btn-red" id="mBtnCancelUomEdit" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel</button>
