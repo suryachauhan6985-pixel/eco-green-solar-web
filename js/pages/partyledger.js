@@ -962,8 +962,13 @@ window.PAGES.partyledger = {
       unlockPageScroll();
       detachLedgerFormEscape();
       if (window.CURRENT_PARTY_LEDGER_MODE === 'create') {
-        if (window.navigateToPage) window.navigateToPage('dashboard');
-        else if (window.goPage) window.goPage('dashboard');
+        if (typeof window.stepBackFromFlyoutTrail === 'function') {
+          window.stepBackFromFlyoutTrail();
+        } else if (window.navigateToPage) {
+          window.navigateToPage('dashboard');
+        } else if (window.goPage) {
+          window.goPage('dashboard');
+        }
       }
     }
 

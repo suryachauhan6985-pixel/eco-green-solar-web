@@ -5859,6 +5859,60 @@ window.attachColumnFilters = function (table) {
     });
   }
 
+  // Ladder Navigation History & Step-by-Step StepBack Engine (Tally / Shree Sava Standard)
+  let lastFlyoutTrail = null;
+
+  function recordFlyoutTrail(groupId, tier1Index, tier2Index, wasNested) {
+    lastFlyoutTrail = {
+      groupId,
+      tier1Index: typeof tier1Index === 'number' ? tier1Index : 0,
+      tier2Index: typeof tier2Index === 'number' ? tier2Index : -1,
+      wasNested: !!wasNested
+    };
+  }
+
+  function clearFlyoutTrail() {
+    lastFlyoutTrail = null;
+  }
+
+  function stepBackFromFlyoutTrail() {
+    if (!lastFlyoutTrail) {
+      go('dashboard');
+      return;
+    }
+    const trail = { ...lastFlyoutTrail };
+    const grp = (ERP_NAV_GROUPS || []).find((g) => g.id === trail.groupId);
+    if (!grp) {
+      go('dashboard');
+      return;
+    }
+    const anchorBtn = document.getElementById('btnNav_' + grp.id);
+    if (window.CURRENT_PAGE_ID !== 'dashboard') {
+      go('dashboard', {}, false);
+    }
+    openSidebarFlyout(grp, anchorBtn, false);
+
+    setTimeout(() => {
+      const flyout = document.getElementById('egsActiveSidebarFlyout');
+      if (!flyout) return;
+      const tier1Items = Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item'));
+      const t1Idx = Math.max(0, Math.min(trail.tier1Index, tier1Items.length - 1));
+      
+      if (trail.wasNested && trail.tier2Index >= 0) {
+        updateTier1Selection(t1Idx, true);
+        navState.focusTier = 'flyout_tier2';
+        updateTier2Selection(trail.tier2Index);
+      } else {
+        updateTier1Selection(t1Idx, false);
+        navState.focusTier = 'flyout_tier1';
+      }
+    }, 40);
+  }
+
+  window.stepBackFromFlyoutTrail = stepBackFromFlyoutTrail;
+  window.recordFlyoutTrail = recordFlyoutTrail;
+  window.clearFlyoutTrail = clearFlyoutTrail;
+
   function setNestedSubmenuOpen(parentRowEl, open = true) {
     const flyout = document.getElementById('egsActiveSidebarFlyout');
     if (!flyout) return;
@@ -6057,6 +6111,7 @@ window.attachColumnFilters = function (table) {
         const filter = row.dataset.filter;
         const groupId = row.dataset.groupId;
 
+        recordFlyoutTrail(grp.id, idx, -1, false);
         closeAllFlyouts();
         dismissMobileSidebar();
         if (action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
@@ -6087,6 +6142,10 @@ window.attachColumnFilters = function (table) {
         const action = subRow.dataset.action;
         const filter = subRow.dataset.filter;
         const groupId = subRow.dataset.groupId;
+        const parentBox = subRow.closest('.egs-nested-flyout-box');
+        const allSubs = parentBox ? Array.from(parentBox.querySelectorAll('.tier2-item')) : [];
+        const sIdx = allSubs.indexOf(subRow);
+        recordFlyoutTrail(grp.id, navState.tier1Index, sIdx, true);
         closeAllFlyouts();
         dismissMobileSidebar();
         if (page) go(page, { sub, action, filter, groupId });
@@ -6122,6 +6181,7 @@ window.attachColumnFilters = function (table) {
           <span class="btn-label"><i class="fa-solid ${grp.icon}"></i> <span>${labelHtml}</span></span>
         `;
         btn.onclick = () => {
+          clearFlyoutTrail();
           closeAllFlyouts();
           if (typeof window.closeSidebar === 'function') window.closeSidebar();
           go(grp.page);
@@ -6151,6 +6211,18 @@ window.attachColumnFilters = function (table) {
       };
 
       navEl.appendChild(btn);
+    });
+
+    // Wire Brand Logo for direct Dashboard Teleportation
+    document.querySelectorAll('.brand, .brand-inner, .brand-card, .mobile-topbar .brand').forEach((el) => {
+      el.style.cursor = 'pointer';
+      el.onclick = (e) => {
+        e.stopPropagation();
+        clearFlyoutTrail();
+        closeAllFlyouts();
+        if (typeof window.closeSidebar === 'function') window.closeSidebar();
+        go('dashboard');
+      };
     });
   }
   window.renderNavButtons = renderNavButtons;
@@ -6525,9 +6597,13 @@ window.attachColumnFilters = function (table) {
         }
       }
 
-      // Step 7: Step-by-step back to Gateway / Dashboard!
+      // Step 7: Step-by-step back to originating Flyout / Dashboard!
       if (window.CURRENT_PAGE_ID && window.CURRENT_PAGE_ID !== 'dashboard') {
-        go('dashboard');
+        if (typeof stepBackFromFlyoutTrail === 'function' && lastFlyoutTrail) {
+          stepBackFromFlyoutTrail();
+        } else {
+          go('dashboard');
+        }
         return true;
       }
 
@@ -6573,6 +6649,7 @@ window.attachColumnFilters = function (table) {
         e.preventDefault();
         e.stopPropagation();
         if (subItems[navState.tier2Index]) {
+          recordFlyoutTrail(navState.activeFlyoutGroup ? navState.activeFlyoutGroup.id : 'grp-accounts', navState.tier1Index, navState.tier2Index, true);
           subItems[navState.tier2Index].click();
         }
         return true;
@@ -6583,6 +6660,8 @@ window.attachColumnFilters = function (table) {
         if (matched) {
           e.preventDefault();
           e.stopPropagation();
+          const sIdx = subItems.indexOf(matched);
+          recordFlyoutTrail(navState.activeFlyoutGroup ? navState.activeFlyoutGroup.id : 'grp-accounts', navState.tier1Index, sIdx, true);
           matched.click();
           return true;
         }
@@ -6638,6 +6717,7 @@ window.attachColumnFilters = function (table) {
             navState.tier2Index = 0;
             updateTier2Selection(0);
           } else {
+            recordFlyoutTrail(navState.activeFlyoutGroup ? navState.activeFlyoutGroup.id : 'grp-accounts', navState.tier1Index, -1, false);
             curItem.click();
           }
         }
@@ -6650,11 +6730,15 @@ window.attachColumnFilters = function (table) {
           e.preventDefault();
           e.stopPropagation();
           if (matched.classList.contains('has-nested')) {
+            const idx = tier1Items.indexOf(matched);
+            navState.tier1Index = idx;
             setNestedSubmenuOpen(matched, true);
             navState.focusTier = 'flyout_tier2';
             navState.tier2Index = 0;
             updateTier2Selection(0);
           } else {
+            const idx = tier1Items.indexOf(matched);
+            recordFlyoutTrail(navState.activeFlyoutGroup ? navState.activeFlyoutGroup.id : 'grp-accounts', idx, -1, false);
             matched.click();
           }
           return true;
