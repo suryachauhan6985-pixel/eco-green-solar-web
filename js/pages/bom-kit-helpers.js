@@ -823,7 +823,7 @@ function bomPrintKitDirectly(kit, header) {
   <style>
     @page {
       size: A4 portrait;
-      margin: 6mm 8mm 6mm 8mm;
+      margin: 7mm 8mm 7mm 8mm;
     }
     * {
       box-sizing: border-box;
@@ -857,9 +857,9 @@ function bomPrintKitDirectly(kit, header) {
     }
     .bom-table th, .bom-table td {
       border: 1px solid #000000 !important;
-      padding: 0.8px 3.5px !important;
-      font-size: 8.8pt !important;
-      line-height: 1.12 !important;
+      padding: 1.1px 3.5px !important;
+      font-size: 9.0pt !important;
+      line-height: 1.15 !important;
       vertical-align: middle !important;
       background: #ffffff !important;
       color: #000000 !important;
@@ -882,33 +882,33 @@ function bomPrintKitDirectly(kit, header) {
 
     .bom-info-cell {
       border: 1px solid #000000 !important;
-      font-size: 8.8pt !important;
+      font-size: 9.0pt !important;
       font-weight: 700 !important;
       color: #000000 !important;
       background: #ffffff !important;
-      padding: 1.2px 4px !important;
-      line-height: 1.14 !important;
+      padding: 1.6px 4px !important;
+      line-height: 1.16 !important;
     }
     .bom-kw-cell {
       border: 1px solid #000000 !important;
       text-align: right !important;
       font-weight: 700 !important;
-      font-size: 10pt !important;
+      font-size: 10.5pt !important;
       color: #000000 !important;
       background: #ffffff !important;
-      padding: 1px 4px !important;
-      line-height: 1.10 !important;
+      padding: 1.5px 4px !important;
+      line-height: 1.14 !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
     }
     .bom-kw-unit {
       border: 1px solid #000000 !important;
       text-align: left !important;
       font-weight: 700 !important;
-      font-size: 10pt !important;
+      font-size: 10.5pt !important;
       color: #000000 !important;
       background: #ffffff !important;
-      padding: 1px 4px !important;
-      line-height: 1.10 !important;
+      padding: 1.5px 4px !important;
+      line-height: 1.14 !important;
     }
     .bom-head-row th {
       background: #666699 !important;
@@ -917,9 +917,9 @@ function bomPrintKitDirectly(kit, header) {
       font-weight: 700 !important;
       text-align: center !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
-      font-size: 8.8pt !important;
-      padding: 1.0px 3.5px !important;
-      line-height: 1.12 !important;
+      font-size: 9.2pt !important;
+      padding: 1.8px 3.5px !important;
+      line-height: 1.15 !important;
     }
     .bom-cat-row td {
       background: #f2f2f2 !important;
@@ -928,9 +928,9 @@ function bomPrintKitDirectly(kit, header) {
       font-weight: 700 !important;
       text-align: center !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
-      font-size: 8.5pt !important;
-      padding: 0.5px 3.5px !important;
-      line-height: 1.10 !important;
+      font-size: 9.6pt !important;
+      padding: 1.8px 3.5px !important;
+      line-height: 1.16 !important;
     }
     .bom-table tr {
       page-break-inside: avoid !important;
@@ -940,10 +940,10 @@ function bomPrintKitDirectly(kit, header) {
       border: none !important;
       border-top: 1px solid #000000 !important;
       text-align: center !important;
-      font-size: 7pt !important;
+      font-size: 7.2pt !important;
       color: #555555 !important;
-      padding: 1px 2px !important;
-      line-height: 1.10 !important;
+      padding: 1.5px 2px !important;
+      line-height: 1.12 !important;
       background: #ffffff !important;
       font-family: 'Calibri Light', Calibri, 'Segoe UI', Arial, sans-serif !important;
       letter-spacing: 0.2px !important;
@@ -962,7 +962,7 @@ function bomPrintKitDirectly(kit, header) {
       const sheet = doc.getElementById('bomSheet');
       if (sheet) {
         const naturalHeight = sheet.scrollHeight || sheet.offsetHeight || sheet.getBoundingClientRect().height;
-        const usableHeightPx = 1080;
+        const usableHeightPx = 1065;
         
         if (naturalHeight > usableHeightPx) {
           const scale = usableHeightPx / naturalHeight;
