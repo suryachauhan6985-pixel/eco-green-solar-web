@@ -773,12 +773,10 @@ function bomRenderPrintSheetHtml(kit, header) {
           <td colspan="4" class="bom-info-cell"><b>Fabricatore Name :</b> ${esc(h.fabricatorName)}</td>
           <td colspan="2" class="bom-info-cell"><b>Dealer Name :</b> ${esc(h.dealerName)}</td>
         </tr>
-        <tr><td colspan="6" class="bom-spacer"></td></tr>
         <tr>
           <td colspan="3" class="bom-kw-cell">${esc(kit.kw)}</td>
           <td colspan="3" class="bom-kw-unit">kW</td>
         </tr>
-        <tr><td colspan="6" class="bom-spacer"></td></tr>
         <tr class="bom-head-row">
           <th class="bom-c-sr">Sr No.</th>
           <th class="bom-c-name">Iteam Name</th>
@@ -823,7 +821,7 @@ function bomPrintKitDirectly(kit, header) {
   <style>
     @page {
       size: A4 portrait;
-      margin: 8mm 8mm 8mm 8mm;
+      margin: 7mm 8mm 7mm 8mm;
     }
     * {
       box-sizing: border-box;
@@ -857,9 +855,9 @@ function bomPrintKitDirectly(kit, header) {
     }
     .bom-table th, .bom-table td {
       border: 1px solid #000000 !important;
-      padding: 1.2px 3.5px !important;
+      padding: 1.1px 3.5px !important;
       font-size: 9.2pt !important;
-      line-height: 1.16 !important;
+      line-height: 1.15 !important;
       vertical-align: middle !important;
       background: #ffffff !important;
       color: #000000 !important;
@@ -886,31 +884,27 @@ function bomPrintKitDirectly(kit, header) {
       font-weight: 700 !important;
       color: #000000 !important;
       background: #ffffff !important;
-      padding: 1.8px 4px !important;
-      line-height: 1.18 !important;
-    }
-    .bom-spacer {
-      border: 1px solid #000000 !important;
-      height: 2.5pt !important;
-      padding: 0 !important;
-      background: #ffffff !important;
+      padding: 1.6px 4px !important;
+      line-height: 1.16 !important;
     }
     .bom-kw-cell {
       border: 1px solid #000000 !important;
       text-align: right !important;
       font-weight: 700 !important;
-      font-size: 11pt !important;
+      font-size: 10.5pt !important;
       color: #000000 !important;
       background: #ffffff !important;
+      padding: 1.5px 4px !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
     }
     .bom-kw-unit {
       border: 1px solid #000000 !important;
       text-align: left !important;
       font-weight: 700 !important;
-      font-size: 11pt !important;
+      font-size: 10.5pt !important;
       color: #000000 !important;
       background: #ffffff !important;
+      padding: 1.5px 4px !important;
     }
     .bom-head-row th {
       background: #666699 !important;
@@ -919,8 +913,9 @@ function bomPrintKitDirectly(kit, header) {
       font-weight: 700 !important;
       text-align: center !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
-      font-size: 9.8pt !important;
-      padding: 2.2px 3.5px !important;
+      font-size: 9.0pt !important;
+      padding: 1.2px 3.5px !important;
+      line-height: 1.14 !important;
     }
     .bom-cat-row td {
       background: #f2f2f2 !important;
@@ -929,8 +924,8 @@ function bomPrintKitDirectly(kit, header) {
       font-weight: 700 !important;
       text-align: center !important;
       font-family: 'Arial Rounded MT Bold', 'Segoe UI', Arial, sans-serif !important;
-      font-size: 9.5pt !important;
-      padding: 1.5px 3.5px !important;
+      font-size: 9.2pt !important;
+      padding: 1.2px 3.5px !important;
     }
     .bom-table tr {
       page-break-inside: avoid !important;
@@ -940,9 +935,11 @@ function bomPrintKitDirectly(kit, header) {
       text-align: center !important;
       font-size: 7.5pt !important;
       color: #555555 !important;
-      margin-top: 4px !important;
+      margin-top: 3px !important;
       font-family: 'Calibri Light', Calibri, 'Segoe UI', Arial, sans-serif !important;
       letter-spacing: 0.2px !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
   </style>
 </head>
@@ -958,7 +955,7 @@ function bomPrintKitDirectly(kit, header) {
       const sheet = doc.getElementById('bomSheet');
       if (sheet) {
         const naturalHeight = sheet.scrollHeight || sheet.offsetHeight || sheet.getBoundingClientRect().height;
-        const usableHeightPx = 1060;
+        const usableHeightPx = 1070;
         
         if (naturalHeight > usableHeightPx) {
           const scale = usableHeightPx / naturalHeight;
