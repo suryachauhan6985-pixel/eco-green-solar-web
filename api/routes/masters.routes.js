@@ -23,6 +23,55 @@ module.exports = function registerMastersRoutes(app, deps) {
     res.json({ success: true });
   }));
 
+  // Category: update / rename category with tracking rules
+  app.put('/api/masters/categories/:oldName', route(async (req, res) => {
+    const oldName = decodeURIComponent(req.params.oldName || '').trim();
+    const newName = String(req.body.name || '').trim();
+    const watt_mandatory = req.body.watt_mandatory ? 1 : 0;
+    const serial_mandatory = req.body.serial_mandatory ? 1 : 0;
+
+    if (!oldName) return res.status(400).json({ error: 'Original category name is required.' });
+    if (!newName) return res.status(400).json({ error: 'Category name cannot be blank.' });
+
+    if (newName.toLowerCase() !== oldName.toLowerCase()) {
+      const [exists] = await pool.query(
+        `SELECT id FROM categories WHERE LOWER(name)=? AND LOWER(name)!=?`,
+        [newName.toLowerCase(), oldName.toLowerCase()]
+      );
+      if (exists.length > 0) {
+        return res.status(400).json({ error: `Category '${newName}' already exists.` });
+      }
+    }
+
+    const [result] = await pool.query(
+      `UPDATE categories SET name=?, watt_mandatory=?, serial_mandatory=? WHERE name=?`,
+      [newName, watt_mandatory, serial_mandatory, oldName]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: `Category '${oldName}' not found.` });
+    }
+
+    // Cascade name change to items, stock_ledger, and subtypes if renamed
+    if (newName !== oldName) {
+      await pool.query(`UPDATE items SET category=? WHERE category=?`, [newName, oldName]);
+      await pool.query(`UPDATE stock_ledger SET category=? WHERE category=?`, [newName, oldName]);
+      try {
+        await pool.query(`UPDATE subtypes SET category=? WHERE category=?`, [newName, oldName]);
+      } catch (e) {}
+    }
+
+    if (masterCache) {
+      masterCache.del('categories');
+      masterCache.del('items');
+      masterCache.del('brands');
+    }
+    if (deps.reportCache && typeof deps.reportCache.flush === 'function') deps.reportCache.flush();
+    if (typeof deps.syncStockSummary === 'function') deps.syncStockSummary(pool).catch(() => {});
+
+    res.json({ success: true, message: `Category '${newName}' updated successfully.` });
+  }));
+
   // Category: update wattage-mandatory rule
   app.put('/api/masters/categories/:name/watt-rule', route(async (req, res) => {
     const { name } = req.params;

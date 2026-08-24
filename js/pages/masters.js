@@ -136,7 +136,7 @@ window.PAGES.masters = {
       <div class="grid-2">
         <div class="panel">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-            <h3 style="margin:0;"><i class="fa-solid fa-plus" style="color:var(--green);"></i> Add New Category</h3>
+            <h3 id="mCatFormHeading" style="margin:0;"><i class="fa-solid fa-plus" style="color:var(--green);"></i> Add New Category</h3>
           </div>
           <div class="form-grid">
             <div class="field span-2"><label>Category Name <span class="req">*</span></label><input id="mInputCatName" placeholder="e.g. Structure, Battery, Solar Panel..."></div>
@@ -159,7 +159,10 @@ window.PAGES.masters = {
               </div>
             </div>
           </div>
-          <div class="actions-row" style="margin-top:14px;"><button class="btn btn-blue" id="mBtnSaveCat" style="width:100%; justify-content:center;"><i class="fa-solid fa-floppy-disk"></i> Save Category</button></div>
+          <div class="actions-row" style="margin-top:14px; display:flex; gap:8px;">
+            <button class="btn btn-blue" id="mBtnSaveCat" style="flex:1; justify-content:center;"><i class="fa-solid fa-floppy-disk"></i> Save Category</button>
+            <button type="button" class="btn btn-ghost" id="mBtnCancelCatEdit" style="display:none; justify-content:center;"><i class="fa-solid fa-xmark"></i> Cancel</button>
+          </div>
         </div>
         <div class="panel">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
@@ -293,6 +296,7 @@ window.PAGES.masters = {
     let editingItemId = null;
     let editingItemSolarType = null;
     let cachedCategories = [];
+    let editingCatOldName = null;
     let editingWhOldName = null;
     let editingUomOldName = null;
     let editingSubOldName = null;
@@ -359,8 +363,8 @@ window.PAGES.masters = {
           cachedCategories = cats;
           $('mSubTargetCat').innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
           $('mastersCategoryBody').innerHTML = cats.map(c => `
-            <tr>
-              <td class="gold-txt" style="font-weight:600;">${c.name}</td>
+            <tr class="m-cat-row" data-cat="${c.name}" data-watt="${c.watt_mandatory ? 1 : 0}" data-serial="${c.serial_mandatory ? 1 : 0}" style="cursor:pointer;" title="Double-click to edit Category">
+              <td class="gold-txt" style="font-weight:600;"><i class="fa-solid fa-folder-tree" style="color:var(--gold); margin-right:6px;"></i> ${c.name}</td>
               <td>${c.item_count} items</td>
               <td>
                 <button type="button" class="btn-toggle-badge ${c.watt_mandatory ? 'active-gold' : 'inactive'}" data-action="toggle-watt" data-cat="${c.name}" title="Click to toggle Wattage Rule">
@@ -374,7 +378,12 @@ window.PAGES.masters = {
                   <span>${c.serial_mandatory ? 'Mandatory' : 'Optional'}</span>
                 </button>
               </td>
-              <td><button class="btn btn-red m-cat-delete" data-cat="${c.name}" style="padding:6px 10px; font-size:11px;" title="Delete Category"><i class="fa-solid fa-trash"></i></button></td>
+              <td>
+                <div style="display:flex; gap:6px; align-items:center;">
+                  <button type="button" class="btn btn-ghost m-cat-edit" data-cat="${c.name}" data-watt="${c.watt_mandatory ? 1 : 0}" data-serial="${c.serial_mandatory ? 1 : 0}" style="color:var(--gold); padding:6px 10px; font-size:11px;" title="Edit Category"><i class="fa-solid fa-pen-to-square"></i></button>
+                  <button type="button" class="btn btn-red m-cat-delete" data-cat="${c.name}" style="padding:6px 10px; font-size:11px;" title="Delete Category"><i class="fa-solid fa-trash"></i></button>
+                </div>
+              </td>
             </tr>
           `).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--txt-muted);">No categories yet.</td></tr>`;
           loadSubtypesForCategory($('mSubTargetCat').value);
@@ -1017,7 +1026,29 @@ window.PAGES.masters = {
       }
     });
 
-    // Save Category handler click event
+    function loadCategoryIntoForm(catName, wattMandatory, serialMandatory) {
+      editingCatOldName = catName;
+      $("mInputCatName").value = catName;
+      $("mInputCatWattMandatory").checked = !!Number(wattMandatory);
+      $("mInputCatSerialMandatory").checked = !!Number(serialMandatory);
+      $("mCatFormHeading").innerHTML = `<i class="fa-solid fa-pen-to-square" style="color:var(--gold);"></i> Edit Category: ${catName}`;
+      $("mBtnSaveCat").innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Update Category';
+      $("mBtnCancelCatEdit").style.display = 'inline-flex';
+      $("mInputCatName").focus();
+      $("mInputCatName").scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function resetCatForm() {
+      editingCatOldName = null;
+      $("mInputCatName").value = "";
+      $("mInputCatWattMandatory").checked = false;
+      $("mInputCatSerialMandatory").checked = false;
+      $("mCatFormHeading").innerHTML = '<i class="fa-solid fa-plus" style="color:var(--green);"></i> Add New Category';
+      $("mBtnSaveCat").innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Category';
+      $("mBtnCancelCatEdit").style.display = 'none';
+    }
+
+    // Save Category handler click event (create + edit)
     $("mBtnSaveCat").addEventListener("click", async () => {
       const name = $("mInputCatName").value.trim();
       if (!name) {
@@ -1025,21 +1056,43 @@ window.PAGES.masters = {
         return;
       }
       try {
-        const res = await fetch(`${API_BASE}/masters/categories`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, watt_mandatory: $('mInputCatWattMandatory').checked, serial_mandatory: $('mInputCatSerialMandatory').checked })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Could not save this category.");
-        window.showToast(`Category '${name}' added.`);
-        $("mInputCatName").value = "";
-        $('mInputCatWattMandatory').checked = false;
-        $('mInputCatSerialMandatory').checked = false;
+        if (editingCatOldName) {
+          const res = await fetch(`${API_BASE}/masters/categories/${encodeURIComponent(editingCatOldName)}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name,
+              watt_mandatory: $('mInputCatWattMandatory').checked,
+              serial_mandatory: $('mInputCatSerialMandatory').checked
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Could not update this category.");
+          window.showToast(`Category '${name}' updated.`);
+        } else {
+          const res = await fetch(`${API_BASE}/masters/categories`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name,
+              watt_mandatory: $('mInputCatWattMandatory').checked,
+              serial_mandatory: $('mInputCatSerialMandatory').checked
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Could not save this category.");
+          window.showToast(`Category '${name}' added.`);
+        }
+        resetCatForm();
         loadMastersSystemEngine();
       } catch (err) {
         window.openModal("Database Error", `<p style="color:var(--red);">${err.message}</p>`);
       }
+    });
+
+    // Cancel category edit
+    $("mBtnCancelCatEdit").addEventListener("click", () => {
+      resetCatForm();
     });
 
     // Save Warehouse click event (create + edit)
@@ -1193,6 +1246,27 @@ window.PAGES.masters = {
           '<p style="color:var(--red);">Could not update serial no. rule.</p>',
         );
       }
+    });
+
+    // --- Category: click Edit button ---
+    $("mastersCategoryBody").addEventListener("click", (e) => {
+      const editBtn = e.target.closest(".m-cat-edit");
+      if (!editBtn) return;
+      const catName = editBtn.dataset.cat;
+      const watt = editBtn.dataset.watt;
+      const serial = editBtn.dataset.serial;
+      loadCategoryIntoForm(catName, watt, serial);
+    });
+
+    // --- Category: DOUBLE-click row to edit ---
+    $("mastersCategoryBody").addEventListener("dblclick", (e) => {
+      if (e.target.closest(".m-cat-delete") || e.target.closest('[data-action]')) return;
+      const row = e.target.closest(".m-cat-row");
+      if (!row) return;
+      const catName = row.dataset.cat;
+      const watt = row.dataset.watt;
+      const serial = row.dataset.serial;
+      loadCategoryIntoForm(catName, watt, serial);
     });
 
     // --- Category: delete ---
