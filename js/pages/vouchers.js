@@ -72,9 +72,9 @@ window.PAGES.vouchers = {
             <textarea id="vouchNarration" rows="2" placeholder="Enter transaction remarks / cheque no. / bank details..."></textarea>
           </div>
 
-          <div class="actions-row" style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+          <div class="actions-row" style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
             <button type="reset" class="btn btn-ghost" id="vouchBtnClear"><i class="fa-solid fa-rotate-left"></i> Reset</button>
-            <button type="submit" class="btn btn-green" id="vouchBtnSave" style="min-width:180px;"><i class="fa-solid fa-floppy-disk"></i> Post Voucher</button>
+            <button type="submit" class="btn btn-green" id="vouchBtnSave"><i class="fa-solid fa-floppy-disk"></i> Post Voucher</button>
           </div>
         </form>
       </div>
@@ -83,7 +83,7 @@ window.PAGES.vouchers = {
       <div class="panel">
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
           <h3 style="margin:0;"><i class="fa-solid fa-book-journal-whills" style="color:var(--blue);"></i> Voucher Audit Register</h3>
-          <div class="search-mini" style="min-width:220px; padding:6px 12px;">
+          <div class="search-mini" style="min-width:min(220px, 100%); padding:6px 12px; max-width:100%; box-sizing:border-box;">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="search" id="vouchSearchInput" placeholder="Filter vouchers...">
           </div>

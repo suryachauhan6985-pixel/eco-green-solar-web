@@ -84,9 +84,9 @@ window.PAGES.masters = {
           </div>
         </div>
 
-        <div class="actions-row" style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px;">
+        <div class="actions-row" style="margin-top:16px; display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
           <button class="btn btn-red" id="mBtnCancelItemEdit" style="display:none;"><i class="fa-solid fa-xmark"></i> Cancel</button>
-          <button class="btn btn-blue" id="mBtnSaveItem" style="min-width:220px;"><i class="fa-solid fa-floppy-disk"></i> Save Product Profile</button>
+          <button class="btn btn-blue" id="mBtnSaveItem"><i class="fa-solid fa-floppy-disk"></i> Save Product Profile</button>
         </div>
       </div>
 
@@ -109,14 +109,14 @@ window.PAGES.masters = {
         </div>
 
         <!-- Search & Filter Bar with modern rounded glass look -->
-        <div class="masters-filter-bar">
-          <div class="search-mini" style="flex:1; max-width:540px;">
+        <div class="masters-filter-bar" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div class="search-mini" style="flex:1 1 200px; min-width:0; max-width:540px;">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="search" id="mItemSearchInput" placeholder="Quick search by Brand, Category, Wattage, Model..." autocomplete="off">
           </div>
-          <div style="display:flex; align-items:center; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <label style="font-size:12.5px; color:var(--txt-muted); white-space:nowrap;"><i class="fa-solid fa-filter"></i> Category:</label>
-            <select id="mItemFilterCatDropdown" style="border-radius:20px; min-width:180px; padding:7px 14px; font-size:12.5px;">
+            <select id="mItemFilterCatDropdown" style="border-radius:20px; min-width:min(180px, 100%); padding:7px 14px; font-size:12.5px;">
               <option value="">All Categories</option>
             </select>
           </div>

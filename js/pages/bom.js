@@ -502,9 +502,9 @@ window.PAGES.bom = {
           It will land in <b>BOM Home</b> / the <b>BOM Register</b> as <b>Pending</b> until the first trip goes out, then move to
           <b>Partially Dispatched</b> or <b>Dispatched</b> on its own as dispatch progresses.
         </p>
-        <table style="width:100%; border-collapse:collapse; margin-bottom:14px;">
-          <tr><td style="padding:6px 0; color:var(--txt-muted);">Order No.</td><td style="padding:6px 0; font-weight:600;">${bomEsc(orderNo)}</td></tr>
-          <tr><td style="padding:6px 0; color:var(--txt-muted);">Customer</td><td style="padding:6px 0; font-weight:600;">${bomEsc(header.customerName || '—')}</td></tr>
+        <table style="width:100%; min-width:0; border-collapse:collapse; margin-bottom:14px;">
+          <tr><td style="padding:6px 0; color:var(--txt-muted);">Order No.</td><td style="padding:6px 0; font-weight:600; overflow-wrap:anywhere;">${bomEsc(orderNo)}</td></tr>
+          <tr><td style="padding:6px 0; color:var(--txt-muted);">Customer</td><td style="padding:6px 0; font-weight:600; overflow-wrap:anywhere;">${bomEsc(header.customerName || '—')}</td></tr>
           <tr><td style="padding:6px 0; color:var(--txt-muted);">Items</td><td style="padding:6px 0; font-weight:600;">${items.length} item(s)</td></tr>
           <tr><td style="padding:6px 0; color:var(--txt-muted);">Initial Status</td><td style="padding:6px 0;">${ctx.bomTrackStatusPill('Pending')}</td></tr>
         </table>

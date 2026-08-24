@@ -205,7 +205,7 @@ function createBomChallanMapModule(ctx) {
       ).join('');
 
       const modalHtml = `
-        <div style="min-width:320px; max-width:440px;">
+        <div style="width:100%; max-width:440px; min-width:0;">
           <div class="field" style="margin-bottom:12px;">
             <label style="font-size:12px; font-weight:600; color:var(--txt-muted);">Item Name / Brand</label>
             <input type="text" class="bom-field-input" value="${bomEscAttr(displayName)}" readonly style="background:rgba(255,255,255,0.05); font-weight:600;">

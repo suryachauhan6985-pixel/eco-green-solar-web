@@ -637,6 +637,12 @@ html[data-theme="light"] .otp-boxes .otp-box{
   box-shadow:0 24px 60px rgba(0,0,0,0.6); padding:24px; box-sizing:border-box;
 }
 .egs-onboard-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
 /* Native Device Permissions Panel */
 .egs-perm-list {
   display: flex;

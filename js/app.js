@@ -2921,7 +2921,7 @@ window.attachColumnFilters = function (table) {
           <span class="pill pill-gold" style="font-weight:700;">Press F1 Anytime</span>
         </div>
 
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(310px, 1fr)); gap:14px;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap:14px;">
           
           <!-- 1. Gateway & Sidebar Top-Level Hotkeys -->
           <div style="background:var(--input-bg); border:1px solid var(--border-light); border-radius:12px; padding:14px;">
@@ -3722,11 +3722,11 @@ window.attachColumnFilters = function (table) {
           </div>
         </div>
 
-        <!-- Activity Timeline & Audit Feed Tab -->
+        <!-- Audit Trail & Enterprise Mutation Logs Tab -->
         <div class="settings-panel" id="tab-audit">
           <div class="settings-card">
             <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-              <span style="display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-clock-rotate-left" style="color:var(--gold);"></i> Activity Timeline &amp; Audit Feed</span>
+              <span style="display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-shield-halved" style="color:var(--gold);"></i> Enterprise Audit Trail &amp; Mutations</span>
               <button type="button" class="btn btn-blue" id="btnRefreshAuditLogs" style="font-size:11.5px; padding:4px 10px;"><i class="fa-solid fa-rotate"></i> Refresh Feed</button>
             </div>
             <p style="margin:0 0 12px 0; font-size:12.5px; color:var(--txt-muted);">
@@ -3734,8 +3734,8 @@ window.attachColumnFilters = function (table) {
             </p>
 
             <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center;">
-              <input type="text" id="auditSearchInput" placeholder="Search reference, user, or details..." style="flex:1; min-width:200px;">
-              <select id="auditModuleFilter" style="width:170px;">
+              <input type="text" id="auditSearchInput" placeholder="Search reference, user, or details..." style="flex:1 1 180px; min-width:0;">
+              <select id="auditModuleFilter" style="width:min(170px, 100%); min-width:140px;">
                 <option value="ALL">All Operations</option>
                 <option value="PURCHASE">Purchase Inward</option>
                 <option value="SALES">Sales / Dispatch</option>
@@ -3784,7 +3784,7 @@ window.attachColumnFilters = function (table) {
               Select how your enterprise tracks inventory, serial numbers, and accounting across the entire software. Switching modes applies dynamically without code modifications.
             </p>
 
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px;" id="erpModeRadioGroup">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap:12px;" id="erpModeRadioGroup">
               
               <label class="egs-mode-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:var(--panel-alt); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.15s ease;">
                 <input type="radio" name="setErpMode" value="hybrid" style="accent-color:var(--blue); margin-top:3px; transform:scale(1.2);">
@@ -3833,7 +3833,7 @@ window.attachColumnFilters = function (table) {
           <div class="settings-card" style="margin-top:16px;">
             <div class="settings-card-title"><i class="fa-solid fa-toggle-on" style="color:var(--blue);"></i> Feature Switchboard &amp; Mandatory Rules</div>
             
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px; margin-top:12px;">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap:14px; margin-top:12px;">
               
               <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
                 <input type="checkbox" id="setCheckFeatureBom" style="accent-color:var(--gold); margin-top:3px; transform:scale(1.15);">
@@ -5656,9 +5656,12 @@ window.attachColumnFilters = function (table) {
     const rect = anchorEl ? anchorEl.getBoundingClientRect() : { top: 120, right: 260, bottom: 160 };
     const isMobile = window.innerWidth <= 768;
     if (isMobile) {
-      flyout.style.left = '16px';
-      flyout.style.right = '16px';
-      flyout.style.top = Math.min(rect.bottom + 6, window.innerHeight - 340) + 'px';
+      flyout.style.left = '12px';
+      flyout.style.right = '12px';
+      flyout.style.maxWidth = 'calc(100vw - 24px)';
+      flyout.style.maxHeight = 'calc(100vh - 80px)';
+      flyout.style.overflowY = 'auto';
+      flyout.style.top = Math.max(10, Math.min(rect.bottom + 6, window.innerHeight - 360)) + 'px';
     } else {
       flyout.style.left = (rect.right + 10) + 'px';
       flyout.style.top = Math.min(Math.max(rect.top, 60), window.innerHeight - 380) + 'px';
@@ -5715,6 +5718,7 @@ window.attachColumnFilters = function (table) {
     const tier1Els = Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item'));
     tier1Els.forEach((row, idx) => {
       row.addEventListener('mouseenter', () => {
+        if (window.innerWidth <= 768) return; // Ignore hover on mobile/touch
         navState.focusTier = 'flyout_tier1';
         navState.tier1Index = idx;
         tier1Els.forEach((r, i) => r.classList.toggle('selected', i === idx));
@@ -5728,10 +5732,13 @@ window.attachColumnFilters = function (table) {
       row.addEventListener('click', (e) => {
         if (row.classList.contains('has-nested') && !e.target.closest('.egs-nested-flyout-box .tier2-item')) {
           e.stopPropagation();
-          setNestedSubmenuOpen(row, true);
-          navState.focusTier = 'flyout_tier2';
-          navState.tier2Index = 0;
-          updateTier2Selection(0);
+          const isOpen = row.classList.contains('nested-open');
+          setNestedSubmenuOpen(row, !isOpen);
+          if (!isOpen) {
+            navState.focusTier = 'flyout_tier2';
+            navState.tier2Index = 0;
+            updateTier2Selection(0);
+          }
           return;
         }
         e.stopPropagation();

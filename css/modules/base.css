@@ -148,21 +148,65 @@ html[data-theme="ocean"]{
   color-scheme:dark;
 }
 
-*{box-sizing:border-box;}
-html,body{margin:0;padding:0;height:100%;}
-body{
-  background:var(--bg); color:var(--txt);
-  font-family:var(--font-main);
-  -webkit-font-smoothing:antialiased;
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 100%;
 }
-a{color:inherit;text-decoration:none;}
-button{font-family:inherit;cursor:pointer;}
-input,select,textarea{color:var(--txt); background:var(--input-bg); font-family:inherit;}
-input::placeholder,textarea::placeholder{color:var(--txt-muted); opacity:1;}
-::-webkit-scrollbar{width:10px;height:10px;}
-::-webkit-scrollbar-track{background:var(--bg);}
-::-webkit-scrollbar-thumb{background:var(--input-bg);border-radius:5px;}
-::-webkit-scrollbar-thumb:hover{background:var(--blue);}
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--font-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.45;
+  text-rendering: optimizeLegibility;
+}
+img, svg, video, canvas {
+  max-width: 100%;
+  height: auto;
+}
+a { color: inherit; text-decoration: none; }
+button {
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+input, select, textarea {
+  color: var(--txt);
+  background: var(--input-bg);
+  font-family: inherit;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+input::placeholder, textarea::placeholder {
+  color: var(--txt-muted);
+  opacity: 0.75;
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--input-bg); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--blue); }
+
+/* Universal responsive typography & text break safeguards */
+.truncate-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.break-text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.text-selectable {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
 
 /* Universal Modal Background Scroll Lock Engine */
 html.egs-modal-locked,

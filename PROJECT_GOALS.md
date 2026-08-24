@@ -156,6 +156,26 @@
 
 ---
 
+## Goal 11 — ERP Responsive UI Audit & Multi-Device Breakpoint System
+**Status:** 🟢 Done
+**Related files:** `css/modules/responsive.css`, `css/modules/layout.css`, `css/modules/components.css`, `css/modules/base.css`, `css/modules/auth.css`, `js/app.js`, `js/pages/returns.js`, `js/pages/masters.js`, `js/pages/vouchers.js`, `js/pages/bom.js`, `js/pages/bom-challan-map.js`
+
+- **Problem:** Mobile screens par elements screen se bahar ja rahe the, buttons/text overlap ho rahe the, tables screen se bahar nikal rahi thi, modals viewport se bade ho rahe the, aur flyout menus off-screen open ho rahe the.
+- **Root causes fixed:**
+  - `.search-mini` ka `min-width: 380px;` mobile topbar mein override karke fully fluid kiya gaya.
+  - Table containment ensure kiya gaya (saari UI tables `.table-wrap` ya `min-width: 0` ke andar).
+  - Multi-tier unified responsive breakpoints hierarchy banayi gayi:
+    - Tier 1: Large Tablets / Compact Laptops (`<= 1024px`)
+    - Tier 2: Mobile / Tablet boundary (`<= 900px`)
+    - Tier 3: Tablet Portrait / Large Mobile (`<= 768px`)
+    - Tier 4: Standard Mobile (`<= 600px`)
+    - Tier 5: Extra Small Mobile (`<= 380px`: 320px, 360px, 375px)
+  - Mobile flyout menus accordion/in-viewport mode mein fix kiye gaye.
+  - Modals, confirm cards aur toast notifications ko fluid insets aur adaptive clamp values ke saath resilient banaya gaya.
+- **Acceptance criteria:** 320px, 360px, 375px, 390px, 412px, 430px, 480px, 600px, 768px, 820px, 1024px, 1280px, 1366px, 1440px, 1920px sabhi viewports par UI perfect display ho bina horizontal unwanted scroll ke.
+
+---
+
 ## Suggestions (Optional — add/discuss before implementing)
 Kuch cheezein jo scan ke known-issues mein already flag hui thi, aur goals ke sath related hain — agar chaho to inhe bhi list mein add kar sakte hain:
 

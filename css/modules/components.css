@@ -1,10 +1,10 @@
 /* Cards / stats */
-.stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px;}
-.stat-card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; display:flex; flex-direction:column; gap:6px; position:relative; overflow:hidden;}
-.stat-card .top{display:flex; align-items:center; justify-content:space-between;}
-.stat-card .label{color:var(--txt-muted); font-size:12px; font-weight:600;}
-.stat-card .value{font-size:26px; font-weight:800;}
-.stat-card i{font-size:18px; opacity:.85;}
+.stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; min-width:0;}
+.stat-card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; display:flex; flex-direction:column; gap:6px; position:relative; overflow:hidden; min-width:0;}
+.stat-card .top{display:flex; align-items:center; justify-content:space-between; gap:6px;}
+.stat-card .label{color:var(--txt-muted); font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.stat-card .value{font-size:clamp(20px, 2.5vw, 26px); font-weight:800; overflow-wrap:anywhere; word-break:break-word;}
+.stat-card i{font-size:18px; opacity:.85; flex-shrink:0;}
 .stat-card.available{border-left:4px solid #2ECC71;}
 .stat-card.assigned{border-left:4px solid var(--blue);}
 .stat-card.sold{border-left:4px solid var(--red);}
@@ -31,9 +31,9 @@
 @media (max-width:900px){
   .stat-nav-arrow{display:none !important;}
 }
-.panel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:18px; min-width:0;}
-.panel h3{margin:0 0 14px; font-size:14.5px; color:var(--txt); font-weight:700; display:flex; align-items:center; gap:8px;}
-.panel h3 i{color:var(--blue); font-size:13.5px;}
+.panel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:18px; min-width:0; max-width:100%; box-sizing:border-box;}
+.panel h3{margin:0 0 14px; font-size:14.5px; color:var(--txt); font-weight:700; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.panel h3 i{color:var(--blue); font-size:13.5px; flex-shrink:0;}
 .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:18px; min-width:0;}
 .grid-2 > *{min-width:0;}
 
@@ -70,13 +70,15 @@
 .topbar-live-btn:hover{border-color:var(--blue); transform:translateY(-1px);}
 
 /* Forms */
-.form-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
-.field{display:flex; flex-direction:column; gap:6px;}
+.form-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; min-width:0;}
+.form-grid > *{min-width:0;}
+.field{display:flex; flex-direction:column; gap:6px; min-width:0;}
 .field label{font-size:12px; color:var(--txt-label); font-weight:600;}
 .field label .req{color:var(--red);}
 .field input, .field select, .field textarea{
   background:var(--input-bg); border:1px solid var(--border); color:var(--txt);
   padding:9px 10px; border-radius:7px; font-size:13px; width:100%; outline:none; font-family:inherit;
+  box-sizing:border-box; max-width:100%; min-width:0;
 }
 .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--blue); box-shadow:0 0 0 2px rgba(59,142,208,.2);}
 .field textarea{resize:vertical; min-height:70px; font-family:inherit; color:var(--txt); background:var(--input-bg);}
@@ -85,14 +87,14 @@
 .field.span-full{grid-column:1/-1;}
 .form-grid.cols-2{grid-template-columns:repeat(2,1fr);}
 
-.btn{display:inline-flex; align-items:center; gap:8px; border:none; border-radius:8px; padding:10px 18px; font-weight:700; font-size:13px; color:#fff; font-family:inherit; cursor:pointer;}
-.btn i{font-size:13px; color:inherit;}
+.btn{display:inline-flex; align-items:center; gap:8px; border:none; border-radius:8px; padding:10px 18px; font-weight:700; font-size:13px; color:#fff; font-family:inherit; cursor:pointer; min-height:38px; box-sizing:border-box; text-align:center;}
+.btn i{font-size:13px; color:inherit; flex-shrink:0;}
 .btn-blue{background:var(--blue); color:#fff !important;}
 .btn-blue i{color:#fff !important;}
 .btn-green{background:var(--green); color:#fff !important;}
 .btn-green i{color:#fff !important;}
 .btn:disabled, .btn[disabled]{opacity:0.4; cursor:not-allowed; filter:grayscale(60%); pointer-events:none;}
-.bom-mini-btn{padding:5px 9px; font-size:11px; gap:4px;}
+.bom-mini-btn{padding:5px 9px; font-size:11px; gap:4px; min-height:auto;}
 .btn-red{background:var(--red); color:#fff !important;}
 .btn-red i{color:#fff !important;}
 .btn-gold{background:var(--blue); color:#fff !important;}
@@ -100,23 +102,20 @@
 .btn-ghost{background:var(--input-bg); color:var(--txt); border:1px solid var(--border-light);}
 .btn-ghost i{color:inherit;}
 .btn:hover{filter:brightness(1.1);}
-.actions-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;}
+.actions-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; min-width:0; width:100%; box-sizing:border-box;}
 
-.toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px;}
-.toolbar .grow{flex:1; min-width:160px;}
-.toolbar label{font-size:11.5px; color:var(--txt-label); font-weight:700; margin-right:-4px;}
-.toolbar input, .toolbar select{background:var(--input-bg); border:1px solid var(--border); color:var(--txt); padding:8px 10px; border-radius:7px; font-size:12.5px;}
+.toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px; min-width:0; width:100%;}
+.toolbar .grow{flex:1 1 180px; min-width:0;}
+.toolbar label{font-size:11.5px; color:var(--txt-label); font-weight:700; margin-right:-4px; white-space:nowrap;}
+.toolbar input, .toolbar select{background:var(--input-bg); border:1px solid var(--border); color:var(--txt); padding:8px 10px; border-radius:7px; font-size:12.5px; max-width:100%; box-sizing:border-box;}
 
-/* ---------- Tables: real tables everywhere, scroll horizontally inside their own box ----------
-   .table-wrap is capped to a height that fits under the topbar/page-head/toolbar, and scrolls
-   BOTH ways internally. That keeps its horizontal scrollbar pinned to the bottom of this box
-   (which is always on-screen) instead of the bottom of the whole table — so you never have to
-   scroll the page down just to reach the horizontal scrollbar. Nudge the calc() below if your
-   topbar/page-head/toolbar height differs. */
+/* ---------- Tables: real tables everywhere, scroll horizontally inside their own box ---------- */
 .table-wrap{
   overflow-x:auto; overflow-y:auto;
   max-height:calc(100vh - 230px);
   border:1px solid var(--border); border-radius:var(--radius);
+  width:100%; min-width:0; max-width:100%; box-sizing:border-box;
+  -webkit-overflow-scrolling:touch;
 }
 /* Global quick-search (topbar): rows jo current search text match nahi karti unhe hide karta hai */
 tbody tr.search-hide{display:none !important;}
@@ -268,29 +267,32 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
 /* ---------- Modern Modal ---------- */
 .modal-overlay{
   display:none; position:fixed; inset:0; background:rgba(0,0,0,.68); z-index:9000;
-  align-items:center; justify-content:center; padding:16px;
+  align-items:center; justify-content:center; padding:clamp(8px, 2.5vw, 18px);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   transition: opacity .25s ease;
   overscroll-behavior: contain !important;
   touch-action: pan-y;
+  box-sizing:border-box;
 }
 .modal-overlay.show{display:flex; animation:egsFadeIn .2s ease-out;}
 .modal-box{
   background:var(--panel); border:1px solid var(--border-light); border-radius:18px;
-  width:100%; max-width:540px; max-height:85vh; overflow-y:auto; overflow-x:hidden;
+  width:100%; max-width:min(540px, 100%); max-height:88vh; overflow-y:auto; overflow-x:hidden;
   box-shadow:0 24px 60px rgba(0,0,0,.65);
   animation:egsModalPop .28s cubic-bezier(0.16, 1, 0.3, 1);
   transition: max-width 0.2s ease, width 0.2s ease;
   overscroll-behavior: contain !important;
   -webkit-overflow-scrolling: touch;
+  box-sizing:border-box;
+  min-width:0;
 }
 .modal-box.modal-box-wide{
-  max-width:960px;
-  width:95vw;
+  max-width:min(960px, 96vw);
+  width:100%;
 }
 .modal-box.modal-box-xl{
-  max-width:1200px;
-  width:95vw;
+  max-width:min(1200px, 96vw);
+  width:100%;
 }
 @media (min-width:992px){
   .modal-box.modal-box-wide{
@@ -319,19 +321,19 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
 }
 .modal-overlay.modal-fullscreen .modal-head{
   flex:0 0 auto !important;
-  padding:14px 28px !important;
+  padding:clamp(12px, 2.5vw, 18px) clamp(14px, 3vw, 24px) !important;
 }
 .modal-overlay.modal-fullscreen .modal-body{
   flex:1 1 auto !important;
   overflow-y:auto !important;
-  padding:20px 28px !important;
+  padding:clamp(14px, 3vw, 24px) !important;
 }
 .modal-overlay.modal-fullscreen .form-grid{
   max-width:none !important;
 }
 .modal-overlay.modal-fullscreen #bomChallanEntryModalRoot .form-grid.cols-2{
   max-width:none !important;
-  grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)) !important;
+  grid-template-columns:repeat(auto-fit, minmax(min(100%, 200px), 1fr)) !important;
 }
 @keyframes egsModalPop{
   from{ transform:scale(.92) translateY(14px); opacity:0; }
@@ -339,18 +341,19 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
 }
 .modal-head{
   display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding:16px 22px; border-bottom:1px solid var(--border);
+  padding:clamp(12px, 2.5vw, 16px) clamp(14px, 3vw, 20px); border-bottom:1px solid var(--border);
   background:linear-gradient(180deg, rgba(255,255,255,.02), transparent);
+  min-width:0; box-sizing:border-box;
 }
 .modal-head h3{margin:0; font-size:15px; color:var(--txt); font-weight:700; flex:1 1 auto; min-width:0; overflow-wrap:break-word; word-break:break-word;}
 .modal-head h3 i{color:var(--blue); margin-right:4px;}
 .modal-close{
   background:var(--input-bg); border:1px solid var(--border-light); color:var(--txt-muted);
   width:32px; height:32px; min-width:32px; border-radius:8px; display:flex; align-items:center; justify-content:center;
-  cursor:pointer; transition:all .2s ease;
+  cursor:pointer; transition:all .2s ease; flex-shrink:0;
 }
 .modal-close:hover{color:#fff; background:var(--red); border-color:var(--red); transform:rotate(90deg);}
-.modal-body{padding:20px 22px; overscroll-behavior:contain !important;}
+.modal-body{padding:clamp(14px, 3vw, 20px); overscroll-behavior:contain !important; min-width:0; box-sizing:border-box;}
 
 /* ---------- Settings Modal & Fixed-Tabs Shell ---------- */
 .modal-box.settings-modal-box,

@@ -22,9 +22,9 @@ window.PAGES.returns = {
   html: `
     <div class="page-head"><i class="fa-solid fa-rotate-left" style="color:var(--red);"></i><h2>Return &amp; Damage Control</h2></div>
 
-    <div class="panel" style="max-width:760px;">
+    <div class="panel" style="max-width:760px; width:100%;">
       <h3><i class="fa-solid fa-tools"></i> Stock Adjustment</h3>
-      <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="form-grid cols-2">
         <div class="field"><label>Action Type</label>
           <select id="retActionType">
             <option>Sales Return (Make Available)</option>
@@ -34,15 +34,15 @@ window.PAGES.returns = {
         <div class="field"><label>Action Date <span class="req">*</span></label>
           <input id="retDate" type="date">
         </div>
-        <div class="field" style="grid-column:1 / -1;"><label>Remarks / Reason <span class="req">*</span></label>
+        <div class="field span-full"><label>Remarks / Reason <span class="req">*</span></label>
           <input id="retRemarks" placeholder="Enter reason...">
         </div>
       </div>
     </div>
 
-    <div class="panel" style="max-width:760px;">
+    <div class="panel" style="max-width:760px; width:100%;">
       <h3><i class="fa-solid fa-layer-group"></i> Add Product Line</h3>
-      <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+      <div class="form-grid cols-2">
         <div class="field"><label>Category</label>
           <select id="retLineCat"><option value="">Select Category...</option></select>
         </div>
@@ -52,16 +52,16 @@ window.PAGES.returns = {
         <div class="field"><label>Wattage</label>
           <select id="retLineWatt" disabled><option value="">Select Wattage...</option></select>
         </div>
-        <div class="field"><label>Type</label>
-          <select id="retLineType" disabled><option value="">Select Type...</option></select>
+        <div class="field"><label>Subtype</label>
+          <select id="retLineType" disabled><option value="">Select Subtype...</option></select>
         </div>
       </div>
 
-      <div id="retLineSerialWrap" class="field" style="display:none;">
+      <div id="retLineSerialWrap" class="field" style="display:none; margin-top:10px;">
         <label>Scan Serial Numbers <span class="req">*</span></label>
         <textarea id="retLineSerials" rows="6" placeholder="Scan serial numbers here..." style="font-family:'Courier New', monospace;"></textarea>
       </div>
-      <div id="retLineQtyWrap" class="field" style="display:none;">
+      <div id="retLineQtyWrap" class="field" style="display:none; margin-top:10px;">
         <label>Quantity <span class="req">*</span></label>
         <input id="retLineQty" type="number" min="1" step="1" placeholder="Enter quantity...">
       </div>
@@ -72,16 +72,18 @@ window.PAGES.returns = {
       </div>
     </div>
 
-    <div class="panel" style="max-width:760px;">
+    <div class="panel" style="max-width:760px; width:100%;">
       <h3><i class="fa-solid fa-list"></i> Queued Lines</h3>
-      <table class="data-table" id="retLinesTable">
-        <thead>
-          <tr><th>Category</th><th>Brand</th><th>Watt</th><th>Type</th><th>Serials / Qty</th><th></th></tr>
-        </thead>
-        <tbody id="retLinesBody">
-          <tr id="retLinesEmpty"><td colspan="6" style="text-align:center; color:var(--muted,#888);">No lines added yet</td></tr>
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="data-table" id="retLinesTable">
+          <thead>
+            <tr><th>Category</th><th>Brand</th><th>Watt</th><th>Type</th><th>Serials / Qty</th><th></th></tr>
+          </thead>
+          <tbody id="retLinesBody">
+            <tr id="retLinesEmpty"><td colspan="6" style="text-align:center; color:var(--muted,#888);">No lines added yet</td></tr>
+          </tbody>
+        </table>
+      </div>
       <div class="actions-row">
         <button class="btn btn-red" id="btnProcessReturn"><i class="fa-solid fa-tools"></i> Execute Stock Adjustment</button>
       </div>

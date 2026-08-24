@@ -1,64 +1,424 @@
-/* =================== RESPONSIVE =================== */
-@media (max-width: 900px){
-  .sidebar{
-    transform:translateX(-100%);
-    width:260px; min-width:260px;
-    padding:16px 12px;
-    box-sizing:border-box;
-  }
-  .sidebar.open{
-    transform:translateX(0);
-    box-shadow:8px 0 32px rgba(0,0,0,0.35);
-  }
-  .overlay.show{display:block;}
-  .mobile-topbar{display:flex;}
-  .main{margin-left:0;}
-  .topbar{display:none;}
-  .stat-grid{grid-template-columns:repeat(2,1fr);}
-  .form-grid{grid-template-columns:repeat(2,1fr);}
-  .field.span-2, .field.span-3{grid-column:span 2;}
-  .grid-2{grid-template-columns:1fr;}
-  .content{padding:14px;}
+/* ==========================================================================
+   ECO GREEN SOLAR ERP — UNIFIED RESPONSIVE SYSTEM
+   Breakpoints Hierarchy:
+     1. Large Tablet / Compact Desktop (<= 1024px)
+     2. Mobile/Tablet Boundary (<= 900px)
+     3. Tablet Portrait / Large Mobile (<= 768px)
+     4. Standard Mobile (<= 600px)
+     5. Extra Small Mobile (<= 380px: 320px, 360px, 375px)
+   ========================================================================== */
 
-  /* ---- Purchase / Sales: mobile shows ONE page at a time, sliding in
-     from the side, instead of both entry + edit panels stacked together. ---- */
-  .btn-toggle-edit{display:inline-flex; flex-basis:100%; margin-top:8px;}
-  .edit-panel-actions{display:block; margin-bottom:14px;}
-
-  .split-two{
-    position:relative;
-    overflow:hidden;         /* viewport: hides the half of the track that's off-screen */
+/* --------------------------------------------------------------------------
+   TIER 1: Large Tablets / Compact Laptops (<= 1024px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .stat-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+    gap: 12px;
   }
-  .split-two-track{
-    display:flex;
-    align-items:flex-start;
-    width:200%;              /* two panels side by side, each = 100% of the screen */
-    transition:transform .32s ease;
-    transform:translateX(0); /* default: entry panel showing */
+  .grid-2 {
+    gap: 14px;
   }
-  .split-two-track > .panel{
-    width:50%;
-    flex:0 0 50%;
-    margin-bottom:0;
+  .search-mini {
+    min-width: 240px;
   }
-  /* Edit toggle button removes "edit-closed" from #purSplit/#saleSplit ->
-     slide the track left by half its width so the edit panel comes into view. */
-  .split-two:not(.edit-closed) .split-two-track{
-    transform:translateX(-52%);
+  .modal-box.modal-box-wide,
+  .modal-box.modal-box-xl {
+    max-width: min(92vw, 960px);
   }
-
-  /* Tables stay real tables on mobile too (matches the desktop software) —
-     they just scroll horizontally inside .table-wrap instead of turning
-     into stacked cards. */
-  .table-wrap{-webkit-overflow-scrolling:touch; max-height:calc(100vh - 190px);}
 }
-@media (max-width: 700px){
-  .form-grid.cols-2{grid-template-columns:1fr;}
+
+/* --------------------------------------------------------------------------
+   TIER 2: Mobile / Tablet Viewport Switch (<= 900px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  /* Shell & Sidebar Off-canvas */
+  .shell {
+    min-width: 0;
+    width: 100%;
+  }
+  .sidebar {
+    transform: translateX(-100%);
+    width: min(270px, 85vw);
+    min-width: 0;
+    padding: 16px 12px;
+    box-sizing: border-box;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 9999;
+    box-shadow: none;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.45);
+  }
+  .overlay.show {
+    display: block;
+    z-index: 9990;
+  }
+  .main {
+    margin-left: 0;
+    width: 100%;
+    min-width: 0;
+  }
+  .topbar {
+    display: none !important;
+  }
+  .mobile-topbar {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 900;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .mobile-topbar .search-mini {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100%;
+    box-sizing: border-box;
+  }
+
+  /* Content area fluid padding */
+  .content {
+    padding: clamp(10px, 2.5vw, 16px);
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* Stat Grid & Forms */
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .field.span-2,
+  .field.span-3 {
+    grid-column: span 2;
+  }
+  .grid-2 {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  /* Split Two Track: Smooth sliding panels for Purchase & Sales */
+  .btn-toggle-edit {
+    display: inline-flex;
+    flex-basis: 100%;
+    margin-top: 8px;
+    justify-content: center;
+  }
+  .edit-panel-actions {
+    display: block;
+    margin-bottom: 14px;
+  }
+  .split-two {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    min-width: 0;
+  }
+  .split-two-track {
+    display: flex;
+    align-items: flex-start;
+    width: 200%;
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateX(0);
+    min-width: 0;
+  }
+  .split-two-track > .panel {
+    width: 50%;
+    flex: 0 0 50%;
+    margin-bottom: 0;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .split-two:not(.edit-closed) .split-two-track {
+    transform: translateX(-50%);
+  }
+
+  /* Universal Table Container: Horizontal scroll contained inside card */
+  .table-wrap {
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(100vh - 190px);
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
 }
-@media (max-width: 560px){
-  .stat-grid{grid-template-columns:1fr 1fr;}
-  .form-grid{grid-template-columns:1fr;}
-  .form-grid.cols-2{grid-template-columns:1fr;}
-  .field.span-2, .field.span-3{grid-column:span 1;}
-  .stat-card .value{font-size:21px;}
+
+/* --------------------------------------------------------------------------
+   TIER 3: Tablet Portrait & Large Mobile (<= 768px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .form-grid.cols-2 {
+    grid-template-columns: 1fr;
+  }
+  .panel {
+    padding: clamp(12px, 3vw, 16px);
+    margin-bottom: 14px;
+  }
+  .panel h3 {
+    font-size: 13.5px;
+    margin-bottom: 12px;
+  }
+
+  /* Modals & Dialogs */
+  .modal-overlay {
+    padding: clamp(8px, 3vw, 16px);
+  }
+  .modal-box {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 12px;
+    padding: clamp(14px, 3vw, 18px);
+    max-height: 90vh;
+  }
+  .modal-head {
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+  }
+  .modal-head h3 {
+    font-size: 14px;
+  }
+
+  /* Navigation Flyout on Mobile - Accordion Style / In-Viewport */
+  .egs-flyout-box {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: calc(100vw - 24px) !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
+  .egs-nested-flyout-box {
+    position: static !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    left: 0 !important;
+    top: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-radius: 6px !important;
+    margin-top: 6px !important;
+    background: rgba(0, 0, 0, 0.25) !important;
+    box-shadow: none !important;
+  }
+  .egs-flyout-item {
+    flex-wrap: wrap;
+  }
+  .egs-flyout-item .item-arrow {
+    transform: rotate(90deg);
+  }
+
+  /* Toolbars & Filter Bars */
+  .toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .toolbar .grow {
+    min-width: 100%;
+    flex: 1 1 100%;
+  }
+  .toolbar input,
+  .toolbar select {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   TIER 4: Standard Mobile Devices (<= 600px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .stat-card {
+    padding: 12px 10px;
+    border-radius: 8px;
+  }
+  .stat-card .label {
+    font-size: 11px;
+  }
+  .stat-card .value {
+    font-size: clamp(16px, 4.8vw, 22px);
+    overflow-wrap: anywhere;
+    word-break: break-all;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .form-grid.cols-2 {
+    grid-template-columns: 1fr;
+  }
+  .field.span-2,
+  .field.span-3,
+  .field.span-full {
+    grid-column: 1 / -1;
+  }
+
+  .page-head {
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .page-head h2 {
+    font-size: 16.5px;
+  }
+  .page-head i {
+    font-size: 16px;
+  }
+
+  /* Actions & Button Rows */
+  .actions-row {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  .actions-row .btn {
+    width: 100%;
+    min-width: 0 !important;
+    justify-content: center;
+    padding: 10px 14px;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
+
+  /* Confirmation Dialog */
+  .confirm-card {
+    padding: 18px 16px;
+    border-radius: 12px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .confirm-row {
+    gap: 12px;
+  }
+  .confirm-icon {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    font-size: 16px;
+  }
+  .confirm-btns {
+    flex-direction: column-reverse;
+    gap: 8px;
+    width: 100%;
+    margin-top: 14px;
+  }
+  .confirm-btns button {
+    width: 100%;
+    min-width: 0 !important;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  /* Toast notification */
+  .egs-toast-container {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: 10px !important;
+    max-width: calc(100vw - 20px) !important;
+    width: auto !important;
+  }
+  .toast {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   TIER 5: Extra-Small Mobile Screens (<= 380px: 320px, 360px, 375px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 380px) {
+  .content {
+    padding: 8px 6px;
+  }
+  .panel {
+    padding: 10px 8px;
+    border-radius: 8px;
+  }
+  
+  /* Single column stat cards to avoid number truncation on 320px */
+  .stat-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .stat-card {
+    padding: 10px;
+  }
+  .stat-card .value {
+    font-size: 19px;
+  }
+
+  /* Mobile Topbar for 320px */
+  .mobile-topbar {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .mobile-topbar .brand-logo-img {
+    height: 28px;
+    max-width: 120px;
+  }
+  .hamburger {
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+  .mobile-profile-avatar {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 11px !important;
+  }
+
+  /* Modals on 320px */
+  .modal-overlay {
+    padding: 4px;
+  }
+  .modal-box {
+    padding: 10px 8px;
+    border-radius: 8px;
+  }
+  .modal-head {
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+  .modal-head h3 {
+    font-size: 13px;
+  }
+  .modal-close {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    font-size: 11px;
+  }
+
+  .field label {
+    font-size: 11.5px;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    font-size: 12px;
+    padding: 7px 8px;
+  }
+
+  .btn {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
 }
