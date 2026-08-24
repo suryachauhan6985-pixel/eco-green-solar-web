@@ -6660,6 +6660,8 @@ window.attachColumnFilters = function (table) {
   window.openModal = function (title, bodyHtml, opts) {
     opts = opts || {};
     currentModalCloseCb = typeof opts.onClose === 'function' ? opts.onClose : null;
+    if (typeof closeAllFlyouts === 'function') closeAllFlyouts();
+    if (typeof window.closeSidebar === 'function') window.closeSidebar();
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalBody').innerHTML = bodyHtml;
     const overlay = document.getElementById('modalOverlay');
@@ -6723,6 +6725,8 @@ window.attachColumnFilters = function (table) {
 
   window.confirmDialog = function (title, message, opts) {
     opts = opts || {};
+    if (typeof closeAllFlyouts === 'function') closeAllFlyouts();
+    if (typeof window.closeSidebar === 'function') window.closeSidebar();
     const kind = KIND_STYLE[opts.kind] ? opts.kind : 'question';
     const style = KIND_STYLE[kind];
     const card = document.getElementById('confirmCard');

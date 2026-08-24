@@ -570,6 +570,75 @@ html[data-theme="gray"] .erp-sidebar-btn.selected {
   border-color: var(--blue);
   color: #FFFFFF;
 }
+html[data-theme="gray"] .egs-flyout-box,
+html[data-theme="gray"] .egs-nested-flyout-box {
+  background: #2C333E;
+  border-color: #3F4756;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+html[data-theme="gray"] .egs-flyout-header {
+  background: #242A33;
+  color: #38BDF8;
+  border-bottom-color: #3F4756;
+}
+
+/* Emerald Theme Specific Overrides */
+html[data-theme="emerald"] .erp-sidebar-btn {
+  background: #12251E;
+  color: #F2FAF6;
+  border-color: #264E40;
+}
+html[data-theme="emerald"] .erp-sidebar-btn:hover,
+html[data-theme="emerald"] .erp-sidebar-btn.selected {
+  background: #1A362C;
+  border-color: #34D399;
+  color: #FFFFFF;
+}
+html[data-theme="emerald"] .egs-flyout-box,
+html[data-theme="emerald"] .egs-nested-flyout-box {
+  background: #152B23;
+  border-color: #264E40;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(52, 211, 153, 0.15);
+}
+html[data-theme="emerald"] .egs-flyout-header {
+  background: #10221C;
+  color: #34D399;
+  border-bottom-color: #264E40;
+}
+html[data-theme="emerald"] .egs-flyout-item:hover,
+html[data-theme="emerald"] .egs-flyout-item.selected {
+  background: linear-gradient(135deg, #10B981, #059669) !important;
+  color: #FFFFFF !important;
+}
+
+/* Ocean Theme Specific Overrides */
+html[data-theme="ocean"] .erp-sidebar-btn {
+  background: #111D31;
+  color: #F0F6FC;
+  border-color: #203554;
+}
+html[data-theme="ocean"] .erp-sidebar-btn:hover,
+html[data-theme="ocean"] .erp-sidebar-btn.selected {
+  background: #1A2B47;
+  border-color: #38BDF8;
+  color: #FFFFFF;
+}
+html[data-theme="ocean"] .egs-flyout-box,
+html[data-theme="ocean"] .egs-nested-flyout-box {
+  background: #14233C;
+  border-color: #203554;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(56, 189, 248, 0.15);
+}
+html[data-theme="ocean"] .egs-flyout-header {
+  background: #0E192C;
+  color: #38BDF8;
+  border-bottom-color: #203554;
+}
+html[data-theme="ocean"] .egs-flyout-item:hover,
+html[data-theme="ocean"] .egs-flyout-item.selected {
+  background: linear-gradient(135deg, #0284C7, #0369A1) !important;
+  color: #FFFFFF !important;
+}
 
 /* Floating Flyout Menu System (Tally / Shree Sava) */
 .egs-flyout-backdrop {

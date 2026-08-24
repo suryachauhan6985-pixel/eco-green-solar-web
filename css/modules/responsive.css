@@ -258,7 +258,7 @@
   /* Navigation Flyout on Mobile - Center-Modal with Highest Z-Index */
   .egs-flyout-backdrop {
     z-index: 10001 !important;
-    background: rgba(0, 0, 0, 0.5) !important;
+    background: var(--overlay-bg, rgba(0, 0, 0, 0.5)) !important;
     backdrop-filter: blur(3px) !important;
   }
   .egs-flyout-box {
@@ -274,7 +274,9 @@
     z-index: 10005 !important;
     box-sizing: border-box;
     border-radius: 14px !important;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+    background: var(--panel) !important;
+    border: 1.5px solid var(--border) !important;
+    box-shadow: 0 20px 60px var(--shadow, rgba(0, 0, 0, 0.75)), 0 0 0 1px var(--border-light) !important;
   }
   .egs-nested-flyout-box {
     position: static !important;
@@ -286,7 +288,8 @@
     border-right: none !important;
     border-radius: 8px !important;
     margin-top: 6px !important;
-    background: rgba(0, 0, 0, 0.25) !important;
+    background: var(--panel-alt) !important;
+    border: 1px solid var(--border) !important;
     box-shadow: none !important;
   }
   .egs-flyout-item {

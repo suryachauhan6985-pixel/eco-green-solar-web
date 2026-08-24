@@ -266,7 +266,7 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
 
 /* ---------- Modern Modal ---------- */
 .modal-overlay{
-  display:none; position:fixed; inset:0; background:rgba(0,0,0,.68); z-index:9000;
+  display:none; position:fixed; inset:0; background:var(--overlay-bg, rgba(0,0,0,.75)); z-index:20000;
   align-items:center; justify-content:center; padding:clamp(8px, 2.5vw, 18px);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   transition: opacity .25s ease;
@@ -276,9 +276,9 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
 }
 .modal-overlay.show{display:flex; animation:egsFadeIn .2s ease-out;}
 .modal-box{
-  background:var(--panel); border:1px solid var(--border-light); border-radius:18px;
+  background:var(--panel); border:1px solid var(--border); border-radius:18px;
   width:100%; max-width:min(540px, 100%); max-height:88vh; overflow-y:auto; overflow-x:hidden;
-  box-shadow:0 24px 60px rgba(0,0,0,.65);
+  box-shadow:0 24px 60px var(--shadow, rgba(0,0,0,.65));
   animation:egsModalPop .28s cubic-bezier(0.16, 1, 0.3, 1);
   transition: max-width 0.2s ease, width 0.2s ease;
   overscroll-behavior: contain !important;
@@ -402,7 +402,7 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
   flex-direction: column;
   gap: 4px;
   overscroll-behavior: contain !important;
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--panel-alt);
 }
 .settings-content-wrap {
   flex: 1 1 auto;
@@ -412,6 +412,7 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
   padding: 18px 22px;
   overscroll-behavior: contain !important;
   -webkit-overflow-scrolling: touch;
+  background: var(--panel);
 }
 .settings-tab-btn {
   display: flex;
@@ -426,7 +427,7 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
   font-weight: 600;
   cursor: pointer;
   text-align: left;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
   white-space: nowrap;
 }
 .settings-tab-btn i {
@@ -435,36 +436,20 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
   text-align: center;
 }
 .settings-tab-btn:hover {
-  background: var(--panel-alt);
+  background: var(--input-bg);
   color: var(--txt);
 }
 .settings-tab-btn.active {
-  background: rgba(59, 142, 208, 0.12);
-  border-color: rgba(59, 142, 208, 0.28);
-  color: var(--blue);
+  background: linear-gradient(135deg, var(--blue), var(--blue-hover));
+  border-color: var(--blue);
+  color: #ffffff !important;
   font-weight: 700;
+  box-shadow: 0 3px 10px rgba(59, 142, 208, 0.3);
 }
-html[data-theme="light"] .settings-tabs {
-  background: #F8FAFC;
-  border-right: 1px solid #E2E8F0;
+.settings-tab-btn.active i {
+  color: #ffffff !important;
 }
-html[data-theme="light"] .settings-tab-btn {
-  color: #475569;
-}
-html[data-theme="light"] .settings-tab-btn:hover {
-  background: #E2E8F0;
-  color: #0F172A;
-}
-html[data-theme="light"] .settings-tab-btn.active {
-  background: rgba(37, 99, 235, 0.12);
-  border-color: #2563EB;
-  color: #1D4ED8;
-}
-html[data-theme="light"] .settings-card {
-  background: #FFFFFF;
-  border: 1px solid #CBD5E1;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-}
+
 .settings-panel {
   display: none;
   animation: egsFadeIn 0.18s ease-out;
@@ -473,11 +458,62 @@ html[data-theme="light"] .settings-card {
   display: block;
 }
 .settings-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 16px var(--shadow, rgba(0, 0, 0, 0.08));
+}
+.egs-setting-box {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.egs-legal-doc {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.egs-legal-section {
+  margin-bottom: 14px;
+}
+.egs-legal-h4 {
+  font-weight: 700;
+  color: var(--gold);
+  font-size: 12.5px;
+  margin-bottom: 4px;
+}
+.egs-about-spec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.egs-about-spec-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.egs-spec-key {
+  color: var(--txt-muted);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.egs-spec-val {
+  color: var(--txt);
+  font-weight: 700;
 }
 
 @media (max-width: 768px) {
