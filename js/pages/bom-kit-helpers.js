@@ -805,11 +805,11 @@ function bomPrintKitDirectly(kit, header) {
   iframe = document.createElement('iframe');
   iframe.id = 'bomKitPrintIframe';
   iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = '0';
+  iframe.style.left = '-9999px';
+  iframe.style.top = '0';
+  iframe.style.width = '794px';
+  iframe.style.height = '1123px';
+  iframe.style.border = 'none';
   iframe.style.visibility = 'hidden';
   document.body.appendChild(iframe);
 
@@ -957,21 +957,14 @@ function bomPrintKitDirectly(kit, header) {
     try {
       const sheet = doc.getElementById('bomSheet');
       if (sheet) {
-        const naturalHeight = sheet.getBoundingClientRect().height;
-        const PX_PER_MM = 96 / 25.4;
-        const A4_HEIGHT_MM = 297;
-        const MARGIN_TB_MM = 12;
-        const A4_WIDTH_MM = 210;
-        const MARGIN_LR_MM = 10;
-        const usableHeightPx = (A4_HEIGHT_MM - MARGIN_TB_MM * 2) * PX_PER_MM * 0.98;
+        const naturalHeight = sheet.scrollHeight || sheet.offsetHeight || sheet.getBoundingClientRect().height;
+        const usableHeightPx = 1032;
         
-        if (naturalHeight > usableHeightPx) {
-          const scale = usableHeightPx / naturalHeight;
-          const usableWidthPx = (A4_WIDTH_MM - MARGIN_LR_MM * 2) * PX_PER_MM;
-          const baseWidthPx = usableWidthPx / scale;
-          sheet.style.width = baseWidthPx + 'px';
-          sheet.style.zoom = scale;
-        }
+        let scale = usableHeightPx / naturalHeight;
+        if (scale > 1) scale = 1;
+        if (scale < 0.76) scale = 0.77;
+        
+        sheet.style.zoom = scale;
       }
       iframe.contentWindow.focus();
       iframe.contentWindow.print();
@@ -979,7 +972,7 @@ function bomPrintKitDirectly(kit, header) {
       console.warn('Iframe print fallback:', e);
       window.print();
     }
-  }, 200);
+  }, 250);
 }
 window.bomPrintKitDirectly = bomPrintKitDirectly;
 
