@@ -25,6 +25,9 @@ function createBomChallanMapModule(ctx) {
       if (!ctx.challanOverlay) return;
       ctx.challanOverlay.classList.remove('show');
       document.body.classList.remove('no-scroll');
+      if (typeof window.stepBackFromFlyoutTrail === 'function') {
+        window.stepBackFromFlyoutTrail();
+      }
     }
     // NOTE: bind the bare local function, not ctx.closeChallanModal — at
     // this point (factory executing, before Object.assign(ctx, ...) below

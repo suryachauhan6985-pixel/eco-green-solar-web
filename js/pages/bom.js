@@ -21,7 +21,7 @@
 // ---------------------------------------------------------------------------
 function bomRenderHomeViewHtml() {
   return `
-    <div id="bomHomeView">
+    <div id="bomHomeView" style="display:none;">
       <div class="page-head"><i class="fa-solid fa-truck-fast" style="color:var(--gold);"></i><h2>BOM Order Dispatch & Processing Workstation</h2></div>
       <div class="panel">
         <h3 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
@@ -479,7 +479,7 @@ window.PAGES.bom = {
       });
     }
 
-    ctx.bomLoadHomePendingTable(); // initial load — BOM tab lands on the Home view
+    // Initial load handled by action router (showBomHome / showBomEntryForNewKit)
 
     function bomCollectItemsForCreate() {
       const out = [];

@@ -14,6 +14,9 @@ function createBomTrackRegisterModule(ctx) {
       if (!ctx.registerOverlay) return;
       ctx.registerOverlay.classList.remove('show');
       document.body.classList.remove('no-scroll');
+      if (typeof window.stepBackFromFlyoutTrail === 'function') {
+        window.stepBackFromFlyoutTrail();
+      }
     }
     if (ctx.registerCloseBtn) ctx.registerCloseBtn.addEventListener('click', closeRegisterModal);
     let regMouseDownTarget = null;
@@ -277,7 +280,14 @@ function createBomTrackRegisterModule(ctx) {
           </div>
         </div>
         <div id="bomTrackResult"></div>
-      `, { size: 'xl' });
+      `, {
+        size: 'xl',
+        onClose: () => {
+          if (typeof window.stepBackFromFlyoutTrail === 'function') {
+            window.stepBackFromFlyoutTrail();
+          }
+        }
+      });
       const input = document.getElementById('bomTrackOrderInput');
       const searchBtn = document.getElementById('bomTrackSearchBtn');
       const resultBox = document.getElementById('bomTrackResult');

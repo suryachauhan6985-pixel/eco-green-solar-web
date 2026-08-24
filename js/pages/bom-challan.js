@@ -1932,7 +1932,9 @@ window.openCustomChallanModal = async function(prefillData) {
   window.openModal('Custom Challan Entry', modalHtml, {
     fullscreen: true,
     onClose: () => {
-      window.openChallanRegisterModal();
+      if (typeof window.stepBackFromFlyoutTrail === 'function') {
+        window.stepBackFromFlyoutTrail();
+      }
     }
   });
 
@@ -2085,7 +2087,14 @@ window.openChallanRegisterModal = async function() {
       </div>
     </div>
   `;
-  window.openModal('Saved Challan Register', html, { fullscreen: true });
+  window.openModal('Saved Challan Register', html, {
+    fullscreen: true,
+    onClose: () => {
+      if (typeof window.stepBackFromFlyoutTrail === 'function') {
+        window.stepBackFromFlyoutTrail();
+      }
+    }
+  });
 
   let allChallans = [];
   async function loadData() {
