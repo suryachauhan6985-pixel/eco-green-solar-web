@@ -6789,6 +6789,27 @@ window.attachColumnFilters = function (table) {
     }
   }, true);
 
+  // Dedicated Universal Top-Modal Escape Interceptor: Runs in CAPTURE phase so top modal closes cleanly without affecting background windows
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const topModal = document.querySelector('#modalOverlay.show, #confirmOverlay.show, #egsPopupOverlay.show');
+      if (topModal) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        if (topModal.id === 'modalOverlay') {
+          window.closeModal();
+        } else if (topModal.id === 'confirmOverlay') {
+          const btn = document.getElementById('confirmCancel');
+          if (btn) btn.click();
+          else topModal.classList.remove('show');
+        } else if (topModal.id === 'egsPopupOverlay') {
+          topModal.classList.remove('show');
+        }
+      }
+    }
+  }, true);
+
   document.addEventListener('keydown', (e) => {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     const isTyping = tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable);

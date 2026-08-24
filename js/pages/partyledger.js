@@ -476,9 +476,10 @@ window.PAGES.partyledger = {
 
     function partyListKeyHandler(e) {
       if (window.CURRENT_PAGE_ID !== 'partyledger') return;
-      // Statement modal and Ledger Form own keys while open
+      // Statement modal, Ledger Form, or Top Global Modals own keys while open
       if (stOverlay && stOverlay.classList.contains('show')) return;
       if (lfOverlay && lfOverlay.classList.contains('show')) return;
+      if (document.querySelector('#modalOverlay.show, #confirmOverlay.show, #egsPopupOverlay.show')) return;
 
       const isSearchFocused = document.activeElement === searchEl || (document.activeElement && document.activeElement.id === 'plSearch');
       const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
@@ -864,6 +865,9 @@ window.PAGES.partyledger = {
     let lfEscHandler = null;
     function attachLedgerFormEscape() {
       lfEscHandler = (e) => {
+        // If a higher overlay (like #modalOverlay / #confirmOverlay / #egsPopupOverlay) is open on top, let top modal handle it!
+        if (document.querySelector('#modalOverlay.show, #confirmOverlay.show, #egsPopupOverlay.show')) return;
+
         if (e.key === 'Escape') {
           e.preventDefault();
           e.stopPropagation();
@@ -1750,6 +1754,9 @@ window.PAGES.partyledger = {
 
     function attachStatementKeyboardNav() {
       stmtKeyHandler = (e) => {
+        // If a higher overlay (like #modalOverlay / #confirmOverlay / #egsPopupOverlay) is open on top, let top modal handle it!
+        if (document.querySelector('#modalOverlay.show, #confirmOverlay.show, #egsPopupOverlay.show')) return;
+
         const rows = document.querySelectorAll('#stmtTbody tr.stmt-table-row');
         if (e.key === 'ArrowDown') {
           e.preventDefault();
