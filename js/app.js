@@ -4132,6 +4132,7 @@ window.attachColumnFilters = function (table) {
               </tbody>
             </table>
           </div>
+        `;
       } catch (e) {
         if (window.Skeleton) {
           container.innerHTML = window.Skeleton.error(e.message || 'Telemetry unavailable.', { retryId: 'btnRetryTelemetry' });
