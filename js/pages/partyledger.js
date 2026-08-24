@@ -961,6 +961,10 @@ window.PAGES.partyledger = {
       lfOverlay.classList.remove('show');
       unlockPageScroll();
       detachLedgerFormEscape();
+      if (window.CURRENT_PARTY_LEDGER_MODE === 'create') {
+        if (window.navigateToPage) window.navigateToPage('dashboard');
+        else if (window.goPage) window.goPage('dashboard');
+      }
     }
 
     document.getElementById('btnCreateLedger').addEventListener('click', () => {
@@ -1049,9 +1053,34 @@ window.PAGES.partyledger = {
           body: JSON.stringify(payload),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Could not save this ledger.');
-        closeLedgerForm();
-        if (window.showToast) window.showToast(editingLedgerId ? 'Ledger updated successfully!' : 'Ledger created successfully!', 'success');
+        const wasEditing = !!editingLedgerId;
+        if (wasEditing) {
+          closeLedgerForm();
+          if (window.showToast) window.showToast('Ledger updated successfully!', 'success');
+        } else {
+          // Continuous batch creation mode: reset fields and keep focus on name
+          document.getElementById('lfName').value = '';
+          document.getElementById('lfShort').value = '';
+          lfMobileInput.value = '';
+          document.getElementById('lfAddress').value = '';
+          lfGstinInput.value = '';
+          if (lfMobileFeedback) { lfMobileFeedback.style.display = 'none'; lfMobileFeedback.innerHTML = ''; }
+          if (lfGstinFeedback) { lfGstinFeedback.style.display = 'none'; lfGstinFeedback.innerHTML = ''; }
+          if (lfMobileInput) lfMobileInput.style.borderColor = '';
+          if (lfGstinInput) lfGstinInput.style.borderColor = '';
+
+          if (window.showToast) {
+            window.showToast(`✅ Ledger "${name}" created successfully! Ready for next ledger.`, 'success');
+          }
+
+          setTimeout(() => {
+            const nameField = document.getElementById('lfName');
+            if (nameField) {
+              nameField.focus();
+              if (typeof nameField.select === 'function') nameField.select();
+            }
+          }, 80);
+        }
         await loadDirectory();
       } catch (err) {
         if (window.showError) window.showError('Could Not Save', err.message);

@@ -30,6 +30,10 @@
   overflow: hidden;
 }
 
+body.pl-mode-create .pl-directory-panel {
+  display: none !important;
+}
+
 @media (max-width: 768px) {
   .content:has(.pl-directory-panel) {
     height: auto;

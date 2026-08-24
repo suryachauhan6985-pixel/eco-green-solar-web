@@ -97,6 +97,7 @@ function invalidateStockCaches() {
 
 function invalidateLedgerCaches() {
   masterCache.del('ledgers');
+  masterCache.delPrefix('ledgers:');
   reportCache.clear();
   dashboardCache.clear();
 }
