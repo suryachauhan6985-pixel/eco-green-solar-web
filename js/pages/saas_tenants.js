@@ -9,9 +9,7 @@ window.PAGES.saas_tenants = {
   name: 'SaaS Tenant & White-Label Studio',
   sub: 'Multi-tenant organization management, custom branding & feature matrix',
   icon: 'fa-building-shield',
-
-  render() {
-    return `
+  html: `
       <div class="saas-container" style="padding: 16px; max-width: 1400px; margin: 0 auto;">
         <!-- TOP HEADER & STATS -->
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
@@ -72,8 +70,7 @@ window.PAGES.saas_tenants = {
           </div>
         </div>
       </div>
-    `;
-  },
+    `,
 
   async init() {
     let tenants = [];

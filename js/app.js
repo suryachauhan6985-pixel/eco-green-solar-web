@@ -6462,7 +6462,7 @@ window.attachColumnFilters = function (table) {
     if (contentEl) {
       contentEl.classList.remove('page-entering');
       void contentEl.offsetWidth;
-      contentEl.innerHTML = page.html || '';
+      contentEl.innerHTML = (typeof page.render === 'function' ? page.render(opts) : page.html) || '';
       contentEl.classList.add('page-entering');
     }
 
