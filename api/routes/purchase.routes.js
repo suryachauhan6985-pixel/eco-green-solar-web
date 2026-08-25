@@ -1,3 +1,5 @@
+const { validateGstin } = require('../utils/validators');
+
 module.exports = function registerPurchaseRoutes(app, deps) {
   const {
     pool,
@@ -85,6 +87,7 @@ module.exports = function registerPurchaseRoutes(app, deps) {
   app.post('/api/purchase', route(async (req, res) => {
     const supplier = String(req.body.supplier || '').trim();
     const invoiceNo = String(req.body.invoiceNo || '').trim();
+    const supplierGstin = String(req.body.supplierGstin || '').trim();
     const date = String(req.body.date || '').trim();
     const pallet = String(req.body.pallet || '').trim() || '-';
     const proofName = String(req.body.proofName || '').trim() || '-';
@@ -92,6 +95,12 @@ module.exports = function registerPurchaseRoutes(app, deps) {
 
     if (!supplier || !invoiceNo) {
       return res.status(400).json({ error: 'Supplier and Invoice are required.' });
+    }
+    if (supplierGstin && supplierGstin !== '-') {
+      const gstCheck = validateGstin(supplierGstin);
+      if (!gstCheck.isValid) {
+        return res.status(400).json({ error: 'Invalid GSTIN' });
+      }
     }
     if (!lines.length) {
       return res.status(400).json({ error: 'Add at least one Invoice Product Line before saving.' });

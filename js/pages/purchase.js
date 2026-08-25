@@ -50,7 +50,7 @@ window.PAGES.purchase = {
             <div class="field"><label>Supplier Short Code</label><input id="purSuppShort" placeholder="Optional short code" list="purSuppShortList" autocomplete="off"><datalist id="purSuppShortList"></datalist></div>
             <div class="field"><label>Supplier Name <span class="req">*</span></label><input id="purSupp" placeholder="Supplier / Party" list="purSuppNameList" autocomplete="off"><datalist id="purSuppNameList"></datalist></div>
             <div class="field"><label>Mobile</label><input id="purSuppMobile" placeholder="Auto-fills from ledger (editable)"></div>
-            <div class="field"><label>GSTIN</label><input id="purSuppGstin" placeholder="Auto-fills from ledger (editable)"></div>
+            <div class="field"><label>GSTIN</label><input id="purSuppGstin" placeholder="Auto-fills from ledger (editable)" autocomplete="off"><div id="purSuppGstinFeedback" style="font-size:11.5px; font-weight:600; margin-top:3px; display:none;"></div></div>
             <div class="field span-full"><label>Address</label><input id="purSuppAddr" placeholder="Auto-fills from ledger (editable)"></div>
 
             <div class="field"><label>Invoice No <span class="req">*</span></label><input id="purInv" placeholder="INV-2026-001"></div>
@@ -629,7 +629,48 @@ window.PAGES.purchase = {
       }
     }
 
-    ['purQty', 'purUnitRate', 'purGstRate', 'purSuppGstin'].forEach((id) => {
+    function updatePurGstinFeedback() {
+      const gstinEl = $('purSuppGstin');
+      const feedbackEl = $('purSuppGstinFeedback');
+      if (!gstinEl) return;
+      let val = gstinEl.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (gstinEl.value !== val) gstinEl.value = val;
+      if (!val || val === '-') {
+        if (feedbackEl) {
+          feedbackEl.style.display = 'none';
+          feedbackEl.innerHTML = '';
+        }
+        gstinEl.style.borderColor = '';
+        return;
+      }
+      const res = (typeof window.validateGstin === 'function') ? window.validateGstin(val) : { isValid: true };
+      if (feedbackEl) {
+        feedbackEl.style.display = 'block';
+        if (res.isValid) {
+          feedbackEl.style.color = '#22c55e';
+          feedbackEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> Valid GSTIN${res.stateName ? ` &bull; <strong style="color:var(--txt);">${res.stateName} [${res.stateCode}]</strong>` : ''}`;
+          gstinEl.style.borderColor = '#22c55e';
+        } else {
+          feedbackEl.style.color = '#ef4444';
+          feedbackEl.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ${res.error || 'Invalid GSTIN'}`;
+          gstinEl.style.borderColor = '#ef4444';
+        }
+      }
+    }
+
+    const purSuppGstinEl = $('purSuppGstin');
+    if (purSuppGstinEl) {
+      purSuppGstinEl.addEventListener('input', () => {
+        updatePurGstinFeedback();
+        calculatePurTotal();
+      });
+      purSuppGstinEl.addEventListener('change', () => {
+        updatePurGstinFeedback();
+        calculatePurTotal();
+      });
+    }
+
+    ['purQty', 'purUnitRate', 'purGstRate'].forEach((id) => {
       const el = $(id);
       if (el) {
         el.addEventListener('input', calculatePurTotal);
@@ -719,6 +760,7 @@ window.PAGES.purchase = {
       $('purSuppMobile').value = l.mobile && l.mobile !== '-' ? l.mobile : '';
       $('purSuppAddr').value = l.address && l.address !== '-' ? l.address : '';
       $('purSuppGstin').value = l.gstin && l.gstin !== '-' ? l.gstin : '';
+      updatePurGstinFeedback();
     }
 
     function wireSupplierAutocomplete(inputEl, listEl, matchKey, searchFn) {
@@ -1762,6 +1804,11 @@ window.PAGES.purchase = {
 
     function clearPurchaseForm() {
       ['purSuppShort', 'purSupp', 'purSuppMobile', 'purSuppAddr', 'purSuppGstin', 'purInv', 'purPallet', 'purQty'].forEach((id) => { $(id).value = ''; });
+      if ($('purSuppGstinFeedback')) {
+        $('purSuppGstinFeedback').style.display = 'none';
+        $('purSuppGstinFeedback').innerHTML = '';
+      }
+      if ($('purSuppGstin')) $('purSuppGstin').style.borderColor = '';
       $('purWatt').value = '';
       $('purModel').value = '';
       $('purDate').value = '';
@@ -1789,6 +1836,18 @@ window.PAGES.purchase = {
         window.openModal('Validation Error', `<p>Please fill: ${missing.join(', ')}.</p>`);
         return;
       }
+
+      // Live GSTIN validation check (if provided, must be fully valid)
+      const rawGstin = $('purSuppGstin') ? $('purSuppGstin').value.trim() : '';
+      if (rawGstin && rawGstin !== '-' && typeof window.validateGstin === 'function') {
+        const gstRes = window.validateGstin(rawGstin);
+        if (!gstRes.isValid) {
+          if (window.showWarning) window.showWarning('Invalid GSTIN', gstRes.error || 'Invalid GSTIN');
+          else window.openModal('Invalid GSTIN', `<p style="color:var(--red);">${gstRes.error || 'Invalid GSTIN'}</p>`);
+          return; // Inward blocked due to invalid GSTIN
+        }
+      }
+
       if (!purLines.length) {
         window.openModal('Validation Error', '<p>Add at least one Invoice Product Line before saving.</p>');
         return;

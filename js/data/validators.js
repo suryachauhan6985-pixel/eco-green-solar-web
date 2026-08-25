@@ -112,11 +112,11 @@
         isValid: false,
         isEmpty: false,
         gstin: normalized,
-        error: `GSTIN must be exactly 15 characters (currently ${normalized.length}).`
+        error: 'Invalid GSTIN'
       };
     }
 
-    // 1. Validate State Code (first 2 digits)
+    // 1. Validate State Code (first 2 digits: 01-38, 97, 99)
     const stateCode = normalized.substring(0, 2);
     const stateName = GST_STATES[stateCode];
     if (!stateName) {
@@ -124,14 +124,15 @@
         isValid: false,
         isEmpty: false,
         gstin: normalized,
-        stateCode,
-        error: `Invalid GSTIN State Code '${stateCode}'.`
+        stateCode: '',
+        stateName: '',
+        error: 'Invalid GSTIN'
       };
     }
 
-    // 2. Validate PAN (next 10 chars: 5 letters + 4 digits + 1 letter)
+    // 2. Validate PAN (next 10 chars: 3 letters + 4th Entity Type [C,P,H,F,A,T,B,L,J,G] + 1 letter + 4 digits + 1 letter)
     const pan = normalized.substring(2, 12);
-    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    const panRegex = /^[A-Z]{3}[CPHFATBLJG][A-Z][0-9]{4}[A-Z]$/;
     if (!panRegex.test(pan)) {
       return {
         isValid: false,
@@ -139,7 +140,7 @@
         gstin: normalized,
         stateCode,
         stateName,
-        error: `Invalid PAN structure '${pan}' in GSTIN (Expected: 5 letters + 4 digits + 1 letter).`
+        error: 'Invalid GSTIN'
       };
     }
 
@@ -152,7 +153,7 @@
         gstin: normalized,
         stateCode,
         stateName,
-        error: `Invalid 13th entity character '${entityChar}'.`
+        error: 'Invalid GSTIN'
       };
     }
 
@@ -165,7 +166,7 @@
         gstin: normalized,
         stateCode,
         stateName,
-        error: `14th character must be 'Z' (got '${defaultChar}').`
+        error: 'Invalid GSTIN'
       };
     }
 
@@ -180,9 +181,7 @@
         gstin: normalized,
         stateCode,
         stateName,
-        expectedChecksum,
-        actualChecksum,
-        error: `Invalid GSTIN checksum character '${actualChecksum}' (Expected: '${expectedChecksum}').`
+        error: 'Invalid GSTIN'
       };
     }
 
