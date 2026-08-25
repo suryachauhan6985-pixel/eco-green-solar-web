@@ -6647,7 +6647,7 @@ window.attachColumnFilters = function (table) {
 
     if (isTyping) return false;
 
-    const modalOpen = document.querySelector('.modal-overlay.show, .settings-modal-box, #statementOverlay.show, #ledgerFormOverlay.show, #egsPopupOverlay.show, #bomChallanOverlay.show, #bomRegisterOverlay.show');
+    const modalOpen = document.querySelector('#modalOverlay.show, #confirmOverlay.show, #statementOverlay.show, #ledgerFormOverlay.show, #egsPopupOverlay.show, #bomChallanOverlay.show, #bomRegisterOverlay.show');
     if (modalOpen) return false;
 
     const key = e.key;
@@ -7205,6 +7205,10 @@ window.attachColumnFilters = function (table) {
     const overlay = document.getElementById('modalOverlay');
     overlay.classList.remove('show');
     overlay.classList.remove('modal-fullscreen');
+    const box = document.querySelector('#modalOverlay .modal-box');
+    if (box) {
+      box.classList.remove('modal-box-wide', 'modal-box-xl', 'settings-modal-box');
+    }
     window.unlockBackgroundScroll();
     if (!skipCallback && currentModalCloseCb) {
       const cb = currentModalCloseCb;
