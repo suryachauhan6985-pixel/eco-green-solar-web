@@ -373,7 +373,11 @@ module.exports = function registerMastersRoutes(app, deps) {
 
   // Users — SuperAdmin & Admin access
   app.get('/api/masters/users', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
-    const [rows] = await pool.query(`SELECT username, role, email FROM users ORDER BY username ASC`);
+    const isSuperAdmin = req.user && req.user.role === 'SuperAdmin';
+    const query = isSuperAdmin
+      ? `SELECT username, role, email FROM users ORDER BY username ASC`
+      : `SELECT username, role, email FROM users WHERE role != 'SuperAdmin' ORDER BY username ASC`;
+    const [rows] = await pool.query(query);
     res.json(rows);
   }));
 
@@ -382,7 +386,10 @@ module.exports = function registerMastersRoutes(app, deps) {
     if (!username || !password) return res.status(400).json({ error: 'Username and Password are mandatory.' });
     const uname = username.trim().toLowerCase();
     const mail = email ? email.trim().toLowerCase() : null;
-    const finalRole = role || 'User';
+    let finalRole = role || 'User';
+    if (req.user && req.user.role !== 'SuperAdmin' && finalRole === 'SuperAdmin') {
+      finalRole = 'Admin';
+    }
     if (!VALID_ROLES.includes(finalRole)) {
       return res.status(400).json({ error: `Role must be one of: ${VALID_ROLES.join(', ')}.` });
     }
@@ -412,21 +419,39 @@ module.exports = function registerMastersRoutes(app, deps) {
   app.put('/api/masters/users/password', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Username and new Password are mandatory.' });
+    const uname = username.trim().toLowerCase();
+
+    // Guard: Non-SuperAdmin cannot alter SuperAdmin credentials
+    if (req.user && req.user.role !== 'SuperAdmin') {
+      const [[targetUser]] = await pool.query(`SELECT role FROM users WHERE username = ?`, [uname]);
+      if (targetUser && targetUser.role === 'SuperAdmin') {
+        return res.status(404).json({ error: 'User configuration profile not found.' });
+      }
+    }
+
     const hashed = await hashPassword(password);
-    const [result] = await pool.query(`UPDATE users SET password = ? WHERE username = ?`, [hashed, username.trim().toLowerCase()]);
+    const [result] = await pool.query(`UPDATE users SET password = ? WHERE username = ?`, [hashed, uname]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'User configuration profile not found.' });
     res.json({ success: true });
   }));
 
-  // Sets/updates the email OTP login relies on for a given user — separate
-  // from the password update so an admin can fix/add just the email without
-  // touching the password.
+  // Sets/updates the email OTP login relies on for a given user
   app.put('/api/masters/users/email', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { username, email } = req.body;
     if (!username || !email) return res.status(400).json({ error: 'Username and Email are mandatory.' });
+    const uname = username.trim().toLowerCase();
+
+    // Guard: Non-SuperAdmin cannot alter SuperAdmin email
+    if (req.user && req.user.role !== 'SuperAdmin') {
+      const [[targetUser]] = await pool.query(`SELECT role FROM users WHERE username = ?`, [uname]);
+      if (targetUser && targetUser.role === 'SuperAdmin') {
+        return res.status(404).json({ error: 'User configuration profile not found.' });
+      }
+    }
+
     const [result] = await pool.query(
       `UPDATE users SET email = ? WHERE username = ?`,
-      [email.trim().toLowerCase(), username.trim().toLowerCase()]
+      [email.trim().toLowerCase(), uname]
     );
     if (result.affectedRows === 0) return res.status(400).json({ error: 'User configuration profile not found.' });
     res.json({ success: true });

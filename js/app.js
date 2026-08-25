@@ -1477,12 +1477,26 @@ window.attachColumnFilters = function (table) {
     const userEl = document.querySelector('.profile-box .user');
     const avatarEl = document.querySelector('.profile-box .avatar');
     const roleEl = document.querySelector('.profile-box .role');
+    const mobileAvatarEl = document.getElementById('mobileProfileAvatar');
+    const btnTenantSwitcher = document.getElementById('btnTopbarTenantSwitcher');
+
     window.currentUsername = username;
     if (userEl) userEl.textContent = '@' + username;
     if (avatarEl) avatarEl.textContent = username.charAt(0).toUpperCase();
+    if (mobileAvatarEl) mobileAvatarEl.textContent = username.charAt(0).toUpperCase();
+
     if (role) {
       window.currentUserRole = role;
-      if (roleEl) roleEl.textContent = role === 'SuperAdmin' ? 'Super Admin' : (role === 'Admin' ? 'Admin' : 'User');
+      window.CURRENT_USER_ROLE = role;
+      if (roleEl) roleEl.textContent = role === 'SuperAdmin' ? 'Super Admin' : (role === 'Admin' ? 'Administrator' : 'User');
+    }
+
+    if (btnTenantSwitcher) {
+      btnTenantSwitcher.style.display = (role === 'SuperAdmin') ? 'inline-flex' : 'none';
+    }
+
+    if (typeof window.renderNavButtons === 'function') {
+      window.renderNavButtons();
     }
   }
 
@@ -3115,7 +3129,8 @@ window.attachColumnFilters = function (table) {
     const activeFont = (typeof window.getAppFont === 'function') ? window.getAppFont() : 'segoe';
     const activeAvatar = (typeof window.getAppAvatarColor === 'function') ? window.getAppAvatarColor() : 'gold';
     const currentRole = window.currentUserRole || 'User';
-    const isAdmin = currentRole === 'SuperAdmin' || currentRole === 'Admin';
+    const isSuperAdmin = currentRole === 'SuperAdmin';
+    const isAdmin = isSuperAdmin || currentRole === 'Admin';
     const currentUsername = window.currentUsername || 'user';
     const initialTab = defaultTabId || 'tab-profile';
 
@@ -3132,7 +3147,7 @@ window.attachColumnFilters = function (table) {
           ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-perf"><i class="fa-solid fa-gauge-high"></i> Performance &amp; Engine</button>' : ''}
           ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-erp-mode"><i class="fa-solid fa-sliders"></i> ERP Mode &amp; Features</button>' : ''}
           ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-users"><i class="fa-solid fa-users-gear"></i> User Accounts</button>' : ''}
-          ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-saas-tenants"><i class="fa-solid fa-building-shield"></i> SaaS &amp; White-Label</button>' : ''}
+          ${isSuperAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-saas-tenants"><i class="fa-solid fa-building-shield"></i> SaaS &amp; White-Label</button>' : ''}
           <button type="button" class="settings-tab-btn" data-tab="tab-challan"><i class="fa-solid fa-file-invoice"></i> Challan &amp; Print</button>
           <button type="button" class="settings-tab-btn" data-tab="tab-theme"><i class="fa-solid fa-palette"></i> Appearance</button>
           <button type="button" class="settings-tab-btn" data-tab="tab-permissions"><i class="fa-solid fa-mobile-screen-button"></i> Device &amp; Notifications</button>
@@ -3263,7 +3278,11 @@ window.attachColumnFilters = function (table) {
                 <div class="field"><label>Password / PIN <span class="req">*</span></label><input type="password" id="setMngPass" placeholder="••••••••"></div>
                 <div class="field"><label>Email (for OTP Login) <span class="req">*</span></label><input type="email" id="setMngEmail" placeholder="e.g. amit@example.com"></div>
                 <div class="field"><label>System Privilege</label>
-                  <select id="setMngRole"><option value="User">User</option><option value="Admin">Admin</option><option value="SuperAdmin">SuperAdmin</option></select>
+                  <select id="setMngRole">
+                    <option value="User">User</option>
+                    <option value="Admin">Admin</option>
+                    ${isSuperAdmin ? '<option value="SuperAdmin">SuperAdmin</option>' : ''}
+                  </select>
                 </div>
               </div>
               <div class="actions-row" style="margin-top:14px; flex-wrap:wrap; gap:10px;">
@@ -3289,7 +3308,7 @@ window.attachColumnFilters = function (table) {
         </div>` : ''}
 
         <!-- SaaS Tenants & Dynamic White-Label Tab -->
-        ${isAdmin ? `
+        ${isSuperAdmin ? `
         <div class="settings-panel" id="tab-saas-tenants">
           <div class="settings-card">
             <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
@@ -5646,8 +5665,9 @@ window.attachColumnFilters = function (table) {
   }
 
   function getErpNavGroups() {
-    const curRole = (window.CURRENT_USER_ROLE || (window.CURRENT_USER && window.CURRENT_USER.role) || localStorage.getItem('user_role') || 'SuperAdmin').toLowerCase();
-    const isAdmin = curRole === 'superadmin' || curRole === 'admin' || curRole === 'super_admin';
+    const curRole = (window.currentUserRole || window.CURRENT_USER_ROLE || (window.CURRENT_USER && window.CURRENT_USER.role) || localStorage.getItem('user_role') || 'User').toLowerCase();
+    const isSuperAdmin = curRole === 'superadmin' || curRole === 'super_admin';
+    const isAdmin = isSuperAdmin || curRole === 'admin';
     const isAcc = window.ERP && window.ERP.isAccountingMode();
     const isFinOnly = window.ERP && window.ERP.isFinancialOnly();
     const isQtyOnly = window.ERP && window.ERP.isQuantityOnly();
@@ -5812,7 +5832,7 @@ window.attachColumnFilters = function (table) {
       { name: 'User Accounts & Roles', hotkey: 'U', icon: 'fa-users-gear', action: 'openSettings', sub: 'tab-users' }
     ];
 
-    if (isAdmin) {
+    if (isSuperAdmin) {
       utilityItems.push({
         name: 'SaaS Tenants & White-Label',
         hotkey: 'T',

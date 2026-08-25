@@ -139,7 +139,7 @@ window.PAGES.sales = {
         </div>
 
         <div class="panel edit-panel sales-edit" id="saleEditPanel">
-          <h3 style="color:var(--purple);"><i class="fa-solid fa-pen-to-square"></i> Sales Order Modification <span class="role-tag" id="saleRoleTag">(SuperAdmin)</span></h3>
+          <h3 style="color:var(--purple);"><i class="fa-solid fa-pen-to-square"></i> Sales Order Modification <span class="role-tag" id="saleRoleTag">(Admin)</span></h3>
 
           <div class="search-row">
             <input id="saleSearchOrder" placeholder="Search by Order No, Challan No, Customer Name, or Short Name...">
@@ -245,7 +245,7 @@ window.PAGES.sales = {
       toggleBtn.disabled = true;
       toggleBtn.style.opacity = '0.55';
       toggleBtn.style.cursor = 'not-allowed';
-      toggleBtn.title = 'SuperAdmin only';
+      toggleBtn.title = 'Administrator only';
 
       editPanelEl.querySelectorAll('input, select, textarea, button').forEach((el) => {
         el.disabled = true;
@@ -254,7 +254,7 @@ window.PAGES.sales = {
       const lockBanner = document.createElement('div');
       lockBanner.className = 'banner';
       lockBanner.style.marginBottom = '14px';
-      lockBanner.innerHTML = '<i class="fa-solid fa-lock"></i><div><strong>Locked.</strong> Only a SuperAdmin can view or modify saved sales challans.</div>';
+      lockBanner.innerHTML = '<i class="fa-solid fa-lock"></i><div><strong>Locked.</strong> Only an Administrator can view or modify saved sales challans.</div>';
       editPanelEl.insertBefore(lockBanner, editPanelEl.children[1] || null);
     }
 

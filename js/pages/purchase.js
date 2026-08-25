@@ -147,7 +147,7 @@ window.PAGES.purchase = {
 
         <!-- ================= PURCHASE INVOICE MODIFICATION ================= -->
         <div class="panel edit-panel" id="purEditPanel">
-          <h3 style="color:var(--orange);"><i class="fa-solid fa-pen-to-square"></i> Purchase Invoice Modification <span class="role-tag">(SuperAdmin)</span></h3>
+          <h3 style="color:var(--orange);"><i class="fa-solid fa-pen-to-square"></i> Purchase Invoice Modification <span class="role-tag">(Admin)</span></h3>
 
           <div class="search-row">
             <input id="purSearchInv" placeholder="Search by Invoice No, Supplier Name, or Short Name...">
@@ -2225,7 +2225,7 @@ window.PAGES.purchase = {
       const lockBanner = document.createElement('div');
       lockBanner.className = 'banner';
       lockBanner.style.marginBottom = '14px';
-      lockBanner.innerHTML = '<i class="fa-solid fa-lock"></i><div><strong>Locked.</strong> Only a SuperAdmin can view or modify saved purchase invoices.</div>';
+      lockBanner.innerHTML = '<i class="fa-solid fa-lock"></i><div><strong>Locked.</strong> Only an Administrator can view or modify saved purchase invoices.</div>';
       editPanelEl.insertBefore(lockBanner, editPanelEl.children[1] || null);
     }
 
@@ -2236,7 +2236,7 @@ window.PAGES.purchase = {
     window.PurchasePageAPI = {
       loadInvoiceForEdit(invoiceNo) {
         if (!isAdmin) {
-          window.openModal('Locked', '<p>Only a SuperAdmin can modify purchase invoices. Switch users from the profile menu if you need edit access.</p>');
+          window.openModal('Locked', '<p>Only an Administrator can modify purchase invoices. Switch users from the profile menu if you need edit access.</p>');
           return;
         }
         setPurEditOpen(true);

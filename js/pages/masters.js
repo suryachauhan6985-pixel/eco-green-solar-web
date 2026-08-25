@@ -273,9 +273,8 @@ window.PAGES.masters = {
           <div class="form-grid">
             <div class="field"><label>Username *</label><input id="mUserNameInput" placeholder="e.g. amit" list="mExistingUsers" autocomplete="off"><datalist id="mExistingUsers"></datalist></div>
             <div class="field"><label>Password / PIN *</label><input type="password" id="mUserPassInput" placeholder="••••••••"></div>
-            <div class="field"><label>Email (for OTP Login) *</label><input type="email" id="mUserEmailInput" placeholder="e.g. amit@example.com"></div>
             <div class="field"><label>System Privilege</label>
-              <select id="mUserRoleDropdown"><option value="User">User</option><option value="Admin">Admin</option><option value="SuperAdmin">SuperAdmin</option></select></div>
+              <select id="mUserRoleDropdown"><option value="User">User</option><option value="Admin">Admin</option></select></div>
           </div>
           <div style="color:var(--txt-muted); font-size:12px; margin-top:6px;">Every user needs an email on file for OTP verification during login.</div>
           <div class="actions-row" style="margin-top:10px;">
@@ -321,7 +320,17 @@ window.PAGES.masters = {
     let editingSubOldName = null;
 
     const currentRole = window.currentUserRole || 'User';
-    const isAdmin = currentRole === 'SuperAdmin' || currentRole === 'Admin';
+    const isSuperAdmin = currentRole === 'SuperAdmin';
+    const isAdmin = isSuperAdmin || currentRole === 'Admin';
+
+    const roleDropdown = $('mUserRoleDropdown');
+    if (roleDropdown && isSuperAdmin && !roleDropdown.querySelector('option[value="SuperAdmin"]')) {
+      const opt = document.createElement('option');
+      opt.value = 'SuperAdmin';
+      opt.textContent = 'SuperAdmin';
+      roleDropdown.appendChild(opt);
+    }
+
     if (!isAdmin) {
       const usersTabBtn = document.querySelector('#mastersSubtabs .subtab[data-sub="users"]');
       const usersPanel = document.querySelector('.subtab-panel[data-panel="users"]');

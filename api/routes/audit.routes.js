@@ -62,6 +62,11 @@ function registerAuditRoutes(app, deps) {
       params.push(toDate);
     }
 
+    // Stealth: Hide SuperAdmin activity traces from non-SuperAdmin audit viewers
+    if (!req.user || req.user.role !== 'SuperAdmin') {
+      conditions.push(`(action_by NOT IN ('superadmin', 'SuperAdmin', 'sumit') AND action_by NOT LIKE '%SuperAdmin%')`);
+    }
+
     const whereClause = conditions.join(' AND ');
 
     // Total count query

@@ -418,14 +418,23 @@ module.exports = function registerAuthRoutes(app, deps) {
        WHERE is_logged_in=1 AND (last_seen IS NULL OR last_seen < (NOW() - INTERVAL ? SECOND))`,
       [SESSION_STALE_SECONDS]
     );
-    const [rows] = await pool.query(`
-      SELECT u.username, u.role,
-             COALESCE(s.is_logged_in,0) AS is_logged_in,
-             s.last_login_time, s.last_seen
-      FROM users u
-      LEFT JOIN user_sessions s ON s.username = u.username
-      ORDER BY COALESCE(s.is_logged_in,0) DESC, u.username ASC
-    `);
+    const isSuperAdmin = req.user && req.user.role === 'SuperAdmin';
+    const query = isSuperAdmin
+      ? `SELECT u.username, u.role,
+                COALESCE(s.is_logged_in,0) AS is_logged_in,
+                s.last_login_time, s.last_seen
+         FROM users u
+         LEFT JOIN user_sessions s ON s.username = u.username
+         ORDER BY COALESCE(s.is_logged_in,0) DESC, u.username ASC`
+      : `SELECT u.username, u.role,
+                COALESCE(s.is_logged_in,0) AS is_logged_in,
+                s.last_login_time, s.last_seen
+         FROM users u
+         LEFT JOIN user_sessions s ON s.username = u.username
+         WHERE u.role != 'SuperAdmin'
+         ORDER BY COALESCE(s.is_logged_in,0) DESC, u.username ASC`;
+
+    const [rows] = await pool.query(query);
     res.json(rows.map((r) => ({
       username: r.username,
       role: r.role,

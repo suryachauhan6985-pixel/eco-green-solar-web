@@ -93,11 +93,11 @@
       </div>
     </div>
     <div class="nav-scroll" id="navScroll"></div>
-    <div class="profile-box">
-      <div class="avatar">S</div>
+    <div class="profile-box" id="sidebarProfileBox">
+      <div class="avatar" id="sidebarAvatar">A</div>
       <div>
-        <div class="role">Super Admin</div>
-        <div class="user">@sumit</div>
+        <div class="role" id="sidebarRole">Administrator</div>
+        <div class="user" id="sidebarUsername">@admin</div>
       </div>
     </div>
   </aside>
@@ -118,7 +118,7 @@
         </div>
       </div>
     </div>
-    <button type="button" class="avatar mobile-profile-avatar" id="mobileProfileAvatar" style="width:34px;height:34px;font-size:13px;border:none;padding:0;" title="Profile">S</button>
+    <button type="button" class="avatar mobile-profile-avatar" id="mobileProfileAvatar" style="width:34px;height:34px;font-size:13px;border:none;padding:0;" title="Profile">A</button>
   </div>
   <div class="search-mini mobile-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="egs-quick-search-mobile" id="egsQuickSearchMobile" placeholder="Quick search anything... (Ctrl+K)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"></div>
 </div>
@@ -130,7 +130,7 @@
       </div>
       <div id="topbarExtra" class="topbar-extra"></div>
       <div class="topbar-right" style="display:flex; align-items:center; gap:8px;">
-        <a href="#saas_tenants" class="btn btn-ghost" id="btnTopbarTenantSwitcher" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:6px 12px; border:1px solid var(--border-light); border-radius:8px; text-decoration:none;" title="Open SaaS Tenant & White-Label Studio">
+        <a href="#saas_tenants" class="btn btn-ghost" id="btnTopbarTenantSwitcher" style="display:none; align-items:center; gap:6px; font-size:12px; padding:6px 12px; border:1px solid var(--border-light); border-radius:8px; text-decoration:none;" title="Open SaaS Tenant & White-Label Studio">
           <i class="fa-solid fa-building-shield" style="color:var(--tenant-primary);"></i>
           <span id="topbarTenantName" style="color:var(--txt);">SaaS Studio</span>
         </a>
@@ -200,9 +200,9 @@
 <!-- Each page's markup + data lives in its own file, like dashboard.py / masters.py in the desktop app -->
 <script src="js/pages/dashboard.js?v=19"></script>
 <script src="js/pages/scansheet.js?v=25"></script>
-<script src="js/pages/masters.js?v=19"></script>
-<script src="js/pages/purchase.js?v=13"></script>
-<script src="js/pages/sales.js?v=12"></script>
+<script src="js/pages/masters.js?v=20"></script>
+<script src="js/pages/purchase.js?v=14"></script>
+<script src="js/pages/sales.js?v=13"></script>
 <script src="js/pages/stockassign.js?v=3"></script>
 <script src="js/pages/purchaseregister.js?v=6"></script>
 <script src="js/pages/saleregister.js?v=6"></script>
@@ -229,7 +229,7 @@
 <script src="js/pages/bom-dispatch.js?v=16"></script>
 <script src="js/pages/bom.js?v=44"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
-<script src="js/app.js?v=108"></script>
+<script src="js/app.js?v=109"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
