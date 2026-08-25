@@ -58,12 +58,12 @@ window.PAGES.partyledger = {
         <div style="display:flex; align-items:center; gap:8px;">
           <label style="color:var(--txt-muted); font-size:12px; font-weight:700; white-space:nowrap;"><i class="fa-solid fa-filter"></i> Group / Type:</label>
           <select id="plTypeFilter" style="border-radius:20px; min-width:160px; padding:7px 12px; font-size:12.5px;">
-            <option>All Parties</option>
-            <option>Suppliers Only</option>
-            <option>Customers Only</option>
-            <option>Dealers Only</option>
-            <option>Installers Only</option>
-            <option>Fabricators Only</option>
+            <option value="All Parties">All Parties</option>
+            <option value="Customers Only">Customers Only</option>
+            <option value="Suppliers Only">Suppliers Only</option>
+            <option value="Dealers Only">Dealers Only</option>
+            <option value="Installers Only">Installers Only</option>
+            <option value="Fabricators Only">Fabricators Only</option>
           </select>
         </div>
       </div>
@@ -261,6 +261,12 @@ window.PAGES.partyledger = {
   init(opts = {}) {
     window.__activeScreenCleanup = () => {
       window.setPartyLedgerMode = null;
+      if (window._plKeyHandler) {
+        document.removeEventListener('keydown', window._plKeyHandler);
+        window._plKeyHandler = null;
+      }
+      if (typeof detachLedgerFormEscape === 'function') detachLedgerFormEscape();
+      if (typeof closeStatementModal === 'function') closeStatementModal();
     };
 
     const API_BASE = window.API_BASE || 'http://192.168.0.123:5000/api';
@@ -278,12 +284,17 @@ window.PAGES.partyledger = {
       searchEl.value = '';
       searchEl.defaultValue = '';
     }
-    if (typeEl && opts.filter) {
-      if (opts.filter === 'Customer' || opts.filter === 'Customers Only') typeEl.value = 'Customers Only';
-      else if (opts.filter === 'Supplier' || opts.filter === 'Suppliers Only') typeEl.value = 'Suppliers Only';
-      else if (opts.filter === 'Dealers Only') typeEl.value = 'Dealers Only';
-      else if (opts.filter === 'Installers Only') typeEl.value = 'Installers Only';
-      else if (opts.filter === 'Fabricators Only') typeEl.value = 'Fabricators Only';
+    if (typeEl) {
+      if (opts.filter) {
+        if (opts.filter === 'Customer' || opts.filter === 'Customers Only') typeEl.value = 'Customers Only';
+        else if (opts.filter === 'Supplier' || opts.filter === 'Suppliers Only') typeEl.value = 'Suppliers Only';
+        else if (opts.filter === 'Dealers Only' || opts.filter === 'Dealer') typeEl.value = 'Dealers Only';
+        else if (opts.filter === 'Installers Only' || opts.filter === 'Installer') typeEl.value = 'Installers Only';
+        else if (opts.filter === 'Fabricators Only' || opts.filter === 'Fabricator') typeEl.value = 'Fabricators Only';
+        else typeEl.value = 'All Parties';
+      } else {
+        typeEl.value = 'All Parties';
+      }
     }
 
     // ---------------- Directory (table) ----------------
@@ -525,9 +536,13 @@ window.PAGES.partyledger = {
           return;
         }
         if (e.key === 'Escape') {
-          e.preventDefault();
-          searchEl.value = '';
-          loadDirectory();
+          if (searchEl.value.trim().length > 0) {
+            e.preventDefault();
+            searchEl.value = '';
+            loadDirectory();
+            searchEl.blur();
+            return;
+          }
           searchEl.blur();
           return;
         }

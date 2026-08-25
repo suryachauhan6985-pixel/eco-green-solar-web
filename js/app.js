@@ -5436,6 +5436,7 @@ window.attachColumnFilters = function (table) {
   }
 
   window.openSettingsModal = openAppSettingsPanel;
+  window.openSystemSettingsModal = openAppSettingsPanel;
 
   function openProfileMenu(targetElement) {
     closeProfileMenu();
@@ -5678,18 +5679,6 @@ window.attachColumnFilters = function (table) {
       });
     }
 
-    accountsItems.push({
-      name: 'Customer & Supplier Directory',
-      hotkey: 'C',
-      icon: 'fa-users',
-      hasNested: true,
-      nestedTitle: 'Parties Directory',
-      nestedItems: [
-        { name: 'Customer Directory', hotkey: 'C', icon: 'fa-hand-holding-dollar', page: 'partyledger', filter: 'Customer' },
-        { name: 'Supplier Directory', hotkey: 'S', icon: 'fa-truck-ramp-box', page: 'partyledger', filter: 'Supplier' }
-      ]
-    });
-
     const transactionItems = [];
     if (isAcc) {
       transactionItems.push(
@@ -5824,7 +5813,7 @@ window.attachColumnFilters = function (table) {
         hotkey: 'U',
         icon: 'fa-gear',
         items: [
-          { name: 'ERP Mode & Feature Controls', hotkey: 'S', icon: 'fa-sliders', action: 'openSettings', sub: 'tab-erp-mode' },
+          { name: 'ERP Mode & Feature Controls', hotkey: 'E', icon: 'fa-sliders', action: 'openSettings', sub: 'tab-erp-mode' },
           { name: 'User Accounts & Roles', hotkey: 'U', icon: 'fa-users-gear', action: 'openSettings', sub: 'tab-users' },
           { name: 'Backup & Restore', hotkey: 'B', icon: 'fa-cloud-arrow-up', page: 'backup' }
         ]
@@ -6643,15 +6632,7 @@ window.attachColumnFilters = function (table) {
         }
       }
 
-      // Step 6: If in Master Create view, step back to Master Display
-      if (window.CURRENT_PAGE_ID === 'masters' && window.CURRENT_MASTER_MODE === 'create') {
-        if (typeof window.setMasterViewMode === 'function') {
-          window.setMasterViewMode('display');
-          return true;
-        }
-      }
-
-      // Step 7: Step-by-step back to originating Flyout / Dashboard!
+      // Step 6: Step-by-step back to originating Flyout / Dashboard!
       if (window.CURRENT_PAGE_ID && window.CURRENT_PAGE_ID !== 'dashboard') {
         if (typeof stepBackFromFlyoutTrail === 'function' && lastFlyoutTrail) {
           stepBackFromFlyoutTrail();
