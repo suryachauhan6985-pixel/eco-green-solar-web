@@ -267,6 +267,138 @@ module.exports = function registerAuthRoutes(app, deps) {
   // ---------------------------------------------------------------------------
   // GOOGLE OAUTH SIGN-IN (GIS / Google Identity Services)
   // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // GOOGLE / EMAIL SECURE AUTH & MULTI-ACCOUNT WORKSPACE SELECTOR
+  // ---------------------------------------------------------------------------
+  app.post('/api/auth/google-request-otp', loginLimiter, route(async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Please enter your Google account email.' });
+    const mail = String(email).trim().toLowerCase();
+    if (!EMAIL_RE.test(mail)) {
+      return res.status(400).json({ error: 'Please enter a valid Google account email address.' });
+    }
+
+    const otpKey = `mail:${mail}`;
+    const otp = generateOtp();
+    const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
+    await pool.query(
+      `INSERT INTO otp_codes (username, otp, expires_at, attempts) VALUES (?, ?, ?, 0)
+       ON DUPLICATE KEY UPDATE otp=VALUES(otp), expires_at=VALUES(expires_at), attempts=0`,
+      [otpKey, otp, expiresAt]
+    );
+
+    try {
+      await sendOtpEmail(mail, otp);
+    } catch (e) {
+      console.error('[Google Auth OTP] Failed to send email:', e.message);
+      return res.status(500).json({ error: 'Could not send verification code to this email. Please check your email address or try again.' });
+    }
+
+    res.json({ success: true, email: mail, maskedEmail: maskEmail(mail) });
+  }));
+
+  app.post('/api/auth/google-verify-otp', otpLimiter, route(async (req, res) => {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ error: 'Email and 6-digit code are required.' });
+    const mail = String(email).trim().toLowerCase();
+    const code = String(otp).trim();
+
+    const otpKey = `mail:${mail}`;
+    const [rows] = await pool.query(`SELECT otp, expires_at, attempts FROM otp_codes WHERE username=?`, [otpKey]);
+    if (!rows.length) {
+      return res.status(400).json({ error: 'Verification code expired or not requested. Please request a new code.' });
+    }
+    const row = rows[0];
+    if (new Date(row.expires_at) < new Date()) {
+      await pool.query(`DELETE FROM otp_codes WHERE username=?`, [otpKey]);
+      return res.status(400).json({ error: 'Verification code expired. Please click "Resend Code".' });
+    }
+    if (row.attempts >= 5) {
+      await pool.query(`DELETE FROM otp_codes WHERE username=?`, [otpKey]);
+      return res.status(400).json({ error: 'Too many incorrect attempts. Please request a new code.' });
+    }
+    if (row.otp !== code) {
+      await pool.query(`UPDATE otp_codes SET attempts = attempts + 1 WHERE username=?`, [otpKey]);
+      return res.status(401).json({ error: `Incorrect verification code. ${4 - row.attempts} attempt(s) left.` });
+    }
+
+    // OTP verified successfully!
+    await pool.query(`DELETE FROM otp_codes WHERE username=?`, [otpKey]);
+
+    // Check all accounts associated with this email
+    const [matchedAccounts] = await pool.query(
+      `SELECT username, role, email, is_verified FROM users WHERE LOWER(email) = ? ORDER BY CASE role WHEN 'SuperAdmin' THEN 1 WHEN 'Admin' THEN 2 ELSE 3 END, username ASC`,
+      [mail]
+    );
+
+    if (matchedAccounts.length === 0) {
+      // Auto-provision new User account
+      let baseName = mail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').toLowerCase() || 'user';
+      let candidate = baseName;
+      let counter = 1;
+      while (true) {
+        const [[taken]] = await pool.query(`SELECT username FROM users WHERE username = ?`, [candidate]);
+        if (!taken) break;
+        candidate = `${baseName}_${counter++}`;
+      }
+      const targetUsername = candidate;
+      const targetRole = 'User';
+      const dummyPass = await hashPassword('GoogleAuth_' + Math.random().toString(36).slice(-10));
+      await pool.query(
+        `INSERT INTO users (username, password, role, email, is_verified) VALUES (?, ?, 'User', ?, 1)`,
+        [targetUsername, dummyPass, mail]
+      );
+      await pool.query(`INSERT IGNORE INTO user_sessions (username, is_logged_in, last_login_time) VALUES (?, 0, '-')`, [targetUsername]);
+      return await completeLoginSession(targetUsername, targetRole, res, req);
+    }
+
+    if (matchedAccounts.length === 1) {
+      const u = matchedAccounts[0];
+      if (!u.is_verified) {
+        await pool.query(`UPDATE users SET is_verified=1 WHERE username=?`, [u.username]);
+      }
+      return await completeLoginSession(u.username, u.role, res, req);
+    }
+
+    // Multiple accounts found for this email! Send list for user selection
+    const sanitizedAccounts = matchedAccounts.map(a => ({
+      username: a.username,
+      role: a.role || 'User',
+      isVerified: !!a.is_verified
+    }));
+
+    res.json({
+      success: true,
+      requiresAccountSelection: true,
+      email: mail,
+      accounts: sanitizedAccounts
+    });
+  }));
+
+  app.post('/api/auth/google-select-account', loginLimiter, route(async (req, res) => {
+    const { email, selectedUsername } = req.body;
+    if (!email || !selectedUsername) {
+      return res.status(400).json({ error: 'Email and selected username are required.' });
+    }
+    const mail = String(email).trim().toLowerCase();
+    const uname = String(selectedUsername).trim().toLowerCase();
+
+    // Verify this username genuinely belongs to this email
+    const [[user]] = await pool.query(
+      `SELECT username, role, email, is_verified FROM users WHERE username = ? AND LOWER(email) = ?`,
+      [uname, mail]
+    );
+    if (!user) {
+      return res.status(403).json({ error: 'Selected account does not match this verified email address.' });
+    }
+
+    if (!user.is_verified) {
+      await pool.query(`UPDATE users SET is_verified=1 WHERE username=?`, [user.username]);
+    }
+
+    await completeLoginSession(user.username, user.role, res, req);
+  }));
+
   app.post('/api/auth/google-login', loginLimiter, route(async (req, res) => {
     const { credential, email: directEmail, name: directName } = req.body;
     let googleEmail = '';
@@ -293,26 +425,33 @@ module.exports = function registerAuthRoutes(app, deps) {
       googleName = directName || googleEmail.split('@')[0];
     }
 
-    // Fallback if client passed email in credential field
-    if (!googleEmail && credential && typeof credential === 'string' && credential.includes('@')) {
-      googleEmail = credential.trim().toLowerCase();
-      googleName = directName || googleEmail.split('@')[0];
-    }
-
     if (!googleEmail || !EMAIL_RE.test(googleEmail)) {
       return res.status(400).json({ error: 'Please enter a valid Google account email address.' });
     }
 
-    // Check if user already exists with this email
+    // Check accounts associated with this email
     const [existingUsers] = await pool.query(
-      `SELECT username, role, email, is_verified FROM users WHERE LOWER(email) = ? LIMIT 1`,
+      `SELECT username, role, email, is_verified FROM users WHERE LOWER(email) = ? ORDER BY CASE role WHEN 'SuperAdmin' THEN 1 WHEN 'Admin' THEN 2 ELSE 3 END, username ASC`,
       [googleEmail]
     );
+
+    if (existingUsers.length > 1) {
+      return res.json({
+        success: true,
+        requiresAccountSelection: true,
+        email: googleEmail,
+        accounts: existingUsers.map(a => ({
+          username: a.username,
+          role: a.role || 'User',
+          isVerified: !!a.is_verified
+        }))
+      });
+    }
 
     let targetUsername = '';
     let targetRole = 'User';
 
-    if (existingUsers.length > 0) {
+    if (existingUsers.length === 1) {
       const u = existingUsers[0];
       targetUsername = u.username;
       targetRole = u.role;

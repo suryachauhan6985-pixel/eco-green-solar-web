@@ -2004,6 +2004,51 @@ window.attachColumnFilters = function (table) {
             <a href="#" id="googleGoLogin">&larr; Back to Sign In</a>
           </div>
         </div>
+
+        <div id="loginStepGoogleOtp" class="login-step" style="display:none;">
+          <div class="login-step-head">
+            <div class="login-step-icon" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:50%; margin-bottom:12px;">
+              <i class="fa-solid fa-shield-halved" style="color:var(--blue, #3b8ed0); font-size:22px;"></i>
+            </div>
+            <h2>Verify Identity</h2>
+            <p id="googleOtpHint">Enter the 6-digit code sent to your Google inbox.</p>
+          </div>
+          <div class="login-field">
+            <label>6-Digit Verification Code</label>
+            <div class="otp-boxes" id="googleOtpBoxes">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+              <input type="text" class="otp-box" inputmode="numeric" maxlength="1">
+            </div>
+            <input type="hidden" id="googleOtpInput">
+          </div>
+          <div class="otp-note" id="googleOtpNote">
+            Didn't receive code? <button type="button" class="otp-resend-link" id="googleOtpResend">Resend Code</button>
+          </div>
+          <div class="login-error" id="googleOtpError"></div>
+          <button type="button" class="login-btn" id="googleOtpSubmit"><span>Verify &amp; Sign In</span> <i class="fa-solid fa-check"></i></button>
+          <div class="login-back-wrap">
+            <button type="button" class="login-back-btn" id="googleOtpBack"><i class="fa-solid fa-arrow-left"></i> Change Email</button>
+          </div>
+        </div>
+
+        <div id="loginStepSelectAccount" class="login-step" style="display:none;">
+          <div class="login-step-head">
+            <div class="login-step-icon" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:50%; margin-bottom:12px;">
+              <i class="fa-solid fa-users" style="color:var(--gold, #f1c40f); font-size:22px;"></i>
+            </div>
+            <h2>Choose ERP Account</h2>
+            <p>Multiple workspaces found for your email. Select which account to open:</p>
+          </div>
+          <div class="account-select-list" id="accountSelectList"></div>
+          <div class="login-error" id="accountSelectError"></div>
+          <div class="login-back-wrap">
+            <button type="button" class="login-back-btn" id="accountSelectBack"><i class="fa-solid fa-arrow-left"></i> Back</button>
+          </div>
+        </div>
         </div>
       </div>
     `;
@@ -2074,6 +2119,22 @@ window.attachColumnFilters = function (table) {
     const googleStepError = loginOverlay.querySelector('#googleStepError');
     const googleStepSubmit = loginOverlay.querySelector('#googleStepSubmit');
     const googleGoLogin = loginOverlay.querySelector('#googleGoLogin');
+
+    const stepGoogleOtp = loginOverlay.querySelector('#loginStepGoogleOtp');
+    const googleOtpHint = loginOverlay.querySelector('#googleOtpHint');
+    const googleOtpBoxes = loginOverlay.querySelector('#googleOtpBoxes');
+    const googleOtpInput = loginOverlay.querySelector('#googleOtpInput');
+    const googleOtpError = loginOverlay.querySelector('#googleOtpError');
+    const googleOtpSubmit = loginOverlay.querySelector('#googleOtpSubmit');
+    const googleOtpBack = loginOverlay.querySelector('#googleOtpBack');
+    const googleOtpResend = loginOverlay.querySelector('#googleOtpResend');
+    let googleOtpBoxesCtl = null;
+
+    const stepSelectAccount = loginOverlay.querySelector('#loginStepSelectAccount');
+    const accountSelectList = loginOverlay.querySelector('#accountSelectList');
+    const accountSelectError = loginOverlay.querySelector('#accountSelectError');
+    const accountSelectBack = loginOverlay.querySelector('#accountSelectBack');
+    let pendingGoogleEmail = '';
     // ---------- OTP boxes: 6 separate single-digit inputs that stay in sync
     // with one hidden <input> (so the rest of the login code below can keep
     // reading/writing otpInput.value exactly as before — nothing else has
@@ -2218,7 +2279,7 @@ window.attachColumnFilters = function (table) {
     // All five screens (creds, login-OTP, register, register-OTP, forgot,
     // reset) live in the same card and only one is ever visible at a time.
     function hideAllSteps() {
-      [stepCreds, stepOtp, stepRegister, stepRegisterOtp, stepForgot, stepReset, stepGoogle].forEach((el) => {
+      [stepCreds, stepOtp, stepRegister, stepRegisterOtp, stepForgot, stepReset, stepGoogle, stepGoogleOtp, stepSelectAccount].forEach((el) => {
         if (el) el.style.display = 'none';
       });
     }
@@ -2230,6 +2291,62 @@ window.attachColumnFilters = function (table) {
       googleAccountEmail.value = '';
       googleAccountName.value = '';
       setTimeout(() => googleAccountEmail.focus(), 50);
+    }
+
+    function showGoogleOtpStep(email, maskedEmail) {
+      hideAllSteps();
+      pendingGoogleEmail = email;
+      stepGoogleOtp.style.display = '';
+      googleOtpHint.textContent = `Enter the 6-digit verification code sent to ${maskedEmail || email} to verify your identity.`;
+      googleOtpError.classList.remove('show');
+      if (googleOtpBoxesCtl) {
+        googleOtpBoxesCtl.clear();
+        googleOtpBoxesCtl.focusFirst();
+      }
+      startResendCooldown(googleOtpResend);
+    }
+
+    function showSelectAccountStep(email, accounts) {
+      hideAllSteps();
+      pendingGoogleEmail = email;
+      stepSelectAccount.style.display = '';
+      accountSelectError.classList.remove('show');
+      accountSelectList.innerHTML = '';
+
+      (accounts || []).forEach((acc) => {
+        const card = document.createElement('div');
+        card.className = 'account-select-card';
+        const initial = (acc.username || 'U').charAt(0).toUpperCase();
+        card.innerHTML = `
+          <div class="account-select-info">
+            <div class="account-select-avatar">${initial}</div>
+            <div>
+              <div class="account-select-uname">@${acc.username}</div>
+              <div class="account-select-role">${acc.role || 'User'}</div>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right account-select-arrow"></i>
+        `;
+        card.addEventListener('click', async () => {
+          accountSelectError.classList.remove('show');
+          try {
+            const res = await window.Api.post('/auth/google-select-account', {
+              email: pendingGoogleEmail,
+              selectedUsername: acc.username
+            });
+            if (res && res.token && res.username) {
+              finishLogin(res);
+            } else {
+              accountSelectError.textContent = 'Could not open selected workspace.';
+              accountSelectError.classList.add('show');
+            }
+          } catch (err) {
+            accountSelectError.textContent = (err && err.message) || 'Failed to select account.';
+            accountSelectError.classList.add('show');
+          }
+        });
+        accountSelectList.appendChild(card);
+      });
     }
 
     function showRegisterStep() {
@@ -2731,28 +2848,128 @@ window.attachColumnFilters = function (table) {
       });
     }
 
+    // Google OTP Boxes and Action Handlers
+    if (googleOtpBoxes && googleOtpInput) {
+      googleOtpBoxesCtl = wireOtpBoxes(googleOtpBoxes, googleOtpInput, () => attemptVerifyGoogleOtp());
+    }
+
+    if (googleOtpSubmit) {
+      googleOtpSubmit.addEventListener('click', attemptVerifyGoogleOtp);
+    }
+    if (googleOtpInput) {
+      googleOtpInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptVerifyGoogleOtp(); });
+    }
+    if (googleOtpBack) {
+      googleOtpBack.addEventListener('click', (e) => {
+        e.preventDefault();
+        showGoogleStep();
+      });
+    }
+    if (accountSelectBack) {
+      accountSelectBack.addEventListener('click', (e) => {
+        e.preventDefault();
+        showGoogleStep();
+      });
+    }
+
+    if (googleOtpResend) {
+      googleOtpResend.addEventListener('click', async () => {
+        if (!pendingGoogleEmail) return;
+        googleOtpError.classList.remove('show');
+        googleOtpResend.disabled = true;
+        const origText = googleOtpResend.textContent;
+        googleOtpResend.textContent = 'Resending...';
+        try {
+          const res = await window.Api.post('/auth/google-request-otp', { email: pendingGoogleEmail });
+          if (res && res.success) {
+            googleOtpHint.textContent = `A new verification code was sent to ${res.maskedEmail || pendingGoogleEmail}.`;
+            if (googleOtpBoxesCtl) {
+              googleOtpBoxesCtl.clear();
+              googleOtpBoxesCtl.focusFirst();
+            }
+            startResendCooldown(googleOtpResend);
+          } else {
+            googleOtpError.textContent = (res && res.error) || 'Could not resend code.';
+            googleOtpError.classList.add('show');
+            googleOtpResend.disabled = false;
+            googleOtpResend.textContent = origText;
+          }
+        } catch (err) {
+          googleOtpError.textContent = (err && err.message) || 'Failed to resend code.';
+          googleOtpError.classList.add('show');
+          googleOtpResend.disabled = false;
+          googleOtpResend.textContent = origText;
+        }
+      });
+    }
+
+    async function attemptVerifyGoogleOtp() {
+      const otp = (googleOtpInput.value || '').trim();
+      if (!pendingGoogleEmail) { showGoogleStep(); return; }
+      if (!otp || otp.length < 6) {
+        googleOtpError.textContent = 'Please enter the complete 6-digit verification code.';
+        googleOtpError.classList.add('show');
+        return;
+      }
+      googleOtpError.classList.remove('show');
+      googleOtpSubmit.disabled = true;
+      googleOtpSubmit.innerHTML = '<span>Verifying...</span> <i class="fa-solid fa-spinner fa-spin"></i>';
+      try {
+        const res = await window.Api.post('/auth/google-verify-otp', {
+          email: pendingGoogleEmail,
+          otp
+        });
+        if (res && res.requiresAccountSelection && res.accounts && res.accounts.length > 1) {
+          showSelectAccountStep(res.email, res.accounts);
+        } else if (res && res.token && res.username) {
+          finishLogin(res);
+        } else {
+          googleOtpError.textContent = 'Verification did not return an active session.';
+          googleOtpError.classList.add('show');
+        }
+      } catch (err) {
+        googleOtpError.textContent = (err && err.message) || 'Verification failed.';
+        googleOtpError.classList.add('show');
+      } finally {
+        googleOtpSubmit.disabled = false;
+        googleOtpSubmit.innerHTML = '<span>Verify &amp; Sign In</span> <i class="fa-solid fa-check"></i>';
+      }
+    }
+
     if (googleStepSubmit) {
-      googleStepSubmit.addEventListener('click', () => {
+      googleStepSubmit.addEventListener('click', async () => {
         const email = (googleAccountEmail.value || '').trim();
-        const name = (googleAccountName.value || '').trim();
         if (!email || !email.includes('@') || !email.includes('.')) {
           googleStepError.textContent = 'Please enter a valid Google account email address.';
           googleStepError.classList.add('show');
           googleAccountEmail.focus();
           return;
         }
-        handleGoogleLoginAction(email, name);
+        googleStepError.classList.remove('show');
+        googleStepSubmit.disabled = true;
+        googleStepSubmit.innerHTML = '<span>Sending code...</span> <i class="fa-solid fa-spinner fa-spin"></i>';
+        try {
+          const res = await window.Api.post('/auth/google-request-otp', { email });
+          if (res && res.success) {
+            showGoogleOtpStep(res.email, res.maskedEmail);
+          } else {
+            googleStepError.textContent = (res && res.error) || 'Could not send verification code.';
+            googleStepError.classList.add('show');
+          }
+        } catch (err) {
+          googleStepError.textContent = (err && err.message) || 'Failed to send verification code. Please check your email.';
+          googleStepError.classList.add('show');
+        } finally {
+          googleStepSubmit.disabled = false;
+          googleStepSubmit.innerHTML = '<span>Continue with Google</span> <i class="fa-solid fa-arrow-right"></i>';
+        }
       });
     }
 
     if (googleAccountEmail) {
       googleAccountEmail.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-          if (googleAccountName && !googleAccountName.value.trim()) {
-            googleAccountName.focus();
-          } else if (googleStepSubmit) {
-            googleStepSubmit.click();
-          }
+          if (googleStepSubmit) googleStepSubmit.click();
         }
       });
     }
