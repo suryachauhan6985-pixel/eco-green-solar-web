@@ -24,9 +24,16 @@ window.PAGES.masters = {
 
       <!-- TOP PANEL: 3-STEP ITEM PROFILER -->
       <div class="panel" id="mItemCreatePanel" style="margin-bottom:18px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-          <h3 id="mItemFormHeading" style="margin:0;"><i class="fa-solid fa-box-open" style="color:var(--gold);"></i> Item Profiler &amp; Registration</h3>
-          <button type="button" class="info-btn" data-info="Create product master templates. Subtypes (DCR, Non-DCR, Hybrid, etc.) are selected dynamically during Purchase Inward."><i class="fa-solid fa-circle-info"></i></button>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; border-bottom:1px solid var(--border); padding-bottom:10px; flex-wrap:wrap; gap:10px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <h3 id="mItemFormHeading" style="margin:0;"><i class="fa-solid fa-box-open" style="color:var(--gold);"></i> Item Profiler &amp; Registration</h3>
+            <button type="button" class="info-btn" data-info="Create product master templates. Subtypes (DCR, Non-DCR, Hybrid, etc.) are selected dynamically during Purchase Inward."><i class="fa-solid fa-circle-info"></i></button>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-ghost" id="mBtnImportItems" style="background:#1F7A4D; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-file-import"></i> Upload Excel</button>
+            <button class="btn btn-ghost" id="mBtnDownloadItemTemplate" style="background:#4B6584; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-download"></i> Download Template</button>
+            <input type="file" id="mItemImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
+          </div>
         </div>
 
         <div class="masters-step-grid">
@@ -94,11 +101,6 @@ window.PAGES.masters = {
       <div class="panel" id="mItemCatalogPanel">
         <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
           <h3 style="margin:0;"><i class="fa-solid fa-table-list" style="color:var(--gold);"></i> Registered Inventory Catalog</h3>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="btn btn-ghost" id="mBtnImportItems" style="background:#1F7A4D; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-file-import"></i> Upload Excel</button>
-            <button class="btn btn-ghost" id="mBtnDownloadItemTemplate" style="background:#4B6584; padding:6px 14px; font-size:12px; border-radius:20px;"><i class="fa-solid fa-download"></i> Download Template</button>
-            <input type="file" id="mItemImportFile" accept=".csv,.xlsx,.xls" style="display:none;">
-          </div>
         </div>
 
         <!-- Stats Bar -->
