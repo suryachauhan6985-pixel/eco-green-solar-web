@@ -1,7 +1,8 @@
 /**
- * Eco Green Solar ERP - Visual Print Template Designer & Publishing Studio v2.1
+ * Eco Green Solar ERP - Visual Print Template Designer & Publishing Studio v2.2
  * Features:
  * - Photoshop-Style Multi-Format Canvas (A4, A5, Letter, Legal, 80mm POS Thermal, Custom mm/in/px)
+ * - Blank Page Starter for "+ New" with customizable sections & columns
  * - Pre-loaded Existing ERP BOM & Dual-Copy Challan Presets
  * - Direct Device File Uploads for Logo, Signature, and Stamp/Seal
  * - Granular Per-Element Single-Font & Typography Inspector
@@ -14,7 +15,7 @@
 
   let currentTemplate = null;
   let currentDocType = 'all';
-  let previewScale = 0.75;
+  let previewScale = 0.70;
   let showBrowserBleed = false;
   let showBrowserHeaderFooter = false;
   let activeTypographyElement = 'title';
@@ -29,7 +30,7 @@
               <div style="display:flex; align-items:center; gap:8px;">
                 <i class="fa-solid fa-compass-drafting" style="color:var(--blue, #3b8ed0); font-size:18px;"></i>
                 <strong style="font-size:14px; color:var(--txt, #fff);">Template Studio</strong>
-                <span class="pill pill-gold" style="font-size:10px; padding:1px 6px;">v2.1</span>
+                <span class="pill pill-gold" style="font-size:10px; padding:1px 6px;">v2.2</span>
               </div>
               <select id="tplDocTypeFilter" class="input" style="padding:4px 8px; font-size:12px; font-weight:700; border-radius:6px; background:var(--bg2, #181d24);">
                 <option value="all">All Documents</option>
@@ -43,7 +44,7 @@
             </div>
 
             <div class="tpl-topbar-right">
-              <button type="button" class="btn btn-ghost" id="tplBtnNew" style="font-size:11px; padding:5px 9px;" title="Create new blueprint"><i class="fa-solid fa-plus"></i> New</button>
+              <button type="button" class="btn btn-blue" id="tplBtnNew" style="font-size:11.5px; padding:5px 12px; font-weight:800;" title="Create new blank canvas template"><i class="fa-solid fa-plus"></i> + Blank Template</button>
               <button type="button" class="btn btn-ghost" id="tplBtnClone" style="font-size:11px; padding:5px 9px;" title="Clone current layout"><i class="fa-solid fa-clone"></i> Clone</button>
               <button type="button" class="btn btn-ghost" id="tplBtnExport" style="font-size:11px; padding:5px 9px;" title="Export JSON"><i class="fa-solid fa-download"></i> Export</button>
               <button type="button" class="btn btn-ghost" id="tplBtnImport" style="font-size:11px; padding:5px 9px;" title="Import JSON"><i class="fa-solid fa-upload"></i> Import</button>
@@ -385,8 +386,8 @@
 
                 <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--txt-muted);">
                   <span>Zoom:</span>
-                  <input type="range" id="rangePreviewZoom" min="0.25" max="1.50" step="0.05" value="0.75" style="width:90px; accent-color:var(--blue, #3b8ed0);">
-                  <span id="valPreviewZoom" style="font-family:monospace; font-weight:700; color:var(--txt, #fff);">75%</span>
+                  <input type="range" id="rangePreviewZoom" min="0.25" max="1.50" step="0.05" value="0.70" style="width:90px; accent-color:var(--blue, #3b8ed0);">
+                  <span id="valPreviewZoom" style="font-family:monospace; font-weight:700; color:var(--txt, #fff);">70%</span>
                   <button type="button" class="btn btn-ghost" id="btnZoomFit" style="padding:2px 6px; font-size:10.5px;">Fit</button>
                   <button type="button" class="btn btn-ghost" id="btnZoom100" style="padding:2px 6px; font-size:10.5px;">100%</button>
                 </div>
@@ -395,11 +396,11 @@
               <!-- Browser Header Simulation Bar -->
               <div class="browser-header-sim" id="browserHeaderSim" style="display:none; width:794px;">
                 <span id="simBrowserDate">25/08/2026, 11:30 AM</span>
-                <span id="simBrowserTitle">BOM Kit - EGS/2026/0842</span>
+                <span id="simBrowserTitle">Document Print - EGS/2026/0842</span>
               </div>
 
               <!-- Canvas Container -->
-              <div class="a4-sheet-preview-wrap A4_portrait" id="a4CanvasWrap" style="transform: scale(0.75);">
+              <div class="a4-sheet-preview-wrap A4_portrait" id="a4CanvasWrap" style="transform: scale(0.70);">
                 <iframe id="a4PreviewIframe" class="a4-sheet-inner-frame" style="width:794px; height:1123px; border:none; display:block;"></iframe>
                 <!-- Red page break boundary line -->
                 <div class="a4-page-break-line" id="a4PageBreakLine" style="top: 1123px;">
@@ -1048,7 +1049,7 @@
       }
 
       if ($('rangePreviewZoom')) $('rangePreviewZoom').addEventListener('input', (e) => {
-        applyZoom(parseFloat(e.target.value) || 0.75);
+        applyZoom(parseFloat(e.target.value) || 0.70);
       });
       if ($('btnZoomFit')) $('btnZoomFit').addEventListener('click', () => applyZoom(0.55));
       if ($('btnZoom100')) $('btnZoom100').addEventListener('click', () => applyZoom(1.00));
@@ -1109,17 +1110,65 @@
         if (window.showNotification) window.showNotification(`📋 Cloned template. Click "Save Layout" to store.`, 'info');
       });
 
+      // "+ Blank Template / New" - Creates a clean blank canvas starter!
       if ($('tplBtnNew')) $('tplBtnNew').addEventListener('click', () => {
-        const name = prompt('Enter a name for the new print template:');
+        const name = prompt('Enter a name for your custom blank template:', 'Custom Blank Print Format');
         if (!name) return;
-        const newTpl = JSON.parse(JSON.stringify(PTE.getAllTemplates()[0]));
-        newTpl.id = 'tpl_' + (newTpl.docType || 'bom') + '_' + Date.now().toString(36);
-        newTpl.name = name.trim();
-        newTpl.isPreset = false;
-        currentTemplate = newTpl;
+        const blankTpl = {
+          id: 'tpl_' + (currentDocType === 'all' ? 'bom' : currentDocType) + '_' + Date.now().toString(36),
+          name: name.trim(),
+          docType: currentDocType === 'all' ? 'bom' : currentDocType,
+          isPreset: false,
+          canvasPreset: 'A4_portrait',
+          paperSize: 'A4',
+          orientation: 'portrait',
+          margins: { top: 10, bottom: 10, left: 8, right: 8 },
+          fontFamily: "'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif",
+          baseFontSize: '9.2pt',
+          rowPadding: '2.5px 5px',
+          tableHeadBg: '#1e293b',
+          tableHeadColor: '#ffffff',
+          sectionHeaderBg: '#f1f5f9',
+          sectionHeaderColor: '#0f172a',
+          sectionHeaderFontSize: '9.6pt',
+          sectionHeaderPadding: '3px 6px',
+          borderWidth: '1px',
+          borderColor: '#000000',
+          printScale: 1.0,
+          autoFitOnePage: true,
+          showLogo: true,
+          logoWidth: '140px',
+          logoAlign: 'left',
+          headerTitle: name.trim().toUpperCase(),
+          headerSubtitle: 'Company Details & System Specification Sheet',
+          titleStyles: { fontSize: '14pt', fontWeight: '900', color: '#0f172a' },
+          subtitleStyles: { fontSize: '8.5pt', fontWeight: '500', color: '#64748b' },
+          tableHeadStyles: { fontSize: '9.2pt', fontWeight: '800', color: '#ffffff', bg: '#1e293b' },
+          categoryStyles: { fontSize: '9.6pt', fontWeight: '800', color: '#0f172a', bg: '#f1f5f9' },
+          dataStyles: { fontSize: '9.2pt', fontWeight: '400', color: '#000000', padding: '2.5px 5px' },
+          totalStyles: { fontSize: '9.5pt', fontWeight: '800', color: '#000000', bg: '#f8fafc' },
+          watermark: { show: false, text: 'DRAFT', opacity: 0.08, angle: -30, color: '#3b8ed0', fontSize: '42pt' },
+          showSignatures: true,
+          signatures: [
+            { title: 'Prepared By' },
+            { title: 'Verified / Approved By' },
+            { title: 'Authorized Signatory' }
+          ],
+          showFooterNotes: true,
+          footerNotes: 'Declaration: Goods delivered in good condition. All disputes subject to local jurisdiction.',
+          columns: [
+            { key: 'sr_no', label: '#', width: '6%', align: 'center', visible: true },
+            { key: 'item_desc', label: 'Item Description & Specifications', width: '54%', align: 'left', visible: true },
+            { key: 'qty', label: 'Quantity', width: '12%', align: 'right', visible: true },
+            { key: 'uom', label: 'Unit', width: '10%', align: 'center', visible: true },
+            { key: 'remarks', label: 'Remarks / Serial', width: '18%', align: 'left', visible: true }
+          ]
+        };
+
+        currentTemplate = blankTpl;
         syncControlsFromTemplate();
         refreshLivePreview();
-        if (window.showNotification) window.showNotification(`Created "${newTpl.name}". Customize your canvas & settings.`, 'info');
+        if (window.showNotification) window.showNotification(`📄 Created fresh Blank Template "${blankTpl.name}". Customize columns, typography & media!`, 'success');
       });
 
       if ($('tplBtnExport')) $('tplBtnExport').addEventListener('click', () => {
@@ -1182,7 +1231,7 @@
 
       // Initial load
       loadTemplatesDropdown();
-      applyZoom(0.75);
+      applyZoom(0.70);
     }
   };
 

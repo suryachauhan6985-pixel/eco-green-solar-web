@@ -797,6 +797,69 @@ function bomRenderPrintSheetHtml(kit, header) {
 }
 
 function bomPrintKitDirectly(kit, header) {
+  // If user has chosen a custom active template in Template Studio, use PrintTemplateEngine!
+  const PTE = window.PrintTemplateEngine;
+  if (PTE && typeof PTE.getActiveTemplate === 'function') {
+    const activeTpl = PTE.getActiveTemplate('bom');
+    if (activeTpl && activeTpl.id !== 'bom_existing_original') {
+      const engineData = {
+        customerName: (kit && (kit.party_name || kit.customer)) || (header && header.party_name) || '',
+        docNo: (kit && (kit.bom_no || kit.order_no)) || 'BOM-KIT',
+        docDate: (kit && (kit.date || kit.created_at)) || new Date().toLocaleDateString('en-IN'),
+        capacity: (kit && (kit.capacity_kw || kit.kw)) ? ((kit.capacity_kw || kit.kw) + ' KW System') : '',
+        siteLocation: (kit && (kit.site_location || kit.address)) || '',
+        vehicleNo: (kit && kit.vehicle_no) || '',
+        sections: []
+      };
+
+      const secMap = {};
+      (kit.items || []).forEach((it) => {
+        const cat = it.category || it.cat || 'SOLAR SYSTEM COMPONENTS';
+        if (!secMap[cat]) secMap[cat] = [];
+        secMap[cat].push({
+          sr_no: secMap[cat].length + 1,
+          item_desc: it.item_name || it.name || it.description || '',
+          brand: it.brand || it.make || it.model || '-',
+          wattage: it.wattage || it.spec || '-',
+          qty: it.qty || it.quantity || 1,
+          uom: it.uom || it.unit || 'NOS',
+          remarks: it.remarks || it.serial || '-'
+        });
+      });
+
+      Object.keys(secMap).forEach((catName) => {
+        engineData.sections.push({
+          name: catName,
+          items: secMap[catName]
+        });
+      });
+
+      const customHtml = PTE.renderDocumentHtml('bom', engineData, activeTpl);
+      let iframe = document.getElementById('bomKitPrintIframe');
+      if (iframe) iframe.remove();
+      iframe = document.createElement('iframe');
+      iframe.id = 'bomKitPrintIframe';
+      iframe.style.position = 'fixed';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '0';
+      iframe.style.width = '794px';
+      iframe.style.height = '1123px';
+      iframe.style.border = 'none';
+      document.body.appendChild(iframe);
+
+      iframe.srcdoc = customHtml;
+      setTimeout(() => {
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        } catch (e) {
+          console.warn('Print error:', e);
+        }
+      }, 350);
+      return;
+    }
+  }
+
   const sheetHtml = bomRenderPrintSheetHtml(kit, header);
 
   let iframe = document.getElementById('bomKitPrintIframe');

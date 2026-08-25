@@ -1331,6 +1331,52 @@ window.printChallanDirectly = function(challanData) {
   iframe.style.pointerEvents = 'none';
   document.body.appendChild(iframe);
 
+  // If user has chosen a custom active template in Template Studio, use PrintTemplateEngine!
+  const PTE = window.PrintTemplateEngine;
+  if (PTE && typeof PTE.getActiveTemplate === 'function') {
+    const activeTpl = PTE.getActiveTemplate('challan');
+    if (activeTpl && activeTpl.id !== 'challan_existing_dual') {
+      const engineData = {
+        customerName: challanData.customerName || challanData.party_name || challanData.consignee || '',
+        docNo: challanData.challanNo || challanData.challan_no || 'DC-001',
+        docDate: challanData.date || new Date().toLocaleDateString('en-IN'),
+        capacity: challanData.capacity ? (challanData.capacity + ' KW System') : '',
+        siteLocation: challanData.siteLocation || challanData.site_location || '',
+        vehicleNo: challanData.vehicleNo || challanData.vehicle_no || '',
+        sections: []
+      };
+
+      const itemsList = [];
+      (challanData.items || challanData.categories || []).forEach((it, idx) => {
+        itemsList.push({
+          sr_no: idx + 1,
+          item_desc: it.name || it.item_name || it.desc || '',
+          brand: it.brand || it.model || '-',
+          qty: it.qty || it.quantity || 1,
+          uom: it.uom || it.unit || 'NOS',
+          remarks: it.remarks || it.desc || '-'
+        });
+      });
+
+      engineData.sections.push({
+        name: 'DISPATCHED MATERIALS & EQUIPMENT',
+        items: itemsList
+      });
+
+      const customHtml = PTE.renderDocumentHtml('challan', engineData, activeTpl);
+      iframe.srcdoc = customHtml;
+      setTimeout(() => {
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        } catch (e) {
+          console.warn('Challan print error:', e);
+        }
+      }, 350);
+      return;
+    }
+  }
+
   const sheetHtml = bomRenderDirectChallanPrintSheetHtml(challanData);
 
   const doc = iframe.contentWindow.document;

@@ -1,12 +1,6 @@
 /**
- * Eco Green Solar ERP - Universal Print Template Engine v2.1
- * Fully-Featured Publishing & Layout Engine:
- * - Photoshop-Grade Multi-Format Canvases (A4, A5, Letter, Legal, POS 80mm, Custom mm/in/px)
- * - Built-in & Custom Presets (BOM Classic, Landscape Challan, Solar BOQ, GST Invoice, POS Slip)
- * - Device Media Uploads (Logo, Signature, Company Seal/Stamp base64)
- * - Per-Element Granular Typography (Titles, Category Headers, Cells, Totals, Footers)
- * - Text Watermarks & Dynamic Placeholders
- * - Browser Margins & Bleed Zone Simulator
+ * Eco Green Solar ERP - Universal Print Template Engine v2.2
+ * Comprehensive Publishing & Dynamic Print Layout Engine
  */
 
 (function(window) {
@@ -16,7 +10,7 @@
   const STORAGE_KEY_ACTIVE = 'egs_active_print_templates';
 
   // ---------------------------------------------------------------------------
-  // 1. CANVAS DIMENSIONS LOOKUP (in mm and standard CSS pixels at 96 DPI)
+  // 1. CANVAS PRESETS
   // ---------------------------------------------------------------------------
   const CANVAS_PRESETS = {
     'A4_portrait': { name: 'A4 Portrait (210 × 297 mm)', widthMm: 210, heightMm: 297, widthPx: 794, heightPx: 1123, orientation: 'portrait' },
@@ -45,13 +39,13 @@
       margins: { top: 8, bottom: 8, left: 6, right: 6 },
       fontFamily: "'Calibri Light', Calibri, 'Segoe UI', Arial, sans-serif",
       baseFontSize: '9.0pt',
-      rowPadding: '1.2px 3.5px',
+      rowPadding: '1.4px 3.5px',
       tableHeadBg: '#666699',
       tableHeadColor: '#ffffff',
       sectionHeaderBg: '#f2f2f2',
       sectionHeaderColor: '#000000',
       sectionHeaderFontSize: '9.6pt',
-      sectionHeaderPadding: '1.8px 3.5px',
+      sectionHeaderPadding: '2.0px 3.5px',
       borderWidth: '1px',
       borderColor: '#000000',
       printScale: 1.0,
@@ -65,7 +59,7 @@
       subtitleStyles: { fontSize: '8.5pt', fontWeight: '400', color: '#444444' },
       tableHeadStyles: { fontSize: '9.2pt', fontWeight: '700', color: '#ffffff', bg: '#666699' },
       categoryStyles: { fontSize: '9.6pt', fontWeight: '700', color: '#000000', bg: '#f2f2f2' },
-      dataStyles: { fontSize: '9.0pt', fontWeight: '400', color: '#000000', padding: '1.2px 3.5px' },
+      dataStyles: { fontSize: '9.0pt', fontWeight: '400', color: '#000000', padding: '1.4px 3.5px' },
       totalStyles: { fontSize: '9.5pt', fontWeight: '800', color: '#000000', bg: '#fafafa' },
       watermark: { show: false, text: 'ORIGINAL', opacity: 0.10, angle: -30, color: '#3b8ed0', fontSize: '42pt' },
       showSignatures: true,
@@ -387,7 +381,7 @@
         const activeId = activeMap[docType];
         if (activeId) {
           const t = this.getTemplateById(activeId);
-          if (t && t.docType === docType) return t;
+          if (t && (docType === 'all' || t.docType === docType)) return t;
         }
       } catch (e) {}
       const list = this.getTemplatesByDocType(docType);
@@ -450,7 +444,7 @@
     },
 
     // -------------------------------------------------------------------------
-    // 4. DYNAMIC HTML RENDERING ENGINE (Multi-Canvas, Base64 Images & Granular Styles)
+    // 4. DYNAMIC HTML RENDERING ENGINE (Multi-Canvas, Base64 Images & Full Page Flow)
     // -------------------------------------------------------------------------
     renderDocumentHtml(docType, data, customTemplate) {
       const tpl = customTemplate || this.getActiveTemplate(docType);
@@ -649,9 +643,9 @@
           '<style>' +
             '@page { size: ' + pageSizeCss + '; margin: ' + m.top + 'mm ' + m.right + 'mm ' + m.bottom + 'mm ' + m.left + 'mm; }' +
             '* { box-sizing: border-box; margin: 0; padding: 0; }' +
-            'html, body { background: #ffffff; width: 100%; min-height: 100%; font-family: ' + tpl.fontFamily + '; color: #000000; -webkit-print-color-adjust: exact; print-color-adjust: exact; position: relative; }' +
-            '.print-sheet { width: 100%; min-height: 100%; padding: ' + sheetPaddingCss + '; margin: 0 auto; background: #ffffff; display: flex; flex-direction: column; justify-content: space-between; transform-origin: top center; position: relative; ' + (tpl.printScale && tpl.printScale !== 1.0 ? 'transform: scale(' + tpl.printScale + ');' : '') + ' }' +
-            'table { width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 5px; }' +
+            'html, body { background: #ffffff; width: 100%; height: 100%; font-family: ' + tpl.fontFamily + '; color: #000000; -webkit-print-color-adjust: exact; print-color-adjust: exact; position: relative; }' +
+            '.print-sheet { width: 100%; height: 100%; padding: ' + sheetPaddingCss + '; margin: 0 auto; background: #ffffff; display: flex; flex-direction: column; justify-content: space-between; transform-origin: top center; position: relative; ' + (tpl.printScale && tpl.printScale !== 1.0 ? 'transform: scale(' + tpl.printScale + ');' : '') + ' }' +
+            'table { width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 5px; flex: 0 0 auto; }' +
             '@media print { body { background: #ffffff !important; } .no-print { display: none !important; } }' +
           '</style>' +
         '</head>' +
