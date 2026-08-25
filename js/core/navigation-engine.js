@@ -16,97 +16,6 @@ function applyErpModeRules() {
 }
 window.applyErpModeRules = applyErpModeRules;
 
-// ---------------------------------------------------------------------------
-// GLOBAL LOADING INDICATORS — Smooth Unidirectional Top Progress Bar + Action Loader
-// Batches cascading API calls into a SINGLE smooth sweep (0 -> 100% -> fade).
-// ---------------------------------------------------------------------------
-let __egsLoaderCount = 0;
-let __egsLoaderTimer = null;
-let __egsLoaderEndTimer = null;
-
-const topProgress = {
-  el: null,
-  percent: 0,
-  trickleTimer: null,
-  resetTimer: null,
-  isRunning: false,
-
-  init() {
-    if (this.el) return this.el;
-    this.el = document.getElementById('egsTopProgressBar');
-    if (!this.el) {
-      this.el = document.createElement('div');
-      this.el.id = 'egsTopProgressBar';
-      this.el.className = 'egs-top-progress';
-      document.body.appendChild(this.el);
-    }
-    return this.el;
-  },
-
-  start() {
-    this.init();
-    if (this.resetTimer) {
-      clearTimeout(this.resetTimer);
-      this.resetTimer = null;
-    }
-
-    if (!this.isRunning || this.percent === 0 || this.percent >= 100) {
-      this.isRunning = true;
-      this.percent = 0;
-      this.el.style.transition = 'none';
-      this.el.style.width = '0%';
-      this.el.style.opacity = '1';
-      void this.el.offsetWidth; // flush layout
-      this.set(35);
-    }
-
-    if (!this.trickleTimer) {
-      this.trickleTimer = setInterval(() => {
-        if (this.percent < 90) {
-          const step = (90 - this.percent) * 0.16;
-          this.set(this.percent + step);
-        }
-      }, 140);
-    }
-  },
-
-  set(pct) {
-    this.init();
-    // Strictly unidirectional forward progression
-    if (pct < this.percent && this.percent < 100) return;
-    this.percent = Math.min(100, Math.max(0, pct));
-    this.el.style.transition = 'width 0.26s cubic-bezier(0.1, 0.85, 0.25, 1), opacity 0.2s ease';
-    this.el.style.width = `${this.percent}%`;
-    this.el.style.opacity = '1';
-  },
-
-  done() {
-    if (!this.el) return;
-    if (this.trickleTimer) {
-      clearInterval(this.trickleTimer);
-      this.trickleTimer = null;
-    }
-    this.set(100);
-    this.isRunning = false;
-
-    if (this.resetTimer) clearTimeout(this.resetTimer);
-    this.resetTimer = setTimeout(() => {
-      if (this.el) {
-        this.el.style.transition = 'opacity 0.22s ease';
-        this.el.style.opacity = '0';
-        setTimeout(() => {
-          if (this.el && !this.isRunning) {
-            this.percent = 0;
-            this.el.style.transition = 'none';
-            this.el.style.width = '0%';
-          }
-        }, 240);
-      }
-      this.resetTimer = null;
-    }, 150);
-  }
-};
-
   // =====================================================================
   // SHREE SAVA / TALLY STYLE SIDEBAR NAVIGATION & FLOATING FLYOUT SYSTEM
   // =====================================================================
@@ -1112,8 +1021,13 @@ const topProgress = {
       }, 70);
     }
 
-    if (typeof applyGlobalTableSearch === 'function') {
-      applyGlobalTableSearch(currentSearchQuery);
+    const searchVal = (typeof window.getCurrentTableSearchQuery === 'function')
+      ? window.getCurrentTableSearchQuery()
+      : (typeof currentSearchQuery !== 'undefined' ? currentSearchQuery : '');
+    if (typeof window.applyGlobalTableSearch === 'function') {
+      window.applyGlobalTableSearch(searchVal);
+    } else if (typeof applyGlobalTableSearch === 'function') {
+      applyGlobalTableSearch(searchVal);
     }
 
     if (typeof closeSidebar === 'function') closeSidebar();
@@ -1686,4 +1600,27 @@ const topProgress = {
   });
 
   // =====================================================================
+
+  window.go = go;
+
+  // Proactive Navigation Link Hover & Touch Prefetching for 0ms Perceived Response
+  document.addEventListener('mouseover', (e) => {
+    const target = e.target.closest && e.target.closest('[onclick*="go("], .egs-flyout-item, .erp-sidebar-btn');
+    if (!target) return;
+    const onclick = target.getAttribute('onclick') || '';
+    if (onclick.includes("'reports'")) window.Api.prefetch('/reports/master');
+    else if (onclick.includes("'masters'")) window.Api.prefetch('/masters/categories');
+    else if (onclick.includes("'partyledger'")) window.Api.prefetch('/ledgers');
+    else if (onclick.includes("'dashboard'")) window.Api.prefetch('/dashboard/summary');
+  }, { passive: true });
+
+  document.addEventListener('touchstart', (e) => {
+    const target = e.target.closest && e.target.closest('[onclick*="go("], .egs-flyout-item, .erp-sidebar-btn');
+    if (!target) return;
+    const onclick = target.getAttribute('onclick') || '';
+    if (onclick.includes("'reports'")) window.Api.prefetch('/reports/master');
+    else if (onclick.includes("'masters'")) window.Api.prefetch('/masters/categories');
+    else if (onclick.includes("'partyledger'")) window.Api.prefetch('/ledgers');
+    else if (onclick.includes("'dashboard'")) window.Api.prefetch('/dashboard/summary');
+  }, { passive: true });
 })();

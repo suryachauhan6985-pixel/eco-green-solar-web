@@ -152,8 +152,10 @@ if (!navigator.onLine) {
   }
 
   function showApp() {
-    if (loginOverlay) loginOverlay.style.display = 'none';
-    if (shellEl) shellEl.style.display = 'flex';
+    const overlay = document.getElementById('loginOverlay') || loginOverlay;
+    if (overlay) overlay.style.display = 'none';
+    const shell = document.querySelector('.shell') || shellEl;
+    if (shell) shell.style.display = 'flex';
   }
 
   // ---------- Session persistence (fixes "refresh -> back to login screen") ----------
@@ -1869,4 +1871,14 @@ if (!navigator.onLine) {
   }
 
 
+
+  // Export session helpers for the app bootstrapper
+  window.buildLoginOverlay = buildLoginOverlay;
+  window.loadSession = loadSession;
+  window.showApp = showApp;
+  window.showLoginOverlay = showLoginOverlay;
+  window.updateProfileDisplay = updateProfileDisplay;
+  window.startHeartbeat = startHeartbeat;
+  window.applyUserPreferencesFromServer = applyUserPreferencesFromServer;
+  window.resetIdleTimer = resetIdleTimer;
 })();

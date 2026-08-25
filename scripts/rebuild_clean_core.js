@@ -1,4 +1,90 @@
-// js/app.js
+﻿const fs = require('fs');
+const execSync = require('child_process').execSync;
+const original = execSync('git show a173b2f:js/app.js', { encoding: 'utf8' }).split('\n');
+
+// 1. js/core/ui-feedback.js
+const uiFeedbackCode = `// js/core/ui-feedback.js
+// Core UI Feedback Engine: Loaders, Toasts, Popups, Modals, Date Picker & Table Filters
+
+(function () {
+${original.slice(0, 248).join('\n')}
+${original.slice(262, 620).join('\n')}
+${original.slice(971, 1463).join('\n')}
+
+  window.getCurrentTableSearchQuery = function () {
+    return (typeof currentSearchQuery !== 'undefined') ? currentSearchQuery : '';
+  };
+  window.setCurrentTableSearchQuery = function (q) {
+    if (typeof currentSearchQuery !== 'undefined') currentSearchQuery = q;
+  };
+
+${original.slice(7728, 7915).join('\n')}
+
+${original.slice(8016, 8066).join('\n')}
+})();
+
+${original.slice(8067, 8278).join('\n')}
+`;
+fs.writeFileSync('js/core/ui-feedback.js', uiFeedbackCode, 'utf8');
+
+// 2. js/core/pwa-permissions.js
+const pwaPermissionsCode = `// js/core/pwa-permissions.js
+// Hardware & Browser Permissions Engine (Camera, Mic, Storage, Notifications) & PWA Install Guide
+
+(function () {
+${original.slice(620, 860).join('\n')}
+})();
+`;
+fs.writeFileSync('js/core/pwa-permissions.js', pwaPermissionsCode, 'utf8');
+
+// 3. js/core/auth-session.js
+const authSessionCode = `// js/core/auth-session.js
+// Authentication State, JWT Interceptor, Login Modal, Biometrics, 2FA & Multi-Tenant Sessions
+
+${original.slice(860, 970).join('\n')}
+
+(function () {
+${original.slice(1463, 3219).join('\n')}
+
+  // Export session helpers for the app bootstrapper
+  window.buildLoginOverlay = buildLoginOverlay;
+  window.loadSession = loadSession;
+  window.showApp = showApp;
+  window.showLoginOverlay = showLoginOverlay;
+  window.updateProfileDisplay = updateProfileDisplay;
+  window.startHeartbeat = startHeartbeat;
+  window.applyUserPreferencesFromServer = applyUserPreferencesFromServer;
+  window.resetIdleTimer = resetIdleTimer;
+  window.finishLogin = finishLogin;
+})();
+`;
+fs.writeFileSync('js/core/auth-session.js', authSessionCode, 'utf8');
+
+// 4. js/core/settings-panel.js
+const settingsPanelCode = `// js/core/settings-panel.js
+// App Configuration Panel, Theme Switcher, Typography, Audio & Keyboard Shortcuts Guide
+
+(function () {
+${original.slice(3219, 6149).join('\n')}
+})();
+`;
+fs.writeFileSync('js/core/settings-panel.js', settingsPanelCode, 'utf8');
+
+// 5. js/core/navigation-engine.js
+const navEngineCode = `// js/core/navigation-engine.js
+// Shree Sava / Tally Navigation Engine, Flyouts, Ladder History & Keyboard Hotkeys Router
+
+(function () {
+${original.slice(248, 262).join('\n')}
+${original.slice(6149, 7728).join('\n')}
+
+${original.slice(7916, 7938).join('\n')}
+})();
+`;
+fs.writeFileSync('js/core/navigation-engine.js', navEngineCode, 'utf8');
+
+// 6. js/app.js (Clean App Bootstrapper & Lifecycle Orchestrator)
+const appBootstrapperCode = `// js/app.js
 // Main Application Entrypoint & Bootstrapper
 // Runs after all core modules and page modules are parsed and registered.
 
@@ -84,3 +170,7 @@
     }
   });
 })();
+`;
+fs.writeFileSync('js/app.js', appBootstrapperCode, 'utf8');
+
+console.log('Rebuilt clean core modules and bootstrapper successfully!');

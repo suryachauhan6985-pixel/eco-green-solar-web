@@ -139,7 +139,7 @@ window.PAGES.reports = {
         allRows = [];
         return;
       }
-      allRows = rows;
+      allRows = Array.isArray(rows) ? rows : (rows && Array.isArray(rows.data) ? rows.data : (rows && Array.isArray(rows.rows) ? rows.rows : []));
       selectedRows.clear();
       if (bulkBarApi) bulkBarApi.update(0);
       const selectAllEl = $('repSelectAll');

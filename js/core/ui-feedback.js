@@ -250,6 +250,97 @@ window.initBulkActionsBar = function(containerEl, config) {
   };
 };
 
+// ---------------------------------------------------------------------------
+// GLOBAL LOADING INDICATORS — Smooth Unidirectional Top Progress Bar + Action Loader
+// Batches cascading API calls into a SINGLE smooth sweep (0 -> 100% -> fade).
+// ---------------------------------------------------------------------------
+let __egsLoaderCount = 0;
+let __egsLoaderTimer = null;
+let __egsLoaderEndTimer = null;
+
+const topProgress = {
+  el: null,
+  percent: 0,
+  trickleTimer: null,
+  resetTimer: null,
+  isRunning: false,
+
+  init() {
+    if (this.el) return this.el;
+    this.el = document.getElementById('egsTopProgressBar');
+    if (!this.el) {
+      this.el = document.createElement('div');
+      this.el.id = 'egsTopProgressBar';
+      this.el.className = 'egs-top-progress';
+      document.body.appendChild(this.el);
+    }
+    return this.el;
+  },
+
+  start() {
+    this.init();
+    if (this.resetTimer) {
+      clearTimeout(this.resetTimer);
+      this.resetTimer = null;
+    }
+
+    if (!this.isRunning || this.percent === 0 || this.percent >= 100) {
+      this.isRunning = true;
+      this.percent = 0;
+      this.el.style.transition = 'none';
+      this.el.style.width = '0%';
+      this.el.style.opacity = '1';
+      void this.el.offsetWidth; // flush layout
+      this.set(35);
+    }
+
+    if (!this.trickleTimer) {
+      this.trickleTimer = setInterval(() => {
+        if (this.percent < 90) {
+          const step = (90 - this.percent) * 0.16;
+          this.set(this.percent + step);
+        }
+      }, 140);
+    }
+  },
+
+  set(pct) {
+    this.init();
+    // Strictly unidirectional forward progression
+    if (pct < this.percent && this.percent < 100) return;
+    this.percent = Math.min(100, Math.max(0, pct));
+    this.el.style.transition = 'width 0.26s cubic-bezier(0.1, 0.85, 0.25, 1), opacity 0.2s ease';
+    this.el.style.width = `${this.percent}%`;
+    this.el.style.opacity = '1';
+  },
+
+  done() {
+    if (!this.el) return;
+    if (this.trickleTimer) {
+      clearInterval(this.trickleTimer);
+      this.trickleTimer = null;
+    }
+    this.set(100);
+    this.isRunning = false;
+
+    if (this.resetTimer) clearTimeout(this.resetTimer);
+    this.resetTimer = setTimeout(() => {
+      if (this.el) {
+        this.el.style.transition = 'opacity 0.22s ease';
+        this.el.style.opacity = '0';
+        setTimeout(() => {
+          if (this.el && !this.isRunning) {
+            this.percent = 0;
+            this.el.style.transition = 'none';
+            this.el.style.width = '0%';
+          }
+        }, 240);
+      }
+      this.resetTimer = null;
+    }, 150);
+  }
+};
+
 window.showLoader = function showLoader(title, sub, forceOverlay = false) {
   __egsLoaderCount++;
   
@@ -517,6 +608,7 @@ window.applyUserPreferences = function (prefs) {
 };
 try { window.applyUserPreferences(); } catch (e) {}
 
+(function () {
   const NAV_ORDER = [
     'dashboard', 'scansheet', 'masters', 'purchase', 'sales', 'stockassign',
     'purchaseregister', 'saleregister', 'reports', 'returns',
@@ -1008,6 +1100,14 @@ window.attachColumnFilters = function (table) {
     });
   });
 
+
+  window.getCurrentTableSearchQuery = function () {
+    return (typeof currentSearchQuery !== 'undefined') ? currentSearchQuery : '';
+  };
+  window.setCurrentTableSearchQuery = function (q) {
+    if (typeof currentSearchQuery !== 'undefined') currentSearchQuery = q;
+  };
+
   // UNIVERSAL MODAL BACKGROUND SCROLL LOCK ENGINE
   // =====================================================================
   let activeModalLockCount = 0;
@@ -1196,106 +1296,6 @@ window.attachColumnFilters = function (table) {
     if (e.target === e.currentTarget) closeConfirmDialog(false);
   });
 
-  window.go = go;
-
-  // Proactive Navigation Link Hover & Touch Prefetching for 0ms Perceived Response
-  document.addEventListener('mouseover', (e) => {
-    const target = e.target.closest && e.target.closest('[onclick*="go("], .egs-flyout-item, .erp-sidebar-btn');
-    if (!target) return;
-    const onclick = target.getAttribute('onclick') || '';
-    if (onclick.includes("'reports'")) window.Api.prefetch('/reports/master');
-    else if (onclick.includes("'masters'")) window.Api.prefetch('/masters/categories');
-    else if (onclick.includes("'partyledger'")) window.Api.prefetch('/ledgers');
-    else if (onclick.includes("'dashboard'")) window.Api.prefetch('/dashboard/summary');
-  }, { passive: true });
-
-  document.addEventListener('touchstart', (e) => {
-    const target = e.target.closest && e.target.closest('[onclick*="go("], .egs-flyout-item, .erp-sidebar-btn');
-    if (!target) return;
-    const onclick = target.getAttribute('onclick') || '';
-    if (onclick.includes("'reports'")) window.Api.prefetch('/reports/master');
-    else if (onclick.includes("'masters'")) window.Api.prefetch('/masters/categories');
-    else if (onclick.includes("'partyledger'")) window.Api.prefetch('/ledgers');
-    else if (onclick.includes("'dashboard'")) window.Api.prefetch('/dashboard/summary');
-  }, { passive: true });
-
-  // ---------- Start: restore a saved session if one exists, otherwise show login ----------
-  // "Remember Me" only prefills the username (see buildLoginOverlay above) if
-  // no session was restored — the password still has to be verified through
-  // POST /api/auth/login the first time. After that, this saved session is
-  // what keeps someone signed in across refreshes/reopens instead of asking
-  // for username/password every single time.
-  buildLoginOverlay();
-  const restoredSession = loadSession();
-  if (restoredSession) {
-    // Show the app immediately — no network round-trip here, so a valid
-    // saved session never flashes the login form before the dashboard
-    // appears. If this token actually IS dead (server restarted since it
-    // was issued), the dashboard's own background API calls will get a
-    // real 401 within a moment, and the fetch wrapper + session-expired
-    // handler above (see top of file) will cleanly drop back to login —
-    // this is the correct, honest way to discover an expired session,
-    // instead of blocking every single reload on an extra round-trip.
-    window.currentAuthToken = restoredSession.token;
-    updateProfileDisplay(restoredSession.username, restoredSession.role);
-    showApp();
-    startHeartbeat(); applyUserPreferencesFromServer();
-    resetIdleTimer();
-  } else {
-    showLoginOverlay();
-  }
-
-  // Only load a page when a session exists. If still on login, finishLogin
-  // will call go() after the token is saved (avoids first paint of all zeros).
-  if (restoredSession) {
-    const startRoute = parseRouteHash(window.location.hash);
-    if (window.PAGES[startRoute.id]) {
-      go(startRoute.id, startRoute.opts, false);
-    } else {
-      go('dashboard', {}, false);
-    }
-    setTimeout(() => {
-      if (typeof window.requestNativeSystemPermissions === 'function') {
-        window.requestNativeSystemPermissions();
-      }
-    }, 1200);
-  }
-
-  // Also react to Back/Forward browser buttons and manual hash edits, so
-  // the visible page always matches the URL hash, not just on first load.
-  window.addEventListener('popstate', () => {
-    const route = parseRouteHash(window.location.hash);
-    if (window.PAGES[route.id]) {
-      go(route.id, route.opts, false);
-    }
-  });
-
-  window.addEventListener('hashchange', () => {
-    const route = parseRouteHash(window.location.hash);
-    if (window.PAGES[route.id]) {
-      const curSub = (window.CURRENT_PAGE_OPTS && (window.CURRENT_PAGE_OPTS.sub || window.CURRENT_PAGE_OPTS.tab || window.CURRENT_PAGE_OPTS.action)) || '';
-      const newSub = route.opts.sub || route.opts.tab || route.opts.action || '';
-      if (window.CURRENT_PAGE_ID === route.id && curSub === newSub) return;
-      go(route.id, route.opts, false);
-    }
-  });
-
-  // Footer credit line — always show the current year, no manual updates needed.
-  const footerYearEl = document.getElementById('footerYear');
-  if (footerYearEl) footerYearEl.textContent = new Date().getFullYear();
-
-  // ---------- Global anti-autofill guard (everywhere EXCEPT the login screen) ----------
-  // Chrome/Edge keep trying to pour a saved credential (e.g. "superadmin")
-  // into whichever plain text input happens to be first/empty on the page —
-  // first the quick-search box, then, once that was blocked, the first
-  // empty text field on the currently open page (e.g. BOM's "Challan No.").
-  // Fix: every real input on every app page starts as readonly, so the
-  // browser has nothing it's allowed to write into. The moment a person
-  // actually clicks/taps/tabs into a field, readonly is removed so typing
-  // works completely normally; if they leave it empty again, it goes back
-  // to readonly so a later autofill pass still can't touch it. This never
-  // runs inside .login-overlay — Sign In / Register / Forgot Password keep
-  // normal autocomplete so saved passwords still work there as intended.
   const AUTOFILL_GUARD_SELECTOR =
     'input[type="text"], input[type="search"], input[type="email"], ' +
     'input[type="tel"], input[type="number"], input[type="url"], ' +
@@ -1345,6 +1345,7 @@ window.attachColumnFilters = function (table) {
     });
   });
   autofillObserver.observe(document.body, { childList: true, subtree: true });
+})();
 })();
 
 // =================== Custom date picker (replaces native boring calendar) ===================
