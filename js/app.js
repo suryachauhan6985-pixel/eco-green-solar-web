@@ -6104,7 +6104,7 @@ window.attachColumnFilters = function (table) {
 
         itemsHtml += `
           <div class="egs-flyout-item tier1-item has-nested" data-hotkey="${item.hotkey || ''}">
-            <span class="item-text"><i class="fa-solid ${item.icon}" style="color:var(--gold); font-size:12px;"></i> <span>${itemLabelHtml}</span></span>
+            <span class="item-text"><i class="fa-solid ${item.icon}" style="color:var(--blue); font-size:12px;"></i> <span>${itemLabelHtml}</span></span>
             <i class="fa-solid fa-chevron-right item-arrow"></i>
             <div class="egs-nested-flyout-box">
               <div class="egs-flyout-header"><span>${item.nestedTitle || item.name}</span></div>
@@ -6252,7 +6252,7 @@ window.attachColumnFilters = function (table) {
         btn.dataset.tab = grp.id;
         btn.dataset.index = gIdx;
         btn.innerHTML = `
-          <span class="btn-label"><i class="fa-solid ${grp.icon}"></i> <span>${labelHtml}</span></span>
+          <span class="btn-label"><i class="fa-solid ${grp.icon}" style="color:var(--blue);"></i> <span>${labelHtml}</span></span>
         `;
         btn.onclick = () => {
           clearFlyoutTrail();
@@ -6271,7 +6271,7 @@ window.attachColumnFilters = function (table) {
       btn.dataset.groupId = grp.id;
       btn.dataset.index = gIdx;
       btn.innerHTML = `
-        <span class="btn-label"><i class="fa-solid ${grp.icon}" style="color:var(--gold);"></i> <span>${labelHtml}</span></span>
+        <span class="btn-label"><i class="fa-solid ${grp.icon}" style="color:var(--blue);"></i> <span>${labelHtml}</span></span>
         <i class="fa-solid fa-chevron-right btn-arrow"></i>
       `;
 

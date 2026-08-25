@@ -146,21 +146,21 @@
   font-weight: 700;
 }
 
-/* Sidebar Tenant Theming */
+/* Sidebar Theming */
 .sidebar {
   background: var(--tenant-sidebar-bg) !important;
 }
 
 .erp-sidebar-btn.selected,
 .erp-sidebar-btn.active {
-  background: rgba(var(--tenant-primary-rgb), 0.2) !important;
-  border-color: var(--tenant-primary) !important;
+  background: rgba(59, 142, 208, 0.2) !important;
+  border-color: var(--blue, #3b8ed0) !important;
   color: #ffffff !important;
 }
 
 .erp-sidebar-btn.selected .fa-solid,
 .erp-sidebar-btn.active .fa-solid {
-  color: var(--tenant-accent) !important;
+  color: #ffffff !important;
 }
 
 /* =====================================================================

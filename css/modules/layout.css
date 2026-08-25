@@ -497,27 +497,33 @@ html[data-theme="light"] .egs-top-progress {
 }
 
 /* Hotkey Letter Underline (Tally / Shree Sava Style) */
+.erp-sidebar-btn .btn-label i {
+  color: var(--blue, #3b8ed0);
+  font-size: 14px;
+  width: 18px;
+  text-align: center;
+}
 .erp-hk-char {
   text-decoration: underline;
-  text-decoration-color: var(--gold);
+  text-decoration-color: var(--blue, #3b8ed0);
   text-decoration-thickness: 2px;
   text-underline-offset: 3px;
   font-weight: 800;
-  color: var(--gold);
+  color: var(--blue, #3b8ed0);
 }
 html[data-theme="light"] .erp-hk-char {
-  text-decoration-color: #B45309;
-  color: #B45309;
+  text-decoration-color: #2563EB;
+  color: #2563EB;
 }
 html[data-theme="light"] .erp-sidebar-btn .erp-hk-char {
-  color: #B45309;
-  text-decoration-color: #B45309;
+  color: #2563EB;
+  text-decoration-color: #2563EB;
 }
 html[data-theme="light"] .erp-sidebar-btn:hover .erp-hk-char,
 html[data-theme="light"] .erp-sidebar-btn.selected .erp-hk-char,
 html[data-theme="light"] .erp-sidebar-btn.flyout-open .erp-hk-char {
-  color: #B45309 !important;
-  text-decoration-color: #B45309 !important;
+  color: #2563EB !important;
+  text-decoration-color: #2563EB !important;
 }
 
 html[data-theme="dark"] .erp-sidebar-btn.active .erp-hk-char,
@@ -536,7 +542,7 @@ html[data-theme="light"] .erp-sidebar-btn {
   border-color: #CBD5E1;
 }
 html[data-theme="light"] .erp-sidebar-btn .btn-label i {
-  color: #D97706;
+  color: #2563EB;
 }
 html[data-theme="light"] .erp-sidebar-btn.active,
 html[data-theme="light"] .nav-btn.active {
@@ -560,7 +566,7 @@ html[data-theme="light"] .erp-sidebar-btn.flyout-open:not(.active) {
 }
 html[data-theme="light"] .erp-sidebar-btn:hover:not(.active) i,
 html[data-theme="light"] .erp-sidebar-btn.selected:not(.active) i {
-  color: #D97706 !important;
+  color: #2563EB !important;
 }
 html[data-theme="light"] .egs-flyout-box,
 html[data-theme="light"] .egs-nested-flyout-box {
