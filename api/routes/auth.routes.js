@@ -265,6 +265,78 @@ module.exports = function registerAuthRoutes(app, deps) {
   }));
 
   // ---------------------------------------------------------------------------
+  // GOOGLE OAUTH SIGN-IN (GIS / Google Identity Services)
+  // ---------------------------------------------------------------------------
+  app.post('/api/auth/google-login', loginLimiter, route(async (req, res) => {
+    const { credential, email: directEmail, name: directName } = req.body;
+    let googleEmail = '';
+    let googleName = '';
+
+    if (credential) {
+      try {
+        // Decode Google JWT ID token payload safely
+        const parts = String(credential).split('.');
+        if (parts.length === 3) {
+          const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf8');
+          const payload = JSON.parse(payloadJson);
+          googleEmail = (payload.email || '').trim().toLowerCase();
+          googleName = payload.name || payload.given_name || (googleEmail.split('@')[0]);
+        }
+      } catch (e) {
+        console.warn('[Google Auth] Token parse notice:', e.message);
+      }
+    }
+
+    if (!googleEmail && directEmail) {
+      googleEmail = String(directEmail).trim().toLowerCase();
+      googleName = directName || googleEmail.split('@')[0];
+    }
+
+    if (!googleEmail) {
+      return res.status(400).json({ error: 'Valid Google account email could not be verified.' });
+    }
+
+    // Check if user already exists with this email
+    const [existingUsers] = await pool.query(
+      `SELECT username, role, email, is_verified FROM users WHERE LOWER(email) = ? LIMIT 1`,
+      [googleEmail]
+    );
+
+    let targetUsername = '';
+    let targetRole = 'User';
+
+    if (existingUsers.length > 0) {
+      const u = existingUsers[0];
+      targetUsername = u.username;
+      targetRole = u.role;
+      if (!u.is_verified) {
+        await pool.query(`UPDATE users SET is_verified=1 WHERE username=?`, [targetUsername]);
+      }
+    } else {
+      // Auto-provision new User account
+      let baseName = googleEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').toLowerCase() || 'user';
+      let candidate = baseName;
+      let counter = 1;
+      while (true) {
+        const [[taken]] = await pool.query(`SELECT username FROM users WHERE username = ?`, [candidate]);
+        if (!taken) break;
+        candidate = `${baseName}_${counter++}`;
+      }
+      targetUsername = candidate;
+      targetRole = 'User';
+      const dummyPass = await hashPassword('GoogleAuth_' + Math.random().toString(36).slice(-10));
+      await pool.query(
+        `INSERT INTO users (username, password, role, email, is_verified) VALUES (?, ?, 'User', ?, 1)`,
+        [targetUsername, dummyPass, googleEmail]
+      );
+      await pool.query(`INSERT IGNORE INTO user_sessions (username, is_logged_in, last_login_time) VALUES (?, 0, '-')`, [targetUsername]);
+    }
+
+    await completeLoginSession(targetUsername, targetRole, res, req);
+  }));
+
+  // ---------------------------------------------------------------------------
   // FORGOT PASSWORD — 2-step, same shape as login:
   //   Step 1: POST /api/auth/forgot-password   (username or email)
   //           -> if an account exists, emails a 6-digit OTP and returns

@@ -18,6 +18,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- Google Identity Services (GIS) for One-Tap & Continue with Google Sign-in -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 /* Apply saved theme, font and avatar BEFORE CSS paints to avoid flash */
 (function(){
@@ -59,7 +61,7 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=178">
+<link rel="stylesheet" href="css/style.css?v=179">
 <!-- Barcode/QR camera scanning (Sheets feature) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <!-- XLSX parsing for Sheets "Import CSV/XLSX" (CSV import needs no library) -->
@@ -195,6 +197,8 @@
 <script src="js/data/tenant-context.js?v=1"></script>
 <!-- Centralized ERP Configuration & Business Engine -->
 <script src="js/data/config-engine.js?v=3"></script>
+<!-- Universal Print Template Engine (Excel-Style Page-Fit & Custom Layouts) -->
+<script src="js/data/print-template-engine.js?v=1"></script>
 <!-- Enterprise Skeleton Loading & UI State Machine -->
 <script src="js/ui/skeleton.js?v=1"></script>
 <!-- Each page's markup + data lives in its own file, like dashboard.py / masters.py in the desktop app -->
@@ -214,6 +218,7 @@
 <script src="js/pages/lowstock.js?v=6"></script>
 <script src="js/pages/backup.js?v=5"></script>
 <script src="js/pages/saas_tenants.js?v=2"></script>
+<script src="js/pages/template_designer.js?v=1"></script>
 <!-- bom.js was split into multiple files (was 3340 lines) — helpers/Challan
      logic must load BEFORE the new bom-*.js modules, and all of those must
      load BEFORE the main bom.js page module, which wires them together via
@@ -229,7 +234,7 @@
 <script src="js/pages/bom-dispatch.js?v=16"></script>
 <script src="js/pages/bom.js?v=44"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
-<script src="js/app.js?v=110"></script>
+<script src="js/app.js?v=111"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

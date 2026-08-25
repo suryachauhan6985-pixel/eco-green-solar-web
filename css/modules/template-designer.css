@@ -1,0 +1,302 @@
+﻿/* ==========================================================================
+   ECO GREEN SOLAR ERP - VISUAL PRINT TEMPLATE DESIGNER STUDIO
+   ========================================================================== */
+
+.tpl-designer-wrap {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 120px);
+  min-height: 650px;
+  background: var(--bg);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+}
+
+.tpl-designer-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border-light);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tpl-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tpl-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tpl-designer-split {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Left Sidebar Controls */
+.tpl-controls-sidebar {
+  width: 440px;
+  min-width: 360px;
+  max-width: 480px;
+  background: var(--panel);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.tpl-tabs-header {
+  display: flex;
+  border-bottom: 1px solid var(--border-light);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tpl-tab-btn {
+  flex: 1;
+  padding: 10px 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--txt-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.tpl-tab-btn:hover {
+  color: var(--txt);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tpl-tab-btn.active {
+  color: var(--blue, #3b8ed0);
+  border-bottom-color: var(--blue, #3b8ed0);
+  background: var(--panel);
+}
+
+.tpl-tab-pane {
+  display: none;
+  padding: 16px;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tpl-tab-pane.active {
+  display: flex;
+}
+
+/* Control Cards & Sliders */
+.tpl-card {
+  background: var(--panel-alt, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.tpl-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--txt);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tpl-slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.tpl-slider-group:last-child {
+  margin-bottom: 0;
+}
+
+.tpl-slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  color: var(--txt-muted);
+  font-weight: 600;
+}
+
+.tpl-slider-val {
+  font-family: monospace;
+  font-weight: 700;
+  color: var(--blue, #3b8ed0);
+  background: rgba(59, 142, 208, 0.12);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.tpl-range-input {
+  width: 100%;
+  accent-color: var(--blue, #3b8ed0);
+  cursor: pointer;
+}
+
+/* Column Manager Cards */
+.tpl-col-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg2, #181d24);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+}
+
+.tpl-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tpl-col-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.tpl-align-btns {
+  display: flex;
+  gap: 2px;
+}
+
+.tpl-align-btn {
+  background: transparent;
+  border: 1px solid var(--border-light);
+  color: var(--txt-muted);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+.tpl-align-btn.active {
+  background: var(--blue, #3b8ed0);
+  border-color: var(--blue, #3b8ed0);
+  color: #ffffff;
+}
+
+/* Right Viewport Canvas (Drafting Board) */
+.tpl-viewport {
+  flex: 1;
+  background: #11161d;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  position: relative;
+}
+
+.tpl-viewport-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(17, 22, 29, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 18px;
+}
+
+.tpl-gauge-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.tpl-gauge-safe {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.tpl-gauge-warn {
+  background: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+/* A4 Sheet Container */
+.a4-sheet-preview-wrap {
+  position: relative;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  transition: transform 0.15s ease-out;
+  transform-origin: top center;
+}
+
+.a4-sheet-preview-wrap.portrait {
+  width: 794px; /* 210mm @ 96 DPI */
+  min-height: 1123px; /* 297mm @ 96 DPI */
+}
+
+.a4-sheet-preview-wrap.landscape {
+  width: 1123px; /* 297mm @ 96 DPI */
+  min-height: 794px; /* 210mm @ 96 DPI */
+}
+
+.a4-sheet-inner-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #ffffff;
+}
+
+.a4-page-break-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 2px dashed #e74c3c;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.a4-page-break-label {
+  position: absolute;
+  right: 12px;
+  top: -10px;
+  background: #e74c3c;
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
