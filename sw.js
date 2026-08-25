@@ -1,17 +1,17 @@
-const CACHE_NAME = 'eco-green-solar-erp-v192';
+const CACHE_NAME = 'eco-green-solar-erp-v193';
 
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/css/style.css?v=192',
+  '/css/style.css?v=193',
   '/css/modules/base.css?v=190',
   '/css/modules/layout.css?v=190',
   '/css/modules/components.css?v=190',
   '/css/modules/dashboard.css?v=190',
   '/css/modules/responsive.css?v=190',
   '/css/modules/party-ledger.css?v=190',
-  '/css/modules/auth.css?v=190',
+  '/css/modules/auth.css?v=193',
   '/css/modules/bom.css?v=190',
   '/css/modules/scan-sheet.css?v=190',
   '/assets/icon.ico',
@@ -59,13 +59,13 @@ const APP_SHELL = [
   '/js/pages/bom-serial-modal.js?v=192',
   '/js/pages/bom-dispatch.js?v=192',
   '/js/pages/bom.js?v=192',
-  '/js/utils/password-policy.js?v=190',
-  '/js/core/ui-feedback.js?v=190',
-  '/js/core/pwa-permissions.js?v=190',
-  '/js/core/auth-session.js?v=190',
-  '/js/core/settings-panel.js?v=190',
-  '/js/core/navigation-engine.js?v=190',
-  '/js/app.js?v=190',
+  '/js/utils/password-policy.js?v=193',
+  '/js/core/ui-feedback.js?v=193',
+  '/js/core/pwa-permissions.js?v=193',
+  '/js/core/auth-session.js?v=193',
+  '/js/core/settings-panel.js?v=193',
+  '/js/core/navigation-engine.js?v=193',
+  '/js/app.js?v=193',
   '/js/theme.js?v=190'
 ];
 

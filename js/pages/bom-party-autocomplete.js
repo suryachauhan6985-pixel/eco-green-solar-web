@@ -88,7 +88,7 @@ function createBomPartyAutocompleteModule(ctx) {
         clearTimeout(ctx.bomCustSearchTimer);
         ctx.bomCustSearchTimer = setTimeout(async () => {
           const ledgers = await searchFn(text);
-          ctx.fillBomCustomerDatalist(listEl, ledgers, matchKey);
+          fillBomCustomerDatalist(listEl, ledgers, matchKey);
           const exact = ledgers.find((l) => String(l[matchKey] || '').trim().toLowerCase() === text.trim().toLowerCase());
           if (exact) ctx.$('bomCustomerName').value = exact.name || '';
         }, 250);
@@ -96,7 +96,7 @@ function createBomPartyAutocompleteModule(ctx) {
       inputEl.addEventListener('focus', async () => {
         if (inputEl.value.trim()) return;
         const ledgers = await searchFn('');
-        ctx.fillBomCustomerDatalist(listEl, ledgers, matchKey);
+        fillBomCustomerDatalist(listEl, ledgers, matchKey);
       });
     }
     // Bare local names, not ctx.wireBomCustomerAutocomplete/ctx.search* —

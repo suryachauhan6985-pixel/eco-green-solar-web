@@ -167,11 +167,12 @@ console.log('🧪 Testing Real Bulk Ledger Import with user CSV file...\n');
     }, rows);
 
     console.log('Client Batch Execution Result:', clientBatchResult);
-    assert.strictEqual(clientBatchResult.created, clientBatchResult.totalValid);
-    assert.strictEqual(clientBatchResult.batchesCount, 4); // 193 rows / 50 per batch = 4 batches
-    assert.strictEqual(capturedBulkPayloads.length, 4);
-    console.log(`✔ Verified: 193 rows split into ${capturedBulkPayloads.length} high-speed bulk batches of ~50 rows each.`);
-    console.log(`✔ Verified: Live progress bar smoothly updated from 0% -> 26% -> 52% -> 78% -> 100%.`);
+    assert.strictEqual(clientBatchResult.totalValid, rows.length);
+    assert.strictEqual(clientBatchResult.created, rows.length);
+    assert.strictEqual(clientBatchResult.batchesCount, Math.ceil(rows.length / 50));
+    assert.strictEqual(capturedBulkPayloads.length, Math.ceil(rows.length / 50));
+    console.log(`✔ Verified: ${rows.length} rows split into ${capturedBulkPayloads.length} high-speed bulk batches of ~50 rows each.`);
+    console.log(`✔ Verified: Live progress bar smoothly updated.`);
 
     console.log('\n🎉 ALL REAL CSV BULK IMPORT TESTS PASSED 100%!');
   } finally {

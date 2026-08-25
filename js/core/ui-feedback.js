@@ -1559,3 +1559,257 @@ window.attachColumnFilters = function (table) {
   }
 })();
 
+// =================== Custom Theme-Aware Autocomplete & Dropdown Engine ===================
+(function () {
+  function enhanceAutocompleteInput(input) {
+    if (!input || input.dataset.egsAc === '1') return;
+    if (input.type === 'date' || input.type === 'file' || input.type === 'checkbox' || input.type === 'radio') return;
+
+    let datalistId = input.getAttribute('list') || input.dataset.datalistId;
+    if (!datalistId && !input.dataset.autocomplete) return;
+
+    input.dataset.egsAc = '1';
+    if (datalistId) {
+      input.dataset.datalistId = datalistId;
+      // Remove native list attribute so browser's ugly full-screen datalist popover never appears
+      input.removeAttribute('list');
+    }
+
+    // Ensure input container is positioned relatively so pop attaches nicely
+    const parent = input.parentElement;
+    if (parent && getComputedStyle(parent).position === 'static') {
+      parent.style.position = 'relative';
+    }
+
+    let pop = null;
+    let activeIdx = -1;
+    let currentOptions = [];
+    let isSelecting = false;
+    let isFocused = false;
+    let hasSelected = false;
+
+    function getDatalist() {
+      const id = input.dataset.datalistId;
+      if (!id) return null;
+      let dl = document.getElementById(id);
+      if (!dl && parent) dl = parent.querySelector(`datalist#${id}`);
+      if (dl && !dl.dataset.egsObserved) {
+        dl.dataset.egsObserved = '1';
+        const dlObserver = new MutationObserver(() => {
+          if (!hasSelected) {
+            renderPop();
+          }
+        });
+        dlObserver.observe(dl, { childList: true, subtree: true, characterData: true });
+      }
+      return dl;
+    }
+
+    function collectOptions() {
+      const dl = getDatalist();
+      if (!dl) return [];
+      const opts = [];
+      dl.querySelectorAll('option').forEach((opt) => {
+        const val = opt.getAttribute('value') || opt.value || opt.textContent || '';
+        const label = opt.getAttribute('label') || opt.textContent || '';
+        if (val.trim()) {
+          opts.push({ value: val.trim(), label: label.trim() !== val.trim() ? label.trim() : '' });
+        }
+      });
+      return opts;
+    }
+
+    function closePop() {
+      if (pop) {
+        pop.remove();
+        pop = null;
+      }
+      activeIdx = -1;
+      document.removeEventListener('mousedown', onDocDown, true);
+    }
+
+    function onDocDown(e) {
+      if (pop && !pop.contains(e.target) && e.target !== input) {
+        closePop();
+      }
+    }
+
+    function selectOption(item) {
+      if (!item) return;
+      isSelecting = true;
+      hasSelected = true;
+      input.value = item.value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      closePop();
+      setTimeout(() => { isSelecting = false; }, 300);
+    }
+
+    function renderPop() {
+      if (isSelecting || hasSelected) return;
+      const query = String(input.value || '').trim().toLowerCase();
+      const allOpts = collectOptions();
+      if (!allOpts.length) {
+        closePop();
+        return;
+      }
+
+      // Filter options matching query (or show all if query is empty)
+      currentOptions = allOpts.filter((opt) => {
+        if (!query) return true;
+        return opt.value.toLowerCase().includes(query) || (opt.label && opt.label.toLowerCase().includes(query));
+      });
+
+      if (!currentOptions.length) {
+        if (!query) {
+          closePop();
+          return;
+        }
+      }
+
+      if (!pop) {
+        pop = document.createElement('div');
+        pop.className = 'egs-ac-pop';
+        if (parent) parent.appendChild(pop);
+        else document.body.appendChild(pop);
+        document.addEventListener('mousedown', onDocDown, true);
+      }
+
+      if (!currentOptions.length) {
+        pop.innerHTML = `<div class="egs-ac-empty"><i class="fa-solid fa-magnifying-glass" style="opacity:0.5; margin-right:4px;"></i> No matching results</div>`;
+        return;
+      }
+
+      pop.innerHTML = currentOptions.map((opt, idx) => `
+        <button type="button" class="egs-ac-item ${idx === activeIdx ? 'active' : ''}" data-ac-idx="${idx}">
+          <span class="egs-ac-text">${opt.value}</span>
+          ${opt.label ? `<span class="egs-ac-badge">${opt.label}</span>` : ''}
+        </button>
+      `).join('');
+
+      pop.querySelectorAll('.egs-ac-item').forEach((btn) => {
+        btn.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          const idx = Number(btn.getAttribute('data-ac-idx'));
+          selectOption(currentOptions[idx]);
+        });
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const idx = Number(btn.getAttribute('data-ac-idx'));
+          selectOption(currentOptions[idx]);
+        });
+        btn.addEventListener('mouseenter', () => {
+          activeIdx = Number(btn.getAttribute('data-ac-idx'));
+          pop.querySelectorAll('.egs-ac-item').forEach((b, i) => b.classList.toggle('active', i === activeIdx));
+        });
+      });
+
+      // Ensure active element is scrolled into view
+      if (activeIdx >= 0) {
+        const activeBtn = pop.querySelector(`.egs-ac-item[data-ac-idx="${activeIdx}"]`);
+        if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    input.addEventListener('focus', () => {
+      if (isSelecting) return;
+      isFocused = true;
+      hasSelected = false;
+      // Small tick to let any focus search handler fill the datalist
+      setTimeout(() => renderPop(), 50);
+    });
+
+    input.addEventListener('click', () => {
+      if (isSelecting) return;
+      isFocused = true;
+      hasSelected = false;
+      renderPop();
+    });
+
+    input.addEventListener('blur', () => {
+      setTimeout(() => {
+        isFocused = false;
+        if (!isSelecting) closePop();
+      }, 150);
+    });
+
+    input.addEventListener('input', () => {
+      if (isSelecting) return;
+      isFocused = true;
+      hasSelected = false;
+      activeIdx = -1;
+      setTimeout(() => renderPop(), 10);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (!pop) {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          renderPop();
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (currentOptions.length > 0) {
+          activeIdx = (activeIdx + 1) % currentOptions.length;
+          pop.querySelectorAll('.egs-ac-item').forEach((b, i) => b.classList.toggle('active', i === activeIdx));
+          const activeBtn = pop.querySelector(`.egs-ac-item[data-ac-idx="${activeIdx}"]`);
+          if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest' });
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (currentOptions.length > 0) {
+          activeIdx = (activeIdx - 1 + currentOptions.length) % currentOptions.length;
+          pop.querySelectorAll('.egs-ac-item').forEach((b, i) => b.classList.toggle('active', i === activeIdx));
+          const activeBtn = pop.querySelector(`.egs-ac-item[data-ac-idx="${activeIdx}"]`);
+          if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest' });
+        }
+      } else if (e.key === 'Enter') {
+        if (activeIdx >= 0 && currentOptions[activeIdx]) {
+          e.preventDefault();
+          e.stopPropagation();
+          selectOption(currentOptions[activeIdx]);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        closePop();
+      } else if (e.key === 'Tab') {
+        if (activeIdx >= 0 && currentOptions[activeIdx]) {
+          selectOption(currentOptions[activeIdx]);
+        }
+        closePop();
+      }
+    });
+  }
+
+  function scanAutocompletes(root) {
+    (root || document).querySelectorAll('input[list], input[data-datalist-id]').forEach(enhanceAutocompleteInput);
+  }
+
+  window.egsInitAutocompletes = scanAutocompletes;
+
+  const mo = new MutationObserver((muts) => {
+    for (const m of muts) {
+      m.addedNodes && m.addedNodes.forEach((n) => {
+        if (n.nodeType !== 1) return;
+        if (n.matches && (n.matches('input[list]') || n.matches('input[data-datalist-id]'))) enhanceAutocompleteInput(n);
+        if (n.querySelectorAll) n.querySelectorAll('input[list], input[data-datalist-id]').forEach(enhanceAutocompleteInput);
+      });
+    }
+  });
+
+  if (document.body) {
+    mo.observe(document.body, { childList: true, subtree: true });
+    scanAutocompletes(document);
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      mo.observe(document.body, { childList: true, subtree: true });
+      scanAutocompletes(document);
+    });
+  }
+})();
+
+

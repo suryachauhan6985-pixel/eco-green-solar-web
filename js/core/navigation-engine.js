@@ -936,6 +936,8 @@ window.applyErpModeRules = applyErpModeRules;
       requestAnimationFrame(() => {
         contentEl.classList.add('page-entering');
       });
+      if (typeof window.egsInitDatePickers === 'function') window.egsInitDatePickers(contentEl);
+      if (typeof window.egsInitAutocompletes === 'function') window.egsInitAutocompletes(contentEl);
     }
 
     if (pageTitleEl) pageTitleEl.textContent = meta.name || page.name || 'Dashboard';
