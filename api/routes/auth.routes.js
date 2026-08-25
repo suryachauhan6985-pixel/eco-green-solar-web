@@ -272,7 +272,7 @@ module.exports = function registerAuthRoutes(app, deps) {
     let googleEmail = '';
     let googleName = '';
 
-    if (credential) {
+    if (credential && typeof credential === 'string' && credential.startsWith('eyJ') && !credential.includes('@')) {
       try {
         // Decode Google JWT ID token payload safely
         const parts = String(credential).split('.');
@@ -293,8 +293,14 @@ module.exports = function registerAuthRoutes(app, deps) {
       googleName = directName || googleEmail.split('@')[0];
     }
 
-    if (!googleEmail) {
-      return res.status(400).json({ error: 'Valid Google account email could not be verified.' });
+    // Fallback if client passed email in credential field
+    if (!googleEmail && credential && typeof credential === 'string' && credential.includes('@')) {
+      googleEmail = credential.trim().toLowerCase();
+      googleName = directName || googleEmail.split('@')[0];
+    }
+
+    if (!googleEmail || !EMAIL_RE.test(googleEmail)) {
+      return res.status(400).json({ error: 'Please enter a valid Google account email address.' });
     }
 
     // Check if user already exists with this email

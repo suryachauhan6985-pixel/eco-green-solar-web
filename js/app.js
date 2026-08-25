@@ -2678,10 +2678,10 @@ window.attachColumnFilters = function (table) {
       if (googleStepError) googleStepError.classList.remove('show');
       try {
         let payload = {};
-        if (typeof credentialOrEmail === 'string' && credentialOrEmail.includes('.') && credentialOrEmail.split('.').length === 3) {
+        if (typeof credentialOrEmail === 'string' && credentialOrEmail.startsWith('eyJ') && !credentialOrEmail.includes('@')) {
           payload = { credential: credentialOrEmail };
         } else {
-          payload = { email: credentialOrEmail, name: directName };
+          payload = { email: String(credentialOrEmail || '').trim().toLowerCase(), name: directName };
         }
         submitBtn.disabled = true;
         if (googleStepSubmit) {
