@@ -6536,6 +6536,11 @@ window.attachColumnFilters = function (table) {
   window.clearFlyoutTrail = clearFlyoutTrail;
   window.resolveFlyoutTrail = resolveFlyoutTrail;
 
+  let suppressHoverUntilMouseMove = false;
+  window.addEventListener('mousemove', () => {
+    suppressHoverUntilMouseMove = false;
+  }, { passive: true });
+
   function setNestedSubmenuOpen(parentRowEl, open = true) {
     const flyout = document.getElementById('egsActiveSidebarFlyout');
     if (!flyout) return;
@@ -6593,12 +6598,13 @@ window.attachColumnFilters = function (table) {
   }
 
   function openSidebarFlyout(grp, anchorEl, selectFirst = true) {
-    closeAllFlyouts();
+    closeAllFlyouts(true);
     if (!grp) return;
     navState.activeFlyoutGroup = grp;
     navState.focusTier = 'flyout_tier1';
     navState.tier1Index = selectFirst ? 0 : -1;
     navState.tier2Index = -1;
+    suppressHoverUntilMouseMove = true;
 
     if (anchorEl) anchorEl.classList.add('flyout-open');
 
@@ -6606,7 +6612,7 @@ window.attachColumnFilters = function (table) {
     const backdrop = document.createElement('div');
     backdrop.id = 'egsActiveFlyoutBackdrop';
     backdrop.className = 'egs-flyout-backdrop';
-    backdrop.onclick = closeAllFlyouts;
+    backdrop.onclick = () => closeAllFlyouts(false);
     document.body.appendChild(backdrop);
 
     // Create Flyout Box
@@ -6674,7 +6680,7 @@ window.attachColumnFilters = function (table) {
       <div class="egs-flyout-header">
         <span>${grp.flyoutTitle || grp.name}</span>
         <div style="display:flex; align-items:center; gap:8px;">
-          <span class="flyout-hint"><kbd>Esc</kbd></span>
+          <span class="egs-flyout-esc-hint" style="cursor:pointer;"><kbd>Esc</kbd></span>
           <button type="button" class="btn-flyout-close" style="background:transparent; border:none; color:var(--txt-muted); font-size:14px; cursor:pointer; padding:2px 6px; display:inline-flex; align-items:center;" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
         </div>
       </div>
@@ -6683,11 +6689,19 @@ window.attachColumnFilters = function (table) {
 
     document.body.appendChild(flyout);
 
+    const escHint = flyout.querySelector('.egs-flyout-esc-hint');
+    if (escHint) {
+      escHint.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeAllFlyouts(false);
+      });
+    }
+
     const closeBtn = flyout.querySelector('.btn-flyout-close');
     if (closeBtn) {
       closeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        closeAllFlyouts();
+        closeAllFlyouts(false);
       });
     }
 
@@ -6704,6 +6718,7 @@ window.attachColumnFilters = function (table) {
     const tier1Els = Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item'));
     tier1Els.forEach((row, idx) => {
       row.addEventListener('mouseenter', () => {
+        if (suppressHoverUntilMouseMove) return;
         if (window.innerWidth <= 768) return; // Ignore hover on mobile/touch
         navState.focusTier = 'flyout_tier1';
         navState.tier1Index = idx;
@@ -6748,6 +6763,7 @@ window.attachColumnFilters = function (table) {
     // Wire mouseenter and clicks on Tier 2 items
     flyout.querySelectorAll('.tier2-item').forEach((subRow) => {
       subRow.addEventListener('mouseenter', () => {
+        if (suppressHoverUntilMouseMove) return;
         navState.focusTier = 'flyout_tier2';
         const parentBox = subRow.closest('.egs-nested-flyout-box');
         if (parentBox) {
@@ -7247,6 +7263,7 @@ window.attachColumnFilters = function (table) {
       const activeFlyout = document.getElementById('egsActiveSidebarFlyout');
       const nestedOpenEl = activeFlyout ? activeFlyout.querySelector('.egs-flyout-item.has-nested.nested-open') : null;
       if (nestedOpenEl || navState.focusTier === 'flyout_tier2') {
+        suppressHoverUntilMouseMove = true;
         setNestedSubmenuOpen(null, false);
         navState.focusTier = 'flyout_tier1';
         navState.tier2Index = -1;
@@ -7299,6 +7316,7 @@ window.attachColumnFilters = function (table) {
         e.preventDefault();
         e.stopPropagation();
         // Step-by-step back to Tier 1!
+        suppressHoverUntilMouseMove = true;
         setNestedSubmenuOpen(null, false);
         navState.focusTier = 'flyout_tier1';
         navState.tier2Index = -1;
