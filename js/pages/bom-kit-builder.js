@@ -167,7 +167,8 @@ function createBomKitBuilderModule(ctx) {
         const sectionCategory = bomResolveSectionCategory(sec.title);
         const itemRowsHtml = sec.items.map((it, ii) => {
           const isCategoryDrivenRow = !!sectionCategory && ii === 0;
-          const effectiveCategory = it.category || sectionCategory;
+          const itemCategory = (it.name && (ctx.bomItemCategoryByName[it.name] || (window._bomItemCategoryByName && window._bomItemCategoryByName[it.name]))) || null;
+          const effectiveCategory = it.category || itemCategory || sectionCategory;
           const rowBrand = bomRowBrand(it);
           const nameCell = isCategoryDrivenRow
             ? `<select class="bom-field-input" data-bsec="${si}" data-bidx="${ii}" data-bfield="category">${bomBuildCategoryOptionsHtml(effectiveCategory)}</select>`

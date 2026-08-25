@@ -20,6 +20,9 @@ function createBomPartyAutocompleteModule(ctx) {
         ]);
         bomCategoryNameList = (cats || []).map((c) => c.name).filter(Boolean);
         bomItemsByCategory = {};
+        window._bomCategoryNameList = bomCategoryNameList;
+        window._bomItemsByCategory = bomItemsByCategory;
+        window._bomItemCategoryByName = ctx.bomItemCategoryByName;
         (cats || []).forEach((c) => { ctx.bomCategorySerialMandatory[c.name] = !!c.serial_mandatory; });
         (items || []).forEach((it) => {
           if (!it.name) return;

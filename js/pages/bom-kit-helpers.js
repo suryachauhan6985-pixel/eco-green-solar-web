@@ -440,22 +440,54 @@ function bomBuildModelOptionsHtml(selectedModel, brandName) {
 }
 
 // ---------- Category / Category-Item dropdown source (category-driven sections) ----------
-// A section is "category-driven" whenever its title exactly matches a real
-// Masters > Category name (case-insensitive) — e.g. a section titled
-// "Solar Panel" or "Inverter". Every item row inside that section then
-// shows the Category/Model dropdown pair below instead of the flat
-// item-name list. Returns the canonical category name (as stored in
-// Masters, for exact matching against bomItemsByCategory) or null.
+// A section is "category-driven" whenever its title matches a real
+// Masters > Category name (case-insensitive) or represents a major equipment
+// group (e.g. "Solar Panel", "DCR Solar Panel", "Inverter"). Every lead item row
+// inside that section then shows the Category/Model dropdown pair instead of the flat
+// item-name list. Returns the canonical category name or null.
 function bomResolveSectionCategory(title) {
   const t = String(title || '').trim().toLowerCase();
   if (!t) return null;
-  return bomCategoryNameList.find((c) => String(c).trim().toLowerCase() === t) || null;
+  const list = (bomCategoryNameList && bomCategoryNameList.length) ? bomCategoryNameList : (window._bomCategoryNameList || []);
+
+  // 1. Exact match against registered category names
+  const exact = list.find((c) => String(c).trim().toLowerCase() === t);
+  if (exact) return exact;
+
+  // 2. Solar Panel keyword matching:
+  // If section title contains 'panel', 'solar panel', 'penal' (e.g. "SOLAR PANEL", "SOLAR PANELS", "PANEL", "DCR SOLAR PANEL")
+  if (t.includes('panel') || t.includes('solar panel') || t.includes('penal')) {
+    const panelCat = list.find((c) => {
+      const cLower = String(c).toLowerCase();
+      return cLower.includes('panel') || cLower.includes('penal');
+    });
+    if (panelCat) return panelCat;
+  }
+
+  // 3. Inverter keyword matching:
+  if (t.includes('inverter')) {
+    const invCat = list.find((c) => String(c).toLowerCase().includes('inverter'));
+    if (invCat) return invCat;
+  }
+
+  // 4. Substring / bidirectional containment match:
+  const sub = list.find((c) => {
+    const cLower = String(c).trim().toLowerCase();
+    return cLower.includes(t) || t.includes(cLower);
+  });
+  if (sub) return sub;
+
+  return null;
 }
 
 function bomBuildCategoryOptionsHtml(selectedCategory) {
-  const names = new Set(bomCategoryNameList);
+  const list = (bomCategoryNameList && bomCategoryNameList.length) ? bomCategoryNameList : (window._bomCategoryNameList || []);
+  const names = new Set(list);
   if (selectedCategory) names.add(selectedCategory);
-  const optionsHtml = Array.from(names).map((n) => `
+  const sorted = Array.from(names).sort((a, b) =>
+    String(a).localeCompare(String(b), undefined, { sensitivity: 'base', numeric: true })
+  );
+  const optionsHtml = sorted.map((n) => `
     <option value="${bomEscAttr(n)}" ${n === selectedCategory ? 'selected' : ''}>${bomEsc(n)}</option>
   `).join('');
   return `<option value="">-- Select Category --</option>${optionsHtml}`;
@@ -533,7 +565,8 @@ function bomFilterRedundantItemNames(nameList) {
 }
 
 function bomBuildCategoryItemOptionsHtml(category, selectedName) {
-  const list = (category && bomItemsByCategory[category]) || [];
+  const itemsMap = (bomItemsByCategory && Object.keys(bomItemsByCategory).length) ? bomItemsByCategory : (window._bomItemsByCategory || {});
+  const list = (category && itemsMap[category]) || [];
   let names = bomFilterRedundantItemNames(list);
   // Always keep the currently selected value visible even if it would be filtered
   if (selectedName && !names.includes(selectedName)) names = names.concat([selectedName]);
@@ -543,7 +576,7 @@ function bomBuildCategoryItemOptionsHtml(category, selectedName) {
   const optionsHtml = names.map((n) => `
     <option value="${bomEscAttr(n)}" ${n === selectedName ? 'selected' : ''}>${bomEsc(n)}</option>
   `).join('');
-  return `<option value="">-- Select Item --</option>${optionsHtml}`;
+  return `<option value="">-- Select Model --</option>${optionsHtml}`;
 }
 
 // ---------- On-screen items preview: REAL editable fields (dark-theme table) ----------
@@ -608,7 +641,8 @@ function bomRenderScreenItemRowHtml(sec, si, it, ii, opts) {
   // any non-category-driven section.
   const sectionCategory = bomResolveSectionCategory(sec.title);
   const isCategoryDrivenRow = !!sectionCategory && ii === 0;
-  const effectiveCategory = it.category || sectionCategory;
+  const itemCategory = (it.name && (window._bomItemCategoryByName && window._bomItemCategoryByName[it.name])) || null;
+  const effectiveCategory = it.category || itemCategory || sectionCategory;
   const nameCell = isCategoryDrivenRow
     ? `<select class="bom-field-input bom-field-category" data-sec="${si}" data-idx="${ii}" data-field="category">${bomBuildCategoryOptionsHtml(effectiveCategory)}</select>`
     : `<select class="bom-field-input bom-field-name" data-sec="${si}" data-idx="${ii}" data-field="name">${bomBuildItemOptionsHtml(bomRowBrand(it))}</select>`;
