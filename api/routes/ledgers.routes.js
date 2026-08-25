@@ -191,6 +191,145 @@ module.exports = function registerLedgersRoutes(app, deps) {
 
   const { validateGstin, validateMobile } = require('../utils/validators');
 
+  // Bulk Ledger Creation (High-Throughput Batch Endpoint for 500-1000+ rows)
+  app.post('/api/ledgers/bulk', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
+    const ledgers = Array.isArray(req.body.ledgers) ? req.body.ledgers : [];
+    if (!ledgers.length) {
+      return res.status(400).json({ error: 'No ledger records provided.' });
+    }
+
+    const created = [];
+    const failed = [];
+    const skipped = [];
+
+    // Pre-fetch all existing ledger keys (case-insensitive name + short_name)
+    const [existingRows] = await pool.query(
+      `SELECT LOWER(TRIM(ledger_name)) AS name, LOWER(TRIM(COALESCE(short_name, ''))) AS short FROM ledgers`
+    );
+    const existingSet = new Set(existingRows.map((r) => `${r.name}|${r.short}`));
+
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      for (const item of ledgers) {
+        const rowNo = item.rowNo || 0;
+        const name = String(item.name || '').trim();
+        const short = String(item.short || '').trim();
+        const type = item.type || 'Both';
+        const rawMobile = String(item.mobile || '').trim();
+        const address = String(item.address || '').trim() || '-';
+        const rawGstin = String(item.gstin || '').trim();
+
+        if (!name) {
+          failed.push({
+            rowNo,
+            name: '-',
+            short,
+            type,
+            mobile: rawMobile || '-',
+            gstin: rawGstin || '-',
+            address,
+            status: 'Failed',
+            reason: 'Ledger Name cannot be empty.'
+          });
+          continue;
+        }
+
+        const key = `${name.toLowerCase()}|${short.toLowerCase()}`;
+        if (existingSet.has(key)) {
+          skipped.push({
+            rowNo,
+            name,
+            short,
+            type,
+            mobile: rawMobile || '-',
+            gstin: rawGstin || '-',
+            address,
+            status: 'Skipped',
+            reason: 'Ledger already exists in ERP'
+          });
+          continue;
+        }
+
+        let finalMobile = '-';
+        if (rawMobile && rawMobile !== '-') {
+          const mobRes = validateMobile(rawMobile);
+          if (!mobRes.isValid) {
+            failed.push({
+              rowNo,
+              name,
+              short,
+              type,
+              mobile: rawMobile,
+              gstin: rawGstin || '-',
+              address,
+              status: 'Failed',
+              reason: `Invalid Mobile: ${mobRes.error}`
+            });
+            continue;
+          }
+          finalMobile = mobRes.mobile;
+        }
+
+        let finalGstin = '-';
+        if (rawGstin && rawGstin !== '-') {
+          const gstRes = validateGstin(rawGstin);
+          if (!gstRes.isValid) {
+            failed.push({
+              rowNo,
+              name,
+              short,
+              type,
+              mobile: rawMobile || '-',
+              gstin: rawGstin,
+              address,
+              status: 'Failed',
+              reason: `Invalid GSTIN: ${gstRes.error}`
+            });
+            continue;
+          }
+          finalGstin = gstRes.gstin;
+        }
+
+        await conn.query(
+          `INSERT INTO ledgers (ledger_name, short_name, ledger_type, mobile, address, gstin, created_on) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [name, short, type, finalMobile, address, finalGstin, ledgerTimestamp()]
+        );
+        existingSet.add(key); // Deduplicate within same batch
+        created.push({
+          rowNo,
+          name,
+          short,
+          type,
+          mobile: finalMobile,
+          address,
+          gstin: finalGstin,
+          status: 'Created'
+        });
+      }
+
+      await conn.commit();
+      if (typeof invalidateLedgerCaches === 'function') invalidateLedgerCaches();
+
+      res.json({
+        success: true,
+        total: ledgers.length,
+        createdCount: created.length,
+        skippedCount: skipped.length,
+        failedCount: failed.length,
+        created,
+        skipped,
+        failed
+      });
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
+  }));
+
   app.post('/api/ledgers', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const name = String(req.body.name || '').trim();
     const short = String(req.body.short || '').trim();

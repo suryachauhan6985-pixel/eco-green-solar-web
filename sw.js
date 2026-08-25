@@ -1,10 +1,10 @@
-const CACHE_NAME = 'eco-green-solar-erp-v190';
+const CACHE_NAME = 'eco-green-solar-erp-v191';
 
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/css/style.css?v=190',
+  '/css/style.css?v=191',
   '/css/modules/base.css?v=190',
   '/css/modules/layout.css?v=190',
   '/css/modules/components.css?v=190',
@@ -41,7 +41,7 @@ const APP_SHELL = [
   '/js/pages/returns.js?v=190',
   '/js/pages/vouchers.js?v=190',
   '/js/pages/financialreports.js?v=190',
-  '/js/pages/partyledger.js?v=190',
+  '/js/pages/partyledger.js?v=191',
   '/js/pages/lowstock.js?v=190',
   '/js/pages/backup.js?v=190',
   '/js/pages/saas_tenants.js?v=190',

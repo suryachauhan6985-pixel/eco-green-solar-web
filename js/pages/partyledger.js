@@ -1254,51 +1254,105 @@ window.PAGES.partyledger = {
         existingKeys.add(key); // Deduplicate within same batch
       });
 
-      // Execute Creation for Valid Rows
+      // Execute Bulk Batch Creation with Live Modal Progress Animation
+      const totalValid = validRows.length;
       let created = 0;
-      for (const ledger of validRows) {
+
+      if (totalValid > 0) {
+        window.openModal(
+          'Importing Party Ledgers',
+          `<div style="text-align:center; padding:18px 8px;">
+            <div class="loader-spinner" style="margin:0 auto 16px auto; width:48px; height:48px; border-width:4px; border-color:rgba(255,255,255,0.1); border-top-color:var(--gold);"></div>
+            <h3 style="margin-bottom:6px; font-size:17px; font-weight:700; color:var(--txt);">Creating Party Ledgers...</h3>
+            <p style="color:var(--txt-muted); font-size:13px; margin-bottom:16px;" id="bulkImportStatusText">Uploading &amp; creating 0 of ${totalValid} ledgers (0%)...</p>
+            
+            <!-- Live Animated Progress Bar -->
+            <div style="width:100%; height:12px; background:rgba(255,255,255,0.06); border-radius:999px; overflow:hidden; border:1px solid var(--border-light); margin-bottom:16px; position:relative;">
+              <div id="bulkImportProgressBar" style="width:0%; height:100%; background:linear-gradient(90deg, var(--gold), #22c55e); border-radius:999px; transition:width 0.25s ease;"></div>
+            </div>
+
+            <!-- Live Status Counters -->
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; background:rgba(0,0,0,0.25); border:1px solid var(--border-light); border-radius:10px; padding:10px;">
+              <div>
+                <div style="font-size:11px; color:var(--txt-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Created</div>
+                <div id="bulkImportCreatedCount" style="font-size:18px; font-weight:800; color:#22c55e; margin-top:2px;">0</div>
+              </div>
+              <div>
+                <div style="font-size:11px; color:var(--txt-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Skipped</div>
+                <div id="bulkImportSkippedCount" style="font-size:18px; font-weight:800; color:#eab308; margin-top:2px;">${skippedRows.length}</div>
+              </div>
+              <div>
+                <div style="font-size:11px; color:var(--txt-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Failed</div>
+                <div id="bulkImportFailedCount" style="font-size:18px; font-weight:800; color:#ef4444; margin-top:2px;">${failedRows.length}</div>
+              </div>
+            </div>
+          </div>`
+        );
+      }
+
+      // Process in batches of 50 for rapid database transactions and 0ms network latency
+      const BATCH_SIZE = 50;
+      let processed = 0;
+
+      for (let i = 0; i < validRows.length; i += BATCH_SIZE) {
+        const chunk = validRows.slice(i, i + BATCH_SIZE);
         try {
-          const res = await fetch(`${API_BASE}/ledgers`, {
+          const res = await fetch(`${API_BASE}/ledgers/bulk`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: ledger.name,
-              short: ledger.short,
-              type: ledger.type,
-              mobile: ledger.mobile,
-              address: ledger.address,
-              gstin: ledger.gstin
-            }),
+            body: JSON.stringify({ ledgers: chunk })
           });
           const data = await res.json();
-          if (res.ok) {
-            created++;
+          if (res.ok && data.success) {
+            created += (data.createdCount || 0);
+            if (Array.isArray(data.skipped)) skippedRows.push(...data.skipped);
+            if (Array.isArray(data.failed)) failedRows.push(...data.failed);
           } else {
-            failedRows.push({
-              rowNo: ledger.rowNo,
-              name: ledger.name,
-              short: ledger.short,
-              type: ledger.type,
-              mobile: ledger.mobile,
-              gstin: ledger.gstin,
-              address: ledger.address,
-              status: 'Failed',
-              reason: `Server: ${data.error || 'Could not create ledger'}`
+            chunk.forEach((r) => {
+              failedRows.push({
+                rowNo: r.rowNo,
+                name: r.name,
+                short: r.short,
+                type: r.type,
+                mobile: r.mobile,
+                gstin: r.gstin,
+                address: r.address,
+                status: 'Failed',
+                reason: `Server: ${data.error || 'Bulk batch failed'}`
+              });
             });
           }
         } catch (err) {
-          failedRows.push({
-            rowNo: ledger.rowNo,
-            name: ledger.name,
-            short: ledger.short,
-            type: ledger.type,
-            mobile: ledger.mobile,
-            gstin: ledger.gstin,
-            address: ledger.address,
-            status: 'Failed',
-            reason: `Network: ${err.message}`
+          chunk.forEach((r) => {
+            failedRows.push({
+              rowNo: r.rowNo,
+              name: r.name,
+              short: r.short,
+              type: r.type,
+              mobile: r.mobile,
+              gstin: r.gstin,
+              address: r.address,
+              status: 'Failed',
+              reason: `Network: ${err.message}`
+            });
           });
         }
+
+        processed += chunk.length;
+        const pct = Math.min(100, Math.round((processed / totalValid) * 100));
+
+        // Update live progress in modal
+        const pBar = document.getElementById('bulkImportProgressBar');
+        const pText = document.getElementById('bulkImportStatusText');
+        const cCount = document.getElementById('bulkImportCreatedCount');
+        const sCount = document.getElementById('bulkImportSkippedCount');
+        const fCount = document.getElementById('bulkImportFailedCount');
+
+        if (pBar) pBar.style.width = `${pct}%`;
+        if (pText) pText.textContent = `Uploaded & created ${processed} of ${totalValid} ledgers (${pct}%)...`;
+        if (cCount) cCount.textContent = created;
+        if (sCount) sCount.textContent = skippedRows.length;
+        if (fCount) fCount.textContent = failedRows.length;
       }
 
       await loadDirectory();

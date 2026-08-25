@@ -4,19 +4,19 @@ function rateLimitHandler(_req, res) {
   res.status(429).json({ error: 'Too many requests. Please slow down and try again in a moment.' });
 }
 
-// Global API Limiter: 300 requests per minute per IP (prevents flood/DoS)
+// Global API Limiter: 1200 requests per minute per IP (prevents flood/DoS while supporting heavy dashboards)
 const globalLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 300,
+  max: 1200,
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
 });
 
-// Mutation Limiter: 60 write operations per minute per IP (POST, PUT, DELETE)
+// Mutation Limiter: 600 write operations per minute per IP (POST, PUT, DELETE)
 const mutationLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 60,
+  max: 600,
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => req.method === 'GET' || req.method === 'OPTIONS' || req.method === 'HEAD',
