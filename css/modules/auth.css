@@ -484,19 +484,19 @@ html[data-theme="light"] .otp-boxes .otp-box{
 .login-btn:active{ transform:translateY(1px); }
 .login-btn:disabled{ opacity:.65; cursor:default; filter:none; transform:none; }
 
-/* Neon Glow Tracer Animated Logout Button (Rounded Corner ERP Theme) */
+/* Exact Uiverse Neon Tracer Animated Logout Button */
 .uiverse-logout-btn {
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  padding: 10px 24px;
+  padding: 10px 20px;
   transition: 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
   position: relative;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 12.5px;
+  font-weight: 700;
   background: #333333;
   border: none;
   color: #ffffff;
-  border-radius: 10px;
+  border-radius: 8px;
   width: 100%;
   display: flex;
   align-items: center;
@@ -505,21 +505,23 @@ html[data-theme="light"] .otp-boxes .otp-box{
   cursor: pointer;
   box-sizing: border-box;
   overflow: visible;
+  outline: none;
+  user-select: none;
 }
 
 .uiverse-logout-btn:hover {
   letter-spacing: 0.25em;
   background: #ff1867;
   color: #ff1867;
-  box-shadow: 0 0 35px #ff1867, 0 0 10px rgba(255, 24, 103, 0.5);
+  box-shadow: 0 0 35px #ff1867;
 }
 
 .uiverse-logout-btn::before {
   content: '';
   position: absolute;
   inset: 2px;
-  background: var(--panel, #181d24);
-  border-radius: 8px;
+  background: var(--panel, #11161d);
+  border-radius: 6px;
   transition: 0.5s ease;
   z-index: 1;
 }
@@ -529,6 +531,7 @@ html[data-theme="light"] .otp-boxes .otp-box{
   z-index: 2;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   color: #ffffff;
   transition: 0.5s ease;
@@ -536,7 +539,6 @@ html[data-theme="light"] .otp-boxes .otp-box{
 
 .uiverse-logout-btn:hover span {
   color: #ff1867;
-  text-shadow: 0 0 10px rgba(255, 24, 103, 0.85);
 }
 
 .uiverse-logout-btn i.neon-wire,
@@ -545,7 +547,7 @@ html[data-theme="light"] .otp-boxes .otp-box{
   inset: 0;
   display: block;
   pointer-events: none;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .uiverse-logout-btn i.neon-wire::before,
@@ -553,24 +555,21 @@ html[data-theme="light"] .otp-boxes .otp-box{
   content: '';
   position: absolute;
   border: 2px solid #ff1867;
-  width: 8px;
+  width: 7px;
   height: 4px;
   top: -3.5px;
   left: 80%;
-  background: var(--panel, #181d24);
-  border-radius: 3px;
+  background: var(--panel, #11161d);
   transform: translateX(-50%);
   transition: 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-  box-shadow: 0 0 6px #ff1867;
-  z-index: 4;
+  z-index: 3;
 }
 
 .uiverse-logout-btn:hover i.neon-wire::before,
 .uiverse-logout-btn:hover > i:not(.fa-solid)::before {
-  width: 22px;
+  width: 20px;
   left: 20%;
-  background: #ff1867;
-  box-shadow: 0 0 14px #ff1867;
+  background: var(--panel, #11161d);
 }
 
 .uiverse-logout-btn i.neon-wire::after,
@@ -578,24 +577,21 @@ html[data-theme="light"] .otp-boxes .otp-box{
   content: '';
   position: absolute;
   border: 2px solid #ff1867;
-  width: 8px;
+  width: 7px;
   height: 4px;
   bottom: -3.5px;
   left: 20%;
-  background: var(--panel, #181d24);
-  border-radius: 3px;
+  background: var(--panel, #11161d);
   transform: translateX(-50%);
   transition: 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-  box-shadow: 0 0 6px #ff1867;
-  z-index: 4;
+  z-index: 3;
 }
 
 .uiverse-logout-btn:hover i.neon-wire::after,
 .uiverse-logout-btn:hover > i:not(.fa-solid)::after {
-  width: 22px;
+  width: 20px;
   left: 80%;
-  background: #ff1867;
-  box-shadow: 0 0 14px #ff1867;
+  background: var(--panel, #11161d);
 }
 
 .login-error{
