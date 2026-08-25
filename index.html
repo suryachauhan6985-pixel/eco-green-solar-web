@@ -130,6 +130,10 @@
       </div>
       <div id="topbarExtra" class="topbar-extra"></div>
       <div class="topbar-right" style="display:flex; align-items:center; gap:8px;">
+        <a href="#saas_tenants" class="btn btn-ghost" id="btnTopbarTenantSwitcher" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:6px 12px; border:1px solid var(--border-light); border-radius:8px; text-decoration:none;" title="Open SaaS Tenant & White-Label Studio">
+          <i class="fa-solid fa-building-shield" style="color:var(--tenant-primary);"></i>
+          <span id="topbarTenantName" style="color:var(--txt);">SaaS Studio</span>
+        </a>
         <button type="button" class="btn btn-gold" id="btnTopbarInstallApp" style="display:none; align-items:center; gap:6px; font-weight:700; border-radius:999px; padding:6px 14px; font-size:12px;" onclick="window.openAppInstallGuide()"><i class="fa-solid fa-download"></i> Install App</button>
         <div class="search-mini"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="egs-quick-search" id="egsQuickSearch" placeholder="Quick search anything... (Ctrl+K)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other"></div>
       </div>

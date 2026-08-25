@@ -3132,6 +3132,7 @@ window.attachColumnFilters = function (table) {
           ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-perf"><i class="fa-solid fa-gauge-high"></i> Performance &amp; Engine</button>' : ''}
           ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-erp-mode"><i class="fa-solid fa-sliders"></i> ERP Mode &amp; Features</button>' : ''}
           ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-users"><i class="fa-solid fa-users-gear"></i> User Accounts</button>' : ''}
+          ${isAdmin ? '<button type="button" class="settings-tab-btn" data-tab="tab-saas-tenants"><i class="fa-solid fa-building-shield"></i> SaaS &amp; White-Label</button>' : ''}
           <button type="button" class="settings-tab-btn" data-tab="tab-challan"><i class="fa-solid fa-file-invoice"></i> Challan &amp; Print</button>
           <button type="button" class="settings-tab-btn" data-tab="tab-theme"><i class="fa-solid fa-palette"></i> Appearance</button>
           <button type="button" class="settings-tab-btn" data-tab="tab-permissions"><i class="fa-solid fa-mobile-screen-button"></i> Device &amp; Notifications</button>
@@ -3282,6 +3283,43 @@ window.attachColumnFilters = function (table) {
                   <thead><tr><th>Username</th><th>Email</th><th>Role</th></tr></thead>
                   <tbody id="setUsersLedgerBody"><tr><td colspan="3" class="pl-empty-hint"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        </div>` : ''}
+
+        <!-- SaaS Tenants & Dynamic White-Label Tab -->
+        ${isAdmin ? `
+        <div class="settings-panel" id="tab-saas-tenants">
+          <div class="settings-card">
+            <div class="settings-card-title" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+              <span style="display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-building-shield" style="color:var(--tenant-primary);"></i> Multi-Tenant SaaS &amp; White-Label Studio</span>
+              <span class="pill pill-purple" style="font-size:11px; padding:2px 8px; font-weight:700;">SuperAdmin Feature</span>
+            </div>
+            <p style="margin:0 0 14px 0; font-size:12.5px; color:var(--txt-muted);">
+              Manage isolated organization tenant accounts, custom branding logos, dynamic CSS color themes, feature matrix, and entity terminology.
+            </p>
+            
+            <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-light); border-radius:10px; padding:16px; margin-bottom:16px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                <div>
+                  <strong style="font-size:14px; color:var(--txt);">Full SaaS Configurator &amp; Brand Studio</strong>
+                  <div style="font-size:12px; color:var(--txt-muted); margin-top:2px;">Register new client tenants, customize hex color palettes, upload logos, and toggle ERP modules.</div>
+                </div>
+                <button type="button" class="btn btn-tenant-primary" onclick="window.closeModal(); window.location.hash='#saas_tenants';">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Full SaaS Studio
+                </button>
+              </div>
+            </div>
+
+            <div class="form-grid cols-2" style="gap:12px;">
+              <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:12px;">
+                <div style="font-size:12px; font-weight:700; color:var(--tenant-primary); margin-bottom:4px;"><i class="fa-solid fa-palette"></i> Dynamic Theming</div>
+                <div style="font-size:11.5px; color:var(--txt-muted);">Injects real-time CSS variables (--tenant-primary, --tenant-accent, etc.) without altering code.</div>
+              </div>
+              <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:12px;">
+                <div style="font-size:12px; font-weight:700; color:var(--tenant-accent); margin-bottom:4px;"><i class="fa-solid fa-spell-check"></i> Terminology Engine</div>
+                <div style="font-size:11.5px; color:var(--txt-muted);">Rename "Customer", "Supplier", "Item" across the UI per organization.</div>
               </div>
             </div>
           </div>
