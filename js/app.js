@@ -1975,6 +1975,35 @@ window.attachColumnFilters = function (table) {
             <button type="button" class="login-back-btn" id="resetBack"><i class="fa-solid fa-arrow-left"></i> Back</button>
           </div>
         </div>
+
+        <div id="loginStepGoogle" class="login-step" style="display:none;">
+          <div class="login-step-head">
+            <div class="login-step-icon" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:50%; margin-bottom:12px;">
+              <svg width="24" height="24" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+            </div>
+            <h2>Google Sign In</h2>
+            <p>Enter your Google account email to sign in</p>
+          </div>
+          <div class="login-field">
+            <label>Google Account Email</label>
+            <div class="login-input-icon">
+              <i class="fa-solid fa-envelope"></i>
+              <input type="email" id="googleAccountEmail" placeholder="e.g. yourname@gmail.com" autocomplete="email">
+            </div>
+          </div>
+          <div class="login-field">
+            <label>Full Name (Optional)</label>
+            <div class="login-input-icon">
+              <i class="fa-solid fa-user"></i>
+              <input type="text" id="googleAccountName" placeholder="Your Name" autocomplete="name">
+            </div>
+          </div>
+          <div class="login-error" id="googleStepError"></div>
+          <button type="button" class="login-btn" id="googleStepSubmit"><span>Continue with Google</span> <i class="fa-solid fa-arrow-right"></i></button>
+          <div class="login-links">
+            <a href="#" id="googleGoLogin">&larr; Back to Sign In</a>
+          </div>
+        </div>
         </div>
       </div>
     `;
@@ -2037,6 +2066,14 @@ window.attachColumnFilters = function (table) {
     const resetSubmitBtn = loginOverlay.querySelector('#resetSubmit');
     const resetBackBtn = loginOverlay.querySelector('#resetBack');
     const resetResendBtn = loginOverlay.querySelector('#resetResend');
+
+    // ---------- Google Sign In ----------
+    const stepGoogle = loginOverlay.querySelector('#loginStepGoogle');
+    const googleAccountEmail = loginOverlay.querySelector('#googleAccountEmail');
+    const googleAccountName = loginOverlay.querySelector('#googleAccountName');
+    const googleStepError = loginOverlay.querySelector('#googleStepError');
+    const googleStepSubmit = loginOverlay.querySelector('#googleStepSubmit');
+    const googleGoLogin = loginOverlay.querySelector('#googleGoLogin');
     // ---------- OTP boxes: 6 separate single-digit inputs that stay in sync
     // with one hidden <input> (so the rest of the login code below can keep
     // reading/writing otpInput.value exactly as before — nothing else has
@@ -2181,9 +2218,18 @@ window.attachColumnFilters = function (table) {
     // All five screens (creds, login-OTP, register, register-OTP, forgot,
     // reset) live in the same card and only one is ever visible at a time.
     function hideAllSteps() {
-      [stepCreds, stepOtp, stepRegister, stepRegisterOtp, stepForgot, stepReset].forEach((el) => {
+      [stepCreds, stepOtp, stepRegister, stepRegisterOtp, stepForgot, stepReset, stepGoogle].forEach((el) => {
         if (el) el.style.display = 'none';
       });
+    }
+
+    function showGoogleStep() {
+      hideAllSteps();
+      stepGoogle.style.display = '';
+      googleStepError.classList.remove('show');
+      googleAccountEmail.value = '';
+      googleAccountName.value = '';
+      setTimeout(() => googleAccountEmail.focus(), 50);
     }
 
     function showRegisterStep() {
@@ -2629,6 +2675,7 @@ window.attachColumnFilters = function (table) {
     const googleBtn = loginOverlay.querySelector('#btnGoogleSignInDirect');
     async function handleGoogleLoginAction(credentialOrEmail, directName) {
       errorBox.classList.remove('show');
+      if (googleStepError) googleStepError.classList.remove('show');
       try {
         let payload = {};
         if (typeof credentialOrEmail === 'string' && credentialOrEmail.includes('.') && credentialOrEmail.split('.').length === 3) {
@@ -2636,38 +2683,84 @@ window.attachColumnFilters = function (table) {
         } else {
           payload = { email: credentialOrEmail, name: directName };
         }
-        loginSubmitBtn.disabled = true;
+        submitBtn.disabled = true;
+        if (googleStepSubmit) {
+          googleStepSubmit.disabled = true;
+          googleStepSubmit.innerHTML = '<span>Verifying...</span> <i class="fa-solid fa-spinner fa-spin"></i>';
+        }
         const res = await window.Api.post('/auth/google-login', payload);
         if (res && res.token && res.username) {
           finishLogin(res);
         } else {
-          showError('Google sign in did not return an active session.');
+          const errMsg = 'Google sign in did not return an active session.';
+          if (stepGoogle && stepGoogle.style.display !== 'none') {
+            googleStepError.textContent = errMsg;
+            googleStepError.classList.add('show');
+          } else {
+            showError(errMsg);
+          }
         }
       } catch (err) {
-        showError((err && err.message) || 'Failed to sign in with Google.');
+        const errMsg = (err && err.message) || 'Failed to sign in with Google.';
+        if (stepGoogle && stepGoogle.style.display !== 'none') {
+          googleStepError.textContent = errMsg;
+          googleStepError.classList.add('show');
+        } else {
+          showError(errMsg);
+        }
       } finally {
-        loginSubmitBtn.disabled = false;
+        submitBtn.disabled = false;
+        if (googleStepSubmit) {
+          googleStepSubmit.disabled = false;
+          googleStepSubmit.innerHTML = '<span>Continue with Google</span> <i class="fa-solid fa-arrow-right"></i>';
+        }
       }
     }
 
     if (googleBtn) {
-      googleBtn.addEventListener('click', () => {
-        if (window.google && window.google.accounts && window.google.accounts.id) {
-          try {
-            window.google.accounts.id.prompt((notification) => {
-              if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                const promptEmail = prompt('Enter your Google account email to sign in:');
-                if (promptEmail && promptEmail.includes('@')) {
-                  handleGoogleLoginAction(promptEmail.trim());
-                }
-              }
-            });
-            return;
-          } catch (e) {}
+      googleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        showGoogleStep();
+      });
+    }
+
+    if (googleGoLogin) {
+      googleGoLogin.addEventListener('click', (e) => {
+        e.preventDefault();
+        showCredsStep();
+      });
+    }
+
+    if (googleStepSubmit) {
+      googleStepSubmit.addEventListener('click', () => {
+        const email = (googleAccountEmail.value || '').trim();
+        const name = (googleAccountName.value || '').trim();
+        if (!email || !email.includes('@') || !email.includes('.')) {
+          googleStepError.textContent = 'Please enter a valid Google account email address.';
+          googleStepError.classList.add('show');
+          googleAccountEmail.focus();
+          return;
         }
-        const promptEmail = prompt('Enter your Google account email to sign in:');
-        if (promptEmail && promptEmail.includes('@')) {
-          handleGoogleLoginAction(promptEmail.trim());
+        handleGoogleLoginAction(email, name);
+      });
+    }
+
+    if (googleAccountEmail) {
+      googleAccountEmail.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          if (googleAccountName && !googleAccountName.value.trim()) {
+            googleAccountName.focus();
+          } else if (googleStepSubmit) {
+            googleStepSubmit.click();
+          }
+        }
+      });
+    }
+
+    if (googleAccountName) {
+      googleAccountName.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && googleStepSubmit) {
+          googleStepSubmit.click();
         }
       });
     }
