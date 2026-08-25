@@ -542,7 +542,7 @@ window.PAGES.partyledger = {
             return;
           }
           searchEl.blur();
-          return;
+          // Do not return here - let universal handleAccountingKeyboard step back the ladder!
         }
         return; // standard typing
       }
@@ -871,29 +871,11 @@ window.PAGES.partyledger = {
       else document.body.classList.remove('no-scroll');
     }
 
-    let lfEscHandler = null;
     function attachLedgerFormEscape() {
-      lfEscHandler = (e) => {
-        // If a higher overlay (like #modalOverlay / #confirmOverlay / #egsPopupOverlay) is open on top, let top modal handle it!
-        if (document.querySelector('#modalOverlay.show, #confirmOverlay.show, #egsPopupOverlay.show')) return;
-
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-          closeLedgerForm();
-        }
-        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-          document.getElementById('lfSave').click();
-        }
-      };
-      document.addEventListener('keydown', lfEscHandler, true);
+      // Handled universally by handleAccountingKeyboard
     }
     function detachLedgerFormEscape() {
-      if (lfEscHandler) { document.removeEventListener('keydown', lfEscHandler, true); lfEscHandler = null; }
+      // Handled universally by handleAccountingKeyboard
     }
 
     // Fast Enter-key navigation between ledger form inputs (Tally style)
@@ -970,6 +952,10 @@ window.PAGES.partyledger = {
       lfOverlay.classList.remove('show');
       unlockPageScroll();
       detachLedgerFormEscape();
+      if (document.activeElement && document.activeElement !== document.body) {
+        try { document.activeElement.blur(); } catch (e) {}
+      }
+      try { document.body.focus(); } catch (e) {}
       if (window.CURRENT_PARTY_LEDGER_MODE === 'create' || window.CURRENT_PARTY_LEDGER_MODE === 'alter') {
         if (typeof window.stepBackFromFlyoutTrail === 'function') {
           window.stepBackFromFlyoutTrail();

@@ -424,11 +424,21 @@ window.applyErpModeRules = applyErpModeRules;
       }
     });
 
+    const tier1Items = Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item'));
+
     if (open && parentRowEl) {
       parentRowEl.classList.add('nested-open');
       navState.activeNestedParentEl = parentRowEl;
+      const pIdx = tier1Items.indexOf(parentRowEl);
+      if (pIdx >= 0) {
+        navState.tier1Index = pIdx;
+        tier1Items.forEach((it, idx) => it.classList.toggle('selected', idx === pIdx));
+      }
     } else if (!open) {
       navState.activeNestedParentEl = null;
+      if (navState.tier1Index >= 0 && navState.tier1Index < tier1Items.length) {
+        tier1Items.forEach((it, idx) => it.classList.toggle('selected', idx === navState.tier1Index));
+      }
     }
   }
 
@@ -479,6 +489,10 @@ window.applyErpModeRules = applyErpModeRules;
     suppressHoverUntilMouseMove = true;
 
     if (anchorEl) anchorEl.classList.add('flyout-open');
+    if (document.activeElement && document.activeElement !== document.body) {
+      try { document.activeElement.blur(); } catch (e) {}
+    }
+    try { document.body.focus(); } catch (e) {}
 
     // Create Backdrop
     const backdrop = document.createElement('div');
