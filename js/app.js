@@ -5620,6 +5620,7 @@ window.attachColumnFilters = function (table) {
       <div class="profile-menu-divider"></div>
       <button type="button" class="profile-menu-item" id="profileSettings"><i class="fa-solid fa-gear"></i> System Settings</button>
       <button type="button" class="profile-menu-item" id="profileInstallApp"><i class="fa-solid fa-download"></i> Install ERP App (iOS / Android / PC)</button>
+      <button type="button" class="profile-menu-item" id="profileLoginActivity"><i class="fa-solid fa-mobile-screen-button"></i> Login activity</button>
       <button type="button" class="uiverse-logout-btn" id="profileLogout" title="Log out of ERP">
         <span><i class="fa-solid fa-right-from-bracket"></i> LOG OUT</span><i class="neon-wire"></i>
       </button>`;
@@ -5659,11 +5660,14 @@ window.attachColumnFilters = function (table) {
       });
     });
 
-    menu.querySelector('#profileAddAccount').addEventListener('click', () => {
-      closeProfileMenu();
-      clearSession();
-      showLoginOverlay('Add another account — your previous account stays saved for switching.');
-    });
+    const addAccBtn = menu.querySelector('#profileAddAccount');
+    if (addAccBtn) {
+      addAccBtn.addEventListener('click', () => {
+        closeProfileMenu();
+        clearSession();
+        showLoginOverlay('Add another account — your previous account stays saved for switching.');
+      });
+    }
 
     const settingsBtn = menu.querySelector('#profileSettings');
     if (settingsBtn) {
@@ -5681,22 +5685,29 @@ window.attachColumnFilters = function (table) {
       });
     }
 
-    menu.querySelector('#profileLoginActivity').addEventListener('click', () => openLoginActivityPanel());
+    const loginActBtn = menu.querySelector('#profileLoginActivity');
+    if (loginActBtn) {
+      loginActBtn.addEventListener('click', () => openLoginActivityPanel());
+    }
 
-    menu.querySelector('#profileLogout').addEventListener('click', async () => {
-      closeProfileMenu();
-      const ok = await window.confirmDialog('Log out', 'Log out of this device?', { kind: 'question', okLabel: 'Log out' });
-      if (!ok) return;
-      const u = window.currentUsername;
-      await notifyServerLogout();
-      clearSession();
-      // Keep account in switcher list (token cleared for this session only) — remove token so dead session isn't reusable
-      if (u) {
-        const list = loadSavedAccounts().map((a) => a.username === u ? { ...a, token: '' } : a).filter((a) => a.token);
-        persistSavedAccounts(list);
-      }
-      showLoginOverlay();
-    });
+    const logoutBtn = menu.querySelector('#profileLogout');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        closeProfileMenu();
+        const ok = await window.confirmDialog('Log out', 'Log out of this device?', { kind: 'question', okLabel: 'Log out' });
+        if (!ok) return;
+        const u = window.currentUsername;
+        await notifyServerLogout();
+        clearSession();
+        // Keep account in switcher list (token cleared for this session only) — remove token so dead session isn't reusable
+        if (u) {
+          const list = loadSavedAccounts().map((a) => a.username === u ? { ...a, token: '' } : a).filter((a) => a.token);
+          persistSavedAccounts(list);
+        }
+        showLoginOverlay();
+      });
+    }
     menu.addEventListener('click', (e) => e.stopPropagation());
   }
 
