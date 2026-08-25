@@ -6520,14 +6520,13 @@ window.attachColumnFilters = function (table) {
       const tier1Items = Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item'));
       const t1Idx = Math.max(0, Math.min(trail.tier1Index, tier1Items.length - 1));
       
-      if (trail.wasNested && trail.tier2Index >= 0) {
-        updateTier1Selection(t1Idx, true);
-        navState.focusTier = 'flyout_tier2';
-        updateTier2Selection(trail.tier2Index);
-      } else {
-        updateTier1Selection(t1Idx, false);
-        navState.focusTier = 'flyout_tier1';
-      }
+      // Step back cleanly to Tier 1 parent menu with the originating item selected!
+      // This leaves Tier 1 open so the user can immediately press any sibling hotkey (e.g. 'I', 'G', 'U', 'W', 'B') or Esc to Dashboard!
+      suppressHoverUntilMouseMove = true;
+      navState.focusTier = 'flyout_tier1';
+      navState.tier2Index = -1;
+      setNestedSubmenuOpen(null, false);
+      updateTier1Selection(t1Idx, false);
     }, 40);
   }
 
