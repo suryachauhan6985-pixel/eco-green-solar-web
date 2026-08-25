@@ -1,12 +1,11 @@
 /**
- * Eco Green Solar ERP - Visual Print Template Designer & Publishing Studio v2.0
+ * Eco Green Solar ERP - Visual Print Template Designer & Publishing Studio v2.1
  * Features:
- * - Photoshop-Style Multi-Format Canvas (A4, A5, Letter, Legal, 80mm POS Thermal, Custom mm/in)
+ * - Photoshop-Style Multi-Format Canvas (A4, A5, Letter, Legal, 80mm POS Thermal, Custom mm/in/px)
  * - Pre-loaded Existing ERP BOM & Dual-Copy Challan Presets
- * - New Official Modern Solar BOQ, Detailed Portrait Challan & GST Invoice
- * - Media & Asset Insertion (Logo, Signatures, Seal/Stamp, QR Code)
- * - Text Watermark Engine (Rotated & Opacity Controls)
- * - Browser Print Margin & Bleed Safety Zone Inspector
+ * - Direct Device File Uploads for Logo, Signature, and Stamp/Seal
+ * - Granular Per-Element Single-Font & Typography Inspector
+ * - Real-time Margin Adjustments & Browser Bleed Zone Simulation
  * - 1-Click Excel-Style Fit-To-Page Scaling
  */
 
@@ -15,9 +14,10 @@
 
   let currentTemplate = null;
   let currentDocType = 'all';
-  let previewScale = 0.82;
+  let previewScale = 0.75;
   let showBrowserBleed = false;
   let showBrowserHeaderFooter = false;
+  let activeTypographyElement = 'title';
 
   const TemplateDesignerPage = {
     render(opts = {}) {
@@ -28,16 +28,16 @@
             <div class="tpl-topbar-left">
               <div style="display:flex; align-items:center; gap:8px;">
                 <i class="fa-solid fa-compass-drafting" style="color:var(--blue, #3b8ed0); font-size:18px;"></i>
-                <strong style="font-size:14px; color:var(--txt);">Template Studio</strong>
-                <span class="pill pill-gold" style="font-size:10px; padding:1px 6px;">v2.0</span>
+                <strong style="font-size:14px; color:var(--txt, #fff);">Template Studio</strong>
+                <span class="pill pill-gold" style="font-size:10px; padding:1px 6px;">v2.1</span>
               </div>
-              <select id="tplDocTypeFilter" class="input" style="padding:4px 8px; font-size:12px; font-weight:700; border-radius:6px; background:var(--bg2);">
-                <option value="all">All Document Types</option>
+              <select id="tplDocTypeFilter" class="input" style="padding:4px 8px; font-size:12px; font-weight:700; border-radius:6px; background:var(--bg2, #181d24);">
+                <option value="all">All Documents</option>
                 <option value="bom">BOM / BOQ Kits</option>
                 <option value="challan">Delivery Challans</option>
                 <option value="invoice">GST Invoices</option>
               </select>
-              <select id="tplActiveSelect" class="input" style="padding:4px 8px; font-size:12px; border-radius:6px; background:var(--bg2); min-width:220px;">
+              <select id="tplActiveSelect" class="input" style="padding:4px 8px; font-size:12px; border-radius:6px; background:var(--bg2, #181d24); min-width:240px;">
                 <!-- Templates grouped dynamically -->
               </select>
             </div>
@@ -62,12 +62,12 @@
                 <button type="button" class="tpl-tab-btn active" data-tab="tab-canvas"><i class="fa-solid fa-ruler-combined"></i> Canvas</button>
                 <button type="button" class="tpl-tab-btn" data-tab="tab-cols"><i class="fa-solid fa-table-columns"></i> Columns</button>
                 <button type="button" class="tpl-tab-btn" data-tab="tab-spacing"><i class="fa-solid fa-font"></i> Typography</button>
-                <button type="button" class="tpl-tab-btn" data-tab="tab-media"><i class="fa-solid fa-image"></i> Media</button>
+                <button type="button" class="tpl-tab-btn" data-tab="tab-media"><i class="fa-solid fa-image"></i> Media & Uploads</button>
                 <button type="button" class="tpl-tab-btn" data-tab="tab-watermark"><i class="fa-solid fa-stamp"></i> Watermark</button>
-                <button type="button" class="tpl-tab-btn" data-tab="tab-pagefit" style="color:var(--gold);"><i class="fa-solid fa-compress"></i> Page-Fit</button>
+                <button type="button" class="tpl-tab-btn" data-tab="tab-pagefit" style="color:var(--gold, #f1c40f);"><i class="fa-solid fa-compress"></i> Page-Fit</button>
               </div>
 
-              <!-- Tab 1: 📐 Photoshop-Style Canvas & Page Setup -->
+              <!-- Tab 1: 📐 Canvas & Page Setup -->
               <div class="tpl-tab-pane active" id="tab-canvas">
                 <div class="tpl-card">
                   <div class="tpl-card-title">
@@ -114,12 +114,12 @@
                 </div>
 
                 <div class="tpl-card">
-                  <div class="tpl-card-title">Page Margins (mm)</div>
+                  <div class="tpl-card-title">Live Page Margins (mm)</div>
                   <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:8px;">
-                    <div class="field"><label style="font-size:10.5px;">Top (mm)</label><input type="number" id="marginItemTop" min="0" max="30" value="8" style="padding:4px 6px; font-size:12px;"></div>
-                    <div class="field"><label style="font-size:10.5px;">Bottom (mm)</label><input type="number" id="marginItemBottom" min="0" max="30" value="8" style="padding:4px 6px; font-size:12px;"></div>
-                    <div class="field"><label style="font-size:10.5px;">Left (mm)</label><input type="number" id="marginItemLeft" min="0" max="30" value="6" style="padding:4px 6px; font-size:12px;"></div>
-                    <div class="field"><label style="font-size:10.5px;">Right (mm)</label><input type="number" id="marginItemRight" min="0" max="30" value="6" style="padding:4px 6px; font-size:12px;"></div>
+                    <div class="field"><label style="font-size:10.5px;">Top Margin (mm)</label><input type="number" id="marginItemTop" min="0" max="40" value="8" style="padding:4px 6px; font-size:12px;"></div>
+                    <div class="field"><label style="font-size:10.5px;">Bottom Margin (mm)</label><input type="number" id="marginItemBottom" min="0" max="40" value="8" style="padding:4px 6px; font-size:12px;"></div>
+                    <div class="field"><label style="font-size:10.5px;">Left Margin (mm)</label><input type="number" id="marginItemLeft" min="0" max="40" value="6" style="padding:4px 6px; font-size:12px;"></div>
+                    <div class="field"><label style="font-size:10.5px;">Right Margin (mm)</label><input type="number" id="marginItemRight" min="0" max="40" value="6" style="padding:4px 6px; font-size:12px;"></div>
                   </div>
                 </div>
               </div>
@@ -129,7 +129,7 @@
                 <div class="tpl-card">
                   <div class="tpl-card-title">
                     <span>Table Columns &amp; Widths</span>
-                    <button type="button" class="btn btn-ghost" id="tplBtnAddCol" style="font-size:10.5px; padding:2px 6px;"><i class="fa-solid fa-plus"></i> Add Column</button>
+                    <button type="button" class="btn btn-ghost" id="tplBtnAddCol" style="font-size:10.5px; padding:3px 8px;"><i class="fa-solid fa-plus"></i> Add Column</button>
                   </div>
                   <div id="tplColumnsList">
                     <!-- Column cards injected dynamically -->
@@ -137,67 +137,75 @@
                 </div>
               </div>
 
-              <!-- Tab 3: 🎛️ Typography & Cell Spacing -->
+              <!-- Tab 3: 🎛️ Granular Single-Font & Typography Inspector -->
               <div class="tpl-tab-pane" id="tab-spacing">
-                <div class="tpl-card">
-                  <div class="tpl-card-title">Typography &amp; Cell Spacing</div>
-                  
-                  <div class="tpl-slider-group">
-                    <div class="tpl-slider-label">
-                      <span>Base Font Size</span>
-                      <span class="tpl-slider-val" id="valBaseFont">9.0pt</span>
-                    </div>
-                    <input type="range" class="tpl-range-input" id="rangeBaseFont" min="7.0" max="13.0" step="0.2" value="9.0">
+                <div class="tpl-card" style="border:1.5px solid rgba(59,142,208,0.3); background:rgba(59,142,208,0.05);">
+                  <div class="tpl-card-title" style="color:var(--blue, #3b8ed0);">
+                    <span><i class="fa-solid fa-arrow-pointer"></i> Element Single-Font Inspector</span>
+                  </div>
+                  <div class="field" style="margin-bottom:10px;">
+                    <label style="font-size:11px;">Select Element to Customize Font</label>
+                    <select id="selTypoTargetElement" class="input" style="font-size:12px; padding:5px 8px; width:100%; font-weight:700;">
+                      <option value="title">1. Document Main Title</option>
+                      <option value="subtitle">2. Document Subtitle / Tagline</option>
+                      <option value="tableHead">3. Table Header Row (TH)</option>
+                      <option value="category">4. Section / Category Headers</option>
+                      <option value="data">5. Table Data Rows (TD)</option>
+                      <option value="total">6. Total Summary Row</option>
+                    </select>
                   </div>
 
                   <div class="tpl-slider-group">
                     <div class="tpl-slider-label">
-                      <span>Row Height / Cell Padding</span>
+                      <span>Element Font Size</span>
+                      <span class="tpl-slider-val" id="valElemFontSize">13.5pt</span>
+                    </div>
+                    <input type="range" class="tpl-range-input" id="rangeElemFontSize" min="7.0" max="22.0" step="0.5" value="13.5">
+                  </div>
+
+                  <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
+                    <div class="field">
+                      <label style="font-size:10.5px;">Font Weight</label>
+                      <select id="selElemFontWeight" class="input" style="padding:4px 6px; font-size:11.5px;">
+                        <option value="400">Regular (400)</option>
+                        <option value="600">Semi-Bold (600)</option>
+                        <option value="700">Bold (700)</option>
+                        <option value="900">Black / Ultra Bold (900)</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label style="font-size:10.5px;">Text Color</label>
+                      <input type="color" id="inpElemTextColor" value="#000000" style="height:30px; padding:2px; cursor:pointer;">
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <label style="font-size:10.5px;">Background Color</label>
+                    <input type="color" id="inpElemBgColor" value="#f2f2f2" style="height:30px; padding:2px; cursor:pointer;">
+                  </div>
+                </div>
+
+                <div class="tpl-card">
+                  <div class="tpl-card-title">Global Table Padding &amp; Borders</div>
+                  <div class="tpl-slider-group">
+                    <div class="tpl-slider-label">
+                      <span>Cell Padding / Row Height</span>
                       <span class="tpl-slider-val" id="valRowPadding">1.2px</span>
                     </div>
                     <input type="range" class="tpl-range-input" id="rangeRowPadding" min="0.5" max="8.0" step="0.2" value="1.2">
                   </div>
 
-                  <div class="tpl-slider-group">
-                    <div class="tpl-slider-label">
-                      <span>Section Header Font Size</span>
-                      <span class="tpl-slider-val" id="valSecFont">9.6pt</span>
-                    </div>
-                    <input type="range" class="tpl-range-input" id="rangeSecFont" min="8.0" max="14.0" step="0.2" value="9.6">
-                  </div>
-
-                  <div class="tpl-slider-group">
-                    <div class="tpl-slider-label">
-                      <span>Section Header Padding</span>
-                      <span class="tpl-slider-val" id="valSecPadding">2.0px</span>
-                    </div>
-                    <input type="range" class="tpl-range-input" id="rangeSecPadding" min="1.0" max="8.0" step="0.5" value="2.0">
-                  </div>
-                </div>
-
-                <div class="tpl-card">
-                  <div class="tpl-card-title">Table Headers &amp; Borders</div>
-                  <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:8px;">
+                  <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:8px;">
                     <div class="field">
-                      <label style="font-size:11px;">Table Head Color</label>
-                      <input type="color" id="inputTableHeadBg" value="#666699" style="height:32px; padding:2px; cursor:pointer;">
+                      <label style="font-size:10.5px;">Border Color</label>
+                      <input type="color" id="inputBorderColor" value="#000000" style="height:30px; padding:2px; cursor:pointer;">
                     </div>
                     <div class="field">
-                      <label style="font-size:11px;">Section Header Bg</label>
-                      <input type="color" id="inputSecBg" value="#f2f2f2" style="height:32px; padding:2px; cursor:pointer;">
-                    </div>
-                  </div>
-                  <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap:10px;">
-                    <div class="field">
-                      <label style="font-size:11px;">Border Color</label>
-                      <input type="color" id="inputBorderColor" value="#000000" style="height:32px; padding:2px; cursor:pointer;">
-                    </div>
-                    <div class="field">
-                      <label style="font-size:11px;">Border Width</label>
-                      <select id="selBorderWidth" class="input" style="font-size:12px; padding:4px 6px;">
+                      <label style="font-size:10.5px;">Border Width</label>
+                      <select id="selBorderWidth" class="input" style="font-size:11.5px; padding:4px 6px;">
                         <option value="1px">1px (Standard)</option>
                         <option value="1.5px">1.5px (Medium)</option>
-                        <option value="2px">2px (Thick Bold)</option>
+                        <option value="2px">2px (Thick)</option>
                         <option value="0.5px">0.5px (Hairline)</option>
                       </select>
                     </div>
@@ -205,22 +213,23 @@
                 </div>
               </div>
 
-              <!-- Tab 4: 🖼️ Media, Logo & Signatures -->
+              <!-- Tab 4: 🖼️ Media & Device Uploads -->
               <div class="tpl-tab-pane" id="tab-media">
+                <!-- Logo Upload -->
                 <div class="tpl-card">
-                  <div class="tpl-card-title">Logo &amp; Header Branding</div>
-                  <div class="field" style="margin-bottom:8px;">
-                    <label style="font-size:11px;">Document Title</label>
-                    <input type="text" id="inputHeaderTitle" placeholder="e.g. BILL OF MATERIAL (BOM)" style="padding:5px 8px; font-size:12px;">
+                  <div class="tpl-card-title">
+                    <span><i class="fa-solid fa-cloud-arrow-up"></i> Organization Logo</span>
+                    <button type="button" class="btn btn-ghost" id="btnResetLogo" style="font-size:10px; padding:2px 6px;">Reset</button>
                   </div>
-                  <div class="field" style="margin-bottom:10px;">
-                    <label style="font-size:11px;">Subtitle / Tagline</label>
-                    <input type="text" id="inputHeaderSubtitle" placeholder="e.g. Solar System Components Specification Sheet" style="padding:5px 8px; font-size:12px;">
+                  <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+                    <input type="file" id="fileLogoUpload" accept="image/*" style="display:none;">
+                    <button type="button" class="btn btn-blue" id="btnBrowseLogo" style="font-size:11px; padding:5px 10px;"><i class="fa-solid fa-folder-open"></i> Upload Logo from Device</button>
+                    <span id="txtLogoStatus" style="font-size:11px; color:var(--txt-muted);">Stock Logo</span>
                   </div>
 
                   <label class="checkbox" style="font-size:11.5px; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
                     <input type="checkbox" id="chkShowLogo" checked>
-                    <span>Show Organization Logo</span>
+                    <span>Show Logo on Sheet</span>
                   </label>
 
                   <div class="tpl-slider-group" id="logoWidthGroup">
@@ -228,29 +237,56 @@
                       <span>Logo Width</span>
                       <span class="tpl-slider-val" id="valLogoWidth">140px</span>
                     </div>
-                    <input type="range" class="tpl-range-input" id="rangeLogoWidth" min="60" max="240" step="5" value="140">
+                    <input type="range" class="tpl-range-input" id="rangeLogoWidth" min="50" max="280" step="5" value="140">
                   </div>
                 </div>
 
+                <!-- Signature Upload -->
                 <div class="tpl-card">
-                  <div class="tpl-card-title">Footer Notes &amp; Signatures</div>
-                  <label class="checkbox" style="font-size:11.5px; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-                    <input type="checkbox" id="chkShowFooterNotes" checked>
-                    <span>Show Footer Notes</span>
-                  </label>
-                  <textarea id="txtFooterNotes" rows="2" style="width:100%; font-size:11px; padding:6px; border-radius:6px; background:var(--bg2); border:1px solid var(--border-light); margin-bottom:10px;" placeholder="Footer notes or terms..."></textarea>
-
-                  <label class="checkbox" style="font-size:11.5px; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                  <div class="tpl-card-title">
+                    <span><i class="fa-solid fa-signature"></i> Authorized Signature Image</span>
+                    <button type="button" class="btn btn-ghost" id="btnResetSign" style="font-size:10px; padding:2px 6px;">Remove</button>
+                  </div>
+                  <input type="file" id="fileSignUpload" accept="image/*" style="display:none;">
+                  <button type="button" class="btn btn-ghost" id="btnBrowseSign" style="font-size:11px; padding:5px 10px; width:100%; margin-bottom:6px;"><i class="fa-solid fa-pen-nib"></i> Upload Signature Image</button>
+                  <label class="checkbox" style="font-size:11.5px; display:flex; align-items:center; gap:6px;">
                     <input type="checkbox" id="chkShowSignatures" checked>
                     <span>Show Signature Blocks</span>
                   </label>
+                </div>
+
+                <!-- Company Stamp / Seal Upload -->
+                <div class="tpl-card">
+                  <div class="tpl-card-title">
+                    <span><i class="fa-solid fa-stamp"></i> Official Stamp / Seal</span>
+                    <button type="button" class="btn btn-ghost" id="btnResetStamp" style="font-size:10px; padding:2px 6px;">Remove</button>
+                  </div>
+                  <input type="file" id="fileStampUpload" accept="image/*" style="display:none;">
+                  <button type="button" class="btn btn-ghost" id="btnBrowseStamp" style="font-size:11px; padding:5px 10px; width:100%;"><i class="fa-solid fa-certificate"></i> Upload Stamp / Seal Image</button>
+                </div>
+
+                <!-- Document Titles & Footer Notes -->
+                <div class="tpl-card">
+                  <div class="tpl-card-title">Document Titles &amp; Notes</div>
+                  <div class="field" style="margin-bottom:8px;">
+                    <label style="font-size:10.5px;">Main Document Title</label>
+                    <input type="text" id="inputHeaderTitle" placeholder="e.g. BILL OF MATERIAL (BOM)" style="padding:4px 6px; font-size:12px;">
+                  </div>
+                  <div class="field" style="margin-bottom:8px;">
+                    <label style="font-size:10.5px;">Subtitle / Tagline</label>
+                    <input type="text" id="inputHeaderSubtitle" placeholder="e.g. Solar System Specification Sheet" style="padding:4px 6px; font-size:12px;">
+                  </div>
+                  <div class="field">
+                    <label style="font-size:10.5px;">Footer Notes &amp; Terms</label>
+                    <textarea id="txtFooterNotes" rows="2" style="width:100%; font-size:11px; padding:5px; border-radius:6px; background:var(--bg2); border:1px solid var(--border-light);" placeholder="Footer terms..."></textarea>
+                  </div>
                 </div>
               </div>
 
               <!-- Tab 5: 🌊 Watermark & Dynamic Variables -->
               <div class="tpl-tab-pane" id="tab-watermark">
                 <div class="tpl-card">
-                  <div class="tpl-card-title">Document Watermark</div>
+                  <div class="tpl-card-title">Document Background Watermark</div>
                   <label class="checkbox" style="font-size:11.5px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
                     <input type="checkbox" id="chkShowWatermark">
                     <span>Enable Background Watermark</span>
@@ -301,7 +337,7 @@
               <!-- Tab 6: ⚡ 1-Page Auto-Fit & Browser Margin Inspector -->
               <div class="tpl-tab-pane" id="tab-pagefit">
                 <div class="tpl-card" style="border:1.5px solid rgba(212,175,55,0.3); background:rgba(212,175,55,0.04);">
-                  <div class="tpl-card-title" style="color:var(--gold);">
+                  <div class="tpl-card-title" style="color:var(--gold, #f1c40f);">
                     <span><i class="fa-solid fa-wand-magic-sparkles"></i> 1-Page Auto Fit Engine</span>
                   </div>
                   <p style="font-size:11.5px; color:var(--txt-muted); margin-bottom:12px; line-height:1.4;">
@@ -340,16 +376,19 @@
 
             <!-- Right Live A4 Canvas Preview -->
             <div class="tpl-viewport">
-              <!-- Floating Live Gauge & Zoom -->
+              <!-- Floating Live Gauge & Zoom Controls -->
               <div class="tpl-viewport-toolbar">
                 <div class="tpl-gauge-badge tpl-gauge-safe" id="tplLiveGauge">
                   <i class="fa-solid fa-circle-check"></i>
                   <span id="tplGaugeText">94% of Page 1 (Fits on 1 Page)</span>
                 </div>
+
                 <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--txt-muted);">
                   <span>Zoom:</span>
-                  <input type="range" id="rangePreviewZoom" min="0.4" max="1.2" step="0.05" value="0.82" style="width:85px; accent-color:var(--blue);">
-                  <span id="valPreviewZoom" style="font-family:monospace; font-weight:700; color:var(--txt);">82%</span>
+                  <input type="range" id="rangePreviewZoom" min="0.25" max="1.50" step="0.05" value="0.75" style="width:90px; accent-color:var(--blue, #3b8ed0);">
+                  <span id="valPreviewZoom" style="font-family:monospace; font-weight:700; color:var(--txt, #fff);">75%</span>
+                  <button type="button" class="btn btn-ghost" id="btnZoomFit" style="padding:2px 6px; font-size:10.5px;">Fit</button>
+                  <button type="button" class="btn btn-ghost" id="btnZoom100" style="padding:2px 6px; font-size:10.5px;">100%</button>
                 </div>
               </div>
 
@@ -360,15 +399,15 @@
               </div>
 
               <!-- Canvas Container -->
-              <div class="a4-sheet-preview-wrap A4_portrait" id="a4CanvasWrap">
-                <iframe id="a4PreviewIframe" class="a4-sheet-inner-frame" src="about:blank"></iframe>
+              <div class="a4-sheet-preview-wrap A4_portrait" id="a4CanvasWrap" style="transform: scale(0.75);">
+                <iframe id="a4PreviewIframe" class="a4-sheet-inner-frame" style="width:794px; height:1123px; border:none; display:block;"></iframe>
                 <!-- Red page break boundary line -->
                 <div class="a4-page-break-line" id="a4PageBreakLine" style="top: 1123px;">
                   <span class="a4-page-break-label">1-PAGE CUTOFF BOUNDARY</span>
                 </div>
                 <!-- Browser Bleed Safety Overlay -->
                 <div class="browser-bleed-box" id="browserBleedBox" style="display:none;">
-                  <span class="browser-bleed-label">PRINTABLE HARDWARE SAFETY BOUNDARY</span>
+                  <span class="browser-bleed-label">PRINTABLE HARDWARE BLEED ZONE</span>
                 </div>
               </div>
 
@@ -392,31 +431,39 @@
       currentDocType = opts.docType || 'all';
       if ($('tplDocTypeFilter')) $('tplDocTypeFilter').value = currentDocType;
 
-      function loadTemplatesDropdown() {
+      function loadTemplatesDropdown(preferredId = null) {
         const templates = PTE.getTemplatesByDocType(currentDocType);
-        const activeTpl = PTE.getActiveTemplate(currentDocType === 'all' ? 'bom' : currentDocType);
         const sel = $('tplActiveSelect');
-        if (sel) {
-          const presets = templates.filter((t) => t.isPreset);
-          const custom = templates.filter((t) => !t.isPreset);
+        if (!sel || templates.length === 0) return;
 
-          let html = '';
-          if (presets.length) {
-            html += '<optgroup label="⭐ Pre-loaded Official Templates">';
-            presets.forEach((t) => {
-              html += `<option value="${t.id}" ${t.id === activeTpl.id ? 'selected' : ''}>${t.name} ${t.id === activeTpl.id ? '★ (Active)' : ''}</option>`;
-            });
-            html += '</optgroup>';
-          }
-          if (custom.length) {
-            html += '<optgroup label="🎨 My Custom Templates">';
-            custom.forEach((t) => {
-              html += `<option value="${t.id}" ${t.id === activeTpl.id ? 'selected' : ''}>${t.name} ${t.id === activeTpl.id ? '★ (Active)' : ''}</option>`;
-            });
-            html += '</optgroup>';
-          }
-          sel.innerHTML = html;
+        let activeTpl = preferredId ? PTE.getTemplateById(preferredId) : null;
+        if (!activeTpl) {
+          activeTpl = PTE.getActiveTemplate(currentDocType === 'all' ? 'bom' : currentDocType);
         }
+        if (!activeTpl || (currentDocType !== 'all' && activeTpl.docType !== currentDocType)) {
+          activeTpl = templates[0];
+        }
+
+        const presets = templates.filter((t) => t.isPreset);
+        const custom = templates.filter((t) => !t.isPreset);
+
+        let html = '';
+        if (presets.length) {
+          html += '<optgroup label="⭐ Pre-loaded Official Templates">';
+          presets.forEach((t) => {
+            html += `<option value="${t.id}" ${t.id === activeTpl.id ? 'selected' : ''}>${t.name}</option>`;
+          });
+          html += '</optgroup>';
+        }
+        if (custom.length) {
+          html += '<optgroup label="🎨 My Custom Templates">';
+          custom.forEach((t) => {
+            html += `<option value="${t.id}" ${t.id === activeTpl.id ? 'selected' : ''}>${t.name}</option>`;
+          });
+          html += '</optgroup>';
+        }
+        sel.innerHTML = html;
+        sel.value = activeTpl.id;
 
         loadTemplateIntoEditor(activeTpl.id);
       }
@@ -437,40 +484,26 @@
         if ($('selCanvasPreset')) $('selCanvasPreset').value = canvasPreset;
         if ($('customCanvasRow')) $('customCanvasRow').style.display = (canvasPreset === 'custom') ? 'grid' : 'none';
 
-        // Sliders & Values
-        const baseFontNum = parseFloat(t.baseFontSize) || 9.0;
-        if ($('rangeBaseFont')) $('rangeBaseFont').value = baseFontNum;
-        if ($('valBaseFont')) $('valBaseFont').textContent = baseFontNum + 'pt';
+        // Orientation Buttons
+        const isLandscape = t.orientation === 'landscape';
+        if ($('btnOrientPortrait')) $('btnOrientPortrait').className = isLandscape ? 'btn btn-ghost' : 'btn btn-blue';
+        if ($('btnOrientLandscape')) $('btnOrientLandscape').className = isLandscape ? 'btn btn-blue' : 'btn btn-ghost';
 
-        const rowPadNum = parseFloat(t.rowPadding) || 1.2;
-        if ($('rangeRowPadding')) $('rangeRowPadding').value = rowPadNum;
-        if ($('valRowPadding')) $('valRowPadding').textContent = rowPadNum + 'px';
-
-        const secFontNum = parseFloat(t.sectionHeaderFontSize) || 9.6;
-        if ($('rangeSecFont')) $('rangeSecFont').value = secFontNum;
-        if ($('valSecFont')) $('valSecFont').textContent = secFontNum + 'pt';
-
-        const secPadNum = parseFloat(t.sectionHeaderPadding) || 2.0;
-        if ($('rangeSecPadding')) $('rangeSecPadding').value = secPadNum;
-        if ($('valSecPadding')) $('valSecPadding').textContent = secPadNum + 'px';
-
-        if ($('inputTableHeadBg')) $('inputTableHeadBg').value = t.tableHeadBg || '#666699';
-        if ($('inputSecBg')) $('inputSecBg').value = t.sectionHeaderBg || '#f2f2f2';
-        if ($('inputBorderColor')) $('inputBorderColor').value = t.borderColor || '#000000';
-        if ($('selBorderWidth')) $('selBorderWidth').value = t.borderWidth || '1px';
-
+        // Margins
         const m = t.margins || { top: 8, bottom: 8, left: 6, right: 6 };
         if ($('marginItemTop')) $('marginItemTop').value = m.top || 8;
         if ($('marginItemBottom')) $('marginItemBottom').value = m.bottom || 8;
         if ($('marginItemLeft')) $('marginItemLeft').value = m.left || 6;
         if ($('marginItemRight')) $('marginItemRight').value = m.right || 6;
 
+        // Header and Footer Text
         if ($('inputHeaderTitle')) $('inputHeaderTitle').value = t.headerTitle || '';
         if ($('inputHeaderSubtitle')) $('inputHeaderSubtitle').value = t.headerSubtitle || '';
         if ($('chkShowLogo')) $('chkShowLogo').checked = t.showLogo !== false;
         const logoWidthNum = parseInt(t.logoWidth, 10) || 140;
         if ($('rangeLogoWidth')) $('rangeLogoWidth').value = logoWidthNum;
         if ($('valLogoWidth')) $('valLogoWidth').textContent = logoWidthNum + 'px';
+        if ($('txtLogoStatus')) $('txtLogoStatus').textContent = t.customLogoData ? 'Custom Logo' : 'Stock Logo';
 
         if ($('chkShowFooterNotes')) $('chkShowFooterNotes').checked = t.showFooterNotes !== false;
         if ($('txtFooterNotes')) $('txtFooterNotes').value = t.footerNotes || '';
@@ -486,31 +519,106 @@
         if ($('rangeWatermarkOpacity')) $('rangeWatermarkOpacity').value = wmOp;
         if ($('valWatermarkOpacity')) $('valWatermarkOpacity').textContent = Math.round(wmOp * 100) + '%';
 
+        // Scale
         const scaleNum = Number(t.printScale) || 1.0;
         if ($('rangePrintScale')) $('rangePrintScale').value = scaleNum;
         if ($('valPrintScale')) $('valPrintScale').textContent = Math.round(scaleNum * 100) + '%';
 
+        // Row Padding & Borders
+        const rowPadNum = parseFloat(t.rowPadding) || 1.2;
+        if ($('rangeRowPadding')) $('rangeRowPadding').value = rowPadNum;
+        if ($('valRowPadding')) $('valRowPadding').textContent = rowPadNum + 'px';
+        if ($('inputBorderColor')) $('inputBorderColor').value = t.borderColor || '#000000';
+        if ($('selBorderWidth')) $('selBorderWidth').value = t.borderWidth || '1px';
+
+        syncTypographyTargetControl();
         updateCanvasGeometry();
         renderColumnsList();
+      }
+
+      function syncTypographyTargetControl() {
+        if (!currentTemplate) return;
+        const t = currentTemplate;
+        let targetObj = null;
+
+        if (activeTypographyElement === 'title') {
+          if (!t.titleStyles) t.titleStyles = { fontSize: '13.5pt', fontWeight: '900', color: '#000000', bg: 'transparent' };
+          targetObj = t.titleStyles;
+        } else if (activeTypographyElement === 'subtitle') {
+          if (!t.subtitleStyles) t.subtitleStyles = { fontSize: '8.5pt', fontWeight: '400', color: '#444444', bg: 'transparent' };
+          targetObj = t.subtitleStyles;
+        } else if (activeTypographyElement === 'tableHead') {
+          if (!t.tableHeadStyles) t.tableHeadStyles = { fontSize: '9.2pt', fontWeight: '800', color: '#ffffff', bg: t.tableHeadBg || '#666699' };
+          targetObj = t.tableHeadStyles;
+        } else if (activeTypographyElement === 'category') {
+          if (!t.categoryStyles) t.categoryStyles = { fontSize: '9.6pt', fontWeight: '700', color: '#000000', bg: t.sectionHeaderBg || '#f2f2f2' };
+          targetObj = t.categoryStyles;
+        } else if (activeTypographyElement === 'data') {
+          if (!t.dataStyles) t.dataStyles = { fontSize: '9.0pt', fontWeight: '400', color: '#000000', bg: '#ffffff' };
+          targetObj = t.dataStyles;
+        } else if (activeTypographyElement === 'total') {
+          if (!t.totalStyles) t.totalStyles = { fontSize: '9.5pt', fontWeight: '800', color: '#000000', bg: '#fafafa' };
+          targetObj = t.totalStyles;
+        }
+
+        if (targetObj) {
+          const fsNum = parseFloat(targetObj.fontSize) || 10.0;
+          if ($('rangeElemFontSize')) $('rangeElemFontSize').value = fsNum;
+          if ($('valElemFontSize')) $('valElemFontSize').textContent = fsNum + 'pt';
+          if ($('selElemFontWeight')) $('selElemFontWeight').value = targetObj.fontWeight || '700';
+          if ($('inpElemTextColor')) $('inpElemTextColor').value = targetObj.color && targetObj.color.startsWith('#') ? targetObj.color : '#000000';
+          if ($('inpElemBgColor')) $('inpElemBgColor').value = targetObj.bg && targetObj.bg.startsWith('#') ? targetObj.bg : '#ffffff';
+        }
       }
 
       function updateCanvasGeometry() {
         if (!currentTemplate) return;
         const isLandscape = currentTemplate.orientation === 'landscape';
-        if ($('btnOrientPortrait')) $('btnOrientPortrait').className = isLandscape ? 'btn btn-ghost' : 'btn btn-blue';
-        if ($('btnOrientLandscape')) $('btnOrientLandscape').className = isLandscape ? 'btn btn-blue' : 'btn btn-ghost';
+        const canvasPreset = currentTemplate.canvasPreset || (isLandscape ? 'A4_landscape' : 'A4_portrait');
+
+        let widthPx = 794;
+        let heightPx = 1123;
+
+        if (canvasPreset === 'A4_landscape' || canvasPreset === 'A5_landscape') {
+          widthPx = 1123;
+          heightPx = 794;
+        } else if (canvasPreset === 'A5_portrait') {
+          widthPx = 559;
+          heightPx = 794;
+        } else if (canvasPreset === 'POS80') {
+          widthPx = 320;
+          heightPx = 880;
+        } else if (canvasPreset === 'Letter_portrait') {
+          widthPx = 816;
+          heightPx = 1056;
+        } else if (canvasPreset === 'Legal_portrait') {
+          widthPx = 816;
+          heightPx = 1344;
+        }
 
         const wrap = $('a4CanvasWrap');
-        const canvasPreset = currentTemplate.canvasPreset || (isLandscape ? 'A4_landscape' : 'A4_portrait');
+        const iframe = $('a4PreviewIframe');
+        const breakLine = $('a4PageBreakLine');
+        const headerSim = $('browserHeaderSim');
+        const footerSim = $('browserFooterSim');
+
         if (wrap) {
           wrap.className = `a4-sheet-preview-wrap ${canvasPreset}`;
-          const breakLine = $('a4PageBreakLine');
-          if (breakLine) {
-            if (canvasPreset === 'A4_landscape' || canvasPreset === 'A5_landscape') breakLine.style.top = '794px';
-            else if (canvasPreset === 'POS80') breakLine.style.top = '600px';
-            else breakLine.style.top = '1123px';
-          }
+          wrap.style.width = widthPx + 'px';
+          wrap.style.height = heightPx + 'px';
         }
+
+        if (iframe) {
+          iframe.style.width = widthPx + 'px';
+          iframe.style.height = heightPx + 'px';
+        }
+
+        if (breakLine) {
+          breakLine.style.top = heightPx + 'px';
+        }
+
+        if (headerSim) headerSim.style.width = widthPx + 'px';
+        if (footerSim) footerSim.style.width = widthPx + 'px';
       }
 
       function renderColumnsList() {
@@ -528,6 +636,9 @@
                 <button type="button" class="tpl-align-btn ${col.align === 'left' ? 'active' : ''}" data-align="left" data-index="${idx}" title="Align Left"><i class="fa-solid fa-align-left"></i></button>
                 <button type="button" class="tpl-align-btn ${col.align === 'center' ? 'active' : ''}" data-align="center" data-index="${idx}" title="Align Center"><i class="fa-solid fa-align-center"></i></button>
                 <button type="button" class="tpl-align-btn ${col.align === 'right' ? 'active' : ''}" data-align="right" data-index="${idx}" title="Align Right"><i class="fa-solid fa-align-right"></i></button>
+                <button type="button" class="tpl-align-btn btn-col-up" data-index="${idx}" title="Move Left"><i class="fa-solid fa-arrow-up"></i></button>
+                <button type="button" class="tpl-align-btn btn-col-down" data-index="${idx}" title="Move Right"><i class="fa-solid fa-arrow-down"></i></button>
+                <button type="button" class="tpl-align-btn btn-col-del" data-index="${idx}" style="color:#e74c3c;" title="Remove Column"><i class="fa-solid fa-trash"></i></button>
               </div>
             </div>
             <div style="display:flex; gap:6px; align-items:center;">
@@ -537,7 +648,7 @@
           </div>
         `).join('');
 
-        // Attach listeners
+        // Wire Column Event Handlers
         listEl.querySelectorAll('.chk-col-vis').forEach((chk) => {
           chk.addEventListener('change', (e) => {
             const idx = parseInt(e.target.dataset.index, 10);
@@ -555,18 +666,57 @@
         });
 
         listEl.querySelectorAll('.input-col-width').forEach((inp) => {
-          inp.addEventListener('change', (e) => {
+          inp.addEventListener('input', (e) => {
             const idx = parseInt(e.target.dataset.index, 10);
             currentTemplate.columns[idx].width = e.target.value;
             refreshLivePreview();
           });
         });
 
-        listEl.querySelectorAll('.tpl-align-btn').forEach((btn) => {
+        listEl.querySelectorAll('.tpl-align-btn[data-align]').forEach((btn) => {
           btn.addEventListener('click', (e) => {
             const target = e.currentTarget;
             const idx = parseInt(target.dataset.index, 10);
             currentTemplate.columns[idx].align = target.dataset.align;
+            renderColumnsList();
+            refreshLivePreview();
+          });
+        });
+
+        listEl.querySelectorAll('.btn-col-up').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            const idx = parseInt(e.currentTarget.dataset.index, 10);
+            if (idx > 0) {
+              const tmp = currentTemplate.columns[idx];
+              currentTemplate.columns[idx] = currentTemplate.columns[idx - 1];
+              currentTemplate.columns[idx - 1] = tmp;
+              renderColumnsList();
+              refreshLivePreview();
+            }
+          });
+        });
+
+        listEl.querySelectorAll('.btn-col-down').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            const idx = parseInt(e.currentTarget.dataset.index, 10);
+            if (idx < currentTemplate.columns.length - 1) {
+              const tmp = currentTemplate.columns[idx];
+              currentTemplate.columns[idx] = currentTemplate.columns[idx + 1];
+              currentTemplate.columns[idx + 1] = tmp;
+              renderColumnsList();
+              refreshLivePreview();
+            }
+          });
+        });
+
+        listEl.querySelectorAll('.btn-col-del').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            const idx = parseInt(e.currentTarget.dataset.index, 10);
+            if (currentTemplate.columns.length <= 1) {
+              alert('A table must have at least one visible column.');
+              return;
+            }
+            currentTemplate.columns.splice(idx, 1);
             renderColumnsList();
             refreshLivePreview();
           });
@@ -579,11 +729,7 @@
         const iframe = $('a4PreviewIframe');
         if (!iframe) return;
 
-        const doc = iframe.contentWindow.document;
-        doc.open();
-        doc.write(html);
-        doc.close();
-
+        iframe.srcdoc = html;
         setTimeout(measurePageUtilization, 150);
       }
 
@@ -591,7 +737,7 @@
         const iframe = $('a4PreviewIframe');
         if (!iframe || !currentTemplate) return;
         try {
-          const doc = iframe.contentWindow.document;
+          const doc = iframe.contentDocument || iframe.contentWindow.document;
           const root = doc.getElementById('printSheetRoot') || doc.body;
           const naturalHeight = root.scrollHeight || root.offsetHeight;
           const isLandscape = currentTemplate.orientation === 'landscape';
@@ -617,7 +763,7 @@
         const iframe = $('a4PreviewIframe');
         if (!iframe || !currentTemplate) return;
         try {
-          const doc = iframe.contentWindow.document;
+          const doc = iframe.contentDocument || iframe.contentWindow.document;
           const root = doc.getElementById('printSheetRoot') || doc.body;
           const naturalHeight = root.scrollHeight || root.offsetHeight;
           const isLandscape = currentTemplate.orientation === 'landscape';
@@ -638,11 +784,11 @@
             if (window.showNotification) window.showNotification('✅ Content already fits comfortably on 1 Page.', 'info');
           }
         } catch (e) {
-          console.warn('Auto-fit calculation error:', e);
+          console.warn('Auto-fit error:', e);
         }
       }
 
-      // Tab switching
+      // Tab Navigation
       document.querySelectorAll('.tpl-tab-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
           document.querySelectorAll('.tpl-tab-btn').forEach((b) => b.classList.remove('active'));
@@ -653,53 +799,87 @@
         });
       });
 
-      // Canvas preset change
+      // Canvas Format Preset
       if ($('selCanvasPreset')) $('selCanvasPreset').addEventListener('change', (e) => {
         const val = e.target.value;
         currentTemplate.canvasPreset = val;
         if (val.includes('landscape')) currentTemplate.orientation = 'landscape';
         else if (val.includes('portrait') || val === 'POS80') currentTemplate.orientation = 'portrait';
         if ($('customCanvasRow')) $('customCanvasRow').style.display = (val === 'custom') ? 'grid' : 'none';
-        updateCanvasGeometry();
+        syncControlsFromTemplate();
         refreshLivePreview();
       });
 
-      // Sliders & inputs bindings
-      if ($('rangeBaseFont')) $('rangeBaseFont').addEventListener('input', (e) => {
+      // Orientation Buttons
+      if ($('btnOrientPortrait')) $('btnOrientPortrait').addEventListener('click', () => {
+        currentTemplate.orientation = 'portrait';
+        currentTemplate.canvasPreset = 'A4_portrait';
+        syncControlsFromTemplate();
+        refreshLivePreview();
+      });
+
+      if ($('btnOrientLandscape')) $('btnOrientLandscape').addEventListener('click', () => {
+        currentTemplate.orientation = 'landscape';
+        currentTemplate.canvasPreset = 'A4_landscape';
+        syncControlsFromTemplate();
+        refreshLivePreview();
+      });
+
+      // Real-Time Live Margins
+      ['marginItemTop', 'marginItemBottom', 'marginItemLeft', 'marginItemRight'].forEach((id) => {
+        const el = $(id);
+        if (el) el.addEventListener('input', () => {
+          currentTemplate.margins = {
+            top: parseInt($('marginItemTop').value, 10) || 0,
+            bottom: parseInt($('marginItemBottom').value, 10) || 0,
+            left: parseInt($('marginItemLeft').value, 10) || 0,
+            right: parseInt($('marginItemRight').value, 10) || 0
+          };
+          refreshLivePreview();
+        });
+      });
+
+      // Typography Inspector Element Switcher
+      if ($('selTypoTargetElement')) $('selTypoTargetElement').addEventListener('change', (e) => {
+        activeTypographyElement = e.target.value;
+        syncTypographyTargetControl();
+      });
+
+      if ($('rangeElemFontSize')) $('rangeElemFontSize').addEventListener('input', (e) => {
         const val = e.target.value + 'pt';
-        if ($('valBaseFont')) $('valBaseFont').textContent = val;
-        currentTemplate.baseFontSize = val;
+        if ($('valElemFontSize')) $('valElemFontSize').textContent = val;
+        let targetObj = currentTemplate[activeTypographyElement + 'Styles'];
+        if (!targetObj) targetObj = currentTemplate[activeTypographyElement + 'Styles'] = {};
+        targetObj.fontSize = val;
         refreshLivePreview();
       });
 
+      if ($('selElemFontWeight')) $('selElemFontWeight').addEventListener('change', (e) => {
+        let targetObj = currentTemplate[activeTypographyElement + 'Styles'];
+        if (!targetObj) targetObj = currentTemplate[activeTypographyElement + 'Styles'] = {};
+        targetObj.fontWeight = e.target.value;
+        refreshLivePreview();
+      });
+
+      if ($('inpElemTextColor')) $('inpElemTextColor').addEventListener('input', (e) => {
+        let targetObj = currentTemplate[activeTypographyElement + 'Styles'];
+        if (!targetObj) targetObj = currentTemplate[activeTypographyElement + 'Styles'] = {};
+        targetObj.color = e.target.value;
+        refreshLivePreview();
+      });
+
+      if ($('inpElemBgColor')) $('inpElemBgColor').addEventListener('input', (e) => {
+        let targetObj = currentTemplate[activeTypographyElement + 'Styles'];
+        if (!targetObj) targetObj = currentTemplate[activeTypographyElement + 'Styles'] = {};
+        targetObj.bg = e.target.value;
+        refreshLivePreview();
+      });
+
+      // Row Padding & Borders
       if ($('rangeRowPadding')) $('rangeRowPadding').addEventListener('input', (e) => {
         const val = e.target.value + 'px';
         if ($('valRowPadding')) $('valRowPadding').textContent = val;
         currentTemplate.rowPadding = val + ' 3.5px';
-        refreshLivePreview();
-      });
-
-      if ($('rangeSecFont')) $('rangeSecFont').addEventListener('input', (e) => {
-        const val = e.target.value + 'pt';
-        if ($('valSecFont')) $('valSecFont').textContent = val;
-        currentTemplate.sectionHeaderFontSize = val;
-        refreshLivePreview();
-      });
-
-      if ($('rangeSecPadding')) $('rangeSecPadding').addEventListener('input', (e) => {
-        const val = e.target.value + 'px';
-        if ($('valSecPadding')) $('valSecPadding').textContent = val;
-        currentTemplate.sectionHeaderPadding = val + ' 4px';
-        refreshLivePreview();
-      });
-
-      if ($('inputTableHeadBg')) $('inputTableHeadBg').addEventListener('input', (e) => {
-        currentTemplate.tableHeadBg = e.target.value;
-        refreshLivePreview();
-      });
-
-      if ($('inputSecBg')) $('inputSecBg').addEventListener('input', (e) => {
-        currentTemplate.sectionHeaderBg = e.target.value;
         refreshLivePreview();
       });
 
@@ -713,19 +893,58 @@
         refreshLivePreview();
       });
 
-      ['marginItemTop', 'marginItemBottom', 'marginItemLeft', 'marginItemRight'].forEach((id) => {
-        const el = $(id);
-        if (el) el.addEventListener('change', () => {
-          currentTemplate.margins = {
-            top: parseInt($('marginItemTop').value, 10) || 8,
-            bottom: parseInt($('marginItemBottom').value, 10) || 8,
-            left: parseInt($('marginItemLeft').value, 10) || 6,
-            right: parseInt($('marginItemRight').value, 10) || 6
-          };
+      // Media Uploads (Logo, Signature, Stamp)
+      if ($('btnBrowseLogo')) $('btnBrowseLogo').addEventListener('click', () => $('fileLogoUpload').click());
+      if ($('fileLogoUpload')) $('fileLogoUpload').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          currentTemplate.customLogoData = re.target.result;
+          $('txtLogoStatus').textContent = file.name;
           refreshLivePreview();
-        });
+        };
+        reader.readAsDataURL(file);
+      });
+      if ($('btnResetLogo')) $('btnResetLogo').addEventListener('click', () => {
+        delete currentTemplate.customLogoData;
+        $('txtLogoStatus').textContent = 'Stock Logo';
+        refreshLivePreview();
       });
 
+      if ($('btnBrowseSign')) $('btnBrowseSign').addEventListener('click', () => $('fileSignUpload').click());
+      if ($('fileSignUpload')) $('fileSignUpload').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          currentTemplate.customSignData = re.target.result;
+          refreshLivePreview();
+        };
+        reader.readAsDataURL(file);
+      });
+      if ($('btnResetSign')) $('btnResetSign').addEventListener('click', () => {
+        delete currentTemplate.customSignData;
+        refreshLivePreview();
+      });
+
+      if ($('btnBrowseStamp')) $('btnBrowseStamp').addEventListener('click', () => $('fileStampUpload').click());
+      if ($('fileStampUpload')) $('fileStampUpload').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          currentTemplate.customStampData = re.target.result;
+          refreshLivePreview();
+        };
+        reader.readAsDataURL(file);
+      });
+      if ($('btnResetStamp')) $('btnResetStamp').addEventListener('click', () => {
+        delete currentTemplate.customStampData;
+        refreshLivePreview();
+      });
+
+      // Header, Notes, Logo Width
       if ($('inputHeaderTitle')) $('inputHeaderTitle').addEventListener('input', (e) => {
         currentTemplate.headerTitle = e.target.value;
         refreshLivePreview();
@@ -738,7 +957,7 @@
 
       if ($('chkShowLogo')) $('chkShowLogo').addEventListener('change', (e) => {
         currentTemplate.showLogo = e.target.checked;
-        if ($('logoWidthGroup')) $('logoWidthGroup').style.display = e.target.checked ? 'flex' : 'none';
+        $('logoWidthGroup').style.display = e.target.checked ? 'flex' : 'none';
         refreshLivePreview();
       });
 
@@ -764,8 +983,7 @@
         refreshLivePreview();
       });
 
-      // Watermark bindings
-      if (!currentTemplate.watermark) currentTemplate.watermark = { show: false, text: 'ORIGINAL', opacity: 0.1, angle: -30, color: '#3b8ed0' };
+      // Watermark
       if ($('chkShowWatermark')) $('chkShowWatermark').addEventListener('change', (e) => {
         if (!currentTemplate.watermark) currentTemplate.watermark = {};
         currentTemplate.watermark.show = e.target.checked;
@@ -798,22 +1016,11 @@
         refreshLivePreview();
       });
 
+      // Scale & Auto-fit
       if ($('rangePrintScale')) $('rangePrintScale').addEventListener('input', (e) => {
         const val = parseFloat(e.target.value) || 1.0;
         if ($('valPrintScale')) $('valPrintScale').textContent = Math.round(val * 100) + '%';
         currentTemplate.printScale = val;
-        refreshLivePreview();
-      });
-
-      if ($('btnOrientPortrait')) $('btnOrientPortrait').addEventListener('click', () => {
-        currentTemplate.orientation = 'portrait';
-        updateCanvasGeometry();
-        refreshLivePreview();
-      });
-
-      if ($('btnOrientLandscape')) $('btnOrientLandscape').addEventListener('click', () => {
-        currentTemplate.orientation = 'landscape';
-        updateCanvasGeometry();
         refreshLivePreview();
       });
 
@@ -832,14 +1039,37 @@
         if ($('browserFooterSim')) $('browserFooterSim').style.display = showBrowserHeaderFooter ? 'flex' : 'none';
       });
 
-      if ($('rangePreviewZoom')) $('rangePreviewZoom').addEventListener('input', (e) => {
-        previewScale = parseFloat(e.target.value) || 0.82;
+      // Zoom Controls
+      function applyZoom(scale) {
+        previewScale = Math.max(0.25, Math.min(1.50, scale));
+        if ($('rangePreviewZoom')) $('rangePreviewZoom').value = previewScale;
         if ($('valPreviewZoom')) $('valPreviewZoom').textContent = Math.round(previewScale * 100) + '%';
         if ($('a4CanvasWrap')) $('a4CanvasWrap').style.transform = `scale(${previewScale})`;
-      });
-      if ($('a4CanvasWrap')) $('a4CanvasWrap').style.transform = `scale(${previewScale})`;
+      }
 
-      // Dropdown & Action Buttons
+      if ($('rangePreviewZoom')) $('rangePreviewZoom').addEventListener('input', (e) => {
+        applyZoom(parseFloat(e.target.value) || 0.75);
+      });
+      if ($('btnZoomFit')) $('btnZoomFit').addEventListener('click', () => applyZoom(0.55));
+      if ($('btnZoom100')) $('btnZoom100').addEventListener('click', () => applyZoom(1.00));
+
+      // Add Column Button
+      if ($('tplBtnAddCol')) $('tplBtnAddCol').addEventListener('click', () => {
+        const name = prompt('Enter new column header name (e.g. HSN Code / Remarks):');
+        if (!name) return;
+        const key = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        currentTemplate.columns.push({
+          key: key,
+          label: name,
+          width: '12%',
+          align: 'center',
+          visible: true
+        });
+        renderColumnsList();
+        refreshLivePreview();
+      });
+
+      // Document Type Filter & Selection
       if ($('tplDocTypeFilter')) $('tplDocTypeFilter').addEventListener('change', (e) => {
         currentDocType = e.target.value;
         loadTemplatesDropdown();
@@ -849,12 +1079,12 @@
         loadTemplateIntoEditor(e.target.value);
       });
 
+      // Top Actions
       if ($('tplBtnSave')) $('tplBtnSave').addEventListener('click', () => {
         try {
           const saved = PTE.saveCustomTemplate(currentTemplate);
           if (window.showNotification) window.showNotification(`💾 Template "${saved.name}" saved successfully!`, 'success');
-          loadTemplatesDropdown();
-          if ($('tplActiveSelect')) $('tplActiveSelect').value = saved.id;
+          loadTemplatesDropdown(saved.id);
         } catch (err) {
           if (window.showNotification) window.showNotification(err.message || 'Failed to save template.', 'error');
         }
@@ -864,7 +1094,7 @@
         if (!currentTemplate) return;
         PTE.setActiveTemplate(currentTemplate.docType || 'bom', currentTemplate.id);
         if (window.showNotification) window.showNotification(`🌟 "${currentTemplate.name}" is now the active default print layout!`, 'success');
-        loadTemplatesDropdown();
+        loadTemplatesDropdown(currentTemplate.id);
       });
 
       if ($('tplBtnClone')) $('tplBtnClone').addEventListener('click', () => {
@@ -914,8 +1144,7 @@
             try {
               const imported = PTE.importTemplateJson(re.target.result);
               if (window.showNotification) window.showNotification(`📥 Imported "${imported.name}" successfully!`, 'success');
-              loadTemplatesDropdown();
-              if ($('tplActiveSelect')) $('tplActiveSelect').value = imported.id;
+              loadTemplatesDropdown(imported.id);
             } catch (err) {
               if (window.showNotification) window.showNotification('Invalid template JSON file.', 'error');
             }
@@ -940,19 +1169,20 @@
         iframe.style.border = '0';
         document.body.appendChild(iframe);
 
-        const doc = iframe.contentWindow.document;
-        doc.open();
-        doc.write(html);
-        doc.close();
-
+        iframe.srcdoc = html;
         setTimeout(() => {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-        }, 250);
+          try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          } catch (e) {
+            console.warn('Print error:', e);
+          }
+        }, 300);
       });
 
       // Initial load
       loadTemplatesDropdown();
+      applyZoom(0.75);
     }
   };
 

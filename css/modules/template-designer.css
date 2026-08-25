@@ -1,17 +1,17 @@
-﻿/* ==========================================================================
-   ECO GREEN SOLAR ERP - VISUAL PRINT TEMPLATE DESIGNER STUDIO v2.0
-   Photoshop-Style Canvas, Media & Watermarks, Browser Bleed Inspector
+/* ==========================================================================
+   ECO GREEN SOLAR ERP - VISUAL PRINT TEMPLATE DESIGNER STUDIO v2.1
+   Photoshop-Style Canvas, Media Uploads, Granular Typography & Bleed Inspector
    ========================================================================== */
 
 .tpl-designer-wrap {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 120px);
-  min-height: 680px;
-  background: var(--bg);
+  height: calc(100vh - 110px);
+  min-height: 700px;
+  background: var(--bg, #0b0f14);
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border-light, rgba(255, 255, 255, 0.12));
 }
 
 .tpl-designer-topbar {
@@ -19,10 +19,11 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  background: var(--panel);
-  border-bottom: 1px solid var(--border-light);
+  background: var(--panel, #11161d);
+  border-bottom: 1px solid var(--border-light, rgba(255, 255, 255, 0.12));
   gap: 12px;
   flex-wrap: wrap;
+  z-index: 10;
 }
 
 .tpl-topbar-left {
@@ -43,6 +44,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 
 /* Left Sidebar Controls */
@@ -50,26 +52,30 @@
   width: 460px;
   min-width: 380px;
   max-width: 500px;
-  background: var(--panel);
-  border-right: 1px solid var(--border-light);
+  background: var(--panel, #11161d);
+  border-right: 1px solid var(--border-light, rgba(255, 255, 255, 0.12));
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  z-index: 5;
 }
 
 .tpl-tabs-header {
   display: flex;
-  border-bottom: 1px solid var(--border-light);
-  background: rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid var(--border-light, rgba(255, 255, 255, 0.12));
+  background: rgba(0, 0, 0, 0.25);
   overflow-x: auto;
+  position: sticky;
+  top: 0;
+  z-index: 6;
 }
 
 .tpl-tab-btn {
   flex: 1;
-  padding: 10px 6px;
-  font-size: 11px;
+  padding: 11px 8px;
+  font-size: 11.5px;
   font-weight: 700;
-  color: var(--txt-muted);
+  color: var(--txt-muted, #94a3b8);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
@@ -77,20 +83,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 6px;
   white-space: nowrap;
   transition: all 0.15s ease;
 }
 
 .tpl-tab-btn:hover {
-  color: var(--txt);
-  background: rgba(255, 255, 255, 0.03);
+  color: var(--txt, #ffffff);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .tpl-tab-btn.active {
   color: var(--blue, #3b8ed0);
   border-bottom-color: var(--blue, #3b8ed0);
-  background: var(--panel);
+  background: var(--panel, #11161d);
 }
 
 .tpl-tab-pane {
@@ -107,7 +113,7 @@
 /* Control Cards & Sliders */
 .tpl-card {
   background: var(--panel-alt, rgba(255, 255, 255, 0.03));
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border-light, rgba(255, 255, 255, 0.1));
   border-radius: 8px;
   padding: 12px;
 }
@@ -115,7 +121,7 @@
 .tpl-card-title {
   font-size: 12px;
   font-weight: 700;
-  color: var(--txt);
+  color: var(--txt, #ffffff);
   margin-bottom: 10px;
   display: flex;
   align-items: center;
@@ -138,7 +144,7 @@
   justify-content: space-between;
   align-items: center;
   font-size: 11.5px;
-  color: var(--txt-muted);
+  color: var(--txt-muted, #94a3b8);
   font-weight: 600;
 }
 
@@ -146,7 +152,7 @@
   font-family: monospace;
   font-weight: 700;
   color: var(--blue, #3b8ed0);
-  background: rgba(59, 142, 208, 0.12);
+  background: rgba(59, 142, 208, 0.15);
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 11px;
@@ -164,7 +170,7 @@
   flex-direction: column;
   gap: 6px;
   background: var(--bg2, #181d24);
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border-light, rgba(255, 255, 255, 0.1));
   border-radius: 6px;
   padding: 8px 10px;
   margin-bottom: 6px;
@@ -183,7 +189,7 @@
   gap: 8px;
   font-size: 12px;
   font-weight: 700;
-  color: var(--txt);
+  color: var(--txt, #ffffff);
 }
 
 .tpl-align-btns {
@@ -193,11 +199,11 @@
 
 .tpl-align-btn {
   background: transparent;
-  border: 1px solid var(--border-light);
-  color: var(--txt-muted);
-  padding: 2px 6px;
+  border: 1px solid var(--border-light, rgba(255, 255, 255, 0.15));
+  color: var(--txt-muted, #94a3b8);
+  padding: 3px 7px;
   border-radius: 4px;
-  font-size: 10.5px;
+  font-size: 11px;
   cursor: pointer;
 }
 
@@ -210,31 +216,31 @@
 /* Right Viewport Canvas (Photoshop-Grade Drafting Board) */
 .tpl-viewport {
   flex: 1;
-  background: #0d1117;
+  background: #080c10;
   overflow: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 24px;
   position: relative;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 0);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 0);
   background-size: 16px 16px;
 }
 
 .tpl-viewport-toolbar {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 20;
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: rgba(17, 22, 29, 0.9);
-  backdrop-filter: blur(10px);
-  padding: 6px 16px;
+  gap: 14px;
+  background: rgba(17, 22, 29, 0.94);
+  backdrop-filter: blur(12px);
+  padding: 7px 18px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  margin-bottom: 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  margin-bottom: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .tpl-gauge-badge {
@@ -243,111 +249,117 @@
   gap: 6px;
   font-size: 11.5px;
   font-weight: 700;
-  padding: 3px 10px;
+  padding: 3px 12px;
   border-radius: 999px;
 }
 
 .tpl-gauge-safe {
-  background: rgba(46, 204, 113, 0.15);
+  background: rgba(46, 204, 113, 0.18);
   color: #2ecc71;
-  border: 1px solid rgba(46, 204, 113, 0.3);
+  border: 1px solid rgba(46, 204, 113, 0.35);
 }
 
 .tpl-gauge-warn {
-  background: rgba(231, 76, 60, 0.15);
+  background: rgba(231, 76, 60, 0.18);
   color: #e74c3c;
-  border: 1px solid rgba(231, 76, 60, 0.3);
+  border: 1px solid rgba(231, 76, 60, 0.35);
 }
 
 /* Browser Header/Footer Simulation Overlays */
 .browser-header-sim {
   display: flex;
   justify-content: space-between;
-  width: 100%;
   font-family: monospace;
   font-size: 8pt;
-  color: #888888;
-  padding: 2px 8px;
+  color: #777777;
+  padding: 4px 8px;
   margin-bottom: 4px;
   pointer-events: none;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
 }
 
 .browser-footer-sim {
   display: flex;
   justify-content: space-between;
-  width: 100%;
   font-family: monospace;
   font-size: 8pt;
-  color: #888888;
-  padding: 2px 8px;
+  color: #777777;
+  padding: 4px 8px;
   margin-top: 4px;
   pointer-events: none;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
 }
 
 .browser-bleed-box {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border: 1.5px dashed rgba(59, 142, 208, 0.4);
+  top: 18px;
+  left: 18px;
+  right: 18px;
+  bottom: 18px;
+  border: 1.5px dashed rgba(59, 142, 208, 0.6);
   pointer-events: none;
   z-index: 4;
 }
 
 .browser-bleed-label {
   position: absolute;
-  top: 2px;
-  left: 4px;
+  top: 4px;
+  left: 6px;
   font-size: 8.5px;
-  color: var(--blue, #3b8ed0);
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  opacity: 0.7;
+  color: #3b8ed0;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  background: rgba(11, 15, 20, 0.85);
+  padding: 1px 6px;
+  border-radius: 3px;
 }
 
 /* Multi-Format Canvas Containers */
 .a4-sheet-preview-wrap {
   position: relative;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.15);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.2);
   background: #ffffff;
   transition: transform 0.15s ease-out;
   transform-origin: top center;
+  overflow: hidden;
 }
 
 .a4-sheet-preview-wrap.A4_portrait,
 .a4-sheet-preview-wrap.Letter_portrait,
 .a4-sheet-preview-wrap.Legal_portrait,
 .a4-sheet-preview-wrap.custom_portrait {
-  width: 794px; /* 210mm @ 96 DPI */
-  min-height: 1123px; /* 297mm @ 96 DPI */
+  width: 794px;
+  height: 1123px;
 }
 
 .a4-sheet-preview-wrap.A4_landscape,
 .a4-sheet-preview-wrap.custom_landscape {
   width: 1123px;
-  min-height: 794px;
+  height: 794px;
 }
 
 .a4-sheet-preview-wrap.A5_portrait {
   width: 559px;
-  min-height: 794px;
+  height: 794px;
 }
 
 .a4-sheet-preview-wrap.A5_landscape {
   width: 794px;
-  min-height: 559px;
+  height: 559px;
 }
 
 .a4-sheet-preview-wrap.POS80 {
   width: 320px;
-  min-height: 600px;
+  height: 880px;
 }
 
 .a4-sheet-inner-frame {
   width: 100%;
   height: 100%;
   border: none;
+  display: block;
   background: #ffffff;
 }
 

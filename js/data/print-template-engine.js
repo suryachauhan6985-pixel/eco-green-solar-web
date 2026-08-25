@@ -1,7 +1,12 @@
-﻿/**
- * Eco Green Solar ERP - Universal Print Template Engine v2.0
- * Comprehensive Document & Report Publishing Engine with Factory Presets,
- * Photoshop-Style Multi-Format Canvases, Media Insertion, Watermarks & 1-Page Scaling.
+/**
+ * Eco Green Solar ERP - Universal Print Template Engine v2.1
+ * Fully-Featured Publishing & Layout Engine:
+ * - Photoshop-Grade Multi-Format Canvases (A4, A5, Letter, Legal, POS 80mm, Custom mm/in/px)
+ * - Built-in & Custom Presets (BOM Classic, Landscape Challan, Solar BOQ, GST Invoice, POS Slip)
+ * - Device Media Uploads (Logo, Signature, Company Seal/Stamp base64)
+ * - Per-Element Granular Typography (Titles, Category Headers, Cells, Totals, Footers)
+ * - Text Watermarks & Dynamic Placeholders
+ * - Browser Margins & Bleed Zone Simulator
  */
 
 (function(window) {
@@ -11,21 +16,21 @@
   const STORAGE_KEY_ACTIVE = 'egs_active_print_templates';
 
   // ---------------------------------------------------------------------------
-  // 1. PAPER & CANVAS DEFINITIONS
+  // 1. CANVAS DIMENSIONS LOOKUP (in mm and standard CSS pixels at 96 DPI)
   // ---------------------------------------------------------------------------
   const CANVAS_PRESETS = {
-    'A4_portrait': { name: 'A4 Portrait (210 × 297 mm)', width: 210, height: 297, unit: 'mm', orientation: 'portrait' },
-    'A4_landscape': { name: 'A4 Landscape (297 × 210 mm)', width: 297, height: 210, unit: 'mm', orientation: 'landscape' },
-    'A5_portrait': { name: 'A5 Portrait (148 × 210 mm)', width: 148, height: 210, unit: 'mm', orientation: 'portrait' },
-    'A5_landscape': { name: 'A5 Landscape (210 × 148 mm)', width: 210, height: 148, unit: 'mm', orientation: 'landscape' },
-    'Letter_portrait': { name: 'Letter Portrait (8.5 × 11 in)', width: 215.9, height: 279.4, unit: 'mm', orientation: 'portrait' },
-    'Legal_portrait': { name: 'Legal Portrait (8.5 × 14 in)', width: 215.9, height: 355.6, unit: 'mm', orientation: 'portrait' },
-    'POS80': { name: '80mm POS Thermal Roll (80 × 220 mm)', width: 80, height: 220, unit: 'mm', orientation: 'portrait' },
-    'custom': { name: 'Custom Canvas Size', width: 210, height: 297, unit: 'mm', orientation: 'portrait' }
+    'A4_portrait': { name: 'A4 Portrait (210 × 297 mm)', widthMm: 210, heightMm: 297, widthPx: 794, heightPx: 1123, orientation: 'portrait' },
+    'A4_landscape': { name: 'A4 Landscape (297 × 210 mm)', widthMm: 297, heightMm: 210, widthPx: 1123, heightPx: 794, orientation: 'landscape' },
+    'A5_portrait': { name: 'A5 Portrait (148 × 210 mm)', widthMm: 148, heightMm: 210, widthPx: 559, heightPx: 794, orientation: 'portrait' },
+    'A5_landscape': { name: 'A5 Landscape (210 × 148 mm)', widthMm: 210, heightMm: 148, widthPx: 794, heightPx: 559, orientation: 'landscape' },
+    'Letter_portrait': { name: 'Letter Portrait (8.5 × 11 in)', widthMm: 215.9, heightMm: 279.4, widthPx: 816, heightPx: 1056, orientation: 'portrait' },
+    'Legal_portrait': { name: 'Legal Portrait (8.5 × 14 in)', widthMm: 215.9, heightMm: 355.6, widthPx: 816, heightPx: 1344, orientation: 'portrait' },
+    'POS80': { name: '80mm POS Thermal Roll (80 × 220 mm)', widthMm: 80, heightMm: 220, widthPx: 320, heightPx: 880, orientation: 'portrait' },
+    'custom': { name: 'Custom Canvas Dimensions', widthMm: 210, heightMm: 297, widthPx: 794, heightPx: 1123, orientation: 'portrait' }
   };
 
   // ---------------------------------------------------------------------------
-  // 2. BUILT-IN FACTORY PRESETS
+  // 2. FACTORY PRESETS
   // ---------------------------------------------------------------------------
   const FACTORY_PRESETS = [
     // 1. Existing Official ERP BOM Kit Layout
@@ -37,16 +42,16 @@
       canvasPreset: 'A4_portrait',
       paperSize: 'A4',
       orientation: 'portrait',
-      margins: { top: 7, bottom: 7, left: 8, right: 8 },
+      margins: { top: 8, bottom: 8, left: 6, right: 6 },
       fontFamily: "'Calibri Light', Calibri, 'Segoe UI', Arial, sans-serif",
       baseFontSize: '9.0pt',
       rowPadding: '1.2px 3.5px',
+      tableHeadBg: '#666699',
+      tableHeadColor: '#ffffff',
       sectionHeaderBg: '#f2f2f2',
       sectionHeaderColor: '#000000',
       sectionHeaderFontSize: '9.6pt',
       sectionHeaderPadding: '1.8px 3.5px',
-      tableHeadBg: '#666699',
-      tableHeadColor: '#ffffff',
       borderWidth: '1px',
       borderColor: '#000000',
       printScale: 1.0,
@@ -56,8 +61,13 @@
       logoAlign: 'left',
       headerTitle: 'BILL OF MATERIAL (BOM)',
       headerSubtitle: 'Solar System Components & Kit Specification Sheet',
-      showKwBox: true,
-      watermark: { show: false, text: 'ORIGINAL', opacity: 0.12, angle: -30, color: '#3b8ed0', fontSize: '42pt' },
+      titleStyles: { fontSize: '13.5pt', fontWeight: '900', color: '#000000' },
+      subtitleStyles: { fontSize: '8.5pt', fontWeight: '400', color: '#444444' },
+      tableHeadStyles: { fontSize: '9.2pt', fontWeight: '700', color: '#ffffff', bg: '#666699' },
+      categoryStyles: { fontSize: '9.6pt', fontWeight: '700', color: '#000000', bg: '#f2f2f2' },
+      dataStyles: { fontSize: '9.0pt', fontWeight: '400', color: '#000000', padding: '1.2px 3.5px' },
+      totalStyles: { fontSize: '9.5pt', fontWeight: '800', color: '#000000', bg: '#fafafa' },
+      watermark: { show: false, text: 'ORIGINAL', opacity: 0.10, angle: -30, color: '#3b8ed0', fontSize: '42pt' },
       showSignatures: true,
       signatures: [
         { title: 'Store Incharge Sign' },
@@ -86,14 +96,16 @@
       paperSize: 'A4',
       orientation: 'landscape',
       isDualCopy: true,
-      margins: { top: 12, bottom: 5, left: 5, right: 5 },
+      margins: { top: 8, bottom: 6, left: 6, right: 6 },
       fontFamily: "Calibri, Carlito, 'Segoe UI', Arial, sans-serif",
-      baseFontSize: '9.2pt',
+      baseFontSize: '9.0pt',
       rowPadding: '1.5px 3px',
+      tableHeadBg: '#f2f4f7',
+      tableHeadColor: '#000000',
       sectionHeaderBg: '#f2f4f7',
       sectionHeaderColor: '#000000',
-      sectionHeaderFontSize: '9.4pt',
-      sectionHeaderPadding: '2.5px 4px',
+      sectionHeaderFontSize: '9.2pt',
+      sectionHeaderPadding: '2px 4px',
       borderWidth: '1px',
       borderColor: '#000000',
       printScale: 1.0,
@@ -103,7 +115,13 @@
       logoAlign: 'center',
       headerTitle: 'DELIVERY CHALLAN',
       headerSubtitle: '',
-      watermark: { show: false, text: 'DUPLICATE', opacity: 0.1, angle: -25, color: '#e67e22', fontSize: '36pt' },
+      titleStyles: { fontSize: '13pt', fontWeight: '900', color: '#000000' },
+      subtitleStyles: { fontSize: '8pt', fontWeight: '400', color: '#444444' },
+      tableHeadStyles: { fontSize: '9pt', fontWeight: '700', color: '#000000', bg: '#f2f4f7' },
+      categoryStyles: { fontSize: '9.2pt', fontWeight: '700', color: '#000000', bg: '#f2f4f7' },
+      dataStyles: { fontSize: '9.0pt', fontWeight: '400', color: '#000000', padding: '1.5px 3px' },
+      totalStyles: { fontSize: '9.2pt', fontWeight: '800', color: '#000000', bg: '#f9f9f9' },
+      watermark: { show: false, text: 'DUPLICATE', opacity: 0.10, angle: -25, color: '#e67e22', fontSize: '36pt' },
       showSignatures: true,
       signatures: [
         { title: 'Issued By (Store Incharge)' },
@@ -120,7 +138,7 @@
       ]
     },
 
-    // 3. New Official Modern Executive Solar BOQ
+    // 3. Modern Executive Solar BOQ
     {
       id: 'bom_modern_corporate',
       name: 'Modern Executive Solar BOQ (Navy & Cyan)',
@@ -131,24 +149,30 @@
       orientation: 'portrait',
       margins: { top: 8, bottom: 8, left: 6, right: 6 },
       fontFamily: "'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif",
-      baseFontSize: '9.5pt',
-      rowPadding: '2.8px 5px',
-      sectionHeaderBg: '#0f172a',
-      sectionHeaderColor: '#38bdf8',
-      sectionHeaderFontSize: '9.8pt',
-      sectionHeaderPadding: '4px 8px',
-      tableHeadBg: '#1e293b',
+      baseFontSize: '9.2pt',
+      rowPadding: '2.5px 5px',
+      tableHeadBg: '#0f172a',
       tableHeadColor: '#ffffff',
+      sectionHeaderBg: '#1e293b',
+      sectionHeaderColor: '#38bdf8',
+      sectionHeaderFontSize: '9.6pt',
+      sectionHeaderPadding: '3.5px 7px',
       borderWidth: '1px',
       borderColor: '#334155',
       printScale: 0.98,
       autoFitOnePage: true,
       showLogo: true,
-      logoWidth: '155px',
+      logoWidth: '150px',
       logoAlign: 'left',
       headerTitle: 'SOLAR SYSTEM BILL OF QUANTITIES (BOQ)',
       headerSubtitle: 'High-Efficiency Solar Power System Engineering Specification',
-      watermark: { show: false, text: 'APPROVED', opacity: 0.08, angle: -35, color: '#2ecc71', fontSize: '48pt' },
+      titleStyles: { fontSize: '13.5pt', fontWeight: '900', color: '#0f172a' },
+      subtitleStyles: { fontSize: '8.5pt', fontWeight: '500', color: '#475569' },
+      tableHeadStyles: { fontSize: '9.2pt', fontWeight: '800', color: '#ffffff', bg: '#0f172a' },
+      categoryStyles: { fontSize: '9.6pt', fontWeight: '800', color: '#38bdf8', bg: '#1e293b' },
+      dataStyles: { fontSize: '9.2pt', fontWeight: '400', color: '#0f172a', padding: '2.5px 5px' },
+      totalStyles: { fontSize: '9.5pt', fontWeight: '800', color: '#0f172a', bg: '#f1f5f9' },
+      watermark: { show: false, text: 'APPROVED', opacity: 0.08, angle: -35, color: '#2ecc71', fontSize: '46pt' },
       showSignatures: true,
       signatures: [
         { title: 'Design Engineer' },
@@ -167,7 +191,7 @@
       ]
     },
 
-    // 4. New Official Single-Page Detailed Delivery Challan (Portrait)
+    // 4. Single-Page Detailed Delivery Challan (Portrait)
     {
       id: 'challan_single_portrait',
       name: 'Detailed Single Copy Delivery Challan (Portrait)',
@@ -176,26 +200,32 @@
       canvasPreset: 'A4_portrait',
       paperSize: 'A4',
       orientation: 'portrait',
-      margins: { top: 10, bottom: 10, left: 8, right: 8 },
+      margins: { top: 8, bottom: 8, left: 6, right: 6 },
       fontFamily: "'Segoe UI', Roboto, Arial, sans-serif",
-      baseFontSize: '9.6pt',
-      rowPadding: '3px 5px',
-      sectionHeaderBg: '#f0fdf4',
-      sectionHeaderColor: '#166534',
-      sectionHeaderFontSize: '10pt',
-      sectionHeaderPadding: '4px 6px',
+      baseFontSize: '9.2pt',
+      rowPadding: '2.5px 5px',
       tableHeadBg: '#15803d',
       tableHeadColor: '#ffffff',
+      sectionHeaderBg: '#f0fdf4',
+      sectionHeaderColor: '#166534',
+      sectionHeaderFontSize: '9.6pt',
+      sectionHeaderPadding: '3px 6px',
       borderWidth: '1px',
       borderColor: '#000000',
       printScale: 1.0,
       autoFitOnePage: true,
       showLogo: true,
-      logoWidth: '150px',
+      logoWidth: '140px',
       logoAlign: 'left',
       headerTitle: 'DELIVERY CHALLAN & DISPATCH VOUCHER',
       headerSubtitle: 'Issued under Rule 55 of GST (Transportation of Goods without Invoice)',
-      watermark: { show: false, text: 'DISPATCHED', opacity: 0.1, angle: -30, color: '#16a34a', fontSize: '40pt' },
+      titleStyles: { fontSize: '13.5pt', fontWeight: '900', color: '#166534' },
+      subtitleStyles: { fontSize: '8.5pt', fontWeight: '500', color: '#334155' },
+      tableHeadStyles: { fontSize: '9.2pt', fontWeight: '800', color: '#ffffff', bg: '#15803d' },
+      categoryStyles: { fontSize: '9.6pt', fontWeight: '800', color: '#166534', bg: '#f0fdf4' },
+      dataStyles: { fontSize: '9.2pt', fontWeight: '400', color: '#000000', padding: '2.5px 5px' },
+      totalStyles: { fontSize: '9.5pt', fontWeight: '800', color: '#000000', bg: '#f9fbf9' },
+      watermark: { show: false, text: 'DISPATCHED', opacity: 0.09, angle: -30, color: '#16a34a', fontSize: '42pt' },
       showSignatures: true,
       signatures: [
         { title: 'Store Dispatcher' },
@@ -213,7 +243,7 @@
       ]
     },
 
-    // 5. Official Standard GST Tax Invoice
+    // 5. Standard GST Tax Invoice
     {
       id: 'invoice_gst_standard',
       name: 'Standard GST Tax Invoice (B2B / B2C)',
@@ -224,14 +254,14 @@
       orientation: 'portrait',
       margins: { top: 8, bottom: 8, left: 6, right: 6 },
       fontFamily: "'Segoe UI', Calibri, Arial, sans-serif",
-      baseFontSize: '9.2pt',
-      rowPadding: '2.5px 4px',
-      sectionHeaderBg: '#f8fafc',
-      sectionHeaderColor: '#0f172a',
-      sectionHeaderFontSize: '9.5pt',
-      sectionHeaderPadding: '3px 6px',
+      baseFontSize: '9.0pt',
+      rowPadding: '2px 4px',
       tableHeadBg: '#1e293b',
       tableHeadColor: '#ffffff',
+      sectionHeaderBg: '#f8fafc',
+      sectionHeaderColor: '#0f172a',
+      sectionHeaderFontSize: '9.4pt',
+      sectionHeaderPadding: '3px 6px',
       borderWidth: '1px',
       borderColor: '#000000',
       printScale: 0.98,
@@ -241,6 +271,12 @@
       logoAlign: 'left',
       headerTitle: 'TAX INVOICE',
       headerSubtitle: 'Original for Recipient',
+      titleStyles: { fontSize: '14pt', fontWeight: '900', color: '#0f172a' },
+      subtitleStyles: { fontSize: '8.5pt', fontWeight: '500', color: '#64748b' },
+      tableHeadStyles: { fontSize: '9pt', fontWeight: '800', color: '#ffffff', bg: '#1e293b' },
+      categoryStyles: { fontSize: '9.4pt', fontWeight: '800', color: '#0f172a', bg: '#f8fafc' },
+      dataStyles: { fontSize: '9.0pt', fontWeight: '400', color: '#000000', padding: '2px 4px' },
+      totalStyles: { fontSize: '9.5pt', fontWeight: '800', color: '#000000', bg: '#f1f5f9' },
       watermark: { show: false, text: 'TAX INVOICE', opacity: 0.08, angle: -30, color: '#000000', fontSize: '42pt' },
       showSignatures: true,
       signatures: [
@@ -272,12 +308,12 @@
       fontFamily: "'Courier New', Courier, monospace",
       baseFontSize: '8.5pt',
       rowPadding: '1.5px 2px',
+      tableHeadBg: '#f1f5f9',
+      tableHeadColor: '#000000',
       sectionHeaderBg: '#e2e8f0',
       sectionHeaderColor: '#000000',
       sectionHeaderFontSize: '8.8pt',
       sectionHeaderPadding: '2px 3px',
-      tableHeadBg: '#f1f5f9',
-      tableHeadColor: '#000000',
       borderWidth: '1px',
       borderColor: '#000000',
       printScale: 1.0,
@@ -287,6 +323,12 @@
       logoAlign: 'center',
       headerTitle: 'DISPATCH GATE PASS',
       headerSubtitle: 'Store Outward Verification Slip',
+      titleStyles: { fontSize: '11pt', fontWeight: '900', color: '#000000' },
+      subtitleStyles: { fontSize: '8pt', fontWeight: '400', color: '#333333' },
+      tableHeadStyles: { fontSize: '8.5pt', fontWeight: '700', color: '#000000', bg: '#f1f5f9' },
+      categoryStyles: { fontSize: '8.8pt', fontWeight: '700', color: '#000000', bg: '#e2e8f0' },
+      dataStyles: { fontSize: '8.5pt', fontWeight: '400', color: '#000000', padding: '1.5px 2px' },
+      totalStyles: { fontSize: '8.8pt', fontWeight: '800', color: '#000000', bg: '#f1f5f9' },
       watermark: { show: false, text: '', opacity: 0, angle: 0, color: '#000', fontSize: '20pt' },
       showSignatures: true,
       signatures: [
@@ -314,6 +356,7 @@
         const userTemplates = raw ? JSON.parse(raw) : [];
         const merged = [...FACTORY_PRESETS];
         userTemplates.forEach((ut) => {
+          if (!ut || !ut.id) return;
           const idx = merged.findIndex((m) => m.id === ut.id);
           if (idx >= 0) merged[idx] = ut;
           else merged.push(ut);
@@ -325,13 +368,16 @@
     },
 
     getTemplatesByDocType(docType) {
-      if (!docType || docType === 'all') return this.getAllTemplates();
-      return this.getAllTemplates().filter((t) => t.docType === docType);
+      const all = this.getAllTemplates();
+      if (!docType || docType === 'all') return all;
+      return all.filter((t) => t.docType === docType);
     },
 
     getTemplateById(id) {
-      if (!id) return this.getAllTemplates()[0];
-      return this.getAllTemplates().find((t) => t.id === id) || this.getAllTemplates()[0];
+      const all = this.getAllTemplates();
+      if (!id) return all[0];
+      const match = all.find((t) => t.id === id);
+      return match || all[0];
     },
 
     getActiveTemplate(docType) {
@@ -404,7 +450,7 @@
     },
 
     // -------------------------------------------------------------------------
-    // 4. DYNAMIC HTML RENDERING ENGINE (Multi-Canvas, Watermark & Placeholders)
+    // 4. DYNAMIC HTML RENDERING ENGINE (Multi-Canvas, Base64 Images & Granular Styles)
     // -------------------------------------------------------------------------
     renderDocumentHtml(docType, data, customTemplate) {
       const tpl = customTemplate || this.getActiveTemplate(docType);
@@ -413,21 +459,17 @@
 
       // Determine canvas geometry
       let pageSizeCss = isLandscape ? '297mm 210mm' : '210mm 297mm';
-      let sheetWidthCss = isLandscape ? '282mm' : '198mm';
+      let sheetPaddingCss = `${m.top}mm ${m.right}mm ${m.bottom}mm ${m.left}mm`;
 
       if (tpl.canvasPreset === 'A5_portrait') {
         pageSizeCss = '148mm 210mm';
-        sheetWidthCss = '136mm';
       } else if (tpl.canvasPreset === 'A5_landscape') {
         pageSizeCss = '210mm 148mm';
-        sheetWidthCss = '198mm';
       } else if (tpl.canvasPreset === 'POS80') {
         pageSizeCss = '80mm 220mm';
-        sheetWidthCss = '74mm';
       } else if (tpl.canvasPreset === 'custom' && tpl.customWidth && tpl.customHeight) {
         const u = tpl.paperUnit || 'mm';
         pageSizeCss = `${tpl.customWidth}${u} ${tpl.customHeight}${u}`;
-        sheetWidthCss = `${tpl.customWidth - (m.left + m.right)}${u}`;
       }
 
       // Variable Replacement Context
@@ -508,10 +550,18 @@
       let totalQty = 0;
       let totalAmount = 0;
 
+      // Extract granular typography styles
+      const titleSt = tpl.titleStyles || { fontSize: '13.5pt', fontWeight: '900', color: '#000000' };
+      const subSt = tpl.subtitleStyles || { fontSize: '8.5pt', fontWeight: '400', color: '#444444' };
+      const headSt = tpl.tableHeadStyles || { fontSize: tpl.baseFontSize || '9.2pt', fontWeight: '800', color: tpl.tableHeadColor || '#ffffff', bg: tpl.tableHeadBg || '#666699' };
+      const catSt = tpl.categoryStyles || { fontSize: tpl.sectionHeaderFontSize || '9.6pt', fontWeight: '700', color: tpl.sectionHeaderColor || '#000000', bg: tpl.sectionHeaderBg || '#f2f2f2' };
+      const dataSt = tpl.dataStyles || { fontSize: tpl.baseFontSize || '9.0pt', fontWeight: '400', color: '#000000', padding: tpl.rowPadding || '1.5px 3.5px' };
+      const totSt = tpl.totalStyles || { fontSize: '9.5pt', fontWeight: '800', color: '#000000', bg: '#fafafa' };
+
       sections.forEach((sec) => {
         if (sec.name) {
-          tableRowsHtml += '<tr class="sec-header-row" style="background:' + (tpl.sectionHeaderBg || '#f2f4f7') + ' !important; -webkit-print-color-adjust:exact;">' +
-            '<td colspan="' + visibleCols.length + '" style="padding:' + (tpl.sectionHeaderPadding || '3px 6px') + '; font-size:' + (tpl.sectionHeaderFontSize || '9.5pt') + '; font-weight:800; color:' + (tpl.sectionHeaderColor || '#000000') + '; border:' + (tpl.borderWidth || '1px') + ' solid ' + (tpl.borderColor || '#000000') + '; letter-spacing:0.3px;">' +
+          tableRowsHtml += '<tr class="sec-header-row" style="background:' + (catSt.bg || tpl.sectionHeaderBg || '#f2f2f2') + ' !important; -webkit-print-color-adjust:exact;">' +
+            '<td colspan="' + visibleCols.length + '" style="padding:' + (tpl.sectionHeaderPadding || '2px 5px') + '; font-size:' + (catSt.fontSize || tpl.sectionHeaderFontSize || '9.6pt') + '; font-weight:' + (catSt.fontWeight || '700') + '; color:' + (catSt.color || tpl.sectionHeaderColor || '#000000') + '; border:' + (tpl.borderWidth || '1px') + ' solid ' + (tpl.borderColor || '#000000') + '; letter-spacing:0.3px;">' +
             sec.name +
             '</td></tr>';
         }
@@ -537,7 +587,7 @@
             else if (col.key === 'remarks') val = it.remarks || '-';
             else val = it[col.key] || '-';
 
-            tableRowsHtml += '<td style="padding:' + (tpl.rowPadding || '2px 4px') + '; text-align:' + (col.align || 'left') + '; border:' + (tpl.borderWidth || '1px') + ' solid ' + (tpl.borderColor || '#000000') + '; font-size:' + (tpl.baseFontSize || '9.6pt') + '; vertical-align:middle;">' +
+            tableRowsHtml += '<td style="padding:' + (dataSt.padding || tpl.rowPadding || '2px 4px') + '; text-align:' + (col.align || 'left') + '; border:' + (tpl.borderWidth || '1px') + ' solid ' + (tpl.borderColor || '#000000') + '; font-size:' + (dataSt.fontSize || tpl.baseFontSize || '9.0pt') + '; font-weight:' + (dataSt.fontWeight || '400') + '; color:' + (dataSt.color || '#000000') + '; vertical-align:middle;">' +
               val +
               '</td>';
           });
@@ -547,26 +597,47 @@
 
       // Total summary row
       const isInvoice = tpl.docType === 'invoice';
-      tableRowsHtml += '<tr class="total-row" style="background:#fafafa; font-weight:800; -webkit-print-color-adjust:exact;">' +
-        '<td colspan="' + Math.max(1, visibleCols.length - (isInvoice ? 2 : 2)) + '" style="padding:' + (tpl.rowPadding || '3px 4px') + '; text-align:right; border:' + (tpl.borderWidth || '1px') + ' solid ' + (tpl.borderColor || '#000000') + '; font-size:' + (tpl.baseFontSize || '9.6pt') + ';\">' +
+      tableRowsHtml += '<tr class="total-row" style="background:' + (totSt.bg || '#fafafa') + '; font-weight:' + (totSt.fontWeight || '800') + '; color:' + (totSt.color || '#000000') + '; -webkit-print-color-adjust:exact;">' +
+        '<td colspan="' + Math.max(1, visibleCols.length - (isInvoice ? 2 : 2)) + '" style="padding:' + (tpl.rowPadding || '3px 4px') + '; text-align:right; border:' + (tpl.borderWidth || '1px') + ' solid ' + (tpl.borderColor || '#000000') + '; font-size:' + (totSt.fontSize || tpl.baseFontSize || '9.5pt') + ';\">' +
         (isInvoice ? 'TOTAL INVOICE AMOUNT:' : 'TOTAL DISPATCH QUANTITY:') +
         '</td>' +
-        '<td style="padding:' + (tpl.rowPadding || '3px 4px') + '; text-align:right; border:' + (tpl.borderWidth || '1px') + ' solid ' + (tpl.borderColor || '#000000') + '; font-size:' + (tpl.baseFontSize || '9.6pt') + ';\">' +
+        '<td style="padding:' + (tpl.rowPadding || '3px 4px') + '; text-align:right; border:' + (tpl.borderWidth || '1px') + ' solid ' + (tpl.borderColor || '#000000') + '; font-size:' + (totSt.fontSize || tpl.baseFontSize || '9.5pt') + ';\">' +
         (isInvoice ? ('₹' + totalAmount.toLocaleString('en-IN')) : totalQty) +
         '</td>' +
-        '<td style="padding:' + (tpl.rowPadding || '3px 4px') + '; text-align:center; border:' + (tpl.borderWidth || '1px') + ' solid ' + (tpl.borderColor || '#000000') + '; font-size:' + (tpl.baseFontSize || '9.6pt') + ';\">' +
+        '<td style="padding:' + (tpl.rowPadding || '3px 4px') + '; text-align:center; border:' + (tpl.borderWidth || '1px') + ' solid ' + (tpl.borderColor || '#000000') + '; font-size:' + (totSt.fontSize || tpl.baseFontSize || '9.5pt') + ';\">' +
         (isInvoice ? 'INR' : 'ITEMS') +
         '</td>' +
       '</tr>';
 
-      const colHeadersHtml = visibleCols.map((c) => '<th style="width:' + (c.width || 'auto') + '; text-align:' + (c.align || 'left') + '; padding:' + (tpl.rowPadding || '3px 4px') + '; border:' + (tpl.borderWidth || '1px') + ' solid ' + (tpl.borderColor || '#000000') + '; background:' + (tpl.tableHeadBg || '#f2f4f7') + '; color:' + (tpl.tableHeadColor || '#000000') + '; font-size:' + (tpl.baseFontSize || '9.6pt') + '; font-weight:800; -webkit-print-color-adjust:exact;">' + c.label + '</th>').join('');
+      const colHeadersHtml = visibleCols.map((c) => '<th style="width:' + (c.width || 'auto') + '; text-align:' + (c.align || 'left') + '; padding:' + (tpl.rowPadding || '3px 4px') + '; border:' + (tpl.borderWidth || '1px') + ' solid ' + (tpl.borderColor || '#000000') + '; background:' + (headSt.bg || tpl.tableHeadBg || '#666699') + '; color:' + (headSt.color || tpl.tableHeadColor || '#ffffff') + '; font-size:' + (headSt.fontSize || tpl.baseFontSize || '9.2pt') + '; font-weight:' + (headSt.fontWeight || '800') + '; -webkit-print-color-adjust:exact;">' + c.label + '</th>').join('');
 
-      const sigsHtml = (tpl.signatures || []).map((s) => '<div style="flex:1; text-align:center; padding:12px 4px 0 4px; border-top:1px solid #000000;"><div style="font-size:8.5pt; font-weight:700;">' + (s.title || 'Authorized Signatory') + '</div></div>').join('');
+      // Custom base64 or stock logo
+      const logoSrc = tpl.customLogoData || 'assets/logo.png';
+      const logoHtml = tpl.showLogo ? `
+        <div style="flex:0 0 ${tpl.logoWidth || '140px'}; text-align:${tpl.logoAlign || 'left'};">
+          <img src="${logoSrc}" alt="Logo" style="max-width:100%; max-height:55px; object-fit:contain;">
+        </div>
+      ` : '';
+
+      // Signatures with optional custom signature image
+      const sigsHtml = (tpl.signatures || []).map((s) => `
+        <div style="flex:1; text-align:center; padding:8px 4px 0 4px; border-top:1px solid #000000; position:relative;">
+          ${tpl.customSignData ? `<img src="${tpl.customSignData}" alt="Sign" style="height:32px; max-width:80px; object-fit:contain; margin-bottom:2px; display:block; margin:0 auto;">` : ''}
+          <div style="font-size:8.5pt; font-weight:700;">${s.title || 'Authorized Signatory'}</div>
+        </div>
+      `).join('');
 
       const wm = tpl.watermark || {};
       const watermarkHtml = (wm.show && wm.text) ? `
-        <div style="position:fixed; top:45%; left:50%; transform:translate(-50%, -50%) rotate(${wm.angle || -30}deg); font-size:${wm.fontSize || '48pt'}; font-weight:900; color:${wm.color || '#000000'}; opacity:${wm.opacity || 0.08}; pointer-events:none; z-index:0; white-space:nowrap; text-transform:uppercase; letter-spacing:4px;">
+        <div style="position:fixed; top:48%; left:50%; transform:translate(-50%, -50%) rotate(${wm.angle || -30}deg); font-size:${wm.fontSize || '44pt'}; font-weight:900; color:${wm.color || '#3b8ed0'}; opacity:${wm.opacity || 0.10}; pointer-events:none; z-index:0; white-space:nowrap; text-transform:uppercase; letter-spacing:4px;">
           ${wm.text}
+        </div>
+      ` : '';
+
+      // Stamp Image
+      const stampHtml = tpl.customStampData ? `
+        <div style="position:absolute; bottom:45px; right:35px; pointer-events:none; opacity:0.85; z-index:2;">
+          <img src="${tpl.customStampData}" alt="Stamp" style="width:75px; height:75px; object-fit:contain;">
         </div>
       ` : '';
 
@@ -578,9 +649,9 @@
           '<style>' +
             '@page { size: ' + pageSizeCss + '; margin: ' + m.top + 'mm ' + m.right + 'mm ' + m.bottom + 'mm ' + m.left + 'mm; }' +
             '* { box-sizing: border-box; margin: 0; padding: 0; }' +
-            'html, body { background: #ffffff; width: 100%; height: 100%; font-family: ' + tpl.fontFamily + '; color: #000000; -webkit-print-color-adjust: exact; print-color-adjust: exact; position: relative; }' +
-            '.print-sheet { width: ' + sheetWidthCss + '; margin: 0 auto; background: #ffffff; display: flex; flex-direction: column; justify-content: space-between; transform-origin: top center; position: relative; ' + (tpl.printScale && tpl.printScale !== 1.0 ? 'transform: scale(' + tpl.printScale + ');' : '') + ' }' +
-            'table { width: 100%; border-collapse: collapse; margin-top: 6px; margin-bottom: 6px; }' +
+            'html, body { background: #ffffff; width: 100%; min-height: 100%; font-family: ' + tpl.fontFamily + '; color: #000000; -webkit-print-color-adjust: exact; print-color-adjust: exact; position: relative; }' +
+            '.print-sheet { width: 100%; min-height: 100%; padding: ' + sheetPaddingCss + '; margin: 0 auto; background: #ffffff; display: flex; flex-direction: column; justify-content: space-between; transform-origin: top center; position: relative; ' + (tpl.printScale && tpl.printScale !== 1.0 ? 'transform: scale(' + tpl.printScale + ');' : '') + ' }' +
+            'table { width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 5px; }' +
             '@media print { body { background: #ffffff !important; } .no-print { display: none !important; } }' +
           '</style>' +
         '</head>' +
@@ -589,12 +660,12 @@
           '<div class="print-sheet" id="printSheetRoot">' +
             '<div style="border-bottom:2px solid #000000; padding-bottom:6px; margin-bottom:6px;">' +
               '<div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">' +
-                (tpl.showLogo ? '<div style="flex:0 0 ' + (tpl.logoWidth || '140px') + '; text-align:' + (tpl.logoAlign || 'left') + ';"><img src="assets/logo.png" alt="Logo" style="max-width:100%; max-height:48px; object-fit:contain;"></div>' : '') +
+                logoHtml +
                 '<div style="flex:1; text-align:center;">' +
-                  '<h1 style="font-size:13.5pt; font-weight:900; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:2px;">' + replaceVars(tpl.headerTitle) + '</h1>' +
-                  (tpl.headerSubtitle ? '<div style="font-size:8.5pt; color:#444;">' + replaceVars(tpl.headerSubtitle) + '</div>' : '') +
+                  '<h1 style="font-size:' + (titleSt.fontSize || '13.5pt') + '; font-weight:' + (titleSt.fontWeight || '900') + '; color:' + (titleSt.color || '#000000') + '; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:2px;">' + replaceVars(tpl.headerTitle) + '</h1>' +
+                  (tpl.headerSubtitle ? '<div style="font-size:' + (subSt.fontSize || '8.5pt') + '; font-weight:' + (subSt.fontWeight || '400') + '; color:' + (subSt.color || '#444444') + ';">' + replaceVars(tpl.headerSubtitle) + '</div>' : '') +
                 '</div>' +
-                '<div style="flex:0 0 160px; text-align:right; font-size:8pt; line-height:1.3;">' +
+                '<div style="flex:0 0 170px; text-align:right; font-size:8.2pt; line-height:1.35;">' +
                   '<div><strong>Doc No:</strong> ' + project.docNo + '</div>' +
                   '<div><strong>Date:</strong> ' + project.docDate + '</div>' +
                   (project.capacity ? '<div><strong>Capacity:</strong> ' + project.capacity + '</div>' : '') +
@@ -609,11 +680,12 @@
               '<thead><tr>' + colHeadersHtml + '</tr></thead>' +
               '<tbody>' + tableRowsHtml + '</tbody>' +
             '</table>' +
-            '<div style="margin-top:auto; padding-top:8px;">' +
-              (tpl.showFooterNotes && tpl.footerNotes ? '<div style="font-size:7.5pt; color:#444; margin-bottom:12px; font-style:italic; line-height:1.2;">* ' + replaceVars(tpl.footerNotes) + '</div>' : '') +
-              (tpl.showSignatures ? '<div style="display:flex; justify-content:space-between; gap:24px; margin-top:14px;">' + sigsHtml + '</div>' : '') +
-              '<div style="text-align:center; font-size:7pt; color:#777; margin-top:8px; border-top:0.5px solid #ccc; padding-top:3px;">' +
-                'Eco Green Solar Enterprise ERP • Page 1 of 1 • System Generated Official Document' +
+            stampHtml +
+            '<div style="margin-top:auto; padding-top:6px;">' +
+              (tpl.showFooterNotes && tpl.footerNotes ? '<div style="font-size:7.5pt; color:#444; margin-bottom:10px; font-style:italic; line-height:1.2;">* ' + replaceVars(tpl.footerNotes) + '</div>' : '') +
+              (tpl.showSignatures ? '<div style="display:flex; justify-content:space-between; gap:20px; margin-top:10px;">' + sigsHtml + '</div>' : '') +
+              '<div style="text-align:center; font-size:7pt; color:#777; margin-top:6px; border-top:0.5px solid #ccc; padding-top:3px;">' +
+                'Eco Green Solar Enterprise ERP • System Generated Official Document' +
               '</div>' +
             '</div>' +
           '</div>' +
