@@ -7,7 +7,7 @@ if (!process.env.JWT_SECRET) {
 }
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '3650d'; // ~10 years — session ends only on explicit logout / remote revoke
 const PUBLIC_API_PATHS = new Set([
-  '/api/health', '/api/auth/login', '/api/auth/verify-otp', '/api/auth/resend-otp',
+  '/api/health', '/api/public/tenant-branding', '/api/auth/login', '/api/auth/verify-otp', '/api/auth/resend-otp',
   '/api/auth/register', '/api/auth/verify-register-otp', '/api/auth/forgot-password',
   '/api/auth/reset-password', '/api/auth/logout',
 ]);
@@ -28,7 +28,7 @@ function issueToken(username, role, jti) {
 
 function authenticateToken(req, res, next) {
   if (!req.path.startsWith('/api/')) return next();
-  if (PUBLIC_API_PATHS.has(req.path)) return next();
+  if (PUBLIC_API_PATHS.has(req.path) || req.path.startsWith('/api/public/')) return next();
 
   const header = req.headers['authorization'] || '';
   const token = header.startsWith('Bearer ') ? header.slice(7).trim() : null;

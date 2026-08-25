@@ -47,6 +47,9 @@ const registerBomKitsRoutes = require('./routes/bom_kits.routes');
 const registerSerialExcelRoutes = require('./routes/serial_excel.routes');
 const registerVouchersRoutes = require('./routes/vouchers.routes');
 const { registerAuditRoutes, logAuditEvent } = require('./routes/audit.routes');
+const { resolveTenant, requireTenantFeature } = require('./middleware/tenant.middleware');
+const registerPublicBrandingRoutes = require('./routes/public_branding.routes');
+const registerSaaSTenantsRoutes = require('./routes/saas_tenants.routes');
 
 // =====================================================================
 // PROCESS SAFETY & CRASH GUARDS
@@ -92,6 +95,7 @@ app.use('/api/', mutationLimiter);
 
 // Parse JSON payloads (20mb for bulk uploads/serials)
 app.use(express.json({ limit: '20mb' }));
+app.use(resolveTenant);
 app.use(authenticateToken);
 
 // 3. Static Asset Edge & Browser Caching
@@ -124,6 +128,7 @@ const deps = {
   invalidateVoucherCaches,
   syncStockSummary,
   requireRole,
+  requireTenantFeature,
   issueToken,
   hashPassword,
   verifyPassword,
@@ -147,6 +152,8 @@ const deps = {
   logAuditEvent
 };
 
+registerPublicBrandingRoutes(app, deps);
+registerSaaSTenantsRoutes(app, deps);
 registerAttachmentRoutes(app, deps);
 registerHealthRoutes(app, deps);
 registerAuthRoutes(app, deps);

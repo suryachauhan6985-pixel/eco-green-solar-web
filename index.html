@@ -83,8 +83,8 @@
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="brand-inner">
-        <div class="brand-card">
-          <img src="assets/logo.png" alt="Eco Green Solar" class="brand-logo-img">
+        <div class="brand-card tenant-logo-slot">
+          <img src="assets/logo.png" alt="Eco Green Solar" class="brand-logo-img tenant-brand-logo">
         </div>
         <div class="brand-badge-pill">
           <span class="brand-live-pulse"></span>
@@ -109,8 +109,8 @@
     <button class="hamburger" onclick="openSidebar()"><i class="fa-solid fa-bars"></i></button>
     <div class="brand">
       <div class="brand-inner">
-        <div class="brand-card">
-          <img src="assets/logo.png" alt="Eco Green Solar" class="brand-logo-img">
+        <div class="brand-card tenant-logo-slot">
+          <img src="assets/logo.png" alt="Eco Green Solar" class="brand-logo-img tenant-brand-logo">
         </div>
         <div class="brand-badge-pill">
           <span class="brand-live-pulse"></span>
@@ -187,6 +187,8 @@
 <script src="js/data/vehicle-validator.js?v=1"></script>
 <!-- Offline GSTIN and Indian Mobile Number Validators -->
 <script src="js/data/validators.js?v=1"></script>
+<!-- Multi-Tenant Context, Dynamic Theming & Terminology Hook Engine -->
+<script src="js/data/tenant-context.js?v=1"></script>
 <!-- Centralized ERP Configuration & Business Engine -->
 <script src="js/data/config-engine.js?v=3"></script>
 <!-- Enterprise Skeleton Loading & UI State Machine -->
@@ -207,6 +209,7 @@
 <script src="js/pages/partyledger.js?v=37"></script>
 <script src="js/pages/lowstock.js?v=6"></script>
 <script src="js/pages/backup.js?v=5"></script>
+<script src="js/pages/saas_tenants.js?v=1"></script>
 <!-- bom.js was split into multiple files (was 3340 lines) — helpers/Challan
      logic must load BEFORE the new bom-*.js modules, and all of those must
      load BEFORE the main bom.js page module, which wires them together via
@@ -222,7 +225,7 @@
 <script src="js/pages/bom-dispatch.js?v=16"></script>
 <script src="js/pages/bom.js?v=44"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
-<script src="js/app.js?v=106"></script>
+<script src="js/app.js?v=107"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

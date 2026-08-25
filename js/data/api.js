@@ -96,7 +96,18 @@ window.Api = {
       }
     }
 
-    const init = { method: 'GET' };
+    function getApiHeaders(customHeaders = {}) {
+      const headers = { 'Content-Type': 'application/json', ...customHeaders };
+      const tenantSlug = localStorage.getItem('egs_tenant_slug') || 'default';
+      headers['x-tenant-slug'] = tenantSlug;
+      const token = localStorage.getItem('egs_auth_token') || sessionStorage.getItem('egs_auth_token');
+      if (token && !headers['Authorization']) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      return headers;
+    }
+
+    const init = { method: 'GET', headers: getApiHeaders(opts && opts.headers) };
     if (opts && opts.silent) init.egsSilent = true;
     const res = await fetch(`${window.API_BASE}${path}`, init);
     const data = await parseApiResponse(res, path);
@@ -106,29 +117,56 @@ window.Api = {
     }
     return data;
   },
-  async post(path, body) {
+  async post(path, body, opts = {}) {
     clearClientApiCache();
+    const tenantSlug = localStorage.getItem('egs_tenant_slug') || 'default';
+    const token = localStorage.getItem('egs_auth_token') || sessionStorage.getItem('egs_auth_token');
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-tenant-slug': tenantSlug,
+      ...(opts.headers || {})
+    };
+    if (token && !headers['Authorization']) headers['Authorization'] = `Bearer ${token}`;
+
     const res = await fetch(`${window.API_BASE}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(body || {}),
     });
     return parseApiResponse(res, path);
   },
-  async put(path, body) {
+  async put(path, body, opts = {}) {
     clearClientApiCache();
+    const tenantSlug = localStorage.getItem('egs_tenant_slug') || 'default';
+    const token = localStorage.getItem('egs_auth_token') || sessionStorage.getItem('egs_auth_token');
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-tenant-slug': tenantSlug,
+      ...(opts.headers || {})
+    };
+    if (token && !headers['Authorization']) headers['Authorization'] = `Bearer ${token}`;
+
     const res = await fetch(`${window.API_BASE}${path}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(body || {}),
     });
     return parseApiResponse(res, path);
   },
-  async delete(path, body) {
+  async delete(path, body, opts = {}) {
     clearClientApiCache();
+    const tenantSlug = localStorage.getItem('egs_tenant_slug') || 'default';
+    const token = localStorage.getItem('egs_auth_token') || sessionStorage.getItem('egs_auth_token');
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-tenant-slug': tenantSlug,
+      ...(opts.headers || {})
+    };
+    if (token && !headers['Authorization']) headers['Authorization'] = `Bearer ${token}`;
+
     const res = await fetch(`${window.API_BASE}${path}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(body || {}),
     });
     return parseApiResponse(res, path);

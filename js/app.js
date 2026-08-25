@@ -5769,6 +5769,27 @@ window.attachColumnFilters = function (table) {
       });
     }
 
+    const utilityItems = [
+      { name: 'ERP Mode & Feature Controls', hotkey: 'E', icon: 'fa-sliders', action: 'openSettings', sub: 'tab-erp-mode' },
+      { name: 'User Accounts & Roles', hotkey: 'U', icon: 'fa-users-gear', action: 'openSettings', sub: 'tab-users' }
+    ];
+
+    if (isAdmin) {
+      utilityItems.push({
+        name: 'SaaS Tenants & White-Label',
+        hotkey: 'T',
+        icon: 'fa-building-shield',
+        page: 'saas_tenants'
+      });
+    }
+
+    utilityItems.push({
+      name: 'Backup & Restore',
+      hotkey: 'B',
+      icon: 'fa-cloud-arrow-up',
+      page: 'backup'
+    });
+
     return [
       {
         type: 'single',
@@ -5812,11 +5833,7 @@ window.attachColumnFilters = function (table) {
         flyoutTitle: 'Utilities & Setup',
         hotkey: 'U',
         icon: 'fa-gear',
-        items: [
-          { name: 'ERP Mode & Feature Controls', hotkey: 'E', icon: 'fa-sliders', action: 'openSettings', sub: 'tab-erp-mode' },
-          { name: 'User Accounts & Roles', hotkey: 'U', icon: 'fa-users-gear', action: 'openSettings', sub: 'tab-users' },
-          { name: 'Backup & Restore', hotkey: 'B', icon: 'fa-cloud-arrow-up', page: 'backup' }
-        ]
+        items: utilityItems
       }
     ];
   }
@@ -6280,7 +6297,8 @@ window.attachColumnFilters = function (table) {
     'scansheet': { name: 'Serial Number Scan Sheet', sub: 'Barcode scanner & serial sheets manager', icon: 'fa-barcode' },
     'reports': { name: 'Master Inventory Report', sub: 'Real-time godown stock summary & inventory explorer', icon: 'fa-clipboard-list' },
     'lowstock': { name: 'Low Stock Alert', sub: 'Items at or below reorder safety threshold', icon: 'fa-triangle-exclamation' },
-    'backup': { name: 'Backup & Restore Hub', sub: 'Cloud & local database archives & point-in-time recovery', icon: 'fa-cloud-arrow-up' }
+    'backup': { name: 'Backup & Restore Hub', sub: 'Cloud & local database archives & point-in-time recovery', icon: 'fa-cloud-arrow-up' },
+    'saas_tenants': { name: 'SaaS Tenant & White-Label Studio', sub: 'Multi-tenant organization management & dynamic theming', icon: 'fa-building-shield' }
   };
 
   window.__activeScreenCleanup = null;

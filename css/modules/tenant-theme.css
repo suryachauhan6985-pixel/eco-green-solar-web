@@ -1,0 +1,227 @@
+/**
+ * Eco Green Solar ERP - Multi-Tenant SaaS Theme & Asset Container Normalization
+ * Defines CSS custom properties, fixed-boundary asset wrappers, and brand containers.
+ */
+
+:root {
+  /* Dynamic Tenant Brand Colors */
+  --tenant-primary: #008080;
+  --tenant-primary-rgb: 0, 128, 128;
+  --tenant-secondary: #005a5a;
+  --tenant-secondary-rgb: 0, 90, 90;
+  --tenant-accent: #e5a93c;
+  --tenant-accent-rgb: 229, 169, 60;
+  --tenant-bg: #0b1320;
+  --tenant-sidebar-bg: #070d18;
+  --tenant-sidebar-text: #ffffff;
+
+  /* Dynamic Tenant Geometry & Typography */
+  --tenant-card-radius: 12px;
+  --tenant-card-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --tenant-font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  /* Contrast-Guaranteed State Colors */
+  --tenant-btn-text: #ffffff;
+  --tenant-accent-text: #1a1a1a;
+}
+
+/* =====================================================================
+   1. STRICT ASSET CONTAINER & NORMALIZATION (FIXED-BOUNDARY POLICY)
+   ===================================================================== */
+
+/* Brand Logo Slot: Fixed boundaries, centered, distortion-free */
+.tenant-logo-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 48px;
+  max-width: 220px;
+  min-width: 36px;
+  overflow: hidden;
+  position: relative;
+}
+
+.tenant-logo-slot img,
+.tenant-brand-logo {
+  max-height: 100%;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+}
+
+/* Header Compact Logo */
+.tenant-logo-compact {
+  max-height: 34px;
+  max-width: 150px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tenant-logo-compact img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+/* Login Screen & Auth Hero Banner Slot */
+.tenant-banner-slot {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.tenant-banner-slot img,
+.tenant-auth-banner {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+/* User & Tenant Avatar Slot */
+.tenant-avatar-slot {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tenant-primary);
+  color: var(--tenant-btn-text);
+  font-weight: 700;
+}
+
+.tenant-avatar-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* =====================================================================
+   2. NORMALIZED TENANT UI COMPONENTS (CARDS, BUTTONS, SIDEBAR)
+   ===================================================================== */
+
+/* Dynamic Branded Cards */
+.tenant-card {
+  background: var(--bg-card, #131d2f);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--tenant-card-radius);
+  box-shadow: var(--tenant-card-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Dynamic Branded Buttons */
+.btn-tenant-primary {
+  background: var(--tenant-primary) !important;
+  color: var(--tenant-btn-text) !important;
+  border: none !important;
+  border-radius: var(--tenant-card-radius);
+  font-weight: 600;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.btn-tenant-primary:hover {
+  filter: brightness(1.12);
+}
+
+.btn-tenant-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-tenant-accent {
+  background: var(--tenant-accent) !important;
+  color: var(--tenant-accent-text) !important;
+  border: none !important;
+  border-radius: var(--tenant-card-radius);
+  font-weight: 700;
+}
+
+/* Sidebar Tenant Theming */
+.sidebar {
+  background: var(--tenant-sidebar-bg) !important;
+}
+
+.erp-sidebar-btn.selected,
+.erp-sidebar-btn.active {
+  background: rgba(var(--tenant-primary-rgb), 0.2) !important;
+  border-color: var(--tenant-primary) !important;
+  color: #ffffff !important;
+}
+
+.erp-sidebar-btn.selected .fa-solid,
+.erp-sidebar-btn.active .fa-solid {
+  color: var(--tenant-accent) !important;
+}
+
+/* =====================================================================
+   3. TENANT MANAGEMENT DASHBOARD & STUDIO STYLING
+   ===================================================================== */
+.saas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.saas-tenant-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--tenant-card-radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.saas-tenant-card.active-tenant {
+  border-color: var(--tenant-primary);
+  box-shadow: 0 0 0 1px var(--tenant-primary);
+}
+
+.saas-tenant-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.saas-color-preview-bar {
+  display: flex;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.saas-feature-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.saas-feature-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--txt-muted);
+  border: 1px solid var(--border-light);
+}
+
+.saas-feature-tag.enabled {
+  background: rgba(var(--tenant-primary-rgb), 0.15);
+  color: var(--tenant-primary);
+  border-color: rgba(var(--tenant-primary-rgb), 0.3);
+  font-weight: 600;
+}

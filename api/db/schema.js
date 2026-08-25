@@ -41,7 +41,144 @@ async function ensureAppSettingsSchema(pool) {
   }
 }
 
+const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
+async function ensureMultiTenantSchema(pool) {
+  try {
+    // 1. Tenants Table
+    await pool.query(`CREATE TABLE IF NOT EXISTS tenants (
+      id VARCHAR(36) PRIMARY KEY,
+      slug VARCHAR(60) NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      custom_domain VARCHAR(255) NULL,
+      status ENUM('active', 'suspended', 'trial') NOT NULL DEFAULT 'active',
+      plan VARCHAR(60) NOT NULL DEFAULT 'enterprise',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE INDEX uniq_tenant_slug (slug),
+      UNIQUE INDEX uniq_tenant_domain (custom_domain),
+      INDEX idx_tenant_status (status)
+    )`);
+
+    // 2. Tenant Themes Table (Branding & Dynamic CSS Variables)
+    await pool.query(`CREATE TABLE IF NOT EXISTS tenant_themes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      tenant_id VARCHAR(36) NOT NULL,
+      primary_color VARCHAR(30) NOT NULL DEFAULT '#008080',
+      secondary_color VARCHAR(30) NOT NULL DEFAULT '#005a5a',
+      accent_color VARCHAR(30) NOT NULL DEFAULT '#e5a93c',
+      bg_color VARCHAR(30) NOT NULL DEFAULT '#0b1320',
+      sidebar_bg VARCHAR(30) NOT NULL DEFAULT '#070d18',
+      sidebar_text VARCHAR(30) NOT NULL DEFAULT '#ffffff',
+      card_radius VARCHAR(20) NOT NULL DEFAULT '12px',
+      card_shadow VARCHAR(60) NOT NULL DEFAULT '0 8px 24px rgba(0, 0, 0, 0.35)',
+      font_family VARCHAR(100) NOT NULL DEFAULT "'Segoe UI', system-ui, sans-serif",
+      logo_url LONGTEXT NULL,
+      favicon_url LONGTEXT NULL,
+      login_banner_url LONGTEXT NULL,
+      css_custom_overrides LONGTEXT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE INDEX uniq_theme_tenant (tenant_id),
+      CONSTRAINT fk_theme_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
+    )`);
+
+    // 3. Tenant Features Table (Feature Gates & Permissions)
+    await pool.query(`CREATE TABLE IF NOT EXISTS tenant_features (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      tenant_id VARCHAR(36) NOT NULL,
+      inventory_enabled TINYINT(1) NOT NULL DEFAULT 1,
+      gst_invoicing TINYINT(1) NOT NULL DEFAULT 1,
+      multi_branch TINYINT(1) NOT NULL DEFAULT 0,
+      export_reports TINYINT(1) NOT NULL DEFAULT 1,
+      bom_enabled TINYINT(1) NOT NULL DEFAULT 1,
+      serial_tracking TINYINT(1) NOT NULL DEFAULT 1,
+      vouchers_enabled TINYINT(1) NOT NULL DEFAULT 1,
+      custom_flags_json LONGTEXT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE INDEX uniq_features_tenant (tenant_id),
+      CONSTRAINT fk_features_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
+    )`);
+
+    // 4. Tenant Config Table (Terminology & Metadata)
+    await pool.query(`CREATE TABLE IF NOT EXISTS tenant_config (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      tenant_id VARCHAR(36) NOT NULL,
+      terminology_json LONGTEXT NULL,
+      company_meta_json LONGTEXT NULL,
+      storage_quota_mb INT NOT NULL DEFAULT 5000,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE INDEX uniq_config_tenant (tenant_id),
+      CONSTRAINT fk_config_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
+    )`);
+
+    // 5. Seed Default Tenant
+    const [existing] = await pool.query(`SELECT id FROM tenants WHERE id=? OR slug='default' OR slug='eco-green' LIMIT 1`, [DEFAULT_TENANT_ID]);
+    if (!existing || !existing.length) {
+      await pool.query(
+        `INSERT INTO tenants (id, slug, name, custom_domain, status, plan) VALUES (?, 'default', 'Eco Green Solar', NULL, 'active', 'enterprise')`,
+        [DEFAULT_TENANT_ID]
+      );
+      await pool.query(
+        `INSERT INTO tenant_themes (tenant_id, primary_color, secondary_color, accent_color, bg_color, sidebar_bg, sidebar_text, card_radius, card_shadow, font_family)
+         VALUES (?, '#008080', '#005a5a', '#e5a93c', '#0b1320', '#070d18', '#ffffff', '12px', '0 8px 24px rgba(0, 0, 0, 0.35)', "'Segoe UI', system-ui, sans-serif")`,
+        [DEFAULT_TENANT_ID]
+      );
+      await pool.query(
+        `INSERT INTO tenant_features (tenant_id, inventory_enabled, gst_invoicing, multi_branch, export_reports, bom_enabled, serial_tracking, vouchers_enabled)
+         VALUES (?, 1, 1, 1, 1, 1, 1, 1)`,
+        [DEFAULT_TENANT_ID]
+      );
+      const defaultTerminology = JSON.stringify({
+        client_alias: 'Customer',
+        supplier_alias: 'Supplier',
+        item_alias: 'Product / Item',
+        invoice_alias: 'Delivery Challan / Invoice',
+        warehouse_alias: 'Godown / Warehouse',
+        tax_alias: 'GSTIN'
+      });
+      const defaultCompanyMeta = JSON.stringify({
+        brand_name: 'Eco Green Solar ERP',
+        support_email: 'support@ecogreensolar.com',
+        phone: '+91 9913543749',
+        address: 'Rajkot, Gujarat, India',
+        copyright_text: 'Eco Green Solar ERP © 2026 • Enterprise Operations & Inventory Suite'
+      });
+      await pool.query(
+        `INSERT INTO tenant_config (tenant_id, terminology_json, company_meta_json, storage_quota_mb)
+         VALUES (?, ?, ?, 10000)`,
+        [DEFAULT_TENANT_ID, defaultTerminology, defaultCompanyMeta]
+      );
+      console.log('[Multi-Tenant] Successfully initialized default tenant (Eco Green Solar).');
+    }
+
+    // 6. Add tenant_id column and index to core tables
+    const tenantScopedTables = [
+      'users', 'categories', 'items', 'ledgers', 'stock_ledger', 'stock_summary',
+      'purchase_inwards', 'sales_orders', 'bom_orders', 'bom_challans',
+      'accounting_vouchers', 'attachments', 'scan_sheets', 'audit_logs'
+    ];
+
+    for (const table of tenantScopedTables) {
+      try {
+        await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(36) NOT NULL DEFAULT '${DEFAULT_TENANT_ID}'`);
+        const [idxRows] = await pool.query(
+          `SELECT COUNT(*) as cnt FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?`,
+          [table, `idx_${table}_tenant`]
+        );
+        if (!idxRows[0].cnt) {
+          await pool.query(`ALTER TABLE ${table} ADD INDEX idx_${table}_tenant (tenant_id)`);
+        }
+      } catch (err) {
+        // Table might not exist yet or column already exists
+      }
+    }
+  } catch (e) {
+    console.warn('[Multi-Tenant Schema] Error ensuring tenant tables:', e.message);
+  }
+}
+
 async function ensureStartupSchema(pool) {
+  await ensureMultiTenantSchema(pool);
   await ensureUserPreferencesSchema(pool);
   await ensureAppSettingsSchema(pool);
 
@@ -528,7 +665,9 @@ async function ensureAuditLogsSchema(pool) {
 }
 
 module.exports = {
+  DEFAULT_TENANT_ID,
   ensureStartupSchema,
+  ensureMultiTenantSchema,
   ensurePerformanceIndexesSchema,
   ensureStockSummarySchema,
   ensureAuditLogsSchema,
