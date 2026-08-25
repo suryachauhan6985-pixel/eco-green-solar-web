@@ -1138,19 +1138,19 @@ window.applyErpModeRules = applyErpModeRules;
 
       // Step 4: If any flyout menu is open on screen, step down flyout tiers
       const activeFlyout = document.getElementById('egsActiveSidebarFlyout');
-      const nestedOpenEl = activeFlyout ? activeFlyout.querySelector('.egs-flyout-item.has-nested.nested-open') : null;
-      if (nestedOpenEl || navState.focusTier === 'flyout_tier2') {
-        suppressHoverUntilMouseMove = true;
-        setNestedSubmenuOpen(null, false);
-        navState.focusTier = 'flyout_tier1';
-        navState.tier2Index = -1;
-        if (navState.tier1Index >= 0) {
-          updateTier1Selection(navState.tier1Index, false);
+      if (activeFlyout) {
+        const nestedOpenEl = activeFlyout.querySelector('.egs-flyout-item.has-nested.nested-open');
+        if (nestedOpenEl) {
+          suppressHoverUntilMouseMove = true;
+          setNestedSubmenuOpen(null, false);
+          navState.focusTier = 'flyout_tier1';
+          navState.tier2Index = -1;
+          if (navState.tier1Index >= 0) {
+            updateTier1Selection(navState.tier1Index, false);
+          }
+          return true;
         }
-        return true;
-      }
 
-      if (activeFlyout || navState.focusTier === 'flyout_tier1') {
         closeAllFlyouts(false); // Cleanly closes Tier 1 and returns focus to Sidebar / Dashboard
         return true;
       }
@@ -1218,6 +1218,29 @@ window.applyErpModeRules = applyErpModeRules;
           const sIdx = subItems.indexOf(matched);
           recordFlyoutTrail(navState.activeFlyoutGroup ? navState.activeFlyoutGroup.id : 'grp-accounts', navState.tier1Index, sIdx, true);
           matched.click();
+          return true;
+        }
+
+        // Sibling Tier 1 Item Hotkey Fallthrough (e.g. from LEDGER INFO pressing 'I' for Item Info, 'G' for Group, 'U' for UOM)
+        const flyout = document.getElementById('egsActiveSidebarFlyout');
+        const tier1Items = flyout ? Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item')) : [];
+        const t1Matched = tier1Items.find((it) => it.dataset.hotkey && it.dataset.hotkey.toUpperCase() === uKey);
+        if (t1Matched) {
+          e.preventDefault();
+          e.stopPropagation();
+          const t1Idx = tier1Items.indexOf(t1Matched);
+          suppressHoverUntilMouseMove = true;
+          if (t1Matched.classList.contains('has-nested')) {
+            updateTier1Selection(t1Idx, true);
+            navState.focusTier = 'flyout_tier2';
+            navState.tier2Index = 0;
+            updateTier2Selection(0);
+          } else {
+            setNestedSubmenuOpen(null, false);
+            updateTier1Selection(t1Idx, false);
+            recordFlyoutTrail(navState.activeFlyoutGroup ? navState.activeFlyoutGroup.id : 'grp-accounts', t1Idx, -1, false);
+            t1Matched.click();
+          }
           return true;
         }
       }
