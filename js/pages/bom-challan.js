@@ -1976,7 +1976,16 @@ window.openCustomChallanModal = async function(prefillData) {
   const modalHtml = bomRenderChallanEntryModalHtml(header, kit, { onlyActive: false, customMode: true });
 
   window.openModal('Custom Challan Entry', modalHtml, {
-    fullscreen: true
+    fullscreen: true,
+    onClose: () => {
+      if (window.CURRENT_PAGE_OPTS && window.CURRENT_PAGE_OPTS.action === 'custom-challan') {
+        if (typeof window.stepBackFromFlyoutTrail === 'function') {
+          window.stepBackFromFlyoutTrail();
+        } else if (typeof window.go === 'function') {
+          window.go('dashboard');
+        }
+      }
+    }
   });
 
   const modalNo = document.getElementById('bomChallanModalNo');
@@ -2129,7 +2138,16 @@ window.openChallanRegisterModal = async function() {
     </div>
   `;
   window.openModal('Saved Challan Register', html, {
-    fullscreen: true
+    fullscreen: true,
+    onClose: () => {
+      if (window.CURRENT_PAGE_OPTS && (window.CURRENT_PAGE_OPTS.action === 'challan' || window.CURRENT_PAGE_OPTS.tab === 'challan')) {
+        if (typeof window.stepBackFromFlyoutTrail === 'function') {
+          window.stepBackFromFlyoutTrail();
+        } else if (typeof window.go === 'function') {
+          window.go('dashboard');
+        }
+      }
+    }
   });
 
   let allChallans = [];

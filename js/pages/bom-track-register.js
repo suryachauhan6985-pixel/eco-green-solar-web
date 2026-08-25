@@ -14,6 +14,13 @@ function createBomTrackRegisterModule(ctx) {
       if (!ctx.registerOverlay) return;
       ctx.registerOverlay.classList.remove('show');
       document.body.classList.remove('no-scroll');
+      if (window.CURRENT_PAGE_OPTS && (window.CURRENT_PAGE_OPTS.action === 'register' || window.CURRENT_PAGE_OPTS.tab === 'register')) {
+        if (typeof window.stepBackFromFlyoutTrail === 'function') {
+          window.stepBackFromFlyoutTrail();
+        } else if (typeof window.go === 'function') {
+          window.go('dashboard');
+        }
+      }
     }
     if (ctx.registerCloseBtn) ctx.registerCloseBtn.addEventListener('click', closeRegisterModal);
     let regMouseDownTarget = null;
@@ -278,7 +285,16 @@ function createBomTrackRegisterModule(ctx) {
         </div>
         <div id="bomTrackResult"></div>
       `, {
-        size: 'xl'
+        size: 'xl',
+        onClose: () => {
+          if (window.CURRENT_PAGE_OPTS && (window.CURRENT_PAGE_OPTS.action === 'track' || window.CURRENT_PAGE_OPTS.tab === 'track')) {
+            if (typeof window.stepBackFromFlyoutTrail === 'function') {
+              window.stepBackFromFlyoutTrail();
+            } else if (typeof window.go === 'function') {
+              window.go('dashboard');
+            }
+          }
+        }
       });
       const input = document.getElementById('bomTrackOrderInput');
       const searchBtn = document.getElementById('bomTrackSearchBtn');

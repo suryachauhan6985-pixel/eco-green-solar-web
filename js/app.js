@@ -929,7 +929,12 @@ if (!navigator.onLine) {
     // logged out, or completed a brand-new login (new token). Its 401,
     // when it finally arrives, belongs to that dead request — not to
     // whatever the person is doing right now.
-    const tokenUsedForThisCall = window.currentAuthToken;
+    const tokenUsedForThisCall = window.currentAuthToken || (function () {
+      try {
+        const s = JSON.parse(sessionStorage.getItem('egs_session') || localStorage.getItem('egs_session') || '{}');
+        return s.token || localStorage.getItem('egs_auth_token') || null;
+      } catch (e) { return null; }
+    })();
     const hadToken = !!(isApiCall && tokenUsedForThisCall);
     if (hadToken) {
       init = init ? Object.assign({}, init) : {};
@@ -6414,13 +6419,15 @@ window.attachColumnFilters = function (table) {
     activeNestedParentEl: null
   };
 
-  function closeAllFlyouts() {
+  function closeAllFlyouts(keepTrail = false) {
     navState.focusTier = 'none';
     navState.tier1Index = -1;
     navState.tier2Index = -1;
     navState.activeFlyoutGroup = null;
     navState.activeNestedParentEl = null;
-    lastFlyoutTrail = null; // Cleanly clear trail so Escape never loops
+    if (!keepTrail) {
+      lastFlyoutTrail = null;
+    }
 
     const existing = document.getElementById('egsActiveSidebarFlyout');
     if (existing) existing.remove();
@@ -6447,15 +6454,56 @@ window.attachColumnFilters = function (table) {
     lastFlyoutTrail = null;
   }
 
+  function resolveFlyoutTrail(pageId, opts = {}) {
+    if (lastFlyoutTrail) return lastFlyoutTrail;
+    if (!pageId || pageId === 'dashboard') return null;
+
+    const action = opts.action || opts.tab || opts.sub || '';
+    const sub = opts.sub || opts.tab || '';
+
+    const navGroups = typeof getErpNavGroups === 'function' ? getErpNavGroups() : (ERP_NAV_GROUPS || []);
+    for (const grp of navGroups) {
+      if (!grp.items) continue;
+      for (let t1Idx = 0; t1Idx < grp.items.length; t1Idx++) {
+        const item = grp.items[t1Idx];
+        if (item.hasNested && item.nestedItems) {
+          for (let t2Idx = 0; t2Idx < item.nestedItems.length; t2Idx++) {
+            const nItem = item.nestedItems[t2Idx];
+            if (nItem.page === pageId) {
+              if (action && (nItem.action || nItem.sub || nItem.tab)) {
+                if (nItem.action === action || nItem.sub === sub || nItem.tab === sub) {
+                  return { groupId: grp.id, tier1Index: t1Idx, tier2Index: t2Idx, wasNested: true };
+                }
+              } else {
+                return { groupId: grp.id, tier1Index: t1Idx, tier2Index: t2Idx, wasNested: true };
+              }
+            }
+          }
+        } else if (item.page === pageId) {
+          if (action && (item.action || item.sub || item.tab)) {
+            if (item.action === action || item.sub === sub || item.tab === sub) {
+              return { groupId: grp.id, tier1Index: t1Idx, tier2Index: -1, wasNested: false };
+            }
+          } else {
+            return { groupId: grp.id, tier1Index: t1Idx, tier2Index: -1, wasNested: false };
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   function stepBackFromFlyoutTrail() {
-    if (!lastFlyoutTrail) {
+    const trail = resolveFlyoutTrail(window.CURRENT_PAGE_ID, window.CURRENT_PAGE_OPTS);
+    lastFlyoutTrail = null; // Consume the current trail
+
+    if (!trail) {
       go('dashboard');
       return;
     }
-    const trail = { ...lastFlyoutTrail };
-    lastFlyoutTrail = null; // Consume trail so subsequent Escapes close cleanly
 
-    const grp = (ERP_NAV_GROUPS || []).find((g) => g.id === trail.groupId);
+    const navGroups = typeof getErpNavGroups === 'function' ? getErpNavGroups() : (ERP_NAV_GROUPS || []);
+    const grp = navGroups.find((g) => g.id === trail.groupId);
     if (!grp) {
       go('dashboard');
       return;
@@ -6486,6 +6534,7 @@ window.attachColumnFilters = function (table) {
   window.stepBackFromFlyoutTrail = stepBackFromFlyoutTrail;
   window.recordFlyoutTrail = recordFlyoutTrail;
   window.clearFlyoutTrail = clearFlyoutTrail;
+  window.resolveFlyoutTrail = resolveFlyoutTrail;
 
   function setNestedSubmenuOpen(parentRowEl, open = true) {
     const flyout = document.getElementById('egsActiveSidebarFlyout');
@@ -6686,7 +6735,7 @@ window.attachColumnFilters = function (table) {
         const groupId = row.dataset.groupId;
 
         recordFlyoutTrail(grp.id, idx, -1, false);
-        closeAllFlyouts();
+        closeAllFlyouts(true);
         dismissMobileSidebar();
         if (action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
           window.openSystemSettingsModal(sub || 'tab-erp-mode');
@@ -6720,7 +6769,7 @@ window.attachColumnFilters = function (table) {
         const allSubs = parentBox ? Array.from(parentBox.querySelectorAll('.tier2-item')) : [];
         const sIdx = allSubs.indexOf(subRow);
         recordFlyoutTrail(grp.id, navState.tier1Index, sIdx, true);
-        closeAllFlyouts();
+        closeAllFlyouts(true);
         dismissMobileSidebar();
         if (page) go(page, { sub, action, filter, groupId });
       });
@@ -6963,7 +7012,7 @@ window.attachColumnFilters = function (table) {
     // Clean up previous active workspace
     cleanupActiveScreen();
 
-    closeAllFlyouts();
+    closeAllFlyouts(true);
     if (window.innerWidth <= 900 && typeof window.closeSidebar === 'function') {
       window.closeSidebar();
     }
@@ -7194,10 +7243,10 @@ window.attachColumnFilters = function (table) {
         }
       }
 
-      // Step 4: If any flyout menu is open, close it cleanly and clear trail!
+      // Step 4: If any flyout menu is open on screen, step down flyout tiers
       const activeFlyout = document.getElementById('egsActiveSidebarFlyout');
       const nestedOpenEl = activeFlyout ? activeFlyout.querySelector('.egs-flyout-item.has-nested.nested-open') : null;
-      if (nestedOpenEl) {
+      if (nestedOpenEl || navState.focusTier === 'flyout_tier2') {
         setNestedSubmenuOpen(null, false);
         navState.focusTier = 'flyout_tier1';
         navState.tier2Index = -1;
@@ -7207,17 +7256,14 @@ window.attachColumnFilters = function (table) {
         return true;
       }
 
-      if (activeFlyout || navState.focusTier !== 'none') {
-        closeAllFlyouts();
-        clearFlyoutTrail();
+      if (activeFlyout || navState.focusTier === 'flyout_tier1') {
+        closeAllFlyouts(false); // Cleanly closes Tier 1 and returns focus to Sidebar / Dashboard
         return true;
       }
 
-      // Step 5: If on any non-dashboard page, navigate cleanly to Dashboard without flyout popups
+      // Step 5: If on ANY non-dashboard page, step back via ladder history to originating flyout / dashboard!
       if (window.CURRENT_PAGE_ID && window.CURRENT_PAGE_ID !== 'dashboard') {
-        clearFlyoutTrail();
-        closeAllFlyouts();
-        go('dashboard');
+        stepBackFromFlyoutTrail();
         return true;
       }
 

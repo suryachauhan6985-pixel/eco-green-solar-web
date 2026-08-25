@@ -1023,12 +1023,16 @@ window.PAGES.bom = {
     } else if (opts.action === 'dispatch' || opts.action === 'pending' || opts.tab === 'dispatch') {
       ctx.showBomHome();
     } else if (opts.action === 'track' || opts.tab === 'track') {
+      ctx.showBomHome();
       if (typeof ctx.openTrackModal === 'function') ctx.openTrackModal();
     } else if (opts.action === 'register' || opts.tab === 'register') {
+      ctx.showBomHome();
       if (typeof ctx.openBomRegisterModal === 'function') ctx.openBomRegisterModal();
     } else if (opts.action === 'challan' || opts.tab === 'challan') {
+      ctx.showBomHome();
       if (typeof window.openChallanRegisterModal === 'function') window.openChallanRegisterModal();
     } else if (opts.action === 'custom-challan' || opts.tab === 'custom-challan') {
+      ctx.showBomHome();
       if (typeof window.openCustomChallanModal === 'function') window.openCustomChallanModal();
     } else {
       if (ctx.bomIsAdmin) {

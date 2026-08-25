@@ -970,10 +970,10 @@ window.PAGES.partyledger = {
       lfOverlay.classList.remove('show');
       unlockPageScroll();
       detachLedgerFormEscape();
-      if (window.CURRENT_PARTY_LEDGER_MODE === 'create') {
-        if (typeof window.closeAllFlyouts === 'function') window.closeAllFlyouts();
-        if (typeof window.clearFlyoutTrail === 'function') window.clearFlyoutTrail();
-        if (typeof window.go === 'function') {
+      if (window.CURRENT_PARTY_LEDGER_MODE === 'create' || window.CURRENT_PARTY_LEDGER_MODE === 'alter') {
+        if (typeof window.stepBackFromFlyoutTrail === 'function') {
+          window.stepBackFromFlyoutTrail();
+        } else if (typeof window.go === 'function') {
           window.go('dashboard');
         }
       }

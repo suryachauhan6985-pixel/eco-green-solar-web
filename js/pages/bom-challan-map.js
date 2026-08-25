@@ -25,6 +25,13 @@ function createBomChallanMapModule(ctx) {
       if (!ctx.challanOverlay) return;
       ctx.challanOverlay.classList.remove('show');
       document.body.classList.remove('no-scroll');
+      if (window.CURRENT_PAGE_OPTS && (window.CURRENT_PAGE_OPTS.action === 'custom-challan' || window.CURRENT_PAGE_OPTS.action === 'challan')) {
+        if (typeof window.stepBackFromFlyoutTrail === 'function') {
+          window.stepBackFromFlyoutTrail();
+        } else if (typeof window.go === 'function') {
+          window.go('dashboard');
+        }
+      }
     }
     // NOTE: bind the bare local function, not ctx.closeChallanModal — at
     // this point (factory executing, before Object.assign(ctx, ...) below
