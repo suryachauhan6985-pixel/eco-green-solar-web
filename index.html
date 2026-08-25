@@ -61,7 +61,7 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=185">
+<link rel="stylesheet" href="css/style.css?v=190">
 <!-- Barcode/QR camera scanning (Sheets feature) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <!-- XLSX parsing for Sheets "Import CSV/XLSX" (CSV import needs no library) -->
@@ -183,81 +183,78 @@
 <div class="bom-print-only" id="bomChallanPrintRoot"></div>
 
 <!-- Shared in-memory data stores (loaded first so page scripts can use them) -->
-<script src="js/data/purchase-data.js?v=3"></script>
+<script src="js/data/purchase-data.js?v=190"></script>
 <!-- NEW: talks to the backend API (server.js), which reads the same MariaDB
      database the desktop .py app uses. Must load before dashboard.js/masters.js. -->
-<script src="js/data/api.js?v=6"></script>
+<script src="js/data/api.js?v=190"></script>
 <!-- Sheets (Scan To Sheet) feature: offline localStorage layer, loaded before its page module -->
-<script src="js/data/sheets-store.js?v=4"></script>
+<script src="js/data/sheets-store.js?v=190"></script>
 <!-- Vehicle Number RTO Validator (Indian State & RTO lookup for Challans) -->
-<script src="js/data/vehicle-validator.js?v=1"></script>
+<script src="js/data/vehicle-validator.js?v=190"></script>
 <!-- Offline GSTIN and Indian Mobile Number Validators -->
-<script src="js/data/validators.js?v=1"></script>
+<script src="js/data/validators.js?v=190"></script>
 <!-- Multi-Tenant Context, Dynamic Theming & Terminology Hook Engine -->
-<script src="js/data/tenant-context.js?v=1"></script>
+<script src="js/data/tenant-context.js?v=190"></script>
 <!-- Centralized ERP Configuration & Business Engine -->
-<script src="js/data/config-engine.js?v=3"></script>
+<script src="js/data/config-engine.js?v=190"></script>
 <!-- Universal Print Template Engine (Excel-Style Page-Fit & Custom Layouts) -->
-<script src="js/data/print-template-engine.js?v=4"></script>
+<script src="js/data/print-template-engine.js?v=190"></script>
 <!-- Enterprise Skeleton Loading & UI State Machine -->
-<script src="js/ui/skeleton.js?v=1"></script>
+<script src="js/ui/skeleton.js?v=190"></script>
 <!-- Each page's markup + data lives in its own file, like dashboard.py / masters.py in the desktop app -->
-<script src="js/pages/dashboard.js?v=19"></script>
-<script src="js/pages/scansheet.js?v=25"></script>
-<script src="js/pages/masters.js?v=21"></script>
-<script src="js/pages/purchase.js?v=14"></script>
-<script src="js/pages/sales.js?v=13"></script>
-<script src="js/pages/stockassign.js?v=3"></script>
-<script src="js/pages/purchaseregister.js?v=6"></script>
-<script src="js/pages/saleregister.js?v=6"></script>
-<script src="js/pages/reports.js?v=6"></script>
-<script src="js/pages/returns.js?v=5"></script>
-<script src="js/pages/vouchers.js?v=4"></script>
-<script src="js/pages/financialreports.js?v=3"></script>
-<script src="js/pages/partyledger.js?v=37"></script>
-<script src="js/pages/lowstock.js?v=6"></script>
-<script src="js/pages/backup.js?v=5"></script>
-<script src="js/pages/saas_tenants.js?v=2"></script>
-<script src="js/pages/template_designer.js?v=4"></script>
+<script src="js/pages/dashboard.js?v=190"></script>
+<script src="js/pages/scansheet.js?v=190"></script>
+<script src="js/pages/masters.js?v=190"></script>
+<script src="js/pages/purchase.js?v=190"></script>
+<script src="js/pages/sales.js?v=190"></script>
+<script src="js/pages/stockassign.js?v=190"></script>
+<script src="js/pages/purchaseregister.js?v=190"></script>
+<script src="js/pages/saleregister.js?v=190"></script>
+<script src="js/pages/reports.js?v=190"></script>
+<script src="js/pages/returns.js?v=190"></script>
+<script src="js/pages/vouchers.js?v=190"></script>
+<script src="js/pages/financialreports.js?v=190"></script>
+<script src="js/pages/partyledger.js?v=190"></script>
+<script src="js/pages/lowstock.js?v=190"></script>
+<script src="js/pages/backup.js?v=190"></script>
+<script src="js/pages/saas_tenants.js?v=190"></script>
+<script src="js/pages/template_designer.js?v=190"></script>
 <!-- bom.js was split into multiple files (was 3340 lines) — helpers/Challan
      logic must load BEFORE the new bom-*.js modules, and all of those must
      load BEFORE the main bom.js page module, which wires them together via
      createXModule(ctx) factory calls inside its init(). -->
-<script src="js/pages/bom-kit-helpers.js?v=32"></script>
-<script src="js/pages/bom-challan.js?v=30"></script>
-<script src="js/pages/bom-challan-map.js?v=5"></script>
-<script src="js/pages/bom-party-autocomplete.js?v=2"></script>
-<script src="js/pages/bom-track-register.js?v=6"></script>
-<script src="js/pages/bom-kit-builder.js?v=2"></script>
-<script src="js/pages/bom-serial-scan.js?v=3"></script>
-<script src="js/pages/bom-serial-modal.js?v=4"></script>
-<script src="js/pages/bom-dispatch.js?v=16"></script>
-<script src="js/pages/bom.js?v=44"></script>
-<script src="js/utils/password-policy.js?v=1"></script>
+<script src="js/pages/bom-kit-helpers.js?v=190"></script>
+<script src="js/pages/bom-challan.js?v=190"></script>
+<script src="js/pages/bom-challan-map.js?v=190"></script>
+<script src="js/pages/bom-party-autocomplete.js?v=190"></script>
+<script src="js/pages/bom-track-register.js?v=190"></script>
+<script src="js/pages/bom-kit-builder.js?v=190"></script>
+<script src="js/pages/bom-serial-scan.js?v=190"></script>
+<script src="js/pages/bom-serial-modal.js?v=190"></script>
+<script src="js/pages/bom-dispatch.js?v=190"></script>
+<script src="js/pages/bom.js?v=190"></script>
+<script src="js/utils/password-policy.js?v=190"></script>
 <!-- Core Infrastructure Modules (Loaded in dependency order) -->
-<script src="js/core/ui-feedback.js?v=1"></script>
-<script src="js/core/pwa-permissions.js?v=1"></script>
-<script src="js/core/auth-session.js?v=1"></script>
-<script src="js/core/settings-panel.js?v=1"></script>
-<script src="js/core/navigation-engine.js?v=1"></script>
+<script src="js/core/ui-feedback.js?v=190"></script>
+<script src="js/core/pwa-permissions.js?v=190"></script>
+<script src="js/core/auth-session.js?v=190"></script>
+<script src="js/core/settings-panel.js?v=190"></script>
+<script src="js/core/navigation-engine.js?v=190"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
-<script src="js/app.js?v=120"></script>
+<script src="js/app.js?v=190"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // updateViaCache: 'none' — stops the BROWSER's own HTTP cache from ever
-    // serving a stale copy of sw.js itself. Without this, the browser can
-    // treat /sw.js like any other static resource and keep re-using an old
-    // cached copy of the service worker file even after a fresh deploy,
-    // which is why the PWA kept running old fetch-handling logic.
-    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch((error) => {
+    // updateViaCache: 'none' stops browser from serving stale sw.js
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then((registration) => {
+      // Proactively check for service worker updates on launch
+      if (registration && typeof registration.update === 'function') {
+        registration.update().catch(() => {});
+      }
+    }).catch((error) => {
       console.warn('Service worker registration failed:', error);
     });
 
-    // Once a NEW service worker takes control (after an update), reload
-    // the open PWA/tab automatically so it starts using the new logic
-    // immediately instead of waiting for the user to fully close and
-    // reopen the app.
     let refreshedOnce = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (refreshedOnce) return;
@@ -267,6 +264,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script src="js/theme.js?v=5"></script>
+<script src="js/theme.js?v=190"></script>
 </body>
 </html>

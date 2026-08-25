@@ -1,57 +1,69 @@
-const CACHE_NAME = 'eco-green-solar-erp-v155';
+const CACHE_NAME = 'eco-green-solar-erp-v190';
 
 const APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/css/style.css?v=155',
-  '/css/modules/base.css?v=155',
-  '/css/modules/layout.css?v=155',
-  '/css/modules/components.css?v=155',
-  '/css/modules/dashboard.css?v=155',
-  '/css/modules/responsive.css?v=155',
-  '/css/modules/party-ledger.css?v=155',
-  '/css/modules/auth.css?v=155',
-  '/css/modules/bom.css?v=155',
-  '/css/modules/scan-sheet.css?v=155',
+  '/css/style.css?v=190',
+  '/css/modules/base.css?v=190',
+  '/css/modules/layout.css?v=190',
+  '/css/modules/components.css?v=190',
+  '/css/modules/dashboard.css?v=190',
+  '/css/modules/responsive.css?v=190',
+  '/css/modules/party-ledger.css?v=190',
+  '/css/modules/auth.css?v=190',
+  '/css/modules/bom.css?v=190',
+  '/css/modules/scan-sheet.css?v=190',
   '/assets/icon.ico',
-  '/assets/icons/icon-192.png?v=2',
-  '/assets/icons/icon-512.png?v=2',
-  '/assets/icons/icon-1024.png?v=2',
+  '/assets/icons/icon-192.png',
+  '/assets/icons/icon-512.png',
+  '/assets/icons/icon-1024.png',
   '/assets/logo.png',
   '/assets/challan_logo.png',
-  '/js/data/purchase-data.js?v=3',
-  '/js/data/api.js?v=6',
-  '/js/data/sheets-store.js?v=4',
-  '/js/data/vehicle-validator.js?v=1',
-  '/js/data/validators.js?v=1',
-  '/js/pages/dashboard.js?v=15',
-  '/js/pages/scansheet.js?v=25',
-  '/js/pages/masters.js?v=13',
-  '/js/pages/purchase.js?v=10',
-  '/js/pages/sales.js?v=9',
-  '/js/pages/stockassign.js?v=3',
-  '/js/pages/purchaseregister.js?v=5',
-  '/js/pages/saleregister.js?v=5',
-  '/js/pages/reports.js?v=5',
-  '/js/pages/returns.js?v=3',
-  '/js/pages/vouchers.js?v=1',
-  '/js/pages/financialreports.js?v=1',
-  '/js/pages/partyledger.js?v=28',
-  '/js/pages/lowstock.js?v=5',
-  '/js/pages/backup.js?v=4',
-  '/js/pages/bom-kit-helpers.js?v=20',
-  '/js/pages/bom-challan.js?v=27',
-  '/js/pages/bom-challan-map.js?v=3',
-  '/js/pages/bom-party-autocomplete.js?v=2',
-  '/js/pages/bom-track-register.js?v=5',
-  '/js/pages/bom-kit-builder.js?v=2',
-  '/js/pages/bom-serial-scan.js?v=3',
-  '/js/pages/bom-serial-modal.js?v=4',
-  '/js/pages/bom-dispatch.js?v=15',
-  '/js/pages/bom.js?v=32',
-  '/js/app.js?v=77',
-  '/js/theme.js?v=5'
+  '/js/data/purchase-data.js?v=190',
+  '/js/data/api.js?v=190',
+  '/js/data/sheets-store.js?v=190',
+  '/js/data/vehicle-validator.js?v=190',
+  '/js/data/validators.js?v=190',
+  '/js/data/tenant-context.js?v=190',
+  '/js/data/config-engine.js?v=190',
+  '/js/data/print-template-engine.js?v=190',
+  '/js/ui/skeleton.js?v=190',
+  '/js/pages/dashboard.js?v=190',
+  '/js/pages/scansheet.js?v=190',
+  '/js/pages/masters.js?v=190',
+  '/js/pages/purchase.js?v=190',
+  '/js/pages/sales.js?v=190',
+  '/js/pages/stockassign.js?v=190',
+  '/js/pages/purchaseregister.js?v=190',
+  '/js/pages/saleregister.js?v=190',
+  '/js/pages/reports.js?v=190',
+  '/js/pages/returns.js?v=190',
+  '/js/pages/vouchers.js?v=190',
+  '/js/pages/financialreports.js?v=190',
+  '/js/pages/partyledger.js?v=190',
+  '/js/pages/lowstock.js?v=190',
+  '/js/pages/backup.js?v=190',
+  '/js/pages/saas_tenants.js?v=190',
+  '/js/pages/template_designer.js?v=190',
+  '/js/pages/bom-kit-helpers.js?v=190',
+  '/js/pages/bom-challan.js?v=190',
+  '/js/pages/bom-challan-map.js?v=190',
+  '/js/pages/bom-party-autocomplete.js?v=190',
+  '/js/pages/bom-track-register.js?v=190',
+  '/js/pages/bom-kit-builder.js?v=190',
+  '/js/pages/bom-serial-scan.js?v=190',
+  '/js/pages/bom-serial-modal.js?v=190',
+  '/js/pages/bom-dispatch.js?v=190',
+  '/js/pages/bom.js?v=190',
+  '/js/utils/password-policy.js?v=190',
+  '/js/core/ui-feedback.js?v=190',
+  '/js/core/pwa-permissions.js?v=190',
+  '/js/core/auth-session.js?v=190',
+  '/js/core/settings-panel.js?v=190',
+  '/js/core/navigation-engine.js?v=190',
+  '/js/app.js?v=190',
+  '/js/theme.js?v=190'
 ];
 
 self.addEventListener('install', (event) => {
@@ -110,13 +122,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Static assets (JS/CSS/images/fonts) — Cache-first with network fallback
-  // NEVER fall back to /index.html for static assets (which would cause SyntaxError: Unexpected token '<')
+  // 3. Static assets (JS/CSS/images/fonts) — Network-first with cache fallback
+  // This guarantees PWA always gets fresh deployed assets on regular launch
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
-
-      return fetch(request).then((networkResponse) => {
+    fetch(request)
+      .then((networkResponse) => {
         const shouldCache =
           networkResponse &&
           networkResponse.ok &&
@@ -128,14 +138,16 @@ self.addEventListener('fetch', (event) => {
         }
 
         return networkResponse;
-      });
-    })
+      })
+      .catch(() => {
+        return caches.match(request);
+      })
   );
 });
 
-// 3. PUSH NOTIFICATIONS & INTERACTIVE CLICK HANDLERS
+// 4. PUSH NOTIFICATIONS & INTERACTIVE CLICK HANDLERS
 self.addEventListener('push', (event) => {
-  let payload = { title: 'Eco Green Solar Alert', body: 'New enterprise operational update.', icon: '/assets/icons/icon-192.png?v=2' };
+  let payload = { title: 'Eco Green Solar Alert', body: 'New enterprise operational update.', icon: '/assets/icons/icon-192.png' };
   try {
     if (event.data) {
       payload = Object.assign(payload, event.data.json());
@@ -146,8 +158,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: payload.body,
-    icon: payload.icon || '/assets/icons/icon-192.png?v=2',
-    badge: '/assets/icons/icon-192.png?v=2',
+    icon: payload.icon || '/assets/icons/icon-192.png',
+    badge: '/assets/icons/icon-192.png',
     vibrate: [200, 100, 200],
     data: payload.url || '/'
   };
