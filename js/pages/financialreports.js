@@ -227,9 +227,7 @@ window.PAGES.financialreports = {
 
     async function loadStatements() {
       try {
-        const res = await fetch(`${API_BASE}/financial/statements`);
-        if (!res.ok) throw new Error('Could not calculate financial statements.');
-        const data = await res.json();
+        const data = await window.Api.get('/financial/statements');
 
         // 1. Render Trial Balance
         const tbBody = document.getElementById('trialBalanceTbody');

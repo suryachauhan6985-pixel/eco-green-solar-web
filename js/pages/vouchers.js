@@ -171,7 +171,6 @@ window.PAGES.vouchers = {
         cachedVouchers = data.vouchers || [];
         renderVoucherTable(cachedVouchers);
       } catch (e) {
-      } catch (e) {
         if (tbody) {
           if (window.Skeleton) {
             tbody.innerHTML = window.Skeleton.tableError(6, e.message || 'Could not load vouchers.', { retryId: 'btnRetryVouchers' });

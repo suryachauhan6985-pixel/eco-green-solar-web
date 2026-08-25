@@ -1,0 +1,3715 @@
+{
+  "fullLiveLog": [
+    {
+      "tab": "#dashboard",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "Cards View",
+          "selector": "#dashModeCardsBtn",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Presentation Mode",
+          "selector": "#dashModePresBtn",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "BOM & Challan",
+          "selector": "dash-btn-quick primary",
+          "tag": "BUTTON",
+          "onclickAttr": "go('bom')",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /masters/items (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Inward",
+          "selector": "dash-btn-quick",
+          "tag": "BUTTON",
+          "onclickAttr": "go('purchase')",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 2,
+          "networkCalls": [
+            "GET /masters/categories (200)",
+            "GET /challan/category-map (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Sales",
+          "selector": "dash-btn-quick",
+          "tag": "BUTTON",
+          "onclickAttr": "go('sales')",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /bom/kits (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Scan Sheets",
+          "selector": "dash-btn-quick",
+          "tag": "BUTTON",
+          "onclickAttr": "go('scansheet')",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Customize",
+          "selector": "#dashCustomizeBtn",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Refresh Live Data",
+          "selector": "#dashRefreshBtn",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Review Low Stock",
+          "selector": "banner-btn",
+          "tag": "A",
+          "onclickAttr": "go('lowstock');return false;",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "SOLAR PANELS IN STOCK 27 KW 50 Panels • Active Gen Stock",
+          "selector": "dash-solar-card",
+          "tag": "DIV",
+          "onclickAttr": "go('reports')",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "INVERTERS READY 0 Units Single & 3-Phase Inverters",
+          "selector": "dash-solar-card",
+          "tag": "DIV",
+          "onclickAttr": "go('reports')",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "BATTERY SYSTEMS 0 Units Li-Ion & Solar Batteries",
+          "selector": "dash-solar-card",
+          "tag": "DIV",
+          "onclickAttr": "go('reports')",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "REGISTERED MASTER CATALOG 68 SKUs Active Products & Categori",
+          "selector": "dash-solar-card",
+          "tag": "DIV",
+          "onclickAttr": "go('masters')",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "AVAILABLE STOCK All Godown Inventory 1 / 2 50 NOS Total All ",
+          "selector": "#card-avail",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "1 / 2",
+          "selector": "stat-stepper-pill",
+          "tag": "DIV",
+          "onclickAttr": "event.stopPropagation();",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Previous Category",
+          "selector": "stat-step-btn prev",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Next Category",
+          "selector": "stat-step-btn next",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "View Report",
+          "selector": "stat-drill-link",
+          "tag": "SPAN",
+          "onclickAttr": "go('reports'); event.stopPropagation();",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "ASSIGNED STOCK Allocated to Projects 1 / 2 0 NOS Total All S",
+          "selector": "#card-assigned",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "1 / 2",
+          "selector": "stat-stepper-pill",
+          "tag": "DIV",
+          "onclickAttr": "event.stopPropagation();",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Previous Category",
+          "selector": "stat-step-btn prev",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Next Category",
+          "selector": "stat-step-btn next",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "View Register",
+          "selector": "stat-drill-link",
+          "tag": "SPAN",
+          "onclickAttr": "go('saleregister'); event.stopPropagation();",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "TOTAL DISPATCHED Delivered to Clients 1 / 2 0 NOS Total All ",
+          "selector": "#card-sold",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "1 / 2",
+          "selector": "stat-stepper-pill",
+          "tag": "DIV",
+          "onclickAttr": "event.stopPropagation();",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Previous Category",
+          "selector": "stat-step-btn prev",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Next Category",
+          "selector": "stat-step-btn next",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "View Register",
+          "selector": "stat-drill-link",
+          "tag": "SPAN",
+          "onclickAttr": "go('saleregister'); event.stopPropagation();",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "DAMAGED / RMA Quality & Inspection 1 / 2 0 NOS Total All Sto",
+          "selector": "#card-damaged",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "1 / 2",
+          "selector": "stat-stepper-pill",
+          "tag": "DIV",
+          "onclickAttr": "event.stopPropagation();",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Previous Category",
+          "selector": "stat-step-btn prev",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Next Category",
+          "selector": "stat-step-btn next",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "View Returns",
+          "selector": "stat-drill-link",
+          "tag": "SPAN",
+          "onclickAttr": "go('returns'); event.stopPropagation();",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "INWARD RECEIVED (TODAY) 0 Nos 0 Inward Invoices",
+          "selector": "dash-pulse-stat",
+          "tag": "DIV",
+          "onclickAttr": "go('purchaseregister')",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "DISPATCHED TO PROJECTS 0 Nos 0 Delivery Challans",
+          "selector": "dash-pulse-stat",
+          "tag": "DIV",
+          "onclickAttr": "go('saleregister')",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "BOM & PROJECT CHALLANS 1 Challans Active Site Dispatches",
+          "selector": "dash-pulse-stat",
+          "tag": "DIV",
+          "onclickAttr": "go('bom')",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "ACTIVE GODOWNS 1 Hubs Multi-Godown Live Sync",
+          "selector": "dash-pulse-stat",
+          "tag": "DIV",
+          "onclickAttr": "go('reports')",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "All Categories",
+          "selector": "dash-cat-pill active",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Solar Panels",
+          "selector": "dash-cat-pill",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "POST /auth/heartbeat (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Inverters",
+          "selector": "dash-cat-pill",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Structures",
+          "selector": "dash-cat-pill",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Civil & BOS",
+          "selector": "dash-cat-pill",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "View in Master Reports",
+          "selector": "btn btn-ghost",
+          "tag": "BUTTON",
+          "onclickAttr": "go('reports')",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "Dashboard",
+      "sub": "Live overview of stock & operations"
+    },
+    {
+      "tab": "#bom",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "Back (Esc)",
+          "selector": "#bomBtnBackHome",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Print BOM",
+          "selector": "#bomBtnPrint",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /bom/orders?status=Open (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Generate BOM",
+          "selector": "#bomBtnCreateBom",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Track BOM",
+          "selector": "#bomBtnTrackBom",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "New Kit",
+          "selector": "#bomBtnNewKit",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Tick All",
+          "selector": "#bomBtnTickAll",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "Bill of Material (BOM)",
+      "sub": "Kit assembly, serial allocation & delivery challans"
+    },
+    {
+      "tab": "#purchase",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "Add Attachment",
+          "selector": "#purBtnAttach",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Clear All",
+          "selector": "#purBtnClearProof",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Add Product Line",
+          "selector": "#purBtnAddLine",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Validation Error\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Inward from BOM Kit",
+          "selector": "#purBtnImportKit",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /bom/kits (304)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Remove Line",
+          "selector": "#purBtnRemoveLine",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Execute Stock Inward",
+          "selector": "#purBtnSave",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Validation Error\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Clear Form",
+          "selector": "#purBtnClearForm",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Find",
+          "selector": "#purBtnFind",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Search Required\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Add Attachment",
+          "selector": "#purBtnEditAttach",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Keep Existing",
+          "selector": "#purBtnKeepProof",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Add Line",
+          "selector": "#purBtnEditAddLine",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Validation Error\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Remove Line",
+          "selector": "#purBtnEditRemoveLine",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Apply Modifications",
+          "selector": "#purBtnApply",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Validation Error\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Clear Changes",
+          "selector": "#purBtnClearEdit",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete Invoice",
+          "selector": "#purBtnDelete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "Purchase Inward",
+      "sub": "Inward stock receipt, batch & invoice entry"
+    },
+    {
+      "tab": "#sales",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "Add Attachment",
+          "selector": "#saleBtnAttach",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Clear All",
+          "selector": "#saleBtnClearProof",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Add Product Line",
+          "selector": "#saleBtnAddLine",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Validation Error\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Remove Line",
+          "selector": "#saleBtnRemoveLine",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Confirm Dispatch",
+          "selector": "#saleBtnSave",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Missing Fields\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Create Challan",
+          "selector": "#saleBtnChallan",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Customer Name Required\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Challan Register",
+          "selector": "#saleBtnOpenChallanReg",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Saved Challan Register\"",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /challan (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Clear Form",
+          "selector": "#saleBtnClearForm",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /sales/types?category=BATTERY&brand=LUMIOUS&watt=10 (304)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Find",
+          "selector": "#saleBtnFind",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Search Required\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Add Attachment",
+          "selector": "#saleBtnEditAttach",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Keep Existing",
+          "selector": "#saleBtnKeepProof",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Add Line",
+          "selector": "#saleBtnEditAddLine",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Line Error\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Remove Line",
+          "selector": "#saleBtnEditRemoveLine",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "POST /auth/heartbeat (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Apply Modifications",
+          "selector": "#saleBtnApply",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Not Found\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Clear Changes",
+          "selector": "#saleBtnClearEdit",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete Transaction",
+          "selector": "#saleBtnDelete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "Project Sales & Dispatch",
+      "sub": "Sales outward, serial assignment & delivery"
+    },
+    {
+      "tab": "#masters",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "Save Product Profile",
+          "selector": "#mBtnSaveItem",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Validation Warning\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Upload Excel",
+          "selector": "#mBtnImportItems",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Download Template",
+          "selector": "#mBtnDownloadItemTemplate",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "POST /auth/heartbeat (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Delete item",
+          "selector": "btn btn-red m-item-delete",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "Item & Product Master",
+      "sub": "Item classification, specifications & inventory rules"
+    },
+    {
+      "tab": "#partyledger",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "Refresh",
+          "selector": "#btnRefreshParties",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Statement",
+          "selector": "btn btn-green btn-table-stmt",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Statement",
+          "selector": "btn btn-green btn-table-stmt",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /ledgers/statement?name=ASIYANI+JITENDRABHAI+PARSOTAMBHAI&type=Customer (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Statement",
+          "selector": "btn btn-green btn-table-stmt",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /ledgers/statement?name=Dhwarkesh+Solar+Projects+LLP&type=Supplier (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Statement",
+          "selector": "btn btn-green btn-table-stmt",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /ledgers/statement?name=JAY+AMBE+SOLAR+LLP&type=Supplier (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Statement",
+          "selector": "btn btn-green btn-table-stmt",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Statement",
+          "selector": "btn btn-green btn-table-stmt",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 2,
+          "networkCalls": [
+            "GET /ledgers/statement?name=JHAPADA+GABHRUBHAI+BHIKHABHAI&type=Customer (200)",
+            "GET /ledgers/statement?name=KHAKHI+YASIN+SALIMBHAI&type=Customer (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Statement",
+          "selector": "btn btn-green btn-table-stmt",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /ledgers/statement?name=Nisar+Power+-+Morbi&type=Dealer (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Statement",
+          "selector": "btn btn-green btn-table-stmt",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /ledgers/statement?name=PATEL+RASIKBHAI+NATHABHAI&type=Customer (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Statement",
+          "selector": "btn btn-green btn-table-stmt",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /ledgers/statement?name=SUMIT+CHAUHAN&type=Customer (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Statement",
+          "selector": "btn btn-green btn-table-stmt",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /ledgers/statement?name=UNADKAT+CHIRAGBHAI+AMULAKHBHAI&type=Customer (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Open Statement",
+          "selector": "#btnOpenStatement",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "Party Ledger Statement",
+      "sub": "Account statements, debit/credit ledger & transactions"
+    },
+    {
+      "tab": "#reports",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "All Inventory",
+          "selector": "view-pill active",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Available In-Stock",
+          "selector": "view-pill ",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Assigned / In-Transit",
+          "selector": "view-pill ",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /reports/master (304)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Sold Out",
+          "selector": "view-pill ",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Damaged / RMA",
+          "selector": "view-pill ",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Save View",
+          "selector": "btn btn-ghost btn-save-view",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Clear Filters",
+          "selector": "#repBtnClearFilters",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Refresh",
+          "selector": "#repBtnRefresh",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /reports/master (304)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Export",
+          "selector": "#repBtnExport",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "POST /auth/heartbeat (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "Master Inventory Report",
+      "sub": "Real-time godown stock summary & inventory explorer"
+    },
+    {
+      "tab": "#financialreports",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "Trial Balance",
+          "selector": "subtab active",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Profit & Loss A/c",
+          "selector": "subtab",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Balance Sheet",
+          "selector": "subtab",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Day Book",
+          "selector": "subtab",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Refresh Statements",
+          "selector": "#btnRefreshFinReports",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /financial/statements (304)"
+          ],
+          "errors": []
+        }
+      ],
+      "title": "Trial Balance Statement",
+      "sub": "Trial balance ledger closing balances"
+    },
+    {
+      "tab": "#vouchers",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "Payment (F5)",
+          "selector": "subtab active",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /vouchers?type=Payment (304)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Receipt (F6)",
+          "selector": "subtab",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /vouchers?type=Receipt (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Journal (F7)",
+          "selector": "subtab",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /vouchers?type=Journal (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Debit Note (Alt+F5)",
+          "selector": "subtab",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /vouchers?type=DebitNote (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Credit Note (Alt+F6)",
+          "selector": "subtab",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /vouchers?type=CreditNote (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Reset",
+          "selector": "#vouchBtnClear",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Post Voucher",
+          "selector": "#vouchBtnSave",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "Payment Voucher (F5)",
+      "sub": "Record supplier payments & bank transfers"
+    },
+    {
+      "tab": "#returns",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "Execute Stock Adjustment",
+          "selector": "#btnProcessReturn",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "Sales Return & Damage",
+      "sub": "Process sales returns, damaged & scrapped stock"
+    },
+    {
+      "tab": "#saleregister",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "All Dispatches",
+          "selector": "view-pill active",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Today's Dispatches",
+          "selector": "view-pill ",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Solar Panels",
+          "selector": "view-pill ",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"No Records\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Inverters",
+          "selector": "view-pill ",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /sales/register (304)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Save View",
+          "selector": "btn btn-ghost btn-save-view",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Clear Column Filters",
+          "selector": "#sregBtnClearFilters",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Export",
+          "selector": "#sregBtnExport",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"No Records\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Refresh",
+          "selector": "#sregBtnRefresh",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /sales/register (304)"
+          ],
+          "errors": []
+        }
+      ],
+      "title": "Sale Register",
+      "sub": "Project sales records & dispatch log archive"
+    },
+    {
+      "tab": "#purchaseregister",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "All Inwards",
+          "selector": "view-pill active",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Today's Inward",
+          "selector": "view-pill ",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Solar Panels",
+          "selector": "view-pill ",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Inverters",
+          "selector": "view-pill ",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /purchase/register (304)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Save View",
+          "selector": "btn btn-ghost btn-save-view",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Clear Column Filters",
+          "selector": "#pregBtnClearFilters",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Export",
+          "selector": "#pregBtnExport",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Refresh",
+          "selector": "#pregBtnRefresh",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /purchase/register (304)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "selector": "",
+          "tag": "TD",
+          "onclickAttr": "event.stopPropagation()",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "Purchase Register",
+      "sub": "Inward purchase records & tax invoice archive"
+    },
+    {
+      "tab": "#lowstock",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "Clear Filters",
+          "selector": "#lsBtnClearFilters",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Export",
+          "selector": "#lsBtnExport",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Refresh",
+          "selector": "#lsBtnRefresh",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /lowstock (200)"
+          ],
+          "errors": []
+        }
+      ],
+      "title": "Low Stock Alert",
+      "sub": "Items at or below reorder safety threshold"
+    },
+    {
+      "tab": "#scansheet",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "Sheets",
+          "selector": "ss-tab active",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Enterprise",
+          "selector": "ss-tab ",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Files",
+          "selector": "ss-tab ",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Create New Sheet",
+          "selector": "#ssCreateBtn",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Create New Sheet\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Create new sheet",
+          "selector": "#ssFab",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Create New Sheet\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Go Pro+",
+          "selector": "#ssGoPro",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "Serial Number Scan Sheet",
+      "sub": "Barcode scanner & serial sheets manager"
+    },
+    {
+      "tab": "#stockassign",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "Add Attachment",
+          "selector": "#assignBtnAttach",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Clear All",
+          "selector": "#assignBtnClearProof",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Add Product Line",
+          "selector": "#assignBtnAddLine",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Validation Error\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Remove Line",
+          "selector": "#assignBtnRemoveLine",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Reserve / Assign Stock",
+          "selector": "#assignBtnSave",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Validation Error\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Clear Form",
+          "selector": "#assignBtnClearForm",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /stockassign/available?category=BATTERY&brand=LUMIOUS&watt=10&type=LI-ION (304)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Refresh",
+          "selector": "#assignBtnRefreshReg",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 2,
+          "networkCalls": [
+            "GET /sales/types?category=BATTERY&brand=LUMIOUS&watt=10 (304)",
+            "GET /stockassign/available?category=BATTERY&brand=LUMIOUS&watt=10&type=LI-ION (304)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Release to Firm",
+          "selector": "#assignBtnReleaseFirm",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"Nothing Loaded\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Release to Customer",
+          "selector": "#assignBtnReleaseCustomer",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "Stock Allocation & Journal",
+      "sub": "Godown reservation & release to firm/customer"
+    },
+    {
+      "tab": "#saas_tenants",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "Refresh",
+          "selector": "#btnRefreshTenants",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /saas/tenants (304)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Register New Tenant",
+          "selector": "#btnCreateTenantModal",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"✨ Register New Tenant Organization\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "TOTAL ORGANIZATIONS 1",
+          "selector": "card stat-card",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /public/tenant-branding (304)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "ACTIVE SAAS WORKSPACES 1",
+          "selector": "card stat-card",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "TOTAL TENANT USERS 6",
+          "selector": "card stat-card",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /saas/tenants/00000000-0000-0000-0000-000000000001 (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "STORAGE ALLOCATION 4.9 GB",
+          "selector": "card stat-card",
+          "tag": "DIV",
+          "onclickAttr": "",
+          "clickStatus": "NOT_FOUND",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "POST /auth/heartbeat (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Active Workspace",
+          "selector": "btn btn-ghost btn-sm",
+          "tag": "BUTTON",
+          "onclickAttr": "window.previewSwitchTenant('default')",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /public/tenant-branding (304)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Edit",
+          "selector": "btn btn-secondary btn-sm",
+          "tag": "BUTTON",
+          "onclickAttr": "window.openEditTenantModal('00000000-0000-0000-0000-000000000001')",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "SaaS Tenant & White-Label Studio",
+      "sub": "Multi-tenant organization management & dynamic theming"
+    },
+    {
+      "tab": "#template_designer",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "+ Blank Template",
+          "selector": "#tplBtnNew",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "Modal: \"⚙️ White-Label Studio: Eco Green Solar\"",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Clone",
+          "selector": "#tplBtnClone",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Export",
+          "selector": "#tplBtnExport",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Import",
+          "selector": "#tplBtnImport",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Set Default",
+          "selector": "#tplBtnSetActive",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Save Layout",
+          "selector": "#tplBtnSave",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Test Print",
+          "selector": "#tplBtnTestPrint",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Canvas",
+          "selector": "tpl-tab-btn active",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Columns",
+          "selector": "tpl-tab-btn",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Typography",
+          "selector": "tpl-tab-btn",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Media & Uploads",
+          "selector": "tpl-tab-btn",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Watermark",
+          "selector": "tpl-tab-btn",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Page-Fit",
+          "selector": "tpl-tab-btn",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Portrait",
+          "selector": "#btnOrientPortrait",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Landscape",
+          "selector": "#btnOrientLandscape",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Fit",
+          "selector": "#btnZoomFit",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "100%",
+          "selector": "#btnZoom100",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "Print Template Designer Studio",
+      "sub": "Visual Excel-style document layout builder & 1-page fit scaling"
+    },
+    {
+      "tab": "#backup",
+      "rendered": true,
+      "actions": [
+        {
+          "element": "Download Latest Backup",
+          "selector": "#bkBtnDownloadLatest",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Backup Now (Force)",
+          "selector": "#bkBtnForce",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Download",
+          "selector": "btn btn-ghost bk-download-row",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Download",
+          "selector": "btn btn-ghost bk-download-row",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "POST /backup/run (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Download",
+          "selector": "btn btn-ghost bk-download-row",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 1,
+          "networkCalls": [
+            "GET /backup/status (200)"
+          ],
+          "errors": []
+        },
+        {
+          "element": "Download",
+          "selector": "btn btn-ghost bk-download-row",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Download",
+          "selector": "btn btn-ghost bk-download-row",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Download",
+          "selector": "btn btn-ghost bk-download-row",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Download",
+          "selector": "btn btn-ghost bk-download-row",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Download",
+          "selector": "btn btn-ghost bk-download-row",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Download",
+          "selector": "btn btn-ghost bk-download-row",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Download",
+          "selector": "btn btn-ghost bk-download-row",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Download",
+          "selector": "btn btn-ghost bk-download-row",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        },
+        {
+          "element": "Download",
+          "selector": "btn btn-ghost bk-download-row",
+          "tag": "BUTTON",
+          "onclickAttr": "",
+          "clickStatus": "CLICKED",
+          "modalObserved": "None",
+          "networkCount": 0,
+          "networkCalls": [],
+          "errors": []
+        }
+      ],
+      "title": "Backup & Restore Hub",
+      "sub": "Cloud & local database archives & point-in-time recovery"
+    }
+  ],
+  "bugsFound": [],
+  "totalConsole": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "time": 1787652318580
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787652318725
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787652318726
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787652318726
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787652318726
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "time": 1787652318727
+    },
+    {
+      "type": "info",
+      "text": "Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.",
+      "time": 1787652318885
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787652319208
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787652319208
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787652319208
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787652319209
+    },
+    {
+      "type": "info",
+      "text": "Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.",
+      "time": 1787652319313
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "time": 1787652320405
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787652361178
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787652476341
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787652477145
+    }
+  ]
+}

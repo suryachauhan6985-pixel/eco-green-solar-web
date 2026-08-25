@@ -156,11 +156,10 @@ module.exports = function registerVouchersRoutes(app, deps) {
       [fromDate, toDate]
     );
 
-    // Fetch stock transactions for inventory valuation & cost of goods
-    const [stockRows] = await pool.query(
-      `SELECT movement, party_name, item_name, quantity, rate, amount FROM stock_ledger WHERE date >= ? AND date <= ?`,
-      [fromDate, toDate]
-    );
+    // Fetch stock transaction summary (purchase inward / sales dispatch amounts)
+    // Note: stock_ledger does not store rate/amount columns — inventory value
+    // calculations are derived from vouchers only in the current schema.
+    const stockRows = []; // Reserved for future inventory valuation integration
 
     // 1. Trial Balance Map (Debits vs Credits per Ledger)
     const ledgerBalances = {};
@@ -251,7 +250,7 @@ module.exports = function registerVouchersRoutes(app, deps) {
         liabilities: {
           sundryCreditors: totalCreditors,
           creditorsList: creditors.slice(0, 15),
-          capitalAccount: 500000 + netProfit
+          capitalAccount: netProfit // Retained earnings (net profit)
         }
       },
       dayBook: vouchers.slice(0, 50)

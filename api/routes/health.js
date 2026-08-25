@@ -71,6 +71,8 @@ module.exports = function registerHealthRoutes(app, deps) {
 
       // Real-time Solar & ERP Daily Operations Pulse
       const todayISO = new Date().toISOString().slice(0, 10);
+      const tenantId = req && req.tenant && req.tenant.id ? req.tenant.id : null;
+      const tenantFilter = tenantId ? ` AND tenant_id = '${tenantId.replace(/'/g, "''")}'` : '';
       let [[opsToday]] = await pool.query(`
         SELECT
           COALESCE(SUM(CASE WHEN purchase_date = ? THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS today_inward_qty,
@@ -79,6 +81,7 @@ module.exports = function registerHealthRoutes(app, deps) {
           COUNT(DISTINCT CASE WHEN (sales_date = ? OR chalan_date = ?) THEN chalan_no ELSE NULL END) AS today_dispatch_challans,
           COALESCE(SUM(CASE WHEN status='Available' AND (category LIKE '%SOLAR%' OR category LIKE '%PANEL%') THEN COALESCE(quantity, 1) ELSE 0 END), 0) AS solar_panels_count
         FROM stock_ledger
+        WHERE 1=1${tenantFilter}
       `, [todayISO, todayISO, todayISO, todayISO, todayISO, todayISO]).catch(() => [[{
         today_inward_qty: 0,
         today_inward_invoices: 0,
@@ -89,13 +92,13 @@ module.exports = function registerHealthRoutes(app, deps) {
 
       let warehousesCount = 1;
       try {
-        const [[wh]] = await pool.query(`SELECT COUNT(DISTINCT warehouse) AS cnt FROM stock_ledger WHERE warehouse IS NOT NULL AND warehouse <> ''`);
+        const [[wh]] = await pool.query(`SELECT COUNT(DISTINCT warehouse) AS cnt FROM stock_ledger WHERE warehouse IS NOT NULL AND warehouse <> ''${tenantFilter}`);
         warehousesCount = wh?.cnt || 1;
       } catch (e) {}
 
       let activeChallans = 0;
       try {
-        const [[ch]] = await pool.query(`SELECT COUNT(DISTINCT chalan_no) AS cnt FROM stock_ledger WHERE chalan_no IS NOT NULL AND chalan_no <> ''`);
+        const [[ch]] = await pool.query(`SELECT COUNT(DISTINCT chalan_no) AS cnt FROM stock_ledger WHERE chalan_no IS NOT NULL AND chalan_no <> ''${tenantFilter}`);
         activeChallans = ch?.cnt || 0;
       } catch (e) {}
 
@@ -146,8 +149,8 @@ module.exports = function registerHealthRoutes(app, deps) {
     })));
   }));
 
-  // GET /api/system/performance — Real-Time Performance & System Telemetry (Admin Only)
-  app.get('/api/system/performance', route(async (req, res) => {
+  // GET /api/system/performance — Real-Time Performance & System Telemetry (SuperAdmin Only)
+  app.get('/api/system/performance', requireRole('SuperAdmin'), route(async (req, res) => {
     const poolInternal = pool.pool || {};
     const mem = process.memoryUsage();
 

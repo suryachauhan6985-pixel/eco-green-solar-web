@@ -1,0 +1,3440 @@
+{
+  "testResults": {
+    "dashboard": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 200",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 3,
+          "sampleNetwork": "GET http://localhost:5000/assets/icons/icon-1024.png  | GET http://localhost:5000/assets/icons/icon-192.png  | GET http://localhost:5000/assets/icons/icon-512.png ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Cards View",
+          "id": "dashModeCardsBtn",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Presentation Mode",
+          "id": "dashModePresBtn",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "BOM & Challan",
+          "id": "",
+          "onclick": "go('bom')",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/public/tenant-branding 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Inward",
+          "id": "",
+          "onclick": "go('purchase')",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Sales",
+          "id": "",
+          "onclick": "go('sales')",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 200",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Scan Sheets",
+          "id": "",
+          "onclick": "go('scansheet')",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Customize",
+          "id": "dashCustomizeBtn",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Refresh Live Data",
+          "id": "dashRefreshBtn",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Review Low Stock",
+          "id": "",
+          "onclick": "go('lowstock');return false;",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SOLAR PANELS IN STOCK 27 KW 50 Panels • Active Gen Stock",
+          "id": "",
+          "onclick": "go('reports')",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "INVERTERS READY 0 Units Single & 3-Phase Inverters",
+          "id": "",
+          "onclick": "go('reports')",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "BATTERY SYSTEMS 0 Units Li-Ion & Solar Batteries",
+          "id": "",
+          "onclick": "go('reports')",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "REGISTERED MASTER CATALOG 68 SKUs Active Products & Categories",
+          "id": "",
+          "onclick": "go('masters')",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "1 / 2",
+          "id": "",
+          "onclick": "event.stopPropagation();",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Previous Category",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "PUT http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Next Category",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "View Report",
+          "id": "",
+          "onclick": "go('reports'); event.stopPropagation();",
+          "clickSuccess": true,
+          "networkCallsFired": 5,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 200 | RES http://localhost:5000/api/public/tenant-branding 304 | RES http://localhost:5000/api/saas/tenants 200",
+          "errorsTriggered": []
+        },
+        {
+          "element": "1 / 2",
+          "id": "",
+          "onclick": "event.stopPropagation();",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Previous Category",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Next Category",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "View Register",
+          "id": "",
+          "onclick": "go('saleregister'); event.stopPropagation();",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "1 / 2",
+          "id": "",
+          "onclick": "event.stopPropagation();",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Previous Category",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Next Category",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "View Register",
+          "id": "",
+          "onclick": "go('saleregister'); event.stopPropagation();",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "1 / 2",
+          "id": "",
+          "onclick": "event.stopPropagation();",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Previous Category",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Next Category",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "View Returns",
+          "id": "",
+          "onclick": "go('returns'); event.stopPropagation();",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "INWARD RECEIVED (TODAY) 0 Nos 0 Inward Invoices",
+          "id": "",
+          "onclick": "go('purchaseregister')",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "DISPATCHED TO PROJECTS 0 Nos 0 Delivery Challans",
+          "id": "",
+          "onclick": "go('saleregister')",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "BOM & PROJECT CHALLANS 1 Challans Active Site Dispatches",
+          "id": "",
+          "onclick": "go('bom')",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "ACTIVE GODOWNS 1 Hubs Multi-Godown Live Sync",
+          "id": "",
+          "onclick": "go('reports')",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "scansheet": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/dashboard/summary ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/dashboard/summary 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Sheets",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Enterprise",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Files",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/public/tenant-branding 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Create New Sheet",
+          "id": "ssCreateBtn",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Create new sheet",
+          "id": "ssFab",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 200",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Go Pro+",
+          "id": "ssGoPro",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "masters": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Save Product Profile",
+          "id": "mBtnSaveItem",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Upload Excel",
+          "id": "mBtnImportItems",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Download Template",
+          "id": "mBtnDownloadItemTemplate",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "POST http://localhost:5000/api/auth/heartbeat  | RES http://localhost:5000/api/auth/heartbeat 200",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": false,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete item",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": false,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "purchase": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/dashboard/summary ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/dashboard/summary 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Add Attachment",
+          "id": "purBtnAttach",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/public/tenant-branding 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Clear All",
+          "id": "purBtnClearProof",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Add Product Line",
+          "id": "purBtnAddLine",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Inward from BOM Kit",
+          "id": "purBtnImportKit",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Remove Line",
+          "id": "purBtnRemoveLine",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Execute Stock Inward",
+          "id": "purBtnSave",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Clear Form",
+          "id": "purBtnClearForm",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Find",
+          "id": "purBtnFind",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Add Attachment",
+          "id": "purBtnEditAttach",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "PUT http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Keep Existing",
+          "id": "purBtnKeepProof",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 3,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 200",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Add Line",
+          "id": "purBtnEditAddLine",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "RES http://localhost:5000/api/public/tenant-branding 304 | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Remove Line",
+          "id": "purBtnEditRemoveLine",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Apply Modifications",
+          "id": "purBtnApply",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Clear Changes",
+          "id": "purBtnClearEdit",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete Invoice",
+          "id": "purBtnDelete",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "⚙️ White-Label Studio: Eco Green Solar  Organization  White-Label Studio  Feature Matrix  Terminology  Customize domain entity terminology to adapt to client-specific business models (e.g. Channel Partners vs Customers).  Client Entity Alias Supplier Entity Alias Item / Product Alias Dispatch / Invoice Alias Cancel Save Tenant Configuration",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "closeModal()",
+          "id": "",
+          "onclick": "closeModal()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Organization",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "White-Label Studio",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Feature Matrix",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Terminology",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Cancel",
+          "id": "",
+          "onclick": "window.closeModal()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Save Tenant Configuration",
+          "id": "btnSaveTenantProfile",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "sales": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/dashboard/summary  | RES http://localhost:5000/api/dashboard/summary 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Add Attachment",
+          "id": "saleBtnAttach",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Clear All",
+          "id": "saleBtnClearProof",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/public/tenant-branding 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Add Product Line",
+          "id": "saleBtnAddLine",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "POST http://localhost:5000/api/auth/heartbeat ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Remove Line",
+          "id": "saleBtnRemoveLine",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/auth/heartbeat 200",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Confirm Dispatch",
+          "id": "saleBtnSave",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Create Challan",
+          "id": "saleBtnChallan",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Challan Register",
+          "id": "saleBtnOpenChallanReg",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Clear Form",
+          "id": "saleBtnClearForm",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Find",
+          "id": "saleBtnFind",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Add Attachment",
+          "id": "saleBtnEditAttach",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Keep Existing",
+          "id": "saleBtnKeepProof",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Add Line",
+          "id": "saleBtnEditAddLine",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Remove Line",
+          "id": "saleBtnEditRemoveLine",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Apply Modifications",
+          "id": "saleBtnApply",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Clear Changes",
+          "id": "saleBtnClearEdit",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Delete Transaction",
+          "id": "saleBtnDelete",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "stockassign": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Add Attachment",
+          "id": "assignBtnAttach",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Clear All",
+          "id": "assignBtnClearProof",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/public/tenant-branding 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Add Product Line",
+          "id": "assignBtnAddLine",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Remove Line",
+          "id": "assignBtnRemoveLine",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 200",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Reserve / Assign Stock",
+          "id": "assignBtnSave",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Clear Form",
+          "id": "assignBtnClearForm",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Refresh",
+          "id": "assignBtnRefreshReg",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Release to Firm",
+          "id": "assignBtnReleaseFirm",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Release to Customer",
+          "id": "assignBtnReleaseCustomer",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "purchaseregister": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/dashboard/summary ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/dashboard/summary 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Save View",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Clear Column Filters",
+          "id": "pregBtnClearFilters",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/public/tenant-branding 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Export",
+          "id": "pregBtnExport",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Refresh",
+          "id": "pregBtnRefresh",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "saleregister": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Save View",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Clear Column Filters",
+          "id": "sregBtnClearFilters",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/public/tenant-branding 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Export",
+          "id": "sregBtnExport",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Refresh",
+          "id": "sregBtnRefresh",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Dismiss",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "reports": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Save View",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Clear Filters",
+          "id": "repBtnClearFilters",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/public/tenant-branding 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Refresh",
+          "id": "repBtnRefresh",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Export",
+          "id": "repBtnExport",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "event.stopPropagation()",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "returns": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/dashboard/summary ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/dashboard/summary 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Add Line",
+          "id": "btnAddLine",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Execute Stock Adjustment",
+          "id": "btnProcessReturn",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "⚙️ White-Label Studio: Eco Green Solar  Organization  White-Label Studio  Feature Matrix  Terminology Organization Name * Tenant Slug (Subdomain) * Access via: {slug}.yourapp.com or ?tenant={slug} Custom Domain (CNAME / Reverse Proxy) Workspace Status Active Trial Suspended Cancel Save Tenant Configuration",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001  | POST http://localhost:5000/api/auth/heartbeat ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "closeModal()",
+          "id": "",
+          "onclick": "closeModal()",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "RES http://localhost:5000/api/auth/heartbeat 200 | RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Organization",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "White-Label Studio",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Feature Matrix",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Terminology",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Cancel",
+          "id": "",
+          "onclick": "window.closeModal()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Save Tenant Configuration",
+          "id": "btnSaveTenantProfile",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "PUT http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "financialreports": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/dashboard/summary  | RES http://localhost:5000/api/dashboard/summary 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Trial Balance",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Profit & Loss A/c",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Balance Sheet",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/public/tenant-branding 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Day Book",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Refresh Statements",
+          "id": "btnRefreshFinReports",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 200",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Dismiss",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "partyledger": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Refresh",
+          "id": "btnRefreshParties",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Statement",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Statement",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Statement",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Statement",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Statement",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Statement",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Statement",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Statement",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Statement",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Statement",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Open Statement",
+          "id": "btnOpenStatement",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "⚙️ White-Label Studio: Eco Green Solar  Organization  White-Label Studio  Feature Matrix  Terminology  Customize domain entity terminology to adapt to client-specific business models (e.g. Channel Partners vs Customers).  Client Entity Alias Supplier Entity Alias Item / Product Alias Dispatch / Invoice Alias Cancel Save Tenant Configuration",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": false,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "closeModal()",
+          "id": "",
+          "onclick": "closeModal()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Organization",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "White-Label Studio",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "POST http://localhost:5000/api/auth/heartbeat  | RES http://localhost:5000/api/auth/heartbeat 200",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Feature Matrix",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Terminology",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Cancel",
+          "id": "",
+          "onclick": "window.closeModal()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Save Tenant Configuration",
+          "id": "btnSaveTenantProfile",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "PUT http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Dismiss",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": false,
+          "networkCallsFired": 3,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 200",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "lowstock": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/dashboard/summary ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/dashboard/summary 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Clear Filters",
+          "id": "lsBtnClearFilters",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Export",
+          "id": "lsBtnExport",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/public/tenant-branding 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Refresh",
+          "id": "lsBtnRefresh",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Dismiss",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 200",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "backup": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Download Latest Backup",
+          "id": "bkBtnDownloadLatest",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Backup Now (Force)",
+          "id": "bkBtnForce",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/public/tenant-branding 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Download",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Download",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Download",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Download",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Download",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Download",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Download",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Download",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Download",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Download",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Download",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Download",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "PUT http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "⚙️ White-Label Studio: Eco Green Solar  Organization  White-Label Studio  Feature Matrix  Terminology Organization Name * Tenant Slug (Subdomain) * Access via: {slug}.yourapp.com or ?tenant={slug} Custom Domain (CNAME / Reverse Proxy) Workspace Status Active Trial Suspended Cancel Save Tenant Configuration",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": true,
+          "networkCallsFired": 3,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 200",
+          "errorsTriggered": []
+        },
+        {
+          "element": "closeModal()",
+          "id": "",
+          "onclick": "closeModal()",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "RES http://localhost:5000/api/public/tenant-branding 304 | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Organization",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "White-Label Studio",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Feature Matrix",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "POST http://localhost:5000/api/auth/heartbeat ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Terminology",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/auth/heartbeat 200",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Cancel",
+          "id": "",
+          "onclick": "window.closeModal()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Save Tenant Configuration",
+          "id": "btnSaveTenantProfile",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Dismiss",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "saas_tenants": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/dashboard/summary ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/dashboard/summary 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Refresh",
+          "id": "btnRefreshTenants",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Register New Tenant",
+          "id": "btnCreateTenantModal",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Active Workspace",
+          "id": "",
+          "onclick": "window.previewSwitchTenant('default')",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/public/tenant-branding 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Edit",
+          "id": "",
+          "onclick": "window.openEditTenantModal('00000000-0000-0000-0000-000000000001')",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "template_designer": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "+ Blank Template",
+          "id": "tplBtnNew",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Clone",
+          "id": "tplBtnClone",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Export",
+          "id": "tplBtnExport",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/public/tenant-branding 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Import",
+          "id": "tplBtnImport",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Set Default",
+          "id": "tplBtnSetActive",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Save Layout",
+          "id": "tplBtnSave",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Test Print",
+          "id": "tplBtnTestPrint",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Canvas",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Columns",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Typography",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Media & Uploads",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Watermark",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Page-Fit",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Portrait",
+          "id": "btnOrientPortrait",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Landscape",
+          "id": "btnOrientLandscape",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "PUT http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Fit",
+          "id": "btnZoomFit",
+          "onclick": "",
+          "clickSuccess": false,
+          "networkCallsFired": 3,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | GET http://localhost:5000/api/public/tenant-branding  | RES http://localhost:5000/api/saas/tenants/00000000-0000-0000-0000-000000000001 200",
+          "errorsTriggered": []
+        },
+        {
+          "element": "100%",
+          "id": "btnZoom100",
+          "onclick": "",
+          "clickSuccess": false,
+          "networkCallsFired": 2,
+          "sampleNetwork": "RES http://localhost:5000/api/public/tenant-branding 304 | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "⚙️ White-Label Studio: Eco Green Solar  Organization  White-Label Studio  Feature Matrix  Terminology Organization Name * Tenant Slug (Subdomain) * Access via: {slug}.yourapp.com or ?tenant={slug} Custom Domain (CNAME / Reverse Proxy) Workspace Status Active Trial Suspended Cancel Save Tenant Configuration",
+          "id": "",
+          "onclick": "event.stopPropagation()",
+          "clickSuccess": false,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "closeModal()",
+          "id": "",
+          "onclick": "closeModal()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Organization",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "White-Label Studio",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "POST http://localhost:5000/api/auth/heartbeat  | RES http://localhost:5000/api/auth/heartbeat 200",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Feature Matrix",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Terminology",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Cancel",
+          "id": "",
+          "onclick": "window.closeModal()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Save Tenant Configuration",
+          "id": "btnSaveTenantProfile",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Dismiss",
+          "id": "",
+          "onclick": "",
+          "clickSuccess": false,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    },
+    "bom": {
+      "navigated": false,
+      "elementsTested": [
+        {
+          "element": "Gateway / Dashboard",
+          "id": "btnNav_dashboard",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "GET http://localhost:5000/api/dashboard/summary ",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Accounts Info",
+          "id": "btnNav_grp-accounts",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 1,
+          "sampleNetwork": "RES http://localhost:5000/api/dashboard/summary 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Transaction Entry",
+          "id": "btnNav_grp-transactions",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Display / Print",
+          "id": "btnNav_grp-display",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Utilities & Setup",
+          "id": "btnNav_grp-utilities",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "SaaS Studio",
+          "id": "btnTopbarTenantSwitcher",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 2,
+          "sampleNetwork": "GET http://localhost:5000/api/saas/tenants  | RES http://localhost:5000/api/saas/tenants 304",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Install App",
+          "id": "btnTopbarInstallApp",
+          "onclick": "window.openAppInstallGuide()",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Back (Esc)",
+          "id": "bomBtnBackHome",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Print BOM",
+          "id": "bomBtnPrint",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Verify BOM",
+          "id": "bomBtnVerify",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Convert into Challan",
+          "id": "bomBtnChallan",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Create Dispatch",
+          "id": "bomBtnDispatch",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Generate BOM",
+          "id": "bomBtnCreateBom",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Track BOM",
+          "id": "bomBtnTrackBom",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "New Kit",
+          "id": "bomBtnNewKit",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        },
+        {
+          "element": "Tick All",
+          "id": "bomBtnTickAll",
+          "onclick": "",
+          "clickSuccess": true,
+          "networkCallsFired": 0,
+          "sampleNetwork": "",
+          "errorsTriggered": []
+        }
+      ],
+      "errors": []
+    }
+  },
+  "bugsFound": [],
+  "allConsoleLogs": [
+    {
+      "type": "error",
+      "text": "Loading the script 'https://accounts.google.com/gsi/client' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+      "time": 1787651904076
+    },
+    {
+      "type": "pageerror",
+      "text": "Unexpected token 'catch'",
+      "stack": "SyntaxError: Unexpected token 'catch'",
+      "time": 1787651904320
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "time": 1787651904358
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787651904435
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787651904436
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787651904436
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787651904436
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "time": 1787651904441
+    },
+    {
+      "type": "info",
+      "text": "Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.",
+      "time": 1787651904544
+    },
+    {
+      "type": "error",
+      "text": "Loading the script 'https://accounts.google.com/gsi/client' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+      "time": 1787651904603
+    },
+    {
+      "type": "pageerror",
+      "text": "Unexpected token 'catch'",
+      "stack": "SyntaxError: Unexpected token 'catch'",
+      "time": 1787651904721
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787651904815
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787651904816
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787651904816
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787651904816
+    },
+    {
+      "type": "info",
+      "text": "Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.",
+      "time": 1787651904884
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "time": 1787651905447
+    },
+    {
+      "type": "pageerror",
+      "text": "Maximum call stack size exceeded.",
+      "stack": "RangeError: Maximum call stack size exceeded.\n    at notifySyncStatus (http://localhost:5000/js/data/sheets-store.js?v=4:59:14)\n    at getQueueStatus (http://localhost:5000/js/data/sheets-store.js?v=4:278:27)\n    at renderSyncStatusHtml (http://localhost:5000/js/pages/scansheet.js?v=25:68:55)\n    at <anonymous> (http://localhost:5000/js/pages/scansheet.js?v=25:1895:26)\n    at notifySyncStatus (http://localhost:5000/js/data/sheets-store.js?v=4:59:14)\n    at getQueueStatus (http://localhost:5000/js/data/sheets-store.js?v=4:278:27)\n    at renderSyncStatusHtml (http://localhost:5000/js/pages/scansheet.js?v=25:68:55)\n    at <anonymous> (http://localhost:5000/js/pages/scansheet.js?v=25:1895:26)\n    at notifySyncStatus (http://localhost:5000/js/data/sheets-store.js?v=4:59:14)\n    at getQueueStatus (http://localhost:5000/js/data/sheets-store.js?v=4:278:27)",
+      "time": 1787651924692
+    },
+    {
+      "type": "pageerror",
+      "text": "Maximum call stack size exceeded.",
+      "stack": "RangeError: Maximum call stack size exceeded.\n    at notifySyncStatus (http://localhost:5000/js/data/sheets-store.js?v=4:59:14)\n    at getQueueStatus (http://localhost:5000/js/data/sheets-store.js?v=4:278:27)\n    at renderSyncStatusHtml (http://localhost:5000/js/pages/scansheet.js?v=25:68:55)\n    at <anonymous> (http://localhost:5000/js/pages/scansheet.js?v=25:1895:26)\n    at notifySyncStatus (http://localhost:5000/js/data/sheets-store.js?v=4:59:14)\n    at getQueueStatus (http://localhost:5000/js/data/sheets-store.js?v=4:278:27)\n    at renderSyncStatusHtml (http://localhost:5000/js/pages/scansheet.js?v=25:68:55)\n    at <anonymous> (http://localhost:5000/js/pages/scansheet.js?v=25:1895:26)\n    at notifySyncStatus (http://localhost:5000/js/data/sheets-store.js?v=4:59:14)\n    at getQueueStatus (http://localhost:5000/js/data/sheets-store.js?v=4:278:27)",
+      "time": 1787651925230
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o",
+      "time": 1787651931364
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "time": 1787652008187
+    }
+  ]
+}

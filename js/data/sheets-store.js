@@ -48,13 +48,17 @@ window.SheetsStore = (function () {
     } catch (e) { syncQueue = []; }
   }
 
-  function notifySyncStatus() {
+  function getQueueStatus() {
     const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
-    const status = {
+    return {
       isOnline,
       pendingCount: syncQueue.length,
       isSyncing,
     };
+  }
+
+  function notifySyncStatus() {
+    const status = getQueueStatus();
     try {
       window.dispatchEvent(new CustomEvent('egs:sync-status-changed', { detail: status }));
     } catch (e) {}
@@ -275,7 +279,7 @@ window.SheetsStore = (function () {
     isReady: () => ready,
     getSheets, getSheet, createSheet, updateSheet, deleteSheet,
     getEntries, addEntry, deleteEntry, clearEntries,
-    getQueueStatus: () => notifySyncStatus(),
+    getQueueStatus: () => getQueueStatus(),
     syncNow: () => flushSyncQueue(),
   };
 })();

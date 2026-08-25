@@ -15,7 +15,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     res.json(rows);
   }));
 
-  app.post('/api/masters/categories', route(async (req, res) => {
+  app.post('/api/masters/categories', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { name, watt_mandatory, serial_mandatory } = req.body;
     if (!name) return res.status(400).json({ error: 'Category name required' });
     await pool.query(`INSERT INTO categories (name, watt_mandatory, serial_mandatory) VALUES (?, ?, ?)`, [name, watt_mandatory ? 1 : 0, serial_mandatory ? 1 : 0]);
@@ -126,7 +126,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     res.json(mapped);
   }));
 
-  app.post('/api/masters/subtypes', route(async (req, res) => {
+  app.post('/api/masters/subtypes', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { category_name, subtype_name } = req.body;
     if (!category_name || !subtype_name) return res.status(400).json({ error: 'Category and subtype name required' });
     await pool.query(`INSERT INTO subtypes (category_name, subtype_name) VALUES (?, ?)`, [category_name, subtype_name]);
@@ -134,7 +134,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     res.json({ success: true });
   }));
 
-  app.put('/api/masters/subtypes', route(async (req, res) => {
+  app.put('/api/masters/subtypes', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { category_name, old_name, new_name } = req.body;
     const [result] = await pool.query(`UPDATE subtypes SET subtype_name = ? WHERE category_name = ? AND subtype_name = ?`, [new_name, category_name, old_name]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Original subtype not found.' });
@@ -142,7 +142,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     res.json({ success: true });
   }));
 
-  app.delete('/api/masters/subtypes', route(async (req, res) => {
+  app.delete('/api/masters/subtypes', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { category_name, subtype_name } = req.body;
     const [result] = await pool.query(`DELETE FROM subtypes WHERE category_name = ? AND subtype_name = ?`, [category_name, subtype_name]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Subtype not found.' });
@@ -162,7 +162,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     res.json(mapped);
   }));
 
-  app.post('/api/masters/units', route(async (req, res) => {
+  app.post('/api/masters/units', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { name } = req.body;
     if (!name) return res.status(400).json({ error: 'Unit name required' });
     await pool.query(`INSERT INTO units (name) VALUES (?)`, [name]);
@@ -170,7 +170,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     res.json({ success: true });
   }));
 
-  app.put('/api/masters/units', route(async (req, res) => {
+  app.put('/api/masters/units', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { old_name, new_name } = req.body;
     const [result] = await pool.query(`UPDATE units SET name = ? WHERE name = ?`, [new_name, old_name]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Original unit not found.' });
@@ -179,7 +179,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     res.json({ success: true });
   }));
 
-  app.delete('/api/masters/units', route(async (req, res) => {
+  app.delete('/api/masters/units', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { name } = req.body;
     const [[{ cnt }]] = await pool.query(`SELECT COUNT(*) AS cnt FROM items WHERE uom = ?`, [name]);
     if (cnt > 0) return res.status(400).json({ error: `Cannot delete '${name}': ${cnt} item(s) using this unit.` });
@@ -278,7 +278,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     return null;
   }
 
-  app.post('/api/masters/items', route(async (req, res) => {
+  app.post('/api/masters/items', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { name, brand_name, watt, watt_unit, solar_type, category, uom, minimum_stock, model, watt_mandatory, serial_mandatory } = req.body;
     const wattOverride = normalizeOverrideFlag(watt_mandatory);
     const serialOverride = normalizeOverrideFlag(serial_mandatory);
@@ -292,7 +292,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     res.json({ success: true });
   }));
 
-  app.put('/api/masters/items/:id', route(async (req, res) => {
+  app.put('/api/masters/items/:id', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { id } = req.params;
     const { name, brand_name, watt, watt_unit, solar_type, category, uom, minimum_stock, model, watt_mandatory, serial_mandatory } = req.body;
     const wattOverride = normalizeOverrideFlag(watt_mandatory);
@@ -309,7 +309,7 @@ module.exports = function registerMastersRoutes(app, deps) {
   }));
 
   // Item: delete a single registered item
-  app.delete('/api/masters/items/:id', route(async (req, res) => {
+  app.delete('/api/masters/items/:id', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { id } = req.params;
     const [[{ cnt }]] = await pool.query(`SELECT COUNT(*) AS cnt FROM stock_ledger WHERE item_id = ?`, [id]);
     if (cnt > 0) {
@@ -330,14 +330,15 @@ module.exports = function registerMastersRoutes(app, deps) {
     res.json(rows);
   }));
 
-  app.post('/api/masters/warehouses', route(async (req, res) => {
+  app.post('/api/masters/warehouses', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { name, location } = req.body;
+    if (!name) return res.status(400).json({ error: 'Warehouse name is required.' });
     await pool.query(`INSERT INTO warehouses (name, location) VALUES (?, ?)`, [name, location || '']);
     if (masterCache) masterCache.del('warehouses');
     res.json({ success: true });
   }));
 
-  app.put('/api/masters/warehouses', route(async (req, res) => {
+  app.put('/api/masters/warehouses', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { old_name, new_name } = req.body;
     const [result] = await pool.query(`UPDATE warehouses SET name = ? WHERE name = ?`, [new_name, old_name]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'Original warehouse not found.' });
@@ -346,7 +347,7 @@ module.exports = function registerMastersRoutes(app, deps) {
     res.json({ success: true });
   }));
 
-  app.delete('/api/masters/warehouses', route(async (req, res) => {
+  app.delete('/api/masters/warehouses', requireRole('SuperAdmin', 'Admin'), route(async (req, res) => {
     const { name } = req.body;
     const [[{ cnt }]] = await pool.query(`SELECT COUNT(*) AS cnt FROM stock_ledger WHERE warehouse = ?`, [name]);
     if (cnt > 0) return res.status(400).json({ error: `Cannot delete '${name}': ${cnt} stock record(s) tagged with this warehouse.` });
