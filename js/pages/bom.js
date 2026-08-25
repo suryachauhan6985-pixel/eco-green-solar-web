@@ -213,19 +213,10 @@ window.PAGES.bom = {
 
   async init(opts = {}) {
     const ctx = {};
-    // ctx.$ MUST exist before any of the createBom*Module(ctx) factory
-    // calls below run — several of them (e.g. createBomChallanMapModule's
-    // ctx.registerOverlay = ctx.$('bomRegisterOverlay') at its own bottom)
-    // call ctx.$(...) synchronously, right when the factory function
-    // itself executes, not just inside the functions it hands back. If
-    // ctx.$ isn't defined yet at that point, that call throws
-    // "ctx.$ is not a function" immediately, which aborts init() before
-    // ANY button listener gets wired and before bomLoadHomePendingTable()
-    // ever runs — exactly the "buttons dead + spinner stuck forever" bug.
-    // Same reasoning for the Challan-modal DOM refs
-    // (challanOverlay/challanModalBody/challanCloseBtn): createBomChallanMapModule
-    // wires their click handlers at factory-call time too, so those three
-    // must also be grabbed before that call, not after.
+    const curRole = window.currentUserRole || window.CURRENT_USER_ROLE || (window.CURRENT_USER && window.CURRENT_USER.role) || localStorage.getItem('user_role') || localStorage.getItem('role') || 'User';
+    ctx.bomCurrentRole = curRole;
+    ctx.bomIsAdmin = curRole === 'SuperAdmin' || curRole === 'Admin';
+
     ctx.$ = (id) => document.getElementById(id);
     ctx.challanOverlay = ctx.$('bomChallanOverlay');
     ctx.challanModalBody = ctx.$('bomChallanModalBody');
@@ -242,6 +233,9 @@ window.PAGES.bom = {
     ctx.kitSelect = ctx.$('bomKitSelect');
     ctx.itemsPreview = ctx.$('bomItemsPreview');
     ctx.kitItemsPanel = ctx.$('bomKitItemsPanel');
+    ctx.btnEditKit = ctx.$('bomBtnEditKit');
+    ctx.btnDeleteKit = ctx.$('bomBtnDeleteKit');
+    ctx.btnNewKit = ctx.$('bomBtnNewKit');
     ctx.btnPrint = ctx.$('bomBtnPrint');
     ctx.printRoot = ctx.$('bomPrintRoot');
     ctx.challanPrintRoot = ctx.$('bomChallanPrintRoot');

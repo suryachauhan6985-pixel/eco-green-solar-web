@@ -13,8 +13,12 @@
 // header comment for the full ctx explanation — same pattern here.
 // -----------------------------------------------------------------------------
 function createBomKitBuilderModule(ctx) {
+    ctx.btnEditKit = ctx.$('bomBtnEditKit');
+    ctx.btnDeleteKit = ctx.$('bomBtnDeleteKit');
+    ctx.btnNewKit = ctx.$('bomBtnNewKit');
+
     function updateKitActionButtons() {
-      const showActions = ctx.bomIsAdmin && bomIsCustomKitKey(ctx.kitSelect.value);
+      const showActions = ctx.bomIsAdmin && bomIsCustomKitKey(ctx.kitSelect ? ctx.kitSelect.value : '');
       if (ctx.btnDeleteKit) ctx.btnDeleteKit.style.display = showActions ? '' : 'none';
       if (ctx.btnEditKit) ctx.btnEditKit.style.display = showActions ? '' : 'none';
     }
@@ -85,8 +89,8 @@ function createBomKitBuilderModule(ctx) {
         } finally {
           ctx.btnDeleteKit.disabled = false;
         }
-        ctx.populateKitDropdown('');
-        ctx.refreshItemsPreview();
+        populateKitDropdown('');
+        refreshItemsPreview();
         if (window.showToast) window.showToast('Kit template deleted.');
       });
     }
@@ -228,7 +232,7 @@ function createBomKitBuilderModule(ctx) {
         // only, not on every keystroke, so the first row's Item Name/Model
         // cells switch to/from the Category dropdown pair as soon as the
         // person finishes typing, without the table jumping around mid-edit.
-        if (e.type === 'change') ctx.renderKitBuilderSections();
+        if (e.type === 'change') renderKitBuilderSections();
         return;
       }
       const ii = Number(el.dataset.bidx);
@@ -236,18 +240,18 @@ function createBomKitBuilderModule(ctx) {
       const item = ctx.newKitSections[si].items[ii];
 
       // Category select on a category-driven row's first item (see
-      // ctx.renderKitBuilderSections). Changing it invalidates whichever real
+      // renderKitBuilderSections). Changing it invalidates whichever real
       // item (item.name) was picked under the old category — clear it and
       // refresh the Model dropdown's option list for the new category.
       if (field === 'category') {
         item.category = el.value;
         item.name = '';
-        ctx.renderKitBuilderSections();
+        renderKitBuilderSections();
         return;
       }
 
       // field 'name' is shared by two different selects depending on the
-      // row type (see ctx.renderKitBuilderSections):
+      // row type (see renderKitBuilderSections):
       //  - category-driven lead row's Model-item select — its value IS
       //    already the real registered item name (bomBuildCategoryItemOptionsHtml).
       //  - normal row's Item Name select — now a deduped BRAND picker
@@ -268,7 +272,7 @@ function createBomKitBuilderModule(ctx) {
           const meta = bomItemMasterMeta[resolved];
           if (meta && meta.model) item.model = meta.model; // brand had exactly one item — keep Model in sync
         }
-        ctx.renderKitBuilderSections();
+        renderKitBuilderSections();
         return;
       }
 
@@ -311,28 +315,28 @@ function createBomKitBuilderModule(ctx) {
         } else {
           return;
         }
-        ctx.renderKitBuilderSections();
+        renderKitBuilderSections();
       });
     }
 
     if (ctx.btnAddKitSection) {
       ctx.btnAddKitSection.addEventListener('click', () => {
         ctx.newKitSections.push({ title: 'New Section', items: [{ sr: '', name: '', model: '', qty: '', remarks: '' }] });
-        ctx.renderKitBuilderSections();
+        renderKitBuilderSections();
       });
     }
 
     if (ctx.btnNewKit) {
       ctx.btnNewKit.addEventListener('click', () => {
         ctx.editingKitKey = null;
-        ctx.setKitBuilderMode(false);
+        setKitBuilderMode(false);
         // Pre-fill with the standard section/item format (names only,
         // Model/Quantity/Remarks blank) — the person only needs to fill in
         // values and add/remove items/sections where this kit differs.
         ctx.newKitSections = bomDefaultSectionsTemplate();
         ctx.newKitLabelInput.value = '';
         ctx.newKitKwInput.value = '';
-        ctx.renderKitBuilderSections();
+        renderKitBuilderSections();
         ctx.kitBuilderPanel.style.display = '';
         // The "Kit Items" panel below always mirrors the currently-selected
         // kit (e.g. the default 3.3 kW list) — while building a brand new
@@ -351,7 +355,7 @@ function createBomKitBuilderModule(ctx) {
     // Cancel never mutates the saved template) instead of the blank
     // default — and Save (now "Update Kit Template") overwrites that same
     // saved key rather than minting a new one. Only ever visible for a
-    // saved custom kit (see ctx.updateKitActionButtons), same Admin/SuperAdmin
+    // saved custom kit (see updateKitActionButtons), same Admin/SuperAdmin
     // gate as New Kit/Delete Kit.
     if (ctx.btnEditKit) {
       ctx.btnEditKit.addEventListener('click', () => {
@@ -362,12 +366,12 @@ function createBomKitBuilderModule(ctx) {
         if (!kit) return;
 
         ctx.editingKitKey = key;
-        ctx.setKitBuilderMode(true);
+        setKitBuilderMode(true);
         ctx.newKitSections = JSON.parse(JSON.stringify(kit.sections || []));
         if (!ctx.newKitSections.length) ctx.newKitSections = bomDefaultSectionsTemplate();
         ctx.newKitLabelInput.value = kit.label || '';
         ctx.newKitKwInput.value = kit.kw || '';
-        ctx.renderKitBuilderSections();
+        renderKitBuilderSections();
         ctx.kitBuilderPanel.style.display = '';
         if (ctx.kitItemsPanel) ctx.kitItemsPanel.style.display = 'none';
         ctx.kitBuilderPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -451,8 +455,8 @@ function createBomKitBuilderModule(ctx) {
 
         ctx.kitBuilderPanel.style.display = 'none';
         if (ctx.kitItemsPanel) ctx.kitItemsPanel.style.display = '';
-        ctx.populateKitDropdown(key); // auto-select the newly saved/updated kit
-        ctx.refreshItemsPreview();
+        populateKitDropdown(key); // auto-select the newly saved/updated kit
+        refreshItemsPreview();
         if (window.showToast) window.showToast(wasEditing ? 'Kit template updated.' : 'Kit template saved — it now auto-fills from the dropdown, on every device.');
       });
     }
