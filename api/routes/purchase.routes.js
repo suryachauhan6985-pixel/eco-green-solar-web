@@ -136,6 +136,7 @@ module.exports = function registerPurchaseRoutes(app, deps) {
         const brand = String(line.brand || line.name || cat || 'General').trim() || 'General';
         const watt = Number(line.watt) || 0;
         const type = String(line.type || 'Others').trim() || 'Others';
+        const model = String(line.model || '').trim();
         const wh = String(line.warehouse || 'Warehouse 1').trim() || 'Warehouse 1';
         const uom = String(line.uom || '').trim();
         const itemId = await getOrCreateItem(conn, cat, brand, watt, type, model, uom);
@@ -440,7 +441,7 @@ module.exports = function registerPurchaseRoutes(app, deps) {
           type: 'PURCHASE_UPDATE',
           ref: newInv,
           user: (req.user && req.user.username) || 'User',
-          oldVal: `Original Inv: ${origInv} | Serials: ${originalSerials.length}`,
+          oldVal: `Original Inv: ${originalInvoiceNo} | Serials: ${originalSerials.length}`,
           newVal: `New Inv: ${newInv} | Supplier: ${newSupp} | Serials: ${newSerials.length}`
         });
       }

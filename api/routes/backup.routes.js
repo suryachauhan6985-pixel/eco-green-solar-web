@@ -76,7 +76,14 @@ module.exports = function registerBackupRoutes(app, deps) {
       if (columns.length) {
         sheet.addRow(columns);
         rows.forEach((r) => {
-          sheet.addRow(columns.map((c) => (tableName === 'users' && c === 'password') ? '********' : r[c]));
+          sheet.addRow(columns.map((c) => {
+            if (tableName === 'users' && c === 'password') return '********';
+            const val = r[c];
+            if (typeof val === 'string' && /^[=+\-@\t\r]/.test(val)) {
+              return `'${val}`;
+            }
+            return val;
+          }));
         });
       }
       anySheetWritten = true;

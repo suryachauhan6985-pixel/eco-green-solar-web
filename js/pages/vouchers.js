@@ -142,24 +142,21 @@ window.PAGES.vouchers = {
     // Load Ledgers for Datalist Autocomplete
     async function loadLedgerOptions() {
       try {
-        const res = await fetch(`${API_BASE}/ledgers`);
-        if (res.ok) {
-          cachedLedgers = await res.json();
-          if (datalist) {
-            const standardAccounts = [
-              { name: 'Cash Account' },
-              { name: 'HDFC Bank Ltd' },
-              { name: 'State Bank of India' },
-              { name: 'ICICI Bank Ltd' },
-              { name: 'Sales Account' },
-              { name: 'Purchase Account' },
-              { name: 'Discount Allowed' },
-              { name: 'Discount Received' },
-              { name: 'Transport & Freight Charges' }
-            ];
-            const all = [...cachedLedgers, ...standardAccounts];
-            datalist.innerHTML = all.map(l => `<option value="${l.name}">${l.type ? `[${l.type}]` : ''}</option>`).join('');
-          }
+        cachedLedgers = await window.Api.get('/ledgers');
+        if (datalist) {
+          const standardAccounts = [
+            { name: 'Cash Account' },
+            { name: 'HDFC Bank Ltd' },
+            { name: 'State Bank of India' },
+            { name: 'ICICI Bank Ltd' },
+            { name: 'Sales Account' },
+            { name: 'Purchase Account' },
+            { name: 'Discount Allowed' },
+            { name: 'Discount Received' },
+            { name: 'Transport & Freight Charges' }
+          ];
+          const all = [...(cachedLedgers || []), ...standardAccounts];
+          datalist.innerHTML = all.map(l => `<option value="${l.name}">${l.type ? `[${l.type}]` : ''}</option>`).join('');
         }
       } catch (e) {}
     }
@@ -170,14 +167,10 @@ window.PAGES.vouchers = {
         tbody.innerHTML = window.Skeleton.tableRows(6, 5, { pillCols: [5] });
       }
       try {
-        const res = await fetch(`${API_BASE}/vouchers?type=${currentVoucherType}`);
-        if (res.ok) {
-          const data = await res.json();
-          cachedVouchers = data.vouchers || [];
-          renderVoucherTable(cachedVouchers);
-        } else {
-          throw new Error('Server returned ' + res.status);
-        }
+        const data = await window.Api.get(`/vouchers?type=${currentVoucherType}`);
+        cachedVouchers = data.vouchers || [];
+        renderVoucherTable(cachedVouchers);
+      } catch (e) {
       } catch (e) {
         if (tbody) {
           if (window.Skeleton) {
@@ -275,23 +268,16 @@ window.PAGES.vouchers = {
         }
 
         try {
-          const res = await fetch(`${API_BASE}/vouchers`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              voucher_type: currentVoucherType,
-              voucher_date,
-              debit_ledger,
-              credit_ledger,
-              amount,
-              tax_amount,
-              narration,
-              ref_no
-            })
+          const data = await window.Api.post('/vouchers', {
+            voucher_type: currentVoucherType,
+            voucher_date,
+            debit_ledger,
+            credit_ledger,
+            amount,
+            tax_amount,
+            narration,
+            ref_no
           });
-
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Failed to record voucher.');
 
           window.showToast(`${currentVoucherType} Voucher ${data.voucher_no} posted successfully!`);
           document.getElementById('vouchDebitLedger').value = '';
@@ -317,9 +303,7 @@ window.PAGES.vouchers = {
         if (!ok) return;
 
         try {
-          const res = await fetch(`${API_BASE}/vouchers/${id}`, { method: 'DELETE' });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Could not delete voucher.');
+          await window.Api.delete(`/vouchers/${id}`);
           window.showToast('Voucher deleted.');
           loadVouchersRegister();
         } catch (err) {
@@ -328,18 +312,22 @@ window.PAGES.vouchers = {
       });
     }
 
-    // Search filter
+    // Search filter with RAF throttling
     const searchInp = document.getElementById('vouchSearchInput');
+    let vouchSearchRaf = null;
     if (searchInp) {
       searchInp.addEventListener('input', (e) => {
-        const q = e.target.value.toLowerCase();
-        const filtered = cachedVouchers.filter(v => 
-          (v.voucher_no && v.voucher_no.toLowerCase().includes(q)) ||
-          (v.debit_ledger && v.debit_ledger.toLowerCase().includes(q)) ||
-          (v.credit_ledger && v.credit_ledger.toLowerCase().includes(q)) ||
-          (v.narration && v.narration.toLowerCase().includes(q))
-        );
-        renderVoucherTable(filtered);
+        if (vouchSearchRaf) cancelAnimationFrame(vouchSearchRaf);
+        vouchSearchRaf = requestAnimationFrame(() => {
+          const q = e.target.value.toLowerCase().trim();
+          const filtered = cachedVouchers.filter(v => 
+            (v.voucher_no && v.voucher_no.toLowerCase().includes(q)) ||
+            (v.debit_ledger && v.debit_ledger.toLowerCase().includes(q)) ||
+            (v.credit_ledger && v.credit_ledger.toLowerCase().includes(q)) ||
+            (v.narration && v.narration.toLowerCase().includes(q))
+          );
+          renderVoucherTable(filtered);
+        });
       });
     }
 

@@ -87,7 +87,7 @@
 .field.span-full{grid-column:1/-1;}
 .form-grid.cols-2{grid-template-columns:repeat(2,1fr);}
 
-.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; border-radius:8px; padding:10px 18px; font-weight:700; font-size:13px; color:#fff; font-family:inherit; cursor:pointer; min-height:38px; box-sizing:border-box; text-align:center; transition:filter .18s ease, transform .12s ease;}
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; border-radius:8px; padding:10px 18px; font-weight:700; font-size:13px; color:#fff; font-family:inherit; cursor:pointer; min-height:38px; box-sizing:border-box; text-align:center; transition:filter .15s ease, transform .08s ease, background-color .15s ease; will-change:transform; user-select:none;}
 .btn i{font-size:13px; color:inherit; flex-shrink:0;}
 .btn-blue{background:var(--blue); color:#fff !important;}
 .btn-blue i{color:#fff !important;}
@@ -102,7 +102,33 @@
 .btn-ghost{background:var(--input-bg); color:var(--txt); border:1px solid var(--border-light);}
 .btn-ghost i{color:inherit;}
 .btn:hover{filter:brightness(1.1);}
-.btn:active{transform:translateY(1px);}
+.btn:active{transform:scale(0.97);}
+
+/* Ultra-Fast In-Button Loading & Micro-Feedback States */
+.btn-loading{position:relative; pointer-events:none; opacity:0.85 !important; cursor:wait !important;}
+.btn-loading::after{
+  content:'';
+  width:14px; height:14px;
+  border:2px solid rgba(255,255,255,0.3);
+  border-top-color:#ffffff;
+  border-radius:50%;
+  animation:btnSpinFast 0.5s linear infinite;
+  display:inline-block;
+  margin-left:6px;
+  vertical-align:middle;
+}
+@keyframes btnSpinFast {
+  to { transform: rotate(360deg); }
+}
+
+.btn-success{background:#22c55e !important; color:#ffffff !important; transition:background-color .15s ease;}
+.btn-error-shake{background:#ef4444 !important; color:#ffffff !important; animation:btnShakeFast 0.35s ease-in-out;}
+@keyframes btnShakeFast {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
 .actions-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; min-width:0; width:100%; box-sizing:border-box;}
 
 .toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px; min-width:0; width:100%;}

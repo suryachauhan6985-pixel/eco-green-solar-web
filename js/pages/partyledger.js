@@ -311,9 +311,7 @@ window.PAGES.partyledger = {
           search: searchEl.value.trim(),
           type: typeEl.value,
         });
-        const res = await fetch(`${API_BASE}/ledgers/directory?${params.toString()}`);
-        if (!res.ok) throw new Error('Could not load party directory.');
-        directory = await res.json();
+        directory = await window.Api.get(`/ledgers/directory?${params.toString()}`);
         renderList();
       } catch (err) {
         if (tbodyEl) {
@@ -713,9 +711,7 @@ window.PAGES.partyledger = {
 
     async function fetchStatementRows(partyName, type) {
       const params = new URLSearchParams({ name: partyName, type });
-      const res = await fetch(`${API_BASE}/ledgers/statement?${params.toString()}`);
-      if (!res.ok) throw new Error('Could not load transactions for this party.');
-      const data = await res.json();
+      const data = await window.Api.get(`/ledgers/statement?${params.toString()}`);
       return data.rows || [];
     }
 
@@ -725,9 +721,7 @@ window.PAGES.partyledger = {
       if (!target || !target.ledgerId) return;
       if (!(await window.confirmDanger('Delete Ledger', `Delete the Ledger '${target.partyName}'?`))) return;
       try {
-        const res = await fetch(`${API_BASE}/ledgers/${target.ledgerId}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Could not delete this ledger.');
+        await window.Api.delete(`/ledgers/${target.ledgerId}`);
         if (window.showToast) window.showToast('Ledger removed from master list.');
         if (selected && selected.ledgerId === target.ledgerId) {
           selected = null;
@@ -977,12 +971,10 @@ window.PAGES.partyledger = {
       unlockPageScroll();
       detachLedgerFormEscape();
       if (window.CURRENT_PARTY_LEDGER_MODE === 'create') {
-        if (typeof window.stepBackFromFlyoutTrail === 'function') {
-          window.stepBackFromFlyoutTrail();
-        } else if (window.navigateToPage) {
-          window.navigateToPage('dashboard');
-        } else if (window.goPage) {
-          window.goPage('dashboard');
+        if (typeof window.closeAllFlyouts === 'function') window.closeAllFlyouts();
+        if (typeof window.clearFlyoutTrail === 'function') window.clearFlyoutTrail();
+        if (typeof window.go === 'function') {
+          window.go('dashboard');
         }
       }
     }

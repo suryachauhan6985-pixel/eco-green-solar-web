@@ -163,54 +163,58 @@ window.PAGES.reports = {
       return r.id || r.serialNo || (r.brand + '_' + r.category + '_' + r.purchaseInvoice);
     }
 
+    let renderRafId = null;
     function renderTable() {
-      const visible = allRows.filter((r) => matchesSearch(r) && isRowVisible(rowToValues(r)));
-      if (!visible.length) {
-        if (window.Skeleton) {
-          tbody.innerHTML = window.Skeleton.tableEmpty(20, 'No stock records found', { icon: 'fa-solid fa-boxes-stacked', desc: 'Try changing category, search terms, or column filters.' });
-        } else {
-          tbody.innerHTML = `<tr><td colspan="20" style="text-align:center; color:var(--txt-muted); font-style:italic;">No records found for the selected filters.</td></tr>`;
+      if (renderRafId) cancelAnimationFrame(renderRafId);
+      renderRafId = requestAnimationFrame(() => {
+        const visible = allRows.filter((r) => matchesSearch(r) && isRowVisible(rowToValues(r)));
+        if (!visible.length) {
+          if (window.Skeleton) {
+            tbody.innerHTML = window.Skeleton.tableEmpty(20, 'No stock records found', { icon: 'fa-solid fa-boxes-stacked', desc: 'Try changing category, search terms, or column filters.' });
+          } else {
+            tbody.innerHTML = `<tr><td colspan="20" style="text-align:center; color:var(--txt-muted); font-style:italic;">No records found for the selected filters.</td></tr>`;
+          }
+          return;
         }
-        return;
-      }
-      tbody.innerHTML = visible.map((r) => {
-        const key = getRowKey(r);
-        return `
-        <tr class="${selectedRows.has(key) ? 'selected-row' : ''}">
-          <td style="text-align:center;" onclick="event.stopPropagation()">
-            <input type="checkbox" class="rep-row-chk" data-key="${key}" ${selectedRows.has(key) ? 'checked' : ''}>
-          </td>
-          <td data-label="Serial No" class="gold-txt" style="font-family:monospace;">${(r.serialNo && r.serialNo !== 'null' && r.serialNo !== '') ? r.serialNo : '-'}</td>
-          <td data-label="Product Brand">${r.brand}</td>
-          <td data-label="Wattage Spec">${formatWattDisplay(r.watt)}</td>
-          <td data-label="Quantity"><span style="font-weight:700;">${formatQtyNum(r.qty)}</span> <small style="font-weight:600; color:var(--txt-muted);">${r.uom || 'Nos'}</small></td>
-          <td data-label="Solar Type">${r.solarType}</td>
-          <td data-label="Category">${r.category}</td>
-          <td data-label="Pallet ID">${r.palletNo}</td>
-          <td data-label="Warehouse">${r.warehouse}</td>
-          <td data-label="Status">${statusPillClass(r.status) ? `<span class="pill ${statusPillClass(r.status)}">${r.status}</span>` : r.status}</td>
-          <td data-label="Supplier">${r.supplier}</td>
-          <td data-label="Purchase Invoice">${r.purchaseInvoice}</td>
-          <td data-label="Purchase Date">${r.purchaseDate}</td>
-          <td data-label="Customer">${r.customer}</td>
-          <td data-label="Order No">${r.orderNo}</td>
-          <td data-label="Sales Invoice">${r.salesInvoice}</td>
-          <td data-label="Sales Invoice Date">${r.invoiceDate}</td>
-          <td data-label="Challan No">${r.chalanNo}</td>
-          <td data-label="Challan Date">${r.chalanDate}</td>
-          <td data-label="Edited?" ${r.edited === 'Yes' ? 'class="gold-txt"' : ''}>${r.edited}</td>
-        </tr>`;
-      }).join('');
+        tbody.innerHTML = visible.map((r) => {
+          const key = getRowKey(r);
+          return `
+          <tr class="${selectedRows.has(key) ? 'selected-row' : ''}">
+            <td style="text-align:center;" onclick="event.stopPropagation()">
+              <input type="checkbox" class="rep-row-chk" data-key="${key}" ${selectedRows.has(key) ? 'checked' : ''}>
+            </td>
+            <td data-label="Serial No" class="gold-txt" style="font-family:monospace;">${(r.serialNo && r.serialNo !== 'null' && r.serialNo !== '') ? r.serialNo : '-'}</td>
+            <td data-label="Product Brand">${r.brand}</td>
+            <td data-label="Wattage Spec">${formatWattDisplay(r.watt)}</td>
+            <td data-label="Quantity"><span style="font-weight:700;">${formatQtyNum(r.qty)}</span> <small style="font-weight:600; color:var(--txt-muted);">${r.uom || 'Nos'}</small></td>
+            <td data-label="Solar Type">${r.solarType}</td>
+            <td data-label="Category">${r.category}</td>
+            <td data-label="Pallet ID">${r.palletNo}</td>
+            <td data-label="Warehouse">${r.warehouse}</td>
+            <td data-label="Status">${statusPillClass(r.status) ? `<span class="pill ${statusPillClass(r.status)}">${r.status}</span>` : r.status}</td>
+            <td data-label="Supplier">${r.supplier}</td>
+            <td data-label="Purchase Invoice">${r.purchaseInvoice}</td>
+            <td data-label="Purchase Date">${r.purchaseDate}</td>
+            <td data-label="Customer">${r.customer}</td>
+            <td data-label="Order No">${r.orderNo}</td>
+            <td data-label="Sales Invoice">${r.salesInvoice}</td>
+            <td data-label="Sales Invoice Date">${r.invoiceDate}</td>
+            <td data-label="Challan No">${r.chalanNo}</td>
+            <td data-label="Challan Date">${r.chalanDate}</td>
+            <td data-label="Edited?" ${r.edited === 'Yes' ? 'class="gold-txt"' : ''}>${r.edited}</td>
+          </tr>`;
+        }).join('');
 
-      // Wire row checkboxes
-      tbody.querySelectorAll('.rep-row-chk').forEach(chk => {
-        chk.addEventListener('change', () => {
-          const key = chk.getAttribute('data-key');
-          if (chk.checked) selectedRows.add(key);
-          else selectedRows.delete(key);
-          const tr = chk.closest('tr');
-          if (tr) tr.classList.toggle('selected-row', chk.checked);
-          if (bulkBarApi) bulkBarApi.update(selectedRows.size);
+        // Wire row checkboxes
+        tbody.querySelectorAll('.rep-row-chk').forEach(chk => {
+          chk.addEventListener('change', () => {
+            const key = chk.getAttribute('data-key');
+            if (chk.checked) selectedRows.add(key);
+            else selectedRows.delete(key);
+            const tr = chk.closest('tr');
+            if (tr) tr.classList.toggle('selected-row', chk.checked);
+            if (bulkBarApi) bulkBarApi.update(selectedRows.size);
+          });
         });
       });
     }

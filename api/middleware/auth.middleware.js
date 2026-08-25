@@ -63,8 +63,9 @@ function authenticateToken(req, res, next) {
 }
 
 function requireRole(...roles) {
+  const allowed = roles.flat().map((r) => String(r || '').trim()).filter(Boolean);
   return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    if (!req.user || !allowed.includes(req.user.role)) {
       return res.status(403).json({ error: 'You do not have permission to perform this action.' });
     }
     next();

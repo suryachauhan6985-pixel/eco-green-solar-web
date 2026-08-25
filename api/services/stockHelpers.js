@@ -42,19 +42,29 @@ async function getItemId(runner, category, brand, watt, solarType, model) {
 // product line must already exist in stock_ledger, be 'Available', and its
 // stored category/brand/watt/type must match the line it's being dispatched
 // under. Returns an array of human-readable error strings (empty = valid).
+// Optimized with single batch query to eliminate N+1 performance bottleneck.
 async function validateSalesLineSerials(runner, serials, line) {
+  if (!Array.isArray(serials) || !serials.length) return [];
   const errors = [];
-  for (const sn of serials) {
-    const [rows] = await runner.query(
-      `SELECT status, category, brand_name, watt, solar_type FROM stock_ledger WHERE serial_no=?`,
-      [sn]
-    );
-    if (!rows.length) {
+  const cleanSerials = serials.map((s) => String(s || '').trim()).filter(Boolean);
+  if (!cleanSerials.length) return [];
+
+  const [rows] = await runner.query(
+    `SELECT serial_no, status, category, brand_name, watt, solar_type FROM stock_ledger WHERE serial_no IN (?)`,
+    [cleanSerials]
+  );
+
+  const rowMap = new Map();
+  rows.forEach((r) => rowMap.set(r.serial_no, r));
+
+  const lineWatt = Number(line.watt) || 0;
+
+  for (const sn of cleanSerials) {
+    const r = rowMap.get(sn);
+    if (!r) {
       errors.push(`'${sn}' - NOT FOUND in database`);
       continue;
     }
-    const r = rows[0];
-    const lineWatt = Number(line.watt) || 0;
     if (r.status !== 'Available') errors.push(`'${sn}' - Status is '${r.status}', not 'Available'`);
     if (r.category !== line.cat) errors.push(`'${sn}' - Category mismatch: database has '${r.category}'`);
     if (r.brand_name !== line.brand) errors.push(`'${sn}' - Brand mismatch: database has '${r.brand_name}'`);

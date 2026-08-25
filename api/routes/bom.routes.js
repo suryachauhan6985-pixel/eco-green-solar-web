@@ -62,8 +62,35 @@ module.exports = function registerBomRoutes(app, deps) {
   // rules, so a BOM that passed Convert-into-Challan never fails
   // Create Dispatch for a different reason. `runner` decides whether rows
   // get FOR UPDATE-locked (Step 2, inside a transaction) or not (Step 1).
+  // Shared validation used by BOTH endpoints below — Step 1's read-only
+  // check and Step 2's inside-transaction re-check run the exact same
+  // rules, so a BOM that passed Convert-into-Challan never fails
+  // Create Dispatch for a different reason. `runner` decides whether rows
+  // get FOR UPDATE-locked (Step 2, inside a transaction) or not (Step 1).
+  // Optimized to batch-query items and available quantities, eliminating N+1 queries.
   async function checkItems(runner, items, forUpdate) {
     const results = [];
+    const validItems = items.filter((raw) => {
+      const name = (raw.name || '').trim();
+      const required = Number(raw.qty) || 0;
+      return name && required > 0;
+    });
+
+    const itemNames = [...new Set(validItems.map((r) => String(r.name).trim()))];
+    const itemMap = new Map();
+
+    if (itemNames.length) {
+      const [itemRows] = await runner.query(
+        `SELECT i.id, i.name, i.category, i.brand_name, i.watt, i.solar_type, i.model,
+                COALESCE(i.serial_mandatory, c.serial_mandatory, 0) AS serial_mandatory
+         FROM items i
+         LEFT JOIN categories c ON c.name = i.category
+         WHERE i.name IN (?)`,
+        [itemNames]
+      );
+      itemRows.forEach((r) => itemMap.set(r.name, r));
+    }
+
     for (const raw of items) {
       const name = (raw.name || '').trim();
       const required = Number(raw.qty) || 0;
@@ -79,7 +106,7 @@ module.exports = function registerBomRoutes(app, deps) {
         continue;
       }
 
-      const item = await findItemByName(runner, name);
+      const item = itemMap.get(name);
       if (!item) {
         results.push({
           name, ok: false,

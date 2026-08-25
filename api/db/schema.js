@@ -571,7 +571,7 @@ async function createIndexIfNotExists(pool, tableName, indexName, columnsSql) {
 
 async function ensurePerformanceIndexesSchema(pool) {
   try {
-    // 1. stock_ledger composite indexes for fast search, filter & counting
+    // 1. stock_ledger composite indexes for fast search, filter, joins & counting
     await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_status_cat_brand', 'status, category, brand_name, watt, solar_type, model');
     await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_serial', 'serial_no');
     await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_order', 'order_no');
@@ -580,11 +580,29 @@ async function ensurePerformanceIndexesSchema(pool) {
     await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_purchase_date', 'purchase_date, status');
     await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_bom', 'bom_dispatch_id');
     await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_item_id', 'item_id');
+    await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_supplier', 'supplier_name, purchase_date');
+    await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_customer', 'customer_name, sales_date');
+    await createIndexIfNotExists(pool, 'stock_ledger', 'idx_sl_tenant_status', 'tenant_id, status, category');
 
-    // 2. items, ledgers, vouchers
+    // 2. items, ledgers, categories
     await createIndexIfNotExists(pool, 'items', 'idx_items_cat_brand', 'category, brand_name');
+    await createIndexIfNotExists(pool, 'items', 'idx_items_brand_watt', 'brand_name, watt');
+    await createIndexIfNotExists(pool, 'items', 'idx_items_tenant_cat', 'tenant_id, category');
     await createIndexIfNotExists(pool, 'ledgers', 'idx_ledgers_type_name', 'ledger_type, ledger_name');
+    await createIndexIfNotExists(pool, 'ledgers', 'idx_ledgers_short', 'short_name');
+    await createIndexIfNotExists(pool, 'ledgers', 'idx_ledgers_tenant', 'tenant_id, ledger_type');
+
+    // 3. accounting_vouchers
     await createIndexIfNotExists(pool, 'accounting_vouchers', 'idx_vouchers_date_type', 'voucher_date, voucher_type');
+    await createIndexIfNotExists(pool, 'accounting_vouchers', 'idx_vouchers_dr_cr', 'debit_ledger, credit_ledger');
+    await createIndexIfNotExists(pool, 'accounting_vouchers', 'idx_vouchers_tenant', 'tenant_id, voucher_date');
+
+    // 4. attachments, audit_logs, scan_sheet_entries, BOM orders
+    await createIndexIfNotExists(pool, 'attachments', 'idx_attachments_tenant_ref', 'tenant_id, ref_type, ref_no');
+    await createIndexIfNotExists(pool, 'audit_logs', 'idx_audit_tenant_time', 'tenant_id, created_at');
+    await createIndexIfNotExists(pool, 'scan_sheet_entries', 'idx_scan_entries_order', 'sheet_id, sno');
+    await createIndexIfNotExists(pool, 'bom_orders', 'idx_bom_orders_tenant_status', 'tenant_id, status, created_at');
+    await createIndexIfNotExists(pool, 'bom_dispatches', 'idx_bom_disp_tenant_order', 'tenant_id, order_no, dispatched_at');
   } catch (e) {
     console.warn('[Performance Indexes] Warning creating composite indexes:', e.message);
   }

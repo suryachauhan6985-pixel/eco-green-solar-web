@@ -387,11 +387,10 @@ window.PAGES.masters = {
       subtypeInfoCache = {};
       try {
         if (targetSub === 'category') {
-          const catsRes = await fetch(`${API_BASE}/masters/categories`).then(r => r.ok ? r.json() : []).catch(() => []);
-          const cats = Array.isArray(catsRes) ? catsRes : [];
-          cachedCategories = cats;
-          $('mSubTargetCat').innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-          $('mastersCategoryBody').innerHTML = cats.map(c => `
+          const cats = await window.Api.get('/masters/categories').catch(() => []);
+          cachedCategories = Array.isArray(cats) ? cats : [];
+          $('mSubTargetCat').innerHTML = cachedCategories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+          $('mastersCategoryBody').innerHTML = cachedCategories.map(c => `
             <tr class="m-cat-row" data-cat="${c.name}" data-watt="${c.watt_mandatory ? 1 : 0}" data-serial="${c.serial_mandatory ? 1 : 0}" style="cursor:pointer;" title="Double-click to edit Category">
               <td class="gold-txt" style="font-weight:600;"><i class="fa-solid fa-folder-tree" style="color:var(--gold); margin-right:6px;"></i> ${c.name}</td>
               <td>${c.item_count} items</td>
@@ -422,9 +421,8 @@ window.PAGES.masters = {
         }
 
         if (targetSub === 'warehouse') {
-          const whsRes = await fetch(`${API_BASE}/masters/warehouses`).then(r => r.ok ? r.json() : []).catch(() => []);
-          const whs = Array.isArray(whsRes) ? whsRes : [];
-          $('mastersWarehouseBody').innerHTML = whs.map(w => `
+          const whs = await window.Api.get('/masters/warehouses').catch(() => []);
+          $('mastersWarehouseBody').innerHTML = (Array.isArray(whs) ? whs : []).map(w => `
             <tr>
               <td style="font-weight:600;">${w.name}</td>
               <td class="gold-txt">${w.items_stored}</td>
@@ -440,9 +438,8 @@ window.PAGES.masters = {
         }
 
         if (targetSub === 'uom') {
-          const unitsRes = await fetch(`${API_BASE}/masters/units`).then(r => r.ok ? r.json() : []).catch(() => []);
-          const units = Array.isArray(unitsRes) ? unitsRes : [];
-          $('mastersUomBody').innerHTML = units.map(u => `
+          const units = await window.Api.get('/masters/units').catch(() => []);
+          $('mastersUomBody').innerHTML = (Array.isArray(units) ? units : []).map(u => `
             <tr>
               <td style="font-weight:600;">${u}</td>
               <td>
@@ -457,22 +454,22 @@ window.PAGES.masters = {
         }
 
         if (targetSub === 'brand') {
-          const brandsRes = await fetch(`${API_BASE}/masters/brands`).then(r => r.ok ? r.json() : []).catch(() => []);
-          const brands = Array.isArray(brandsRes) ? brandsRes : [];
-          $('mastersBrandBody').innerHTML = brands.map(b => `<tr><td class="gold-txt" style="font-weight:600;">${b.brand_name}</td><td>${b.item_count} items</td></tr>`).join('') || `<tr><td colspan="2" style="text-align:center;color:var(--txt-muted);">No brands registered yet.</td></tr>`;
+          const brands = await window.Api.get('/masters/brands').catch(() => []);
+          const brandList = Array.isArray(brands) ? brands : [];
+          $('mastersBrandBody').innerHTML = brandList.map(b => `<tr><td class="gold-txt" style="font-weight:600;">${b.brand_name}</td><td>${b.item_count} items</td></tr>`).join('') || `<tr><td colspan="2" style="text-align:center;color:var(--txt-muted);">No brands registered yet.</td></tr>`;
           const existingBrandsList = $('mExistingBrandsList');
-          if (existingBrandsList) existingBrandsList.innerHTML = brands.map(b => `<option value="${b.brand_name}">`).join('');
+          if (existingBrandsList) existingBrandsList.innerHTML = brandList.map(b => `<option value="${b.brand_name}">`).join('');
           const brandTable = $('mastersBrandBody') && $('mastersBrandBody').closest('table');
           if (brandTable && window.attachColumnFilters) window.attachColumnFilters(brandTable);
           return;
         }
 
         if (targetSub === 'users') {
-          const usersRes = await fetch(`${API_BASE}/masters/users`).then(r => r.ok ? r.json() : []).catch(() => []);
-          const users = Array.isArray(usersRes) ? usersRes : [];
-          $('mastersUsersBody').innerHTML = users.map(u => `<tr class="m-user-row" data-username="${u.username}" style="cursor:pointer;" title="Click to select this username for password/email update"><td><span class="badge" style="background:rgba(255,255,255,0.06); font-weight:600;">${u.username}</span></td><td>${u.email || '<span style="color:var(--txt-muted); font-style:italic;">Not set</span>'}</td><td><span class="badge" style="background:rgba(212,175,55,0.12); color:var(--gold); font-weight:700;">${u.role}</span></td></tr>`).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--txt-muted);">No users yet.</td></tr>`;
+          const users = await window.Api.get('/masters/users').catch(() => []);
+          const userList = Array.isArray(users) ? users : [];
+          $('mastersUsersBody').innerHTML = userList.map(u => `<tr class="m-user-row" data-username="${u.username}" style="cursor:pointer;" title="Click to select this username for password/email update"><td><span class="badge" style="background:rgba(255,255,255,0.06); font-weight:600;">${u.username}</span></td><td>${u.email || '<span style="color:var(--txt-muted); font-style:italic;">Not set</span>'}</td><td><span class="badge" style="background:rgba(212,175,55,0.12); color:var(--gold); font-weight:700;">${u.role}</span></td></tr>`).join('') || `<tr><td colspan="3" style="text-align:center;color:var(--txt-muted);">No users yet.</td></tr>`;
           const existingUsersList = $('mExistingUsers');
-          if (existingUsersList) existingUsersList.innerHTML = users.map(u => `<option value="${u.username}">`).join('');
+          if (existingUsersList) existingUsersList.innerHTML = userList.map(u => `<option value="${u.username}">`).join('');
           const usersTable = $('mastersUsersBody') && $('mastersUsersBody').closest('table');
           if (usersTable && window.attachColumnFilters) window.attachColumnFilters(usersTable);
           return;
@@ -480,10 +477,10 @@ window.PAGES.masters = {
 
         // Full Items Workspace (Item creation + Catalog directory)
         const [catsRes, itemsRes, unitsRes, brandsRes] = await Promise.all([
-          fetch(`${API_BASE}/masters/categories`).then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch(`${API_BASE}/masters/items`).then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch(`${API_BASE}/masters/units`).then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch(`${API_BASE}/masters/brands`).then(r => r.ok ? r.json() : []).catch(() => [])
+          window.Api.get('/masters/categories').catch(() => []),
+          window.Api.get('/masters/items').catch(() => []),
+          window.Api.get('/masters/units').catch(() => []),
+          window.Api.get('/masters/brands').catch(() => [])
         ]);
 
         const cats = Array.isArray(catsRes) ? catsRes : [];

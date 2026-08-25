@@ -428,7 +428,7 @@ window.withButtonFeedback = async function withButtonFeedback(btnOrId, asyncFn, 
   const btn = typeof btnOrId === 'string' ? document.getElementById(btnOrId) : btnOrId;
   if (!btn || typeof asyncFn !== 'function') return (asyncFn ? asyncFn() : null);
 
-  const minDuration = options.minDuration ?? 420; // Crisp human-satisfying duration (~420ms)
+  const minDuration = options.minDuration || 0; // Ultra-fast immediate response (0ms artificial delay)
   const originalHtml = btn.innerHTML;
   const originalDisabled = btn.disabled;
   const startTime = Date.now();
@@ -439,30 +439,24 @@ window.withButtonFeedback = async function withButtonFeedback(btnOrId, asyncFn, 
   try {
     const result = await asyncFn();
     const elapsed = Date.now() - startTime;
-    if (elapsed < minDuration) {
+    if (minDuration > 0 && elapsed < minDuration) {
       await new Promise(r => setTimeout(r, minDuration - elapsed));
     }
 
-    if (options.showSuccess !== false) {
+    if (options.showSuccess !== false && options.successText) {
       btn.classList.remove('btn-loading');
       btn.classList.add('btn-success');
-      if (options.successText) {
-        btn.innerHTML = `<i class="fa-solid fa-check"></i> <span>${options.successText}</span>`;
-      }
-      await new Promise(r => setTimeout(r, options.successDuration || 350));
+      btn.innerHTML = `<i class="fa-solid fa-check"></i> <span>${options.successText}</span>`;
+      await new Promise(r => setTimeout(r, options.successDuration || 200));
     }
     return result;
   } catch (err) {
-    const elapsed = Date.now() - startTime;
-    if (elapsed < minDuration) {
-      await new Promise(r => setTimeout(r, minDuration - elapsed));
-    }
     btn.classList.remove('btn-loading');
     btn.classList.add('btn-error-shake');
     if (options.errorText) {
       btn.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> <span>${options.errorText}</span>`;
     }
-    await new Promise(r => setTimeout(r, options.errorDuration || 600));
+    await new Promise(r => setTimeout(r, options.errorDuration || 350));
     throw err;
   } finally {
     btn.classList.remove('btn-loading', 'btn-success', 'btn-error-shake');
@@ -6426,6 +6420,7 @@ window.attachColumnFilters = function (table) {
     navState.tier2Index = -1;
     navState.activeFlyoutGroup = null;
     navState.activeNestedParentEl = null;
+    lastFlyoutTrail = null; // Cleanly clear trail so Escape never loops
 
     const existing = document.getElementById('egsActiveSidebarFlyout');
     if (existing) existing.remove();
@@ -6458,6 +6453,8 @@ window.attachColumnFilters = function (table) {
       return;
     }
     const trail = { ...lastFlyoutTrail };
+    lastFlyoutTrail = null; // Consume trail so subsequent Escapes close cleanly
+
     const grp = (ERP_NAV_GROUPS || []).find((g) => g.id === trail.groupId);
     if (!grp) {
       go('dashboard');
@@ -6984,10 +6981,10 @@ window.attachColumnFilters = function (table) {
     const meta = WORKSPACE_METADATA[workspaceKey] || WORKSPACE_METADATA[id] || { name: page.name, sub: page.sub, icon: page.icon };
 
     if (contentEl) {
-      contentEl.classList.remove('page-entering');
-      void contentEl.offsetWidth;
       contentEl.innerHTML = (typeof page.render === 'function' ? page.render(opts) : page.html) || '';
-      contentEl.classList.add('page-entering');
+      requestAnimationFrame(() => {
+        contentEl.classList.add('page-entering');
+      });
     }
 
     if (pageTitleEl) pageTitleEl.textContent = meta.name || page.name || 'Dashboard';
@@ -7136,22 +7133,7 @@ window.attachColumnFilters = function (table) {
         }
       }
 
-      // Step 2: If Tier 2 flyout is open, step back to Tier 1
-      if (navState.focusTier === 'flyout_tier2') {
-        setNestedSubmenuOpen(null, false);
-        navState.focusTier = 'flyout_tier1';
-        navState.tier2Index = -1;
-        updateTier1Selection(navState.tier1Index, false);
-        return true;
-      }
-
-      // Step 3: If Tier 1 flyout is open, close all flyouts
-      if (navState.focusTier === 'flyout_tier1' || document.getElementById('egsActiveSidebarFlyout')) {
-        closeAllFlyouts();
-        return true;
-      }
-
-      // Step 4: If any Modal / Overlay / Statement / Popup is open, close it!
+      // Step 2: If any Modal / Overlay / Statement / Popup is open, close it FIRST!
       const modalOverlay = document.getElementById('modalOverlay');
       if (modalOverlay && modalOverlay.classList.contains('show')) {
         window.closeModal();
@@ -7202,7 +7184,7 @@ window.attachColumnFilters = function (table) {
         return true;
       }
 
-      // Step 5: If in inline continue dispatch order, step back to BOM pending list
+      // Step 3: If in inline continue dispatch order, step back to BOM pending list
       const bomContinuePanel = document.getElementById('bomContinuePanel');
       if (bomContinuePanel && bomContinuePanel.style.display !== 'none') {
         const bomBtnBackHome = document.getElementById('bomBtnBackHome');
@@ -7212,13 +7194,30 @@ window.attachColumnFilters = function (table) {
         }
       }
 
-      // Step 6: Step-by-step back to originating Flyout / Dashboard!
-      if (window.CURRENT_PAGE_ID && window.CURRENT_PAGE_ID !== 'dashboard') {
-        if (typeof stepBackFromFlyoutTrail === 'function' && lastFlyoutTrail) {
-          stepBackFromFlyoutTrail();
-        } else {
-          go('dashboard');
+      // Step 4: If any flyout menu is open, close it cleanly and clear trail!
+      const activeFlyout = document.getElementById('egsActiveSidebarFlyout');
+      const nestedOpenEl = activeFlyout ? activeFlyout.querySelector('.egs-flyout-item.has-nested.nested-open') : null;
+      if (nestedOpenEl) {
+        setNestedSubmenuOpen(null, false);
+        navState.focusTier = 'flyout_tier1';
+        navState.tier2Index = -1;
+        if (navState.tier1Index >= 0) {
+          updateTier1Selection(navState.tier1Index, false);
         }
+        return true;
+      }
+
+      if (activeFlyout || navState.focusTier !== 'none') {
+        closeAllFlyouts();
+        clearFlyoutTrail();
+        return true;
+      }
+
+      // Step 5: If on any non-dashboard page, navigate cleanly to Dashboard without flyout popups
+      if (window.CURRENT_PAGE_ID && window.CURRENT_PAGE_ID !== 'dashboard') {
+        clearFlyoutTrail();
+        closeAllFlyouts();
+        go('dashboard');
         return true;
       }
 
@@ -7849,6 +7848,27 @@ window.attachColumnFilters = function (table) {
   });
 
   window.go = go;
+
+  // Proactive Navigation Link Hover & Touch Prefetching for 0ms Perceived Response
+  document.addEventListener('mouseover', (e) => {
+    const target = e.target.closest && e.target.closest('[onclick*="go("], .egs-flyout-item, .erp-sidebar-btn');
+    if (!target) return;
+    const onclick = target.getAttribute('onclick') || '';
+    if (onclick.includes("'reports'")) window.Api.prefetch('/reports/master');
+    else if (onclick.includes("'masters'")) window.Api.prefetch('/masters/categories');
+    else if (onclick.includes("'partyledger'")) window.Api.prefetch('/ledgers');
+    else if (onclick.includes("'dashboard'")) window.Api.prefetch('/dashboard/summary');
+  }, { passive: true });
+
+  document.addEventListener('touchstart', (e) => {
+    const target = e.target.closest && e.target.closest('[onclick*="go("], .egs-flyout-item, .erp-sidebar-btn');
+    if (!target) return;
+    const onclick = target.getAttribute('onclick') || '';
+    if (onclick.includes("'reports'")) window.Api.prefetch('/reports/master');
+    else if (onclick.includes("'masters'")) window.Api.prefetch('/masters/categories');
+    else if (onclick.includes("'partyledger'")) window.Api.prefetch('/ledgers');
+    else if (onclick.includes("'dashboard'")) window.Api.prefetch('/dashboard/summary');
+  }, { passive: true });
 
   // ---------- Start: restore a saved session if one exists, otherwise show login ----------
   // "Remember Me" only prefills the username (see buildLoginOverlay above) if

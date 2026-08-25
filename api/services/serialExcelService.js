@@ -23,6 +23,16 @@ function sanitizeFileName(name) {
   return String(name).trim().replace(/[/\\?%*:|"<>]/g, '-').replace(/\s+/g, ' ');
 }
 
+function sanitizeCellForExcel(val) {
+  if (val === null || val === undefined) return '';
+  const s = String(val).trim();
+  // Neutralize CSV / Spreadsheet Formula Injection (=, +, -, @, tab, CR)
+  if (/^[=+\-@\t\r]/.test(s)) {
+    return `'${s}`;
+  }
+  return s;
+}
+
 function formatScanDate(rawDate) {
   const d = rawDate ? new Date(rawDate) : new Date();
   if (isNaN(d.getTime())) {
@@ -92,7 +102,7 @@ async function buildSerialWorkbook(serials) {
     cA.alignment = { vertical: 'middle', horizontal: 'center' };
     cA.border = thinBorder;
 
-    cB.value = String(sn || '').trim();
+    cB.value = sanitizeCellForExcel(sn);
     cB.font = { name: 'Calibri', size: 11 };
     cB.alignment = { vertical: 'middle', horizontal: 'left' };
     cB.border = thinBorder;
@@ -185,5 +195,6 @@ module.exports = {
   buildSerialWorkbook,
   saveSerialExcelToNetwork,
   formatScanDate,
-  sanitizeFileName
+  sanitizeFileName,
+  sanitizeCellForExcel
 };

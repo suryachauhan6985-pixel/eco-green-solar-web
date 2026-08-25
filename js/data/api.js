@@ -26,8 +26,10 @@ async function parseApiResponse(res, path) {
   return data;
 }
 
-// High-Speed Client In-Memory API Cache with Stale-While-Revalidate
+// High-Speed Client In-Memory API Cache with Stale-While-Revalidate & In-Flight Request Deduplication
 const clientApiCache = new Map();
+const inFlightRequests = new Map();
+const searchControllers = new Map();
 const DEFAULT_CLIENT_TTL_MS = 120000; // 2 minutes default
 
 function getCacheTtlForPath(path) {
@@ -61,8 +63,19 @@ function clearClientApiCache() {
 }
 window.clearClientApiCache = clearClientApiCache;
 
+function getApiHeaders(customHeaders = {}) {
+  const headers = { 'Content-Type': 'application/json', ...customHeaders };
+  const tenantSlug = localStorage.getItem('egs_tenant_slug') || 'default';
+  headers['x-tenant-slug'] = tenantSlug;
+  const token = localStorage.getItem('egs_auth_token') || sessionStorage.getItem('egs_auth_token');
+  if (token && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 window.Api = {
-  async get(path, opts) {
+  async get(path, opts = {}) {
     // Endpoints eligible for instant in-memory read (Masters, lookups, settings, dashboard)
     const isCacheEligible = (
       path.startsWith('/masters/') ||
@@ -73,7 +86,7 @@ window.Api = {
       path.startsWith('/auth/app-settings') ||
       path.startsWith('/dashboard/summary')
     );
-    const bypassCache = opts && (opts.bypassCache || opts.fresh);
+    const bypassCache = opts.bypassCache || opts.fresh;
 
     if (isCacheEligible && !bypassCache) {
       const cached = getCachedApiResponse(path);
@@ -83,51 +96,75 @@ window.Api = {
       }
       if (cached && cached.isStale) {
         // Stale-While-Revalidate: Return cached immediately, revalidate silently in background
-        setTimeout(() => {
-          fetch(`${window.API_BASE}${path}`, { method: 'GET', egsSilent: true })
+        if (!inFlightRequests.has(path)) {
+          const revalPromise = fetch(`${window.API_BASE}${path}`, { method: 'GET', headers: getApiHeaders(), egsSilent: true })
             .then(res => parseApiResponse(res, path))
             .then(fresh => {
               setCachedApiResponse(path, fresh);
               window.dispatchEvent(new CustomEvent('egs:cache-revalidated', { detail: { path, data: fresh } }));
+              return fresh;
             })
-            .catch(() => {});
-        }, 10);
+            .catch(() => {})
+            .finally(() => inFlightRequests.delete(path));
+          inFlightRequests.set(path, revalPromise);
+        }
         return JSON.parse(JSON.stringify(cached.data));
       }
     }
 
-    function getApiHeaders(customHeaders = {}) {
-      const headers = { 'Content-Type': 'application/json', ...customHeaders };
-      const tenantSlug = localStorage.getItem('egs_tenant_slug') || 'default';
-      headers['x-tenant-slug'] = tenantSlug;
-      const token = localStorage.getItem('egs_auth_token') || sessionStorage.getItem('egs_auth_token');
-      if (token && !headers['Authorization']) {
-        headers['Authorization'] = `Bearer ${token}`;
+    // In-Flight Request Deduplication: if identical GET request is currently fetching, reuse existing promise
+    if (!bypassCache && inFlightRequests.has(path)) {
+      const pending = await inFlightRequests.get(path);
+      return JSON.parse(JSON.stringify(pending));
+    }
+
+    const init = { method: 'GET', headers: getApiHeaders(opts.headers) };
+    if (opts.silent) init.egsSilent = true;
+    if (opts.signal) init.signal = opts.signal;
+
+    const requestPromise = (async () => {
+      try {
+        const res = await fetch(`${window.API_BASE}${path}`, init);
+        const data = await parseApiResponse(res, path);
+        if (isCacheEligible) {
+          setCachedApiResponse(path, data);
+        }
+        return data;
+      } finally {
+        inFlightRequests.delete(path);
       }
-      return headers;
-    }
+    })();
 
-    const init = { method: 'GET', headers: getApiHeaders(opts && opts.headers) };
-    if (opts && opts.silent) init.egsSilent = true;
-    const res = await fetch(`${window.API_BASE}${path}`, init);
-    const data = await parseApiResponse(res, path);
-
-    if (isCacheEligible) {
-      setCachedApiResponse(path, data);
-    }
-    return data;
+    inFlightRequests.set(path, requestPromise);
+    return requestPromise;
   },
+
+  // Proactive background prefetching for navigation links & upcoming pages
+  prefetch(path) {
+    if (!clientApiCache.has(path) && !inFlightRequests.has(path)) {
+      this.get(path, { silent: true }).catch(() => {});
+    }
+  },
+
+  // Auto-cancelling debounced search API helper
+  async search(domainKey, path) {
+    if (searchControllers.has(domainKey)) {
+      searchControllers.get(domainKey).abort();
+    }
+    const controller = new AbortController();
+    searchControllers.set(domainKey, controller);
+    try {
+      return await this.get(path, { signal: controller.signal, bypassCache: true });
+    } finally {
+      if (searchControllers.get(domainKey) === controller) {
+        searchControllers.delete(domainKey);
+      }
+    }
+  },
+
   async post(path, body, opts = {}) {
     clearClientApiCache();
-    const tenantSlug = localStorage.getItem('egs_tenant_slug') || 'default';
-    const token = localStorage.getItem('egs_auth_token') || sessionStorage.getItem('egs_auth_token');
-    const headers = {
-      'Content-Type': 'application/json',
-      'x-tenant-slug': tenantSlug,
-      ...(opts.headers || {})
-    };
-    if (token && !headers['Authorization']) headers['Authorization'] = `Bearer ${token}`;
-
+    const headers = getApiHeaders(opts.headers);
     const res = await fetch(`${window.API_BASE}${path}`, {
       method: 'POST',
       headers,
@@ -135,17 +172,10 @@ window.Api = {
     });
     return parseApiResponse(res, path);
   },
+
   async put(path, body, opts = {}) {
     clearClientApiCache();
-    const tenantSlug = localStorage.getItem('egs_tenant_slug') || 'default';
-    const token = localStorage.getItem('egs_auth_token') || sessionStorage.getItem('egs_auth_token');
-    const headers = {
-      'Content-Type': 'application/json',
-      'x-tenant-slug': tenantSlug,
-      ...(opts.headers || {})
-    };
-    if (token && !headers['Authorization']) headers['Authorization'] = `Bearer ${token}`;
-
+    const headers = getApiHeaders(opts.headers);
     const res = await fetch(`${window.API_BASE}${path}`, {
       method: 'PUT',
       headers,
@@ -153,17 +183,10 @@ window.Api = {
     });
     return parseApiResponse(res, path);
   },
+
   async delete(path, body, opts = {}) {
     clearClientApiCache();
-    const tenantSlug = localStorage.getItem('egs_tenant_slug') || 'default';
-    const token = localStorage.getItem('egs_auth_token') || sessionStorage.getItem('egs_auth_token');
-    const headers = {
-      'Content-Type': 'application/json',
-      'x-tenant-slug': tenantSlug,
-      ...(opts.headers || {})
-    };
-    if (token && !headers['Authorization']) headers['Authorization'] = `Bearer ${token}`;
-
+    const headers = getApiHeaders(opts.headers);
     const res = await fetch(`${window.API_BASE}${path}`, {
       method: 'DELETE',
       headers,

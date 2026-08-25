@@ -1976,12 +1976,7 @@ window.openCustomChallanModal = async function(prefillData) {
   const modalHtml = bomRenderChallanEntryModalHtml(header, kit, { onlyActive: false, customMode: true });
 
   window.openModal('Custom Challan Entry', modalHtml, {
-    fullscreen: true,
-    onClose: () => {
-      if (typeof window.stepBackFromFlyoutTrail === 'function') {
-        window.stepBackFromFlyoutTrail();
-      }
-    }
+    fullscreen: true
   });
 
   const modalNo = document.getElementById('bomChallanModalNo');
@@ -2134,12 +2129,7 @@ window.openChallanRegisterModal = async function() {
     </div>
   `;
   window.openModal('Saved Challan Register', html, {
-    fullscreen: true,
-    onClose: () => {
-      if (typeof window.stepBackFromFlyoutTrail === 'function') {
-        window.stepBackFromFlyoutTrail();
-      }
-    }
+    fullscreen: true
   });
 
   let allChallans = [];

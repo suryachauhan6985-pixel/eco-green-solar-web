@@ -1,14 +1,15 @@
 module.exports = function registerReportsRoutes(app, deps) {
   const { pool, route, reportCache } = deps;
 
-  // GET /api/reports/master — High-Speed Master Inventory Report with query caching & pagination
+  // GET /api/reports/master — High-Speed Master Inventory Report with query caching & bounded keyset pagination
   app.get('/api/reports/master', route(async (req, res) => {
     const category = req.query.category;
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = req.query.all === 'true' ? 5000 : Math.min(1000, Math.max(10, parseInt(req.query.limit) || 200));
+    const limit = Math.min(200, Math.max(10, parseInt(req.query.limit) || 50));
+    const cursor = parseInt(req.query.cursor) || null;
     const offset = (page - 1) * limit;
 
-    const cacheKey = `reports:master:${category || 'all'}:${page}:${limit}`;
+    const cacheKey = `reports:master:${category || 'all'}:${cursor || page}:${limit}`;
     const result = await reportCache.wrap(cacheKey, async () => {
       let sql = `SELECT sl.id, sl.serial_no, sl.brand_name, sl.watt, sl.solar_type, sl.category, sl.pallet_no, sl.warehouse, sl.status,
                         sl.supplier_name, sl.purchase_invoice, sl.purchase_date, sl.customer_name, sl.order_no,
@@ -17,12 +18,27 @@ module.exports = function registerReportsRoutes(app, deps) {
                  FROM stock_ledger sl
                  LEFT JOIN items it ON sl.item_id = it.id`;
       const params = [];
+      const where = [];
+
       if (category && category !== 'All Categories') {
-        sql += ` WHERE sl.category = ?`;
+        where.push(`sl.category = ?`);
         params.push(category);
       }
-      sql += ` ORDER BY sl.id DESC LIMIT ? OFFSET ?`;
-      params.push(limit, offset);
+      if (cursor) {
+        where.push(`sl.id < ?`);
+        params.push(cursor);
+      }
+      if (where.length) {
+        sql += ` WHERE ${where.join(' AND ')}`;
+      }
+
+      if (cursor) {
+        sql += ` ORDER BY sl.id DESC LIMIT ?`;
+        params.push(limit);
+      } else {
+        sql += ` ORDER BY sl.id DESC LIMIT ? OFFSET ?`;
+        params.push(limit, offset);
+      }
 
       const [rows] = await pool.query(sql, params);
       const dash = (v) => (v === null || v === undefined || v === '' || String(v).toLowerCase() === 'null' ? '-' : String(v));

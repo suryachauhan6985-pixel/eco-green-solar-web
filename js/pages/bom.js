@@ -361,13 +361,7 @@ window.PAGES.bom = {
     }
     if (ctx.btnBackHome) {
       ctx.btnBackHome.addEventListener('click', () => {
-        if (ctx.bomInlineContinueOrderId) {
-          ctx.showBomHome();
-        } else if (typeof window.stepBackFromFlyoutTrail === 'function') {
-          window.stepBackFromFlyoutTrail();
-        } else {
-          ctx.showBomHome();
-        }
+        ctx.showBomHome();
       });
     }
 
@@ -883,20 +877,7 @@ window.PAGES.bom = {
 
       if (closeBtn) closeBtn.addEventListener('click', () => { overlay.remove(); });
 
-      // Progressive micro-steps with comfortable, legible pacing
-      const t1 = setTimeout(() => {
-        if (statusEl) statusEl.innerHTML = '⚡ Verifying Serial Numbers in Database...';
-        if (pbarFill) pbarFill.style.width = '65%';
-        if (iconEl) iconEl.className = 'fa-solid fa-barcode bom-verify-icon';
-      }, 450);
-
-      const t2 = setTimeout(() => {
-        if (statusEl) statusEl.innerHTML = '🛡️ Checking Available Warehouse Stock...';
-        if (pbarFill) pbarFill.style.width = '90%';
-        if (iconEl) iconEl.className = 'fa-solid fa-database bom-verify-icon';
-      }, 900);
-
-      // Concurrent API Stock Check
+      // Instant API Stock Check
       const items = ctx.bomCollectItemsForStockCheck();
       let result = null;
       let checkError = null;
@@ -907,15 +888,10 @@ window.PAGES.bom = {
         checkError = (e && e.message) || 'Server connection error';
       }
 
-      // Ensure ~1350ms elapsed time so user comfortably reads all 3 scanning phases
-      await new Promise((r) => setTimeout(r, 1350));
-      clearTimeout(t1);
-      clearTimeout(t2);
-
       const isSuccess = !checkError && result && result.canDispatch;
 
       if (isSuccess) {
-        // SUCCESS STATE
+        // SUCCESS STATE — Instant feedback
         scannerWrap.innerHTML = '<i class="fa-solid fa-circle-check bom-pop-in" style="font-size:52px; color:#22c55e; filter:drop-shadow(0 0 12px rgba(34,197,94,0.4));"></i>';
         titleEl.style.color = '#22c55e';
         titleEl.innerHTML = 'VERIFIED SUCCESSFULLY!';
@@ -925,10 +901,10 @@ window.PAGES.bom = {
           pbarFill.style.background = '#22c55e';
         }
 
-        // Wait 1100ms so user can comfortably see and feel the green checkmark before auto-close
-        await new Promise((r) => setTimeout(r, 1100));
+        // Brief 250ms visual confirmation before continuing
+        await new Promise((r) => setTimeout(r, 250));
         overlay.classList.remove('show');
-        setTimeout(() => overlay.remove(), 250);
+        overlay.remove();
         return { success: true };
       } else {
         // FAILED STATE

@@ -82,6 +82,10 @@ app.use((_req, res, next) => {
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(self), geolocation=(), microphone=()');
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https:; frame-ancestors 'self'; base-uri 'self'; form-action 'self';"
+  );
   if (process.env.NODE_ENV === 'production') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
@@ -175,7 +179,7 @@ registerVouchersRoutes(app, deps);
 registerAuditRoutes(app, deps);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`API running on port ${PORT}`);
   ensureStartupSchema(pool).then(() => {
     backupTasks.ensureBackupLogTable().then(() => {
@@ -184,4 +188,26 @@ app.listen(PORT, '0.0.0.0', () => {
     });
   });
 });
+
+// Graceful shutdown handling for container & cloud redeployments
+function handleGracefulShutdown(signal) {
+  console.log(`[Server] ${signal} received: draining HTTP connections & database pool...`);
+  server.close(() => {
+    console.log('[Server] HTTP server closed.');
+    pool.end().then(() => {
+      console.log('[Server] Database pool drained successfully.');
+      process.exit(0);
+    }).catch((err) => {
+      console.error('[Server] Error draining database pool:', err.message);
+      process.exit(1);
+    });
+  });
+  setTimeout(() => {
+    console.error('[Server] Forced shutdown timeout exceeded.');
+    process.exit(1);
+  }, 10000).unref();
+}
+
+process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => handleGracefulShutdown('SIGINT'));
 
