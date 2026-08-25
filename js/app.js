@@ -1874,7 +1874,7 @@ window.attachColumnFilters = function (table) {
             <label>Password</label>
             <div class="login-pwd-wrap login-input-icon">
               <i class="fa-solid fa-lock"></i>
-              <input type="password" id="regPassword" placeholder="At least 6 characters" autocomplete="new-password">
+              <input type="password" id="regPassword" placeholder="At least 12 characters" autocomplete="new-password">
               <button type="button" class="login-toggle-pwd" id="regTogglePwd"><i class="fa-solid fa-eye"></i></button>
             </div>
           </div>
@@ -1885,6 +1885,7 @@ window.attachColumnFilters = function (table) {
               <input type="password" id="regConfirmPassword" placeholder="Re-enter password" autocomplete="new-password">
             </div>
           </div>
+          <div id="regPwdStrengthContainer" style="display:none;"></div>
           <div class="login-error" id="regError"></div>
           <button type="button" class="login-btn" id="regSubmit"><span>Continue</span> <i class="fa-solid fa-arrow-right"></i></button>
           <div class="login-links">
@@ -1965,10 +1966,11 @@ window.attachColumnFilters = function (table) {
             <label>New Password</label>
             <div class="login-pwd-wrap login-input-icon">
               <i class="fa-solid fa-lock"></i>
-              <input type="password" id="resetNewPassword" placeholder="At least 6 characters" autocomplete="new-password">
+              <input type="password" id="resetNewPassword" placeholder="At least 12 characters" autocomplete="new-password">
               <button type="button" class="login-toggle-pwd" id="resetTogglePwd"><i class="fa-solid fa-eye"></i></button>
             </div>
           </div>
+          <div id="resetPwdStrengthContainer" style="display:none;"></div>
           <div class="login-error" id="resetError"></div>
           <button type="button" class="login-btn" id="resetSubmit"><span>Reset Password &amp; Sign In</span> <i class="fa-solid fa-check"></i></button>
           <div class="login-back-wrap">
@@ -2135,6 +2137,26 @@ window.attachColumnFilters = function (table) {
     const accountSelectError = loginOverlay.querySelector('#accountSelectError');
     const accountSelectBack = loginOverlay.querySelector('#accountSelectBack');
     let pendingGoogleEmail = '';
+
+    const regPwdStrengthContainer = loginOverlay.querySelector('#regPwdStrengthContainer');
+    const resetPwdStrengthContainer = loginOverlay.querySelector('#resetPwdStrengthContainer');
+
+    let regPwdWidget = null;
+    let resetPwdWidget = null;
+
+    if (window.PasswordPolicy) {
+      regPwdWidget = window.PasswordPolicy.attach({
+        passwordInput: regPassword,
+        confirmPasswordInput: regConfirmPassword,
+        container: regPwdStrengthContainer,
+        showMatch: true
+      });
+      resetPwdWidget = window.PasswordPolicy.attach({
+        passwordInput: resetNewPassword,
+        container: resetPwdStrengthContainer,
+        showMatch: false
+      });
+    }
     // ---------- OTP boxes: 6 separate single-digit inputs that stay in sync
     // with one hidden <input> (so the rest of the login code below can keep
     // reading/writing otpInput.value exactly as before — nothing else has
@@ -2560,15 +2582,33 @@ window.attachColumnFilters = function (table) {
         regError.classList.add('show');
         return;
       }
-      if (pwd !== confirmPwd) {
-        regError.textContent = 'Passwords do not match.';
-        regError.classList.add('show');
-        return;
-      }
-      if (pwd.length < 6) {
-        regError.textContent = 'Password must be at least 6 characters.';
-        regError.classList.add('show');
-        return;
+      if (window.PasswordPolicy) {
+        const pol = window.PasswordPolicy.evaluate(pwd, { confirmPassword: confirmPwd });
+        if (!pol.valid) {
+          if (!pol.checks.minLength) regError.textContent = `Password must be at least ${window.PasswordPolicy.MIN_LENGTH} characters.`;
+          else if (!pol.checks.hasUpper) regError.textContent = 'Password must include at least one uppercase letter (A-Z).';
+          else if (!pol.checks.hasLower) regError.textContent = 'Password must include at least one lowercase letter (a-z).';
+          else if (!pol.checks.hasNumber) regError.textContent = 'Password must include at least one number (0-9).';
+          else if (!pol.checks.hasSpecial) regError.textContent = 'Password must include at least one special character (!@#$%...).';
+          else if (!pol.checks.noSurroundingWhitespace) regError.textContent = 'Password must not contain leading or trailing spaces.';
+          else if (!pol.checks.notCommon) regError.textContent = 'Password is too common or predictable. Choose a stronger passphrase.';
+          else if (!pol.checks.passwordsMatch) regError.textContent = 'Passwords do not match.';
+          else regError.textContent = 'Password does not satisfy security policy.';
+          regError.classList.add('show');
+          regPassword.focus();
+          return;
+        }
+      } else {
+        if (pwd !== confirmPwd) {
+          regError.textContent = 'Passwords do not match.';
+          regError.classList.add('show');
+          return;
+        }
+        if (pwd.length < 12) {
+          regError.textContent = 'Password must be at least 12 characters.';
+          regError.classList.add('show');
+          return;
+        }
       }
       regError.classList.remove('show');
       regSubmitBtn.disabled = true;
@@ -2740,10 +2780,27 @@ window.attachColumnFilters = function (table) {
         resetError.classList.add('show');
         return;
       }
-      if (newPassword.length < 6) {
-        resetError.textContent = 'Password must be at least 6 characters.';
-        resetError.classList.add('show');
-        return;
+      if (window.PasswordPolicy) {
+        const pol = window.PasswordPolicy.evaluate(newPassword);
+        if (!pol.valid) {
+          if (!pol.checks.minLength) resetError.textContent = `Password must be at least ${window.PasswordPolicy.MIN_LENGTH} characters.`;
+          else if (!pol.checks.hasUpper) resetError.textContent = 'Password must include at least one uppercase letter (A-Z).';
+          else if (!pol.checks.hasLower) resetError.textContent = 'Password must include at least one lowercase letter (a-z).';
+          else if (!pol.checks.hasNumber) resetError.textContent = 'Password must include at least one number (0-9).';
+          else if (!pol.checks.hasSpecial) resetError.textContent = 'Password must include at least one special character (!@#$%...).';
+          else if (!pol.checks.noSurroundingWhitespace) resetError.textContent = 'Password must not contain leading or trailing spaces.';
+          else if (!pol.checks.notCommon) resetError.textContent = 'Password is too common or predictable. Choose a stronger passphrase.';
+          else resetError.textContent = 'Password does not satisfy security policy.';
+          resetError.classList.add('show');
+          resetNewPassword.focus();
+          return;
+        }
+      } else {
+        if (newPassword.length < 12) {
+          resetError.textContent = 'Password must be at least 12 characters.';
+          resetError.classList.add('show');
+          return;
+        }
       }
       resetError.classList.remove('show');
       resetSubmitBtn.disabled = true;
@@ -3596,12 +3653,13 @@ window.attachColumnFilters = function (table) {
 
               <div class="field">
                 <label>New Password / PIN <small style="color:var(--txt-muted); font-weight:normal;">(Leave empty to keep existing)</small></label>
-                <input type="password" id="myProfileNewPass" placeholder="New password (optional)">
+                <input type="password" id="myProfileNewPass" placeholder="New password (optional)" autocomplete="new-password">
               </div>
               <div class="field">
                 <label>Confirm New Password / PIN</label>
-                <input type="password" id="myProfileConfirmPass" placeholder="Re-enter new password">
+                <input type="password" id="myProfileConfirmPass" placeholder="Re-enter new password" autocomplete="new-password">
               </div>
+              <div id="profilePwdStrengthContainer" style="display:none;" class="span-2"></div>
             </div>
             <div class="actions-row" style="margin-top:14px; justify-content:flex-end;">
               <button type="button" class="btn btn-blue" id="btnSaveMyProfile"><i class="fa-solid fa-check"></i> Save Profile Changes</button>
@@ -3651,7 +3709,7 @@ window.attachColumnFilters = function (table) {
               </div>
               <div class="form-grid" style="margin-top:12px;">
                 <div class="field"><label>Username <span class="req">*</span></label><input id="setMngUname" placeholder="e.g. amit" autocomplete="off"></div>
-                <div class="field"><label>Password / PIN <span class="req">*</span></label><input type="password" id="setMngPass" placeholder="••••••••"></div>
+                <div class="field"><label>Password / PIN <span class="req">*</span></label><input type="password" id="setMngPass" placeholder="At least 12 characters" autocomplete="new-password"></div>
                 <div class="field"><label>Email (for OTP Login) <span class="req">*</span></label><input type="email" id="setMngEmail" placeholder="e.g. amit@example.com"></div>
                 <div class="field"><label>System Privilege</label>
                   <select id="setMngRole">
@@ -3661,6 +3719,7 @@ window.attachColumnFilters = function (table) {
                   </select>
                 </div>
               </div>
+              <div id="setMngPwdStrengthContainer" style="display:none; margin-top:8px;"></div>
               <div class="actions-row" style="margin-top:14px; flex-wrap:wrap; gap:10px;">
                 <button type="button" class="btn btn-blue" id="setBtnAddUser"><i class="fa-solid fa-user-plus"></i> Add User</button>
                 <button type="button" class="btn btn-ghost" id="setBtnUpdatePass"><i class="fa-solid fa-key" style="color:var(--blue);"></i> Update Pass</button>
@@ -4739,6 +4798,19 @@ window.attachColumnFilters = function (table) {
     // -------------------------------------------------------------
     const profileEmailInput = document.getElementById('myProfileEmail');
     const profileUnameInput = document.getElementById('myProfileUsername');
+    const myNewPassInput = document.getElementById('myProfileNewPass');
+    const myConfirmPassInput = document.getElementById('myProfileConfirmPass');
+    const profilePwdContainer = document.getElementById('profilePwdStrengthContainer');
+
+    if (window.PasswordPolicy && myNewPassInput && profilePwdContainer) {
+      window.PasswordPolicy.attach({
+        passwordInput: myNewPassInput,
+        confirmPasswordInput: myConfirmPassInput,
+        container: profilePwdContainer,
+        showMatch: true
+      });
+    }
+
     if (profileEmailInput && window.Api) {
       window.Api.get('/auth/profile').then((data) => {
         if (data && data.email && profileEmailInput) profileEmailInput.value = data.email;
@@ -4761,9 +4833,23 @@ window.attachColumnFilters = function (table) {
             return;
           }
         }
-        if (newPassword && newPassword !== confirmPassword) {
-          window.openModal('Password Mismatch', '<p>The new password and confirmation do not match.</p>');
-          return;
+        if (newPassword) {
+          if (window.PasswordPolicy) {
+            const pol = window.PasswordPolicy.evaluate(newPassword, { confirmPassword });
+            if (!pol.valid) {
+              window.openModal('Password Policy Requirement', `<p style="color:var(--red);">${pol.errors[0] || 'Password does not meet security requirements.'}</p>`);
+              return;
+            }
+          } else {
+            if (newPassword !== confirmPassword) {
+              window.openModal('Password Mismatch', '<p>The new password and confirmation do not match.</p>');
+              return;
+            }
+            if (newPassword.length < 12) {
+              window.openModal('Weak Password', '<p>Password must be at least 12 characters long.</p>');
+              return;
+            }
+          }
         }
 
         try {
@@ -5071,6 +5157,15 @@ window.attachColumnFilters = function (table) {
         }
       }
 
+      const setMngPwdContainer = document.getElementById('setMngPwdStrengthContainer');
+      if (window.PasswordPolicy && passInp && setMngPwdContainer) {
+        window.PasswordPolicy.attach({
+          passwordInput: passInp,
+          container: setMngPwdContainer,
+          showMatch: false
+        });
+      }
+
       loadSettingsUsersLedger();
 
       const btnAddUser = document.getElementById('setBtnAddUser');
@@ -5084,12 +5179,20 @@ window.attachColumnFilters = function (table) {
             window.openModal('Validation Error', '<p>Username, Password, and Email are required.</p>');
             return;
           }
+          if (window.PasswordPolicy) {
+            const pol = window.PasswordPolicy.evaluate(password);
+            if (!pol.valid) {
+              window.openModal('Password Policy Requirement', `<p style="color:var(--red);">${pol.errors[0] || 'Password does not meet security requirements.'}</p>`);
+              return;
+            }
+          }
           try {
             await window.Api.post('/masters/users', { username, password, email, role });
             if (window.showToast) window.showToast(`User '@${username}' created!`);
             unameInp.value = '';
             passInp.value = '';
             emailInp.value = '';
+            if (setMngPwdContainer) setMngPwdContainer.style.display = 'none';
             loadSettingsUsersLedger();
           } catch (e) {
             window.openModal('Failed', `<p style="color:var(--red);">${e.message || 'Could not add user.'}</p>`);
@@ -5106,10 +5209,18 @@ window.attachColumnFilters = function (table) {
             window.openModal('Validation Error', '<p>Please enter username and new password.</p>');
             return;
           }
+          if (window.PasswordPolicy) {
+            const pol = window.PasswordPolicy.evaluate(password);
+            if (!pol.valid) {
+              window.openModal('Password Policy Requirement', `<p style="color:var(--red);">${pol.errors[0] || 'Password does not meet security requirements.'}</p>`);
+              return;
+            }
+          }
           try {
             await window.Api.put('/masters/users/password', { username, password });
             if (window.showToast) window.showToast(`Password updated for '@${username}'!`);
             passInp.value = '';
+            if (setMngPwdContainer) setMngPwdContainer.style.display = 'none';
           } catch (e) {
             window.openModal('Failed', `<p style="color:var(--red);">${e.message || 'Could not update password.'}</p>`);
           }

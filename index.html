@@ -61,7 +61,7 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=184">
+<link rel="stylesheet" href="css/style.css?v=185">
 <!-- Barcode/QR camera scanning (Sheets feature) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <!-- XLSX parsing for Sheets "Import CSV/XLSX" (CSV import needs no library) -->
@@ -204,7 +204,7 @@
 <!-- Each page's markup + data lives in its own file, like dashboard.py / masters.py in the desktop app -->
 <script src="js/pages/dashboard.js?v=19"></script>
 <script src="js/pages/scansheet.js?v=25"></script>
-<script src="js/pages/masters.js?v=20"></script>
+<script src="js/pages/masters.js?v=21"></script>
 <script src="js/pages/purchase.js?v=14"></script>
 <script src="js/pages/sales.js?v=13"></script>
 <script src="js/pages/stockassign.js?v=3"></script>
@@ -233,8 +233,9 @@
 <script src="js/pages/bom-serial-modal.js?v=4"></script>
 <script src="js/pages/bom-dispatch.js?v=16"></script>
 <script src="js/pages/bom.js?v=44"></script>
+<script src="js/utils/password-policy.js?v=1"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
-<script src="js/app.js?v=116"></script>
+<script src="js/app.js?v=118"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

@@ -26,6 +26,7 @@ const {
 const { authenticateToken, issueToken, requireRole, setAuthPool } = require('./middleware/auth.middleware');
 const { globalLimiter, mutationLimiter, exportLimiter, loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter } = require('./middleware/rateLimiters');
 const { hashPassword, verifyPassword } = require('./services/passwords');
+const { validatePasswordPolicy } = require('./services/passwordPolicy');
 const { OTP_TTL_MINUTES, generateOtp, sendOtpEmail, maskEmail } = require('./services/email');
 const { itemNameSlug, getItemId, validateSalesLineSerials, getOrCreateItem } = require('./services/stockHelpers');
 const { route } = require('./utils/route');
@@ -132,6 +133,7 @@ const deps = {
   issueToken,
   hashPassword,
   verifyPassword,
+  validatePasswordPolicy,
   OTP_TTL_MINUTES,
   generateOtp,
   sendOtpEmail,

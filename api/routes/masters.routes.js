@@ -1,5 +1,5 @@
 module.exports = function registerMastersRoutes(app, deps) {
-  const { pool, route, requireRole, hashPassword, masterCache } = deps;
+  const { pool, route, requireRole, hashPassword, validatePasswordPolicy, masterCache } = deps;
   const VALID_ROLES = ['User', 'Admin', 'SuperAdmin'];
 
   // ---------------------------------------------------------------------------
@@ -393,6 +393,14 @@ module.exports = function registerMastersRoutes(app, deps) {
     if (!VALID_ROLES.includes(finalRole)) {
       return res.status(400).json({ error: `Role must be one of: ${VALID_ROLES.join(', ')}.` });
     }
+    const pwCheck = validatePasswordPolicy(password, { username: uname, email: mail });
+    if (!pwCheck.valid) {
+      return res.status(400).json({
+        error: pwCheck.errors[0],
+        allErrors: pwCheck.errors,
+        checks: pwCheck.checks,
+      });
+    }
     // Same email can be reused across different roles, but never twice for
     // the same role — mirrors the rule enforced on self-registration.
     if (mail) {
@@ -429,9 +437,23 @@ module.exports = function registerMastersRoutes(app, deps) {
       }
     }
 
+    const pwCheck = validatePasswordPolicy(password, { username: uname });
+    if (!pwCheck.valid) {
+      return res.status(400).json({
+        error: pwCheck.errors[0],
+        allErrors: pwCheck.errors,
+        checks: pwCheck.checks,
+      });
+    }
+
     const hashed = await hashPassword(password);
     const [result] = await pool.query(`UPDATE users SET password = ? WHERE username = ?`, [hashed, uname]);
     if (result.affectedRows === 0) return res.status(400).json({ error: 'User configuration profile not found.' });
+
+    // Invalidate target user's active device sessions when admin changes their password
+    await pool.query(`UPDATE auth_device_sessions SET revoked_at=NOW() WHERE username=? AND revoked_at IS NULL`, [uname]);
+    await pool.query(`UPDATE user_sessions SET is_logged_in=0 WHERE username=?`, [uname]);
+
     res.json({ success: true });
   }));
 

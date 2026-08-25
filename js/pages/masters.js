@@ -272,9 +272,10 @@ window.PAGES.masters = {
           </h3>
           <div class="form-grid">
             <div class="field"><label>Username *</label><input id="mUserNameInput" placeholder="e.g. amit" list="mExistingUsers" autocomplete="off"><datalist id="mExistingUsers"></datalist></div>
-            <div class="field"><label>Password / PIN *</label><input type="password" id="mUserPassInput" placeholder="••••••••"></div>
+            <div class="field"><label>Password / PIN *</label><input type="password" id="mUserPassInput" placeholder="At least 12 characters" autocomplete="new-password"></div>
             <div class="field"><label>System Privilege</label>
               <select id="mUserRoleDropdown"><option value="User">User</option><option value="Admin">Admin</option></select></div>
+            <div id="mUserPwdStrengthContainer" style="display:none;" class="span-2"></div>
           </div>
           <div style="color:var(--txt-muted); font-size:12px; margin-top:6px;">Every user needs an email on file for OTP verification during login.</div>
           <div class="actions-row" style="margin-top:10px;">
@@ -1559,6 +1560,16 @@ window.PAGES.masters = {
       window.showToast(`Selected user: ${row.dataset.username}`);
     });
 
+    const mUserPass = $("mUserPassInput");
+    const mUserPwdBox = $("mUserPwdStrengthContainer");
+    if (window.PasswordPolicy && mUserPass && mUserPwdBox) {
+      window.PasswordPolicy.attach({
+        passwordInput: mUserPass,
+        container: mUserPwdBox,
+        showMatch: false
+      });
+    }
+
     $("mBtnAddUser").addEventListener("click", async () => {
       const username = $("mUserNameInput").value.trim();
       const password = $("mUserPassInput").value.trim();
@@ -1567,6 +1578,13 @@ window.PAGES.masters = {
       if (!username || !password || !email) {
         window.openModal("Validation Error", "<p>Username, Password and Email are mandatory.</p>");
         return;
+      }
+      if (window.PasswordPolicy) {
+        const pol = window.PasswordPolicy.evaluate(password);
+        if (!pol.valid) {
+          window.openModal("Password Policy Requirement", `<p style="color:var(--red);">${pol.errors[0] || "Password does not satisfy security policy."}</p>`);
+          return;
+        }
       }
       try {
         const res = await fetch(`${API_BASE}/masters/users`, {
@@ -1580,6 +1598,7 @@ window.PAGES.masters = {
         $("mUserNameInput").value = "";
         $("mUserPassInput").value = "";
         $("mUserEmailInput").value = "";
+        if (mUserPwdBox) mUserPwdBox.style.display = "none";
         loadMastersSystemEngine();
       } catch (err) {
         window.openModal("Failed", `<p style="color:var(--red);">${err.message}</p>`);
@@ -1592,6 +1611,13 @@ window.PAGES.masters = {
       if (!username || !password) {
         window.openModal("Validation Error", "<p>Provide username and new password.</p>");
         return;
+      }
+      if (window.PasswordPolicy) {
+        const pol = window.PasswordPolicy.evaluate(password);
+        if (!pol.valid) {
+          window.openModal("Password Policy Requirement", `<p style="color:var(--red);">${pol.errors[0] || "Password does not satisfy security policy."}</p>`);
+          return;
+        }
       }
       const ok = await window.confirmDialog(
         "Confirm Password Update",
@@ -1610,6 +1636,7 @@ window.PAGES.masters = {
         window.showToast(`Password updated for '${username}'.`);
         $("mUserNameInput").value = "";
         $("mUserPassInput").value = "";
+        if (mUserPwdBox) mUserPwdBox.style.display = "none";
       } catch (err) {
         window.openModal("Failed", `<p style="color:var(--red);">${err.message}</p>`);
       }

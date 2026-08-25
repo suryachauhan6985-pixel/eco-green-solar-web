@@ -1073,3 +1073,93 @@ html[data-theme="light"] .egs-legal-h4{
   transform: translateX(4px);
 }
 
+/* Password Strength & Real-Time Checklist Widget */
+.pwd-strength-container {
+  background: var(--panel-alt, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-light, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 8px 0 12px 0;
+  animation: fadeIn 0.2s ease;
+}
+
+.pwd-strength-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  margin-bottom: 5px;
+}
+
+.pwd-strength-title {
+  color: var(--txt-muted, #94a3b8);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pwd-strength-label {
+  font-weight: 800;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pwd-strength-label.weak { color: #ef4444; }
+.pwd-strength-label.fair { color: #f97316; }
+.pwd-strength-label.good { color: #eab308; }
+.pwd-strength-label.strong { color: #3b82f6; }
+.pwd-strength-label.very-strong { color: #10b981; }
+
+.pwd-strength-track {
+  height: 5px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.pwd-strength-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease;
+}
+
+.pwd-strength-fill.weak { background: #ef4444; }
+.pwd-strength-fill.fair { background: #f97316; }
+.pwd-strength-fill.good { background: #eab308; }
+.pwd-strength-fill.strong { background: #3b82f6; }
+.pwd-strength-fill.very-strong { background: #10b981; }
+
+.pwd-requirements-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 5px 8px;
+}
+
+.pwd-req-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--txt-muted, #94a3b8);
+  transition: color 0.2s ease;
+}
+
+.pwd-req-item i {
+  font-size: 11px;
+  color: #ef4444;
+  transition: all 0.2s ease;
+}
+
+.pwd-req-item.passed {
+  color: var(--txt, #ffffff);
+  font-weight: 500;
+}
+
+.pwd-req-item.passed i {
+  color: #10b981;
+}
+

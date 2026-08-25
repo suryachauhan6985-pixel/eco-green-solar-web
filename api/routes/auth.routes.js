@@ -1,5 +1,5 @@
 module.exports = function registerAuthRoutes(app, deps) {
-  const { pool, route, requireRole, issueToken, hashPassword, verifyPassword, generateOtp, sendOtpEmail, maskEmail, OTP_TTL_MINUTES, loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter } = deps;
+  const { pool, route, requireRole, issueToken, hashPassword, verifyPassword, validatePasswordPolicy, generateOtp, sendOtpEmail, maskEmail, OTP_TTL_MINUTES, loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter } = deps;
   const SESSION_STALE_SECONDS = 40;
 
   function parseDeviceLabel(ua) {
@@ -188,8 +188,13 @@ module.exports = function registerAuthRoutes(app, deps) {
     if (!EMAIL_RE.test(mail)) {
       return res.status(400).json({ error: 'Please enter a valid email address.' });
     }
-    if (String(password).length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    const pwCheck = validatePasswordPolicy(password, { username: uname, email: mail });
+    if (!pwCheck.valid) {
+      return res.status(400).json({
+        error: pwCheck.errors[0],
+        allErrors: pwCheck.errors,
+        checks: pwCheck.checks,
+      });
     }
 
     const [[usernameTaken]] = await pool.query(`SELECT username FROM users WHERE username = ?`, [uname]);
@@ -530,8 +535,13 @@ module.exports = function registerAuthRoutes(app, deps) {
     if (!uname || !otp || !newPassword) {
       return res.status(400).json({ error: 'Username, OTP and new Password are all required.' });
     }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    const pwCheck = validatePasswordPolicy(newPassword, { username: uname });
+    if (!pwCheck.valid) {
+      return res.status(400).json({
+        error: pwCheck.errors[0],
+        allErrors: pwCheck.errors,
+        checks: pwCheck.checks,
+      });
     }
 
     const [rows] = await pool.query(`SELECT otp, expires_at, attempts FROM otp_codes WHERE username=?`, [uname]);
@@ -556,6 +566,11 @@ module.exports = function registerAuthRoutes(app, deps) {
     const hashedNew = await hashPassword(newPassword);
     const [result] = await pool.query(`UPDATE users SET password = ? WHERE username = ?`, [hashedNew, uname]);
     if (result.affectedRows === 0) return res.status(404).json({ error: 'User not found.' });
+
+    // Invalidate all active device sessions upon password reset to terminate compromised sessions
+    await pool.query(`UPDATE auth_device_sessions SET revoked_at=NOW() WHERE username=? AND revoked_at IS NULL`, [uname]);
+    await pool.query(`UPDATE user_sessions SET is_logged_in=0 WHERE username=?`, [uname]);
+
     res.json({ success: true });
   }));
 
@@ -845,12 +860,23 @@ module.exports = function registerAuthRoutes(app, deps) {
 
     // 4. Update Password
     if (newPassword && String(newPassword).trim()) {
-      const passClean = String(newPassword).trim();
-      if (passClean.length < 4) {
-        return res.status(400).json({ error: 'New password must be at least 4 characters.' });
+      const pwCheck = validatePasswordPolicy(newPassword, { username: finalUsername, email: finalEmail });
+      if (!pwCheck.valid) {
+        return res.status(400).json({
+          error: pwCheck.errors[0],
+          allErrors: pwCheck.errors,
+          checks: pwCheck.checks,
+        });
       }
-      const hashed = await hashPassword(passClean);
+      const hashed = await hashPassword(newPassword);
       await pool.query(`UPDATE users SET password = ? WHERE username = ?`, [hashed, finalUsername]);
+
+      // Revoke other device sessions upon password change
+      const curJti = req.user.jti || '';
+      await pool.query(
+        `UPDATE auth_device_sessions SET revoked_at=NOW() WHERE username=? AND revoked_at IS NULL AND (jti IS NULL OR jti<>?)`,
+        [finalUsername, curJti]
+      );
     }
 
     res.json({
