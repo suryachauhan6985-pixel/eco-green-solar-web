@@ -2774,161 +2774,164 @@
   window.openSystemSettingsModal = openAppSettingsPanel;
 
   function openProfileMenu(targetElement) {
-    closeProfileMenu();
-    const isMobile = window.innerWidth <= 900;
-    if (isMobile) {
-      if (typeof window.closeSidebar === 'function') window.closeSidebar();
-      if (typeof closeAllFlyouts === 'function') closeAllFlyouts();
-    }
-    const roleEl = document.querySelector('.profile-box .role');
-    const userEl = document.querySelector('.profile-box .user');
-    const roleTxt = roleEl ? roleEl.textContent : (window.currentRole || '');
-    const userTxt = userEl ? userEl.textContent : ('@' + (window.currentUsername || 'user'));
-    const currentUser = (window.currentUsername || '').toLowerCase();
-    const accounts = getSavedAccounts();
-
-    const accountRows = accounts.map((a) => {
-      const isCur = a.username.toLowerCase() === currentUser;
-      return `<button type="button" class="profile-account-row${isCur ? ' current' : ''}" data-switch-user="${a.username}">
-        <span class="pa-avatar">${(a.username[0] || '?').toUpperCase()}</span>
-        <span class="pa-meta">
-          <span class="pa-name">@${a.username}</span>
-          <span class="pa-role">${a.role || ''}${isCur ? ' · Active' : ''}</span>
-        </span>
-        ${isCur ? '<i class="fa-solid fa-check pa-check"></i>' : ''}
-      </button>`;
-    }).join('');
-
-    if (isMobile) {
-      profileMenuBackdrop = document.createElement('div');
-      profileMenuBackdrop.className = 'egs-flyout-backdrop';
-      profileMenuBackdrop.style.zIndex = '24999';
-      profileMenuBackdrop.onclick = closeProfileMenu;
-      document.body.appendChild(profileMenuBackdrop);
-    }
-
-    const menu = document.createElement('div');
-    menu.className = 'profile-menu profile-menu-wide' + (isMobile ? ' profile-menu-mobile' : '');
-    menu.innerHTML = `
-      <div class="profile-menu-header" style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <div class="name">${userTxt}</div>
-          <div class="role">${roleTxt}</div>
-        </div>
-        ${isMobile ? '<button type="button" class="modal-close" style="width:28px;height:28px;font-size:13px;border:none;background:transparent;color:var(--txt-muted);cursor:pointer;" onclick="window.closeProfileMenu()"><i class="fa-solid fa-xmark"></i></button>' : ''}
-      </div>
-      <div class="profile-menu-section-label">Accounts</div>
-      <div class="profile-accounts">${accountRows || '<p class="note" style="padding:8px 12px;margin:0;">No saved accounts yet</p>'}</div>
-      <button type="button" class="profile-menu-item" id="profileAddAccount"><i class="fa-solid fa-user-plus"></i> Add account</button>
-      <div class="profile-menu-divider"></div>
-      <div class="profile-menu-section-label">Workspace Theme</div>
-      <div class="profile-theme-row">
-        <button type="button" class="theme-btn" data-theme-set="dark" title="Dark"><i class="fa-solid fa-moon"></i> Dark</button>
-        <button type="button" class="theme-btn" data-theme-set="gray" title="Gray"><i class="fa-solid fa-circle-half-stroke"></i> Gray</button>
-        <button type="button" class="theme-btn" data-theme-set="light" title="Light"><i class="fa-solid fa-sun"></i> Light</button>
-        <button type="button" class="theme-btn" data-theme-set="emerald" title="Emerald"><i class="fa-solid fa-leaf" style="color:#2ecc71;"></i> Emerald</button>
-        <button type="button" class="theme-btn" data-theme-set="ocean" title="Ocean"><i class="fa-solid fa-water" style="color:#38bdf8;"></i> Ocean</button>
-      </div>
-      <div class="profile-menu-divider"></div>
-      <button type="button" class="profile-menu-item" id="profileSettings"><i class="fa-solid fa-gear"></i> System Settings</button>
-      <button type="button" class="profile-menu-item" id="profileInstallApp"><i class="fa-solid fa-download"></i> Install ERP App (iOS / Android / PC)</button>
-      <button type="button" class="profile-menu-item" id="profileLoginActivity"><i class="fa-solid fa-mobile-screen-button"></i> Login activity</button>
-      <button type="button" class="uiverse-logout-btn" id="profileLogout" title="Log out of ERP">
-        <span><i class="fa-solid fa-right-from-bracket"></i> LOG OUT</span><i class="neon-wire"></i>
-      </button>`;
-    document.body.appendChild(menu);
-
-    if (isMobile) {
-      menu.style.position = 'fixed';
-      menu.style.left = '50%';
-      menu.style.top = '50%';
-      menu.style.transform = 'translate(-50%, -50%)';
-      menu.style.width = 'min(340px, calc(100vw - 28px))';
-      menu.style.maxHeight = 'calc(100vh - 40px)';
-      menu.style.overflowY = 'auto';
-      menu.style.zIndex = '25000';
-    } else {
-      const pBox = getProfileBox();
-      const anchor = targetElement ? (targetElement.closest ? (targetElement.closest('#sidebarProfileBox, .profile-box, #mobileProfileAvatar') || targetElement) : targetElement) : pBox;
-      const rect = anchor ? anchor.getBoundingClientRect() : { left: 12, top: window.innerHeight - 80 };
-      const menuHeight = menu.offsetHeight || menu.getBoundingClientRect().height || 420;
-      let calculatedTop = rect.top - menuHeight - 8;
-      if (calculatedTop < 10) {
-        calculatedTop = 10;
+    try {
+      closeProfileMenu();
+      const isMobile = window.innerWidth <= 900;
+      if (isMobile) {
+        if (typeof window.closeSidebar === 'function') window.closeSidebar();
+        if (typeof window.closeSidebarFlyout === 'function') window.closeSidebarFlyout();
       }
-      menu.style.position = 'fixed';
-      menu.style.left = Math.max(10, rect.left) + 'px';
-      menu.style.top = calculatedTop + 'px';
-      menu.style.maxHeight = 'calc(100vh - 24px)';
-      menu.style.overflowY = 'auto';
-      menu.style.zIndex = '25000';
-    }
-    profileMenuEl = menu;
-    if (window.wireThemeButtons) window.wireThemeButtons(menu);
-    if (window.getAppTheme) {
-      menu.querySelectorAll('[data-theme-set]').forEach((btn) => {
-        btn.classList.toggle('active', btn.getAttribute('data-theme-set') === window.getAppTheme());
-      });
-    }
+      const roleEl = document.querySelector('.profile-box .role');
+      const userEl = document.querySelector('.profile-box .user');
+      const roleTxt = roleEl ? roleEl.textContent : (window.currentRole || '');
+      const userTxt = userEl ? userEl.textContent : ('@' + (window.currentUsername || 'user'));
+      const currentUser = (window.currentUsername || '').toLowerCase();
+      const accounts = getSavedAccounts();
 
-    menu.querySelectorAll('[data-switch-user]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const uname = btn.getAttribute('data-switch-user');
-        const acc = accounts.find((a) => a.username === uname);
-        if (acc && acc.username.toLowerCase() !== currentUser) switchToAccount(acc);
-        else closeProfileMenu();
-      });
-    });
+      const accountRows = (accounts || []).map((a) => {
+        const isCur = a.username && a.username.toLowerCase() === currentUser;
+        return `<button type="button" class="profile-account-row${isCur ? ' current' : ''}" data-switch-user="${a.username}">
+          <span class="pa-avatar">${(a.username[0] || '?').toUpperCase()}</span>
+          <span class="pa-meta">
+            <span class="pa-name">@${a.username}</span>
+            <span class="pa-role">${a.role || ''}${isCur ? ' · Active' : ''}</span>
+          </span>
+          ${isCur ? '<i class="fa-solid fa-check pa-check"></i>' : ''}
+        </button>`;
+      }).join('');
 
-    const addAccBtn = menu.querySelector('#profileAddAccount');
-    if (addAccBtn) {
-      addAccBtn.addEventListener('click', () => {
-        closeProfileMenu();
-        doClearSession();
-        doShowLoginOverlay('Add another account — your previous account stays saved for switching.');
-      });
-    }
+      if (isMobile) {
+        profileMenuBackdrop = document.createElement('div');
+        profileMenuBackdrop.className = 'egs-flyout-backdrop';
+        profileMenuBackdrop.style.zIndex = '24999';
+        profileMenuBackdrop.onclick = closeProfileMenu;
+        document.body.appendChild(profileMenuBackdrop);
+      }
 
-    const settingsBtn = menu.querySelector('#profileSettings');
-    if (settingsBtn) {
-      settingsBtn.addEventListener('click', () => {
-        closeProfileMenu();
-        openAppSettingsPanel();
-      });
-    }
+      const menu = document.createElement('div');
+      menu.className = 'profile-menu profile-menu-wide' + (isMobile ? ' profile-menu-mobile' : '');
+      menu.innerHTML = `
+        <div class="profile-menu-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div class="name">${userTxt}</div>
+            <div class="role">${roleTxt}</div>
+          </div>
+          ${isMobile ? '<button type="button" class="modal-close" style="width:28px;height:28px;font-size:13px;border:none;background:transparent;color:var(--txt-muted);cursor:pointer;" onclick="window.closeProfileMenu()"><i class="fa-solid fa-xmark"></i></button>' : ''}
+        </div>
+        <div class="profile-menu-section-label">Accounts</div>
+        <div class="profile-accounts">${accountRows || '<p class="note" style="padding:8px 12px;margin:0;">No saved accounts yet</p>'}</div>
+        <button type="button" class="profile-menu-item" id="profileAddAccount"><i class="fa-solid fa-user-plus"></i> Add account</button>
+        <div class="profile-menu-divider"></div>
+        <div class="profile-menu-section-label">Workspace Theme</div>
+        <div class="profile-theme-row">
+          <button type="button" class="theme-btn" data-theme-set="dark" title="Dark"><i class="fa-solid fa-moon"></i> Dark</button>
+          <button type="button" class="theme-btn" data-theme-set="gray" title="Gray"><i class="fa-solid fa-circle-half-stroke"></i> Gray</button>
+          <button type="button" class="theme-btn" data-theme-set="light" title="Light"><i class="fa-solid fa-sun"></i> Light</button>
+          <button type="button" class="theme-btn" data-theme-set="emerald" title="Emerald"><i class="fa-solid fa-leaf" style="color:#2ecc71;"></i> Emerald</button>
+          <button type="button" class="theme-btn" data-theme-set="ocean" title="Ocean"><i class="fa-solid fa-water" style="color:#38bdf8;"></i> Ocean</button>
+        </div>
+        <div class="profile-menu-divider"></div>
+        <button type="button" class="profile-menu-item" id="profileSettings"><i class="fa-solid fa-gear"></i> System Settings</button>
+        <button type="button" class="profile-menu-item" id="profileInstallApp"><i class="fa-solid fa-download"></i> Install ERP App (iOS / Android / PC)</button>
+        <button type="button" class="profile-menu-item" id="profileLoginActivity"><i class="fa-solid fa-mobile-screen-button"></i> Login activity</button>
+        <button type="button" class="uiverse-logout-btn" id="profileLogout" title="Log out of ERP">
+          <span><i class="fa-solid fa-right-from-bracket"></i> LOG OUT</span><i class="neon-wire"></i>
+        </button>`;
+      document.body.appendChild(menu);
 
-    const installAppBtn = menu.querySelector('#profileInstallApp');
-    if (installAppBtn) {
-      installAppBtn.addEventListener('click', () => {
-        closeProfileMenu();
-        if (window.openAppInstallGuide) window.openAppInstallGuide();
-      });
-    }
-
-    const loginActBtn = menu.querySelector('#profileLoginActivity');
-    if (loginActBtn) {
-      loginActBtn.addEventListener('click', () => openLoginActivityPanel());
-    }
-
-    const logoutBtn = menu.querySelector('#profileLogout');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        closeProfileMenu();
-        const ok = await window.confirmDialog('Log out', 'Log out of this device?', { kind: 'question', okLabel: 'Log out' });
-        if (!ok) return;
-        const u = window.currentUsername;
-        await doNotifyServerLogout();
-        doClearSession();
-        // Keep account in switcher list (token cleared for this session only) — remove token so dead session isn't reusable
-        if (u) {
-          const list = getSavedAccounts().map((a) => a.username === u ? { ...a, token: '' } : a).filter((a) => a.token);
-          saveSavedAccounts(list);
+      if (isMobile) {
+        menu.style.position = 'fixed';
+        menu.style.left = '50%';
+        menu.style.top = '50%';
+        menu.style.transform = 'translate(-50%, -50%)';
+        menu.style.width = 'min(340px, calc(100vw - 28px))';
+        menu.style.maxHeight = 'calc(100vh - 40px)';
+        menu.style.overflowY = 'auto';
+        menu.style.zIndex = '25000';
+      } else {
+        const pBox = getProfileBox();
+        const anchor = targetElement ? (targetElement.closest ? (targetElement.closest('#sidebarProfileBox, .profile-box, #mobileProfileAvatar') || targetElement) : targetElement) : pBox;
+        const rect = anchor ? anchor.getBoundingClientRect() : { left: 12, top: window.innerHeight - 80 };
+        const menuHeight = menu.offsetHeight || menu.getBoundingClientRect().height || 420;
+        let calculatedTop = rect.top - menuHeight - 8;
+        if (calculatedTop < 10) {
+          calculatedTop = 10;
         }
-        doShowLoginOverlay();
+        menu.style.position = 'fixed';
+        menu.style.left = Math.max(10, rect.left) + 'px';
+        menu.style.top = calculatedTop + 'px';
+        menu.style.maxHeight = 'calc(100vh - 24px)';
+        menu.style.overflowY = 'auto';
+        menu.style.zIndex = '25000';
+      }
+      profileMenuEl = menu;
+      if (typeof window.wireThemeButtons === 'function') window.wireThemeButtons(menu);
+      if (typeof window.getAppTheme === 'function') {
+        menu.querySelectorAll('[data-theme-set]').forEach((btn) => {
+          btn.classList.toggle('active', btn.getAttribute('data-theme-set') === window.getAppTheme());
+        });
+      }
+
+      menu.querySelectorAll('[data-switch-user]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const uname = btn.getAttribute('data-switch-user');
+          const acc = (accounts || []).find((a) => a.username === uname);
+          if (acc && acc.username.toLowerCase() !== currentUser) switchToAccount(acc);
+          else closeProfileMenu();
+        });
       });
+
+      const addAccBtn = menu.querySelector('#profileAddAccount');
+      if (addAccBtn) {
+        addAccBtn.addEventListener('click', () => {
+          closeProfileMenu();
+          doClearSession();
+          doShowLoginOverlay('Add another account — your previous account stays saved for switching.');
+        });
+      }
+
+      const settingsBtn = menu.querySelector('#profileSettings');
+      if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+          closeProfileMenu();
+          openAppSettingsPanel();
+        });
+      }
+
+      const installAppBtn = menu.querySelector('#profileInstallApp');
+      if (installAppBtn) {
+        installAppBtn.addEventListener('click', () => {
+          closeProfileMenu();
+          if (window.openAppInstallGuide) window.openAppInstallGuide();
+        });
+      }
+
+      const loginActBtn = menu.querySelector('#profileLoginActivity');
+      if (loginActBtn) {
+        loginActBtn.addEventListener('click', () => openLoginActivityPanel());
+      }
+
+      const logoutBtn = menu.querySelector('#profileLogout');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          closeProfileMenu();
+          const ok = await window.confirmDialog('Log out', 'Log out of this device?', { kind: 'question', okLabel: 'Log out' });
+          if (!ok) return;
+          const u = window.currentUsername;
+          await doNotifyServerLogout();
+          doClearSession();
+          if (u) {
+            const list = getSavedAccounts().map((a) => a.username === u ? { ...a, token: '' } : a).filter((a) => a.token);
+            saveSavedAccounts(list);
+          }
+          doShowLoginOverlay();
+        });
+      }
+      menu.addEventListener('click', (e) => e.stopPropagation());
+    } catch (err) {
+      console.error('[Profile Menu Error]', err);
     }
-    menu.addEventListener('click', (e) => e.stopPropagation());
   }
 
   function toggleProfileMenu(e) {
