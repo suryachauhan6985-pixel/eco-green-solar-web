@@ -489,13 +489,13 @@ html[data-theme="light"] .otp-boxes .otp-box{
   text-transform: uppercase;
   letter-spacing: 0.1em;
   padding: 10px 20px;
-  transition: 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
   position: relative;
-  font-size: 12.5px;
-  font-weight: 700;
-  background: #333333;
-  border: none;
-  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--border, #333333);
+  border: 1px solid var(--border-light, #444);
+  color: var(--txt);
   border-radius: 8px;
   width: 100%;
   display: flex;
@@ -510,10 +510,11 @@ html[data-theme="light"] .otp-boxes .otp-box{
 }
 
 .uiverse-logout-btn:hover {
-  letter-spacing: 0.25em;
-  background: #ff1867;
-  color: #ff1867;
-  box-shadow: 0 0 35px #ff1867;
+  letter-spacing: 0.18em;
+  background: #ff1867 !important;
+  border-color: #ff1867 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 25px rgba(255, 24, 103, 0.6);
 }
 
 .uiverse-logout-btn::before {
@@ -522,8 +523,12 @@ html[data-theme="light"] .otp-boxes .otp-box{
   inset: 2px;
   background: var(--panel, #11161d);
   border-radius: 6px;
-  transition: 0.5s ease;
+  transition: 0.3s ease;
   z-index: 1;
+}
+
+.uiverse-logout-btn:hover::before {
+  background: #ff1867 !important;
 }
 
 .uiverse-logout-btn span {
@@ -533,12 +538,12 @@ html[data-theme="light"] .otp-boxes .otp-box{
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: #ffffff;
-  transition: 0.5s ease;
+  color: var(--txt, #f1f5f9);
+  transition: 0.3s ease;
 }
 
 .uiverse-logout-btn:hover span {
-  color: #ff1867;
+  color: #ffffff !important;
 }
 
 .uiverse-logout-btn i.neon-wire,
@@ -762,6 +767,70 @@ html[data-theme="light"] .otp-boxes .otp-box{
 }
 .profile-theme-row .theme-btn:hover{border-color:var(--blue);}
 .mobile-profile-avatar{cursor:pointer;}
+
+/* High-Contrast Light Theme Overrides for Profile Dropdown */
+html[data-theme="light"] .profile-menu {
+  background: #FFFFFF;
+  border-color: #CBD5E1;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+html[data-theme="light"] .profile-menu-header {
+  border-bottom-color: #E2E8F0;
+}
+html[data-theme="light"] .profile-menu-header .name {
+  color: #0F172A;
+}
+html[data-theme="light"] .profile-menu-divider {
+  background: #E2E8F0;
+}
+html[data-theme="light"] .profile-menu-section-label {
+  color: #64748B;
+}
+html[data-theme="light"] .profile-menu-item {
+  color: #0F172A;
+}
+html[data-theme="light"] .profile-menu-item:hover {
+  background: #EFF6FF;
+  color: #2563EB;
+}
+html[data-theme="light"] .profile-menu-item:hover i {
+  color: #2563EB;
+}
+html[data-theme="light"] .profile-account-row {
+  color: #0F172A;
+}
+html[data-theme="light"] .profile-account-row:hover {
+  background: #F1F5F9;
+}
+html[data-theme="light"] .profile-account-row.current {
+  background: #EFF6FF;
+  border-left-color: #2563EB;
+}
+html[data-theme="light"] .profile-theme-row .theme-btn {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+  color: #0F172A;
+}
+html[data-theme="light"] .profile-theme-row .theme-btn:hover {
+  background: #EFF6FF;
+  border-color: #2563EB;
+  color: #1E40AF;
+}
+html[data-theme="light"] .profile-theme-row .theme-btn.active {
+  background: #2563EB !important;
+  border-color: #2563EB !important;
+  color: #FFFFFF !important;
+}
+html[data-theme="light"] .uiverse-logout-btn {
+  background: #E2E8F0;
+  border-color: #CBD5E1;
+}
+html[data-theme="light"] .uiverse-logout-btn::before {
+  background: #FFFFFF;
+}
+html[data-theme="light"] .uiverse-logout-btn span {
+  color: #0F172A;
+}
 
 /* Settings panel */
 .egs-set-section{border:1px solid var(--border); border-radius:12px; margin-bottom:10px; overflow:hidden;}
