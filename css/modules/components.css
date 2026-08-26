@@ -386,8 +386,9 @@ footer.note{color:var(--txt-muted); font-size:11px; text-align:center; padding:1
 #bomBtnPrint:hover .printer-page,
 #bomChallanPrintBtn:hover .printer-page {
   height: 11px;
-  background-color: var(--gold, #d4af37);
-  border-color: var(--gold, #d4af37);
+  background-color: var(--blue, #2563EB);
+  border-color: var(--blue, #2563EB);
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
 }
 
 .uiverse-print-btn:hover,
