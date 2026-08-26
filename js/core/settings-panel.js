@@ -2800,13 +2800,21 @@
         </button>`;
       }).join('');
 
-      if (isMobile) {
-        profileMenuBackdrop = document.createElement('div');
-        profileMenuBackdrop.className = 'egs-flyout-backdrop';
-        profileMenuBackdrop.style.zIndex = '24999';
-        profileMenuBackdrop.onclick = closeProfileMenu;
-        document.body.appendChild(profileMenuBackdrop);
-      }
+      // Backdrop for both desktop and mobile to reliably close on outside click
+      profileMenuBackdrop = document.createElement('div');
+      profileMenuBackdrop.className = isMobile ? 'egs-flyout-backdrop' : 'profile-menu-backdrop-desktop';
+      profileMenuBackdrop.style.position = 'fixed';
+      profileMenuBackdrop.style.top = '0';
+      profileMenuBackdrop.style.left = '0';
+      profileMenuBackdrop.style.width = '100vw';
+      profileMenuBackdrop.style.height = '100vh';
+      profileMenuBackdrop.style.zIndex = '24999';
+      profileMenuBackdrop.style.background = isMobile ? 'rgba(0,0,0,0.5)' : 'transparent';
+      profileMenuBackdrop.onclick = (ev) => {
+        if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
+        closeProfileMenu();
+      };
+      document.body.appendChild(profileMenuBackdrop);
 
       const menu = document.createElement('div');
       menu.className = 'profile-menu profile-menu-wide' + (isMobile ? ' profile-menu-mobile' : '');
@@ -2850,17 +2858,18 @@
         menu.style.zIndex = '25000';
       } else {
         const pBox = getProfileBox();
-        const anchor = targetElement ? (targetElement.closest ? (targetElement.closest('#sidebarProfileBox, .profile-box, #mobileProfileAvatar') || targetElement) : targetElement) : pBox;
-        const rect = anchor ? anchor.getBoundingClientRect() : { left: 12, top: window.innerHeight - 80 };
-        const menuHeight = menu.offsetHeight || menu.getBoundingClientRect().height || 420;
-        let calculatedTop = rect.top - menuHeight - 8;
-        if (calculatedTop < 10) {
-          calculatedTop = 10;
-        }
+        const anchorEl = (targetElement && targetElement.nodeType === 1)
+          ? (targetElement.closest('#sidebarProfileBox, .profile-box, #mobileProfileAvatar') || targetElement)
+          : pBox;
+        const rect = (anchorEl && typeof anchorEl.getBoundingClientRect === 'function')
+          ? anchorEl.getBoundingClientRect()
+          : { left: 14, top: window.innerHeight - 80 };
+
         menu.style.position = 'fixed';
         menu.style.left = Math.max(10, rect.left) + 'px';
-        menu.style.top = calculatedTop + 'px';
-        menu.style.maxHeight = 'calc(100vh - 24px)';
+        menu.style.bottom = Math.max(10, window.innerHeight - (rect.top || (window.innerHeight - 80)) + 8) + 'px';
+        menu.style.top = 'auto';
+        menu.style.maxHeight = 'calc(100vh - 110px)';
         menu.style.overflowY = 'auto';
         menu.style.zIndex = '25000';
       }
@@ -2936,9 +2945,14 @@
 
   function toggleProfileMenu(e) {
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-    const target = e ? (e.currentTarget || e.target) : null;
-    if (profileMenuEl) closeProfileMenu();
-    else openProfileMenu(target);
+    const triggerEl = e && e.target && e.target.nodeType === 1
+      ? (e.target.closest('#sidebarProfileBox, .profile-box, #mobileProfileAvatar, .mobile-profile-avatar') || e.target)
+      : null;
+    if (profileMenuEl) {
+      closeProfileMenu();
+    } else {
+      openProfileMenu(triggerEl);
+    }
   }
 
   window.toggleProfileMenu = toggleProfileMenu;
@@ -2946,7 +2960,7 @@
 
   // Delegated click on document for robust profile box toggling & outside closing
   document.addEventListener('click', (e) => {
-    const trigger = e.target && e.target.closest && e.target.closest('#sidebarProfileBox, .profile-box, #mobileProfileAvatar, .mobile-profile-avatar');
+    const trigger = e.target && e.target.nodeType === 1 && e.target.closest('#sidebarProfileBox, .profile-box, #mobileProfileAvatar, .mobile-profile-avatar');
     if (trigger) {
       toggleProfileMenu(e);
       return;
