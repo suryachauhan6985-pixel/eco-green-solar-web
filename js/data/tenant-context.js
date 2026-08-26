@@ -16,9 +16,9 @@
       primaryColor: '#008080',
       secondaryColor: '#005a5a',
       accentColor: '#e5a93c',
-      bgColor: '#0b1320',
-      sidebarBg: '#070d18',
-      sidebarText: '#ffffff',
+      bgColor: null,
+      sidebarBg: null,
+      sidebarText: null,
       cardRadius: '12px',
       cardShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
       fontFamily: "'Segoe UI', system-ui, sans-serif",
@@ -89,12 +89,18 @@
     }
     if (theme.bgColor) {
       root.style.setProperty('--tenant-bg', theme.bgColor);
+    } else {
+      root.style.removeProperty('--tenant-bg');
     }
     if (theme.sidebarBg) {
       root.style.setProperty('--tenant-sidebar-bg', theme.sidebarBg);
+    } else {
+      root.style.removeProperty('--tenant-sidebar-bg');
     }
     if (theme.sidebarText) {
       root.style.setProperty('--tenant-sidebar-text', theme.sidebarText);
+    } else {
+      root.style.removeProperty('--tenant-sidebar-text');
     }
     if (theme.cardRadius) {
       root.style.setProperty('--tenant-card-radius', theme.cardRadius);

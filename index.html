@@ -61,7 +61,7 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="css/style.css?v=190">
+<link rel="stylesheet" href="css/style.css?v=197">
 <!-- Barcode/QR camera scanning (Sheets feature) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
 <!-- XLSX parsing for Sheets "Import CSV/XLSX" (CSV import needs no library) -->
@@ -223,25 +223,25 @@
      logic must load BEFORE the new bom-*.js modules, and all of those must
      load BEFORE the main bom.js page module, which wires them together via
      createXModule(ctx) factory calls inside its init(). -->
-<script src="js/pages/bom-kit-helpers.js?v=196"></script>
-<script src="js/pages/bom-challan.js?v=196"></script>
-<script src="js/pages/bom-challan-map.js?v=196"></script>
-<script src="js/pages/bom-party-autocomplete.js?v=196"></script>
-<script src="js/pages/bom-track-register.js?v=196"></script>
-<script src="js/pages/bom-kit-builder.js?v=196"></script>
-<script src="js/pages/bom-serial-scan.js?v=196"></script>
-<script src="js/pages/bom-serial-modal.js?v=196"></script>
-<script src="js/pages/bom-dispatch.js?v=196"></script>
-<script src="js/pages/bom.js?v=196"></script>
-<script src="js/utils/password-policy.js?v=196"></script>
+<script src="js/pages/bom-kit-helpers.js?v=197"></script>
+<script src="js/pages/bom-challan.js?v=197"></script>
+<script src="js/pages/bom-challan-map.js?v=197"></script>
+<script src="js/pages/bom-party-autocomplete.js?v=197"></script>
+<script src="js/pages/bom-track-register.js?v=197"></script>
+<script src="js/pages/bom-kit-builder.js?v=197"></script>
+<script src="js/pages/bom-serial-scan.js?v=197"></script>
+<script src="js/pages/bom-serial-modal.js?v=197"></script>
+<script src="js/pages/bom-dispatch.js?v=197"></script>
+<script src="js/pages/bom.js?v=197"></script>
+<script src="js/utils/password-policy.js?v=197"></script>
 <!-- Core Infrastructure Modules (Loaded in dependency order) -->
-<script src="js/core/ui-feedback.js?v=196"></script>
-<script src="js/core/pwa-permissions.js?v=196"></script>
-<script src="js/core/auth-session.js?v=196"></script>
-<script src="js/core/settings-panel.js?v=196"></script>
-<script src="js/core/navigation-engine.js?v=196"></script>
+<script src="js/core/ui-feedback.js?v=197"></script>
+<script src="js/core/pwa-permissions.js?v=197"></script>
+<script src="js/core/auth-session.js?v=197"></script>
+<script src="js/core/settings-panel.js?v=197"></script>
+<script src="js/core/navigation-engine.js?v=197"></script>
 <!-- app.js runs last: builds nav from window.PAGES and wires everything up -->
-<script src="js/app.js?v=196"></script>
+<script src="js/app.js?v=197"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -264,6 +264,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script src="js/theme.js?v=196"></script>
+<script src="js/theme.js?v=197"></script>
 </body>
 </html>
