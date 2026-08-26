@@ -109,7 +109,14 @@
   // Clicking the rounded avatar in the sidebar opens a small dropdown, like
   // the desktop app's show_profile_menu(): header (@username / role), then
   // "Switch User" and "Logout" — instead of logging out directly.
-  const profileBox = document.querySelector('.profile-box');
+  const getProfileBox = () => document.getElementById('sidebarProfileBox') || document.querySelector('.profile-box');
+  const getSavedAccounts = () => (typeof window.loadSavedAccounts === 'function' ? window.loadSavedAccounts() : []);
+  const saveSavedAccounts = (list) => (typeof window.persistSavedAccounts === 'function' ? window.persistSavedAccounts(list) : null);
+  const doSaveSession = (...args) => (typeof window.saveSession === 'function' ? window.saveSession(...args) : null);
+  const doClearSession = () => (typeof window.clearSession === 'function' ? window.clearSession() : null);
+  const doNotifyServerLogout = () => (typeof window.notifyServerLogout === 'function' ? window.notifyServerLogout() : Promise.resolve());
+  const doShowLoginOverlay = (...args) => (typeof window.showLoginOverlay === 'function' ? window.showLoginOverlay(...args) : null);
+
   let profileMenuEl = null;
   let profileMenuBackdrop = null;
 
@@ -122,9 +129,9 @@
 
   function endSessionAndShowLogin() {
     closeProfileMenu();
-    notifyServerLogout();
-    clearSession();
-    showLoginOverlay();
+    doNotifyServerLogout();
+    doClearSession();
+    doShowLoginOverlay();
   }
 
   function updateProfileBox(username, role) {
@@ -140,7 +147,7 @@
     closeProfileMenu();
     if (!acc || !acc.token) return;
     // Activate saved token locally (no password) — Instagram-style quick switch
-    saveSession(acc.username, acc.role, true, acc.token);
+    doSaveSession(acc.username, acc.role, true, acc.token);
     updateProfileBox(acc.username, acc.role);
     if (window.showToast) window.showToast('Switched to @' + acc.username);
     // Soft reload current page data
@@ -2778,7 +2785,7 @@
     const roleTxt = roleEl ? roleEl.textContent : (window.currentRole || '');
     const userTxt = userEl ? userEl.textContent : ('@' + (window.currentUsername || 'user'));
     const currentUser = (window.currentUsername || '').toLowerCase();
-    const accounts = loadSavedAccounts();
+    const accounts = getSavedAccounts();
 
     const accountRows = accounts.map((a) => {
       const isCur = a.username.toLowerCase() === currentUser;
@@ -2841,11 +2848,19 @@
       menu.style.overflowY = 'auto';
       menu.style.zIndex = '25000';
     } else {
-      const anchor = targetElement || profileBox;
-      const rect = anchor ? anchor.getBoundingClientRect() : { left: 10, top: 500 };
-      const menuRect = menu.getBoundingClientRect();
+      const pBox = getProfileBox();
+      const anchor = targetElement ? (targetElement.closest ? (targetElement.closest('#sidebarProfileBox, .profile-box, #mobileProfileAvatar') || targetElement) : targetElement) : pBox;
+      const rect = anchor ? anchor.getBoundingClientRect() : { left: 12, top: window.innerHeight - 80 };
+      const menuHeight = menu.offsetHeight || menu.getBoundingClientRect().height || 420;
+      let calculatedTop = rect.top - menuHeight - 8;
+      if (calculatedTop < 10) {
+        calculatedTop = 10;
+      }
+      menu.style.position = 'fixed';
       menu.style.left = Math.max(10, rect.left) + 'px';
-      menu.style.top = Math.max(10, rect.top - menuRect.height - 8) + 'px';
+      menu.style.top = calculatedTop + 'px';
+      menu.style.maxHeight = 'calc(100vh - 24px)';
+      menu.style.overflowY = 'auto';
       menu.style.zIndex = '25000';
     }
     profileMenuEl = menu;
@@ -2869,8 +2884,8 @@
     if (addAccBtn) {
       addAccBtn.addEventListener('click', () => {
         closeProfileMenu();
-        clearSession();
-        showLoginOverlay('Add another account — your previous account stays saved for switching.');
+        doClearSession();
+        doShowLoginOverlay('Add another account — your previous account stays saved for switching.');
       });
     }
 
@@ -2903,33 +2918,39 @@
         const ok = await window.confirmDialog('Log out', 'Log out of this device?', { kind: 'question', okLabel: 'Log out' });
         if (!ok) return;
         const u = window.currentUsername;
-        await notifyServerLogout();
-        clearSession();
+        await doNotifyServerLogout();
+        doClearSession();
         // Keep account in switcher list (token cleared for this session only) — remove token so dead session isn't reusable
         if (u) {
-          const list = loadSavedAccounts().map((a) => a.username === u ? { ...a, token: '' } : a).filter((a) => a.token);
-          persistSavedAccounts(list);
+          const list = getSavedAccounts().map((a) => a.username === u ? { ...a, token: '' } : a).filter((a) => a.token);
+          saveSavedAccounts(list);
         }
-        showLoginOverlay();
+        doShowLoginOverlay();
       });
     }
     menu.addEventListener('click', (e) => e.stopPropagation());
   }
 
   function toggleProfileMenu(e) {
-    if (e) e.stopPropagation();
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     const target = e ? (e.currentTarget || e.target) : null;
     if (profileMenuEl) closeProfileMenu();
     else openProfileMenu(target);
   }
-  if (profileBox) {
-    profileBox.addEventListener('click', toggleProfileMenu);
-  }
-  // Mobile topbar avatar — same menu as sidebar profile
-  const mobileAvatar = document.getElementById('mobileProfileAvatar');
-  if (mobileAvatar) {
-    mobileAvatar.addEventListener('click', toggleProfileMenu);
-  }
-  document.addEventListener('click', closeProfileMenu);
+
+  window.toggleProfileMenu = toggleProfileMenu;
+  window.openProfileMenu = openProfileMenu;
+
+  // Delegated click on document for robust profile box toggling & outside closing
+  document.addEventListener('click', (e) => {
+    const trigger = e.target && e.target.closest && e.target.closest('#sidebarProfileBox, .profile-box, #mobileProfileAvatar, .mobile-profile-avatar');
+    if (trigger) {
+      toggleProfileMenu(e);
+      return;
+    }
+    if (profileMenuEl && !e.target.closest('.profile-menu, .profile-menu-mobile')) {
+      closeProfileMenu();
+    }
+  });
 
 })();

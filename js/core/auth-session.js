@@ -1881,4 +1881,11 @@ if (!navigator.onLine) {
   window.startHeartbeat = startHeartbeat;
   window.applyUserPreferencesFromServer = applyUserPreferencesFromServer;
   window.resetIdleTimer = resetIdleTimer;
+  window.loadSavedAccounts = loadSavedAccounts;
+  window.persistSavedAccounts = persistSavedAccounts;
+  window.upsertSavedAccount = upsertSavedAccount;
+  window.removeSavedAccount = removeSavedAccount;
+  window.saveSession = saveSession;
+  window.clearSession = clearSession;
+  window.notifyServerLogout = notifyServerLogout;
 })();
