@@ -75,7 +75,25 @@ app.use(compression({
   level: 6 // Optimal balance between compression ratio and CPU usage
 }));
 
-// 2. HTTP Security Headers Middleware
+// 2. Canonical Custom Domain 301 Permanent Redirect Middleware
+// Automatically redirects requests from *.onrender.com (e.g. eco-green-solar-web-1.onrender.com)
+// to the official custom domain (https://eco-green-solar-erp.vprotech.online) preserving full path & query params.
+const CANONICAL_DOMAIN = process.env.CANONICAL_DOMAIN || 'eco-green-solar-erp.vprotech.online';
+
+app.use((req, res, next) => {
+  const rawHost = (req.headers['x-forwarded-host'] || req.get('host') || '').split(':')[0].trim().toLowerCase();
+
+  // If traffic comes through onrender.com host, redirect 301 permanently to the new custom domain
+  if (rawHost.endsWith('.onrender.com')) {
+    const targetUrl = `https://${CANONICAL_DOMAIN}${req.originalUrl || req.url || '/'}`;
+    res.setHeader('Location', targetUrl);
+    return res.status(301).send(`Redirecting to ${targetUrl}`);
+  }
+
+  next();
+});
+
+// 3. HTTP Security Headers Middleware
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');

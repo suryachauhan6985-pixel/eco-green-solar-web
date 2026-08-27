@@ -21,6 +21,17 @@
 <!-- Google Identity Services (GIS) for One-Tap & Continue with Google Sign-in -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
+/* Canonical Domain Redirect Guard: immediately redirect onrender.com URLs to the official custom domain */
+(function() {
+  try {
+    var host = window.location.hostname.toLowerCase();
+    if (host.endsWith('.onrender.com')) {
+      var targetDomain = 'eco-green-solar-erp.vprotech.online';
+      var newUrl = 'https://' + targetDomain + window.location.pathname + window.location.search + window.location.hash;
+      window.location.replace(newUrl);
+    }
+  } catch (e) {}
+})();
 /* Apply saved theme, font and avatar BEFORE CSS paints to avoid flash */
 (function(){
   try {
