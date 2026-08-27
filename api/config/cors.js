@@ -13,12 +13,34 @@ const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || DEFAULT_ALLOWED_ORIGIN)
   .map((s) => s.trim().replace(/\/$/, ''))
   .filter(Boolean);
 
+function isOriginAllowed(origin) {
+  if (!origin) return true; // Same-origin / direct server-to-server / Postman / mobile app
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname.toLowerCase();
+
+    // Allow any vprotech.online domain and subdomain (e.g. erp.vprotech.online, app.vprotech.online)
+    if (hostname === 'vprotech.online' || hostname.endsWith('.vprotech.online')) return true;
+
+    // Allow render deployments
+    if (hostname === 'onrender.com' || hostname.endsWith('.onrender.com')) return true;
+
+    // Allow local development
+    if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
+  } catch (e) {}
+
+  return false;
+}
+
 function corsMiddleware() {
   return cors({
     origin(origin, callback) {
-      if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-      return callback(new Error('Not allowed by CORS'));
+      if (isOriginAllowed(origin)) return callback(null, true);
+      return callback(new Error(`Not allowed by CORS: ${origin}`));
     },
+    credentials: true
   });
 }
 
