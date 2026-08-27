@@ -42,8 +42,26 @@ async function getItemId(runner, category, brand, watt, solarType, model) {
 // product line must already exist in stock_ledger, be 'Available', and its
 // stored category/brand/watt/type must match the line it's being dispatched
 // under. Returns an array of human-readable error strings (empty = valid).
+// Normalization helper for category comparison (e.g. 'DCR SOLAR PANEL' vs 'SOLAR PANELS')
+function areCategoriesCompatible(catA, catB) {
+  if (!catA || !catB) return true;
+  const a = String(catA).trim().toUpperCase();
+  const b = String(catB).trim().toUpperCase();
+  if (a === b) return true;
+  if ((a.includes('PANEL') || a.includes('MODULE')) && (b.includes('PANEL') || b.includes('MODULE'))) return true;
+  if (a.includes('INVERTER') && b.includes('INVERTER')) return true;
+  if (a.includes('BATTERY') && b.includes('BATTERY')) return true;
+  if (a.includes('STRUCTURE') && b.includes('STRUCTURE')) return true;
+  if (a.includes('CABLE') && b.includes('CABLE')) return true;
+  return false;
+}
+
+// Mirrors ui/sales.py's validate_sales_line_serials(): every serial in a
+// product line must already exist in stock_ledger, be 'Available', and its
+// stored category/brand/watt/type must match the line it's being dispatched
+// under. Returns an array of human-readable error strings (empty = valid).
 // Optimized with single batch query to eliminate N+1 performance bottleneck.
-async function validateSalesLineSerials(runner, serials, line) {
+async function validateSalesLineSerials(runner, serials, line = {}) {
   if (!Array.isArray(serials) || !serials.length) return [];
   const errors = [];
   const cleanSerials = serials.map((s) => String(s || '').trim()).filter(Boolean);
@@ -55,21 +73,49 @@ async function validateSalesLineSerials(runner, serials, line) {
   );
 
   const rowMap = new Map();
-  rows.forEach((r) => rowMap.set(r.serial_no, r));
+  rows.forEach((r) => {
+    rowMap.set(String(r.serial_no).trim().toUpperCase(), r);
+    rowMap.set(String(r.serial_no).trim(), r);
+  });
 
   const lineWatt = Number(line.watt) || 0;
+  const lineBrand = String(line.brand || '').trim().toUpperCase();
+  const lineType = String(line.type || '').trim().toUpperCase();
 
   for (const sn of cleanSerials) {
-    const r = rowMap.get(sn);
+    const snLookup = String(sn).trim().toUpperCase();
+    const r = rowMap.get(snLookup) || rowMap.get(sn);
     if (!r) {
       errors.push(`'${sn}' - NOT FOUND in database`);
       continue;
     }
-    if (r.status !== 'Available') errors.push(`'${sn}' - Status is '${r.status}', not 'Available'`);
-    if (r.category !== line.cat) errors.push(`'${sn}' - Category mismatch: database has '${r.category}'`);
-    if (r.brand_name !== line.brand) errors.push(`'${sn}' - Brand mismatch: database has '${r.brand_name}'`);
-    if ((Number(r.watt) || 0) !== lineWatt) errors.push(`'${sn}' - Wattage mismatch: database has '${r.watt}W'`);
-    if (r.solar_type !== line.type) errors.push(`'${sn}' - Type mismatch: database has '${r.solar_type}'`);
+    if (String(r.status || '').toLowerCase() !== 'available') {
+      errors.push(`'${sn}' - Status is '${r.status}', not 'Available'`);
+    }
+
+    // Category check
+    if (line.cat && !areCategoriesCompatible(r.category, line.cat)) {
+      errors.push(`'${sn}' - Category mismatch: database has '${r.category}'`);
+    }
+
+    // Brand check (case-insensitive)
+    if (lineBrand && String(r.brand_name || '').trim().toUpperCase() !== lineBrand) {
+      errors.push(`'${sn}' - Brand mismatch: database has '${r.brand_name}'`);
+    }
+
+    // Wattage check (only if both are defined and non-zero)
+    const dbWatt = Number(r.watt) || 0;
+    if (lineWatt > 0 && dbWatt > 0 && Math.abs(dbWatt - lineWatt) > 0.01) {
+      errors.push(`'${sn}' - Wattage mismatch: database has '${r.watt}W'`);
+    }
+
+    // Solar type check: only fail if both lineType and DB solar_type are explicitly specified and conflict
+    const dbType = String(r.solar_type || '').trim().toUpperCase();
+    if (lineType && lineType !== '-' && lineType !== 'ALL' && lineType !== 'N/A') {
+      if (dbType && dbType !== '-' && dbType !== lineType) {
+        errors.push(`'${sn}' - Type mismatch: database has '${r.solar_type}'`);
+      }
+    }
   }
   return errors;
 }

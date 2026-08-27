@@ -8,11 +8,19 @@ const nodemailer = require('nodemailer');
 
 const OTP_TTL_MINUTES = 5;
 
+let lastSmtpFailureTime = 0;
+const SMTP_FAILURE_BACKOFF_MS = 5 * 60 * 1000; // 5 minutes backoff if SMTP is blocked/down
+
+function isRenderCloud() {
+  return !!process.env.RENDER || !!process.env.RENDER_SERVICE_ID || !!process.env.IS_RENDER;
+}
+
 /**
- * Creates and returns a configured Nodemailer transporter from environment variables.
+ * Builds and returns a Nodemailer SMTP transporter using .env variables.
+ * @returns {nodemailer.Transporter|null}
  */
 function getSmtpTransporter() {
-  const host = process.env.SMTP_HOST || 'smtppro.zoho.in';
+  const host = process.env.SMTP_HOST || 'smtp.zoho.in';
   const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465;
   const user = process.env.SMTP_USER || '';
   const pass = process.env.SMTP_PASS || '';
@@ -24,6 +32,7 @@ function getSmtpTransporter() {
     return null;
   }
 
+  // Fast timeout: Render free instances block ports 465/587, so fail fast in 2.5s instead of hanging for 15s
   return nodemailer.createTransport({
     host,
     port,
@@ -35,9 +44,9 @@ function getSmtpTransporter() {
     tls: {
       rejectUnauthorized: false
     },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000
+    connectionTimeout: 2500,
+    greetingTimeout: 2500,
+    socketTimeout: 5000
   });
 }
 
@@ -52,29 +61,55 @@ async function verifySmtpConnection() {
   }
   try {
     await transporter.verify();
+    lastSmtpFailureTime = 0;
     return { success: true, message: 'SMTP server is ready to deliver messages.' };
   } catch (err) {
+    lastSmtpFailureTime = Date.now();
     return { success: false, message: err.message, error: err };
   }
 }
 
 /**
- * Generic reusable email sending function.
- * Supports: HTML, Plain text, Attachments, Custom Sender, CC/BCC.
- * 
- * @param {Object} options
- * @param {string|Array<string>} options.to - Recipient email address(es)
- * @param {string} options.subject - Email subject line
- * @param {string} [options.text] - Plain text body
- * @param {string} [options.html] - HTML body
- * @param {string} [options.from] - Custom sender (defaults to SMTP_FROM / SMTP_USER)
- * @param {string|Array<string>} [options.cc] - Carbon copy recipients
- * @param {string|Array<string>} [options.bcc] - Blind carbon copy recipients
- * @param {Array<Object>} [options.attachments] - Array of nodemailer attachment objects
- * @returns {Promise<{success: boolean, messageId?: string, provider: string}>}
+ * Sends an email via Brevo HTTPS API.
  */
-async function sendEmail({ to, subject, text, html, from, cc, bcc, attachments = [] }) {
-  if (!to) {
+async function sendViaBrevo({ to, subject, text, html, senderName, senderEmail }) {
+  const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
+  const fromEmail = senderEmail || process.env.BREVO_FROM_EMAIL || process.env.SMTP_USER || 'info@vprotech.online';
+  const fromName = senderName || process.env.BREVO_FROM_NAME || process.env.SMTP_FROM_NAME || 'Eco Green Solar ERP';
+
+  if (!BREVO_API_KEY || !fromEmail) {
+    throw new Error('Brevo not configured (missing BREVO_API_KEY or sender email)');
+  }
+
+  const recipientArray = (Array.isArray(to) ? to : [to]).map((e) => ({ email: String(e).trim() }));
+  const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': BREVO_API_KEY,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { name: fromName, email: fromEmail },
+      to: recipientArray,
+      subject,
+      textContent: text || '',
+      htmlContent: html || text || '',
+    }),
+  });
+
+  if (!resp.ok) {
+    const detail = await resp.text().catch(() => '');
+    throw new Error(`Brevo API error (${resp.status}): ${detail || resp.statusText}`);
+  }
+  return { success: true, provider: 'brevo' };
+}
+
+/**
+ * Sends an email using the best available provider with instant fallback.
+ */
+async function sendEmail({ to, subject, text, html, from, cc, bcc, attachments }) {
+  if (!to || (Array.isArray(to) && to.length === 0)) {
     throw new Error('Recipient email (to) is required.');
   }
   if (!subject) {
@@ -89,9 +124,31 @@ async function sendEmail({ to, subject, text, html, from, cc, bcc, attachments =
   const defaultSender = process.env.SMTP_FROM || `"${defaultFromName}" <${defaultFromUser}>`;
   const senderAddress = from || defaultSender;
 
-  // 1. Primary: Zoho Mail / Custom SMTP Transporter
+  const brevoConfigured = !!(process.env.BREVO_API_KEY && (process.env.BREVO_FROM_EMAIL || process.env.SMTP_USER));
+  const onRender = isRenderCloud();
+  const smtpRecentlyFailed = (Date.now() - lastSmtpFailureTime) < SMTP_FAILURE_BACKOFF_MS;
+
+  // If on Render Cloud (where outbound SMTP ports are blocked) and Brevo is configured,
+  // or if SMTP recently timed out, use ultra-fast Brevo HTTPS API first (<300ms)
+  if (brevoConfigured && (onRender || smtpRecentlyFailed)) {
+    try {
+      return await sendViaBrevo({
+        to,
+        subject,
+        text,
+        html,
+        senderName: defaultFromName,
+        senderEmail: process.env.BREVO_FROM_EMAIL || defaultFromUser,
+      });
+    } catch (err) {
+      console.warn('[Email Service] Brevo primary attempt failed:', err.message);
+      errors.push(`Brevo: ${err.message}`);
+    }
+  }
+
+  // 1. Try Zoho Mail / Custom SMTP Transporter
   const mailer = getSmtpTransporter();
-  if (mailer) {
+  if (mailer && !smtpRecentlyFailed) {
     try {
       const info = await mailer.sendMail({
         from: senderAddress,
@@ -101,44 +158,28 @@ async function sendEmail({ to, subject, text, html, from, cc, bcc, attachments =
         subject,
         text,
         html,
-        attachments
+        attachments,
       });
+      lastSmtpFailureTime = 0; // reset failure timer
       return { success: true, messageId: info.messageId, provider: 'smtp' };
     } catch (err) {
+      lastSmtpFailureTime = Date.now();
       console.warn('[Email Service] SMTP dispatch failed, checking fallback providers:', err.message);
       errors.push(`SMTP (${process.env.SMTP_HOST || 'Zoho'}): ${err.message}`);
     }
   }
 
-  // 2. Secondary Fallback: Brevo API
-  const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
-  const BREVO_FROM_EMAIL = process.env.BREVO_FROM_EMAIL || '';
-  const BREVO_FROM_NAME = process.env.BREVO_FROM_NAME || defaultFromName;
-
-  if (BREVO_API_KEY && BREVO_FROM_EMAIL) {
+  // 2. Secondary Fallback: Brevo API (if not already tried)
+  if (brevoConfigured && !errors.some((e) => e.startsWith('Brevo:'))) {
     try {
-      const recipientArray = (Array.isArray(to) ? to : [to]).map(e => ({ email: e.trim() }));
-      const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          'api-key': BREVO_API_KEY,
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          sender: { name: BREVO_FROM_NAME, email: BREVO_FROM_EMAIL },
-          to: recipientArray,
-          subject,
-          textContent: text || '',
-          htmlContent: html || text || '',
-        }),
+      return await sendViaBrevo({
+        to,
+        subject,
+        text,
+        html,
+        senderName: defaultFromName,
+        senderEmail: process.env.BREVO_FROM_EMAIL || defaultFromUser,
       });
-
-      if (!resp.ok) {
-        const detail = await resp.text().catch(() => '');
-        throw new Error(`Brevo API error (${resp.status}): ${detail || resp.statusText}`);
-      }
-      return { success: true, provider: 'brevo' };
     } catch (err) {
       console.warn('[Email Service] Brevo fallback failed:', err.message);
       errors.push(`Brevo: ${err.message}`);
