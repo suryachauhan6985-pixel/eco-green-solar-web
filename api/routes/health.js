@@ -190,4 +190,32 @@ module.exports = function registerHealthRoutes(app, deps) {
     });
   }));
 
+  // POST /api/system/test-email — Send test email via Zoho SMTP (SuperAdmin Only)
+  app.post('/api/system/test-email', requireRole('SuperAdmin'), route(async (req, res) => {
+    const to = (req.body.to || req.user?.email || process.env.SMTP_USER || '').trim();
+    if (!to) {
+      return res.status(400).json({ error: 'Recipient email is required.' });
+    }
+
+    if (typeof deps.sendEmail !== 'function') {
+      return res.status(500).json({ error: 'Email service is not initialized.' });
+    }
+
+    const result = await deps.sendEmail({
+      to,
+      subject: 'Eco Green Solar ERP — Live Test Email',
+      text: `Hello,\n\nThis is a diagnostic email from Eco Green Solar ERP system.\nSent at: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #059669; border-radius: 8px;">
+          <h2 style="color: #059669; margin: 0 0 10px 0;">Eco Green Solar ERP</h2>
+          <p>This is a live diagnostic email sent via Zoho Mail SMTP.</p>
+          <p><strong>Sent to:</strong> ${to}</p>
+          <p><strong>Timestamp:</strong> ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
+        </div>
+      `
+    });
+
+    res.json({ success: true, message: `Test email sent successfully to ${to}`, result });
+  }));
+
 };
