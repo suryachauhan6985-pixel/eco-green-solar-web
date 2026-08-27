@@ -749,18 +749,22 @@ window.PAGES.bom = {
         ctx.setVerified(true);
         ctx.updateVerifyButtonState();
 
-        // Collect scanned serials ONLY from Solar Panel items (Inverter serials excluded)
+        // Collect scanned serials ONLY from Solar Panel items (Inverters, Batteries, Structures, Cables excluded)
         const allSerials = [];
-        const isNonPanel = (name, cat) => {
-          const s = `${name || ''} ${cat || ''}`.toUpperCase();
-          return s.includes('INVERTER') || s.includes('DEYE') || s.includes('GROWATT') || s.includes('POLYCAB') || s.includes('SOLIS') || s.includes('STRUCTURE') || s.includes('WIRE') || s.includes('ACDB') || s.includes('DCDB');
+        const isSolarPanelOnly = (name, cat) => {
+          const s = `${name || ''} ${cat || ''}`.toUpperCase().trim();
+          if (!s) return false;
+          const isInvOrOther = s.includes('INVERTER') || s.includes('DEYE') || s.includes('GROWATT') || s.includes('POLYCAB') || s.includes('SOLIS') || s.includes('HAVELLS') || s.includes('STRUCTURE') || s.includes('WIRE') || s.includes('CABLE') || s.includes('ACDB') || s.includes('DCDB') || s.includes('BATTERY') || s.includes('EARTHING');
+          if (isInvOrOther) return false;
+          const isPanel = s.includes('PANEL') || s.includes('MODULE') || s.includes('DCR') || s.includes('SOLAR') || s.includes('ADANI') || s.includes('WAAREE') || s.includes('VIKRAM') || s.includes('GOLDI') || s.includes('RENEW') || s.includes('RAYZON') || s.includes('TATA');
+          return isPanel;
         };
 
-        // 1. Check current kit state sections
+        // 1. Check current kit state sections (Solar Panels only)
         if (ctx.currentKitState && Array.isArray(ctx.currentKitState.sections)) {
           for (const sec of ctx.currentKitState.sections) {
             for (const it of (sec.items || [])) {
-              if (isNonPanel(it.name, sec.title || it.category)) continue;
+              if (!isSolarPanelOnly(it.name, sec.title || it.category)) continue;
               if (it && it.serials) {
                 const list = typeof bomSplitSerials === 'function'
                   ? bomSplitSerials(it.serials)
@@ -774,10 +778,10 @@ window.PAGES.bom = {
           }
         }
 
-        // 2. Check Continue Order items if active
+        // 2. Check Continue Order items if active (Solar Panels only)
         if (ctx.currentContinueOrder && Array.isArray(ctx.currentContinueOrder.items)) {
           for (const it of ctx.currentContinueOrder.items) {
-            if (isNonPanel(it.item_name || it.name, it.category)) continue;
+            if (!isSolarPanelOnly(it.item_name || it.name, it.category)) continue;
             if (it && it.serials) {
               const list = typeof bomSplitSerials === 'function'
                 ? bomSplitSerials(it.serials)
@@ -790,10 +794,11 @@ window.PAGES.bom = {
           }
         }
 
-        // 3. Also check any serial textareas on screen for panel items (exclude inverters)
-        document.querySelectorAll('textarea[data-cont-kind="serial"], textarea#bomSerialModalBox').forEach((box) => {
+        // 3. Also check any active panel serial textareas on screen
+        document.querySelectorAll('textarea[data-cont-kind="serial"]').forEach((box) => {
           const itemName = String(box.getAttribute('data-cont-name') || '').trim();
-          if (isNonPanel(itemName)) return;
+          const itemCat = String(box.getAttribute('data-cont-cat') || '').trim();
+          if (!isSolarPanelOnly(itemName, itemCat)) return;
 
           const list = typeof bomSplitSerials === 'function'
             ? bomSplitSerials(box.value || '')

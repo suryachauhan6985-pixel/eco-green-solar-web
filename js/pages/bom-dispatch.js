@@ -514,13 +514,23 @@ function createBomDispatchModule(ctx) {
           }
           if (window.showToast) window.showToast('Dispatched — stock has been deducted.');
 
-          // Auto-save Solar Panel serial Excel (exclude inverters)
+          // Auto-save Solar Panel serial Excel (strictly exclude inverters, batteries, structures, wires)
           const dispSerials = [];
+          const isSolarPanelOnly = (name, cat) => {
+            const s = `${name || ''} ${cat || ''}`.toUpperCase().trim();
+            if (!s) return false;
+            const isInvOrOther = s.includes('INVERTER') || s.includes('DEYE') || s.includes('GROWATT') || s.includes('POLYCAB') || s.includes('SOLIS') || s.includes('HAVELLS') || s.includes('STRUCTURE') || s.includes('WIRE') || s.includes('CABLE') || s.includes('ACDB') || s.includes('DCDB') || s.includes('BATTERY') || s.includes('EARTHING');
+            if (isInvOrOther) return false;
+            const isPanel = s.includes('PANEL') || s.includes('MODULE') || s.includes('DCR') || s.includes('SOLAR') || s.includes('ADANI') || s.includes('WAAREE') || s.includes('VIKRAM') || s.includes('GOLDI') || s.includes('RENEW') || s.includes('RAYZON') || s.includes('TATA');
+            return isPanel;
+          };
+
           (items || []).forEach((it) => {
-            const itemName = String(it.name || '').trim().toUpperCase();
-            const isInverter = itemName.includes('INVERTER') || itemName.includes('DEYE') || itemName.includes('GROWATT') || itemName.includes('POLYCAB') || itemName.includes('SOLIS');
-            if (!isInverter && Array.isArray(it.serials)) {
-              it.serials.forEach((s) => { if (s && String(s).trim()) dispSerials.push(String(s).trim()); });
+            if (isSolarPanelOnly(it.name, it.category) && Array.isArray(it.serials)) {
+              it.serials.forEach((s) => {
+                const cleanS = s && String(s).trim();
+                if (cleanS && !dispSerials.includes(cleanS)) dispSerials.push(cleanS);
+              });
             }
           });
           if (dispSerials.length && typeof window.saveSerialExcelDirectly === 'function') {

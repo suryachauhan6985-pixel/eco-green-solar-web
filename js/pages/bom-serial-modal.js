@@ -387,17 +387,27 @@ function createBomSerialModalModule(ctx) {
         const custName = ctx.$('bomCustomerName') ? String(ctx.$('bomCustomerName').value || '').trim() : '';
         const headerDate = ctx.$('bomChallanDate') ? ctx.$('bomChallanDate').value : '';
 
+        const isSolarPanelOnly = (name, cat) => {
+          const s = `${name || ''} ${cat || ''}`.toUpperCase().trim();
+          if (!s) return false;
+          const isInvOrOther = s.includes('INVERTER') || s.includes('DEYE') || s.includes('GROWATT') || s.includes('POLYCAB') || s.includes('SOLIS') || s.includes('HAVELLS') || s.includes('STRUCTURE') || s.includes('WIRE') || s.includes('CABLE') || s.includes('ACDB') || s.includes('DCDB') || s.includes('BATTERY') || s.includes('EARTHING');
+          if (isInvOrOther) return false;
+          const isPanel = s.includes('PANEL') || s.includes('MODULE') || s.includes('DCR') || s.includes('SOLAR') || s.includes('ADANI') || s.includes('WAAREE') || s.includes('VIKRAM') || s.includes('GOLDI') || s.includes('RENEW') || s.includes('RAYZON') || s.includes('TATA');
+          return isPanel;
+        };
+
         const allSerials = [];
         if (ctx.currentKitState && Array.isArray(ctx.currentKitState.sections)) {
           for (const sec of ctx.currentKitState.sections) {
             for (const it of (sec.items || [])) {
+              if (!isSolarPanelOnly(it.name, sec.title || it.category)) continue;
               if (it && it.serials) {
                 const list = typeof bomSplitSerials === 'function'
                   ? bomSplitSerials(it.serials)
                   : String(it.serials).split(/[\r\n,;]+/);
                 list.forEach((s) => {
                   const trimmed = String(s || '').trim();
-                  if (trimmed) allSerials.push(trimmed);
+                  if (trimmed && !allSerials.includes(trimmed)) allSerials.push(trimmed);
                 });
               }
             }

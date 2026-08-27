@@ -24,6 +24,37 @@ function registerSerialExcelRoutes(app, deps) {
     const cleanCust = String(customerName || shortName || '').trim();
     const scanDate = formatScanDate(date);
 
+    // Filter serials to strictly Solar Panels (exclude inverters, batteries, structures, cables)
+    let panelSerials = serials;
+    try {
+      const [stockRows] = await pool.query(
+        `SELECT serial_no, category, brand_name, item_name FROM stock_ledger WHERE serial_no IN (?)`,
+        [serials]
+      );
+      if (stockRows && stockRows.length > 0) {
+        const panelSet = new Set();
+        stockRows.forEach((r) => {
+          const cat = String(r.category || '').toUpperCase();
+          const item = String(r.item_name || '').toUpperCase();
+          const brand = String(r.brand_name || '').toUpperCase();
+          const isInv = cat.includes('INVERTER') || item.includes('INVERTER') || brand.includes('POLYCAB') || brand.includes('DEYE') || brand.includes('GROWATT') || brand.includes('SOLIS') || brand.includes('HAVELLS');
+          const isOther = cat.includes('STRUCTURE') || cat.includes('WIRE') || cat.includes('CABLE') || cat.includes('BATTERY') || cat.includes('ACDB') || cat.includes('DCDB') || cat.includes('EARTHING');
+          if (!isInv && !isOther) {
+            panelSet.add(r.serial_no);
+          }
+        });
+        if (panelSet.size > 0) {
+          panelSerials = serials.filter((s) => panelSet.has(s));
+        }
+      }
+    } catch (dbErr) {
+      console.warn('[SerialExcel] Panel serial filtering warning:', dbErr.message);
+    }
+
+    if (!panelSerials.length) {
+      return res.json({ success: false, message: 'No Solar Panel serial numbers found to save in Excel.' });
+    }
+
     // 1. Persist to database queue
     try {
       await pool.query(`
@@ -42,7 +73,7 @@ function registerSerialExcelRoutes(app, deps) {
       await pool.query(
         `INSERT INTO nas_serial_sync_queue (order_no, customer_name, scan_date, serials_json)
          VALUES (?, ?, ?, ?)`,
-        [cleanOrder, cleanCust, scanDate, JSON.stringify(serials)]
+        [cleanOrder, cleanCust, scanDate, JSON.stringify(panelSerials)]
       );
     } catch (dbErr) {
       console.warn('[SerialExcel] DB queue insert warning:', dbErr.message);
@@ -54,7 +85,7 @@ function registerSerialExcelRoutes(app, deps) {
       customerName: cleanCust,
       shortName: cleanCust || cleanOrder,
       date: scanDate,
-      serials
+      serials: panelSerials
     });
 
     res.json(result);
