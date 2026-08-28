@@ -761,24 +761,39 @@ window.PAGES.bom = {
         };
 
         // 1. Check current kit state sections (Solar Panels only)
-        if (ctx.currentKitState && Array.isArray(ctx.currentKitState.sections)) {
-          for (const sec of ctx.currentKitState.sections) {
-            for (const it of (sec.items || [])) {
-              if (!isSolarPanelOnly(it.name, sec.title || it.category)) continue;
-              if (it && it.serials) {
-                const list = typeof bomSplitSerials === 'function'
-                  ? bomSplitSerials(it.serials)
-                  : (Array.isArray(it.serials) ? it.serials : String(it.serials).split(/[\r\n,;]+/));
-                list.forEach((s) => {
-                  const trimmed = String(s || '').trim();
-                  if (trimmed && !allSerials.includes(trimmed)) allSerials.push(trimmed);
-                });
-              }
+        const kitSections = Array.isArray(ctx.currentKitState)
+          ? ctx.currentKitState
+          : (ctx.currentKitState && Array.isArray(ctx.currentKitState.sections) ? ctx.currentKitState.sections : []);
+
+        for (const sec of kitSections) {
+          for (const it of (sec.items || [])) {
+            if (!isSolarPanelOnly(it.name, sec.title || it.category || sec.name)) continue;
+            if (it && it.serials) {
+              const list = typeof bomSplitSerials === 'function'
+                ? bomSplitSerials(it.serials)
+                : (Array.isArray(it.serials) ? it.serials : String(it.serials).split(/[\r\n,;]+/));
+              list.forEach((s) => {
+                const trimmed = String(s || '').trim();
+                if (trimmed && !allSerials.includes(trimmed)) allSerials.push(trimmed);
+              });
             }
           }
         }
 
-        // 2. Check Continue Order items if active (Solar Panels only)
+        // 2. Also check items from bomCollectItemsForStockCheck
+        if (typeof ctx.bomCollectItemsForStockCheck === 'function') {
+          const collected = ctx.bomCollectItemsForStockCheck();
+          (collected || []).forEach((it) => {
+            if (isSolarPanelOnly(it.name, it.category || '')) {
+              (it.serials || []).forEach((s) => {
+                const trimmed = String(s || '').trim();
+                if (trimmed && !allSerials.includes(trimmed)) allSerials.push(trimmed);
+              });
+            }
+          });
+        }
+
+        // 3. Check Continue Order items if active (Solar Panels only)
         if (ctx.currentContinueOrder && Array.isArray(ctx.currentContinueOrder.items)) {
           for (const it of ctx.currentContinueOrder.items) {
             if (!isSolarPanelOnly(it.item_name || it.name, it.category)) continue;
@@ -794,7 +809,7 @@ window.PAGES.bom = {
           }
         }
 
-        // 3. Also check any active panel serial textareas on screen
+        // 4. Also check any active panel serial textareas on screen
         document.querySelectorAll('textarea[data-cont-kind="serial"]').forEach((box) => {
           const itemName = String(box.getAttribute('data-cont-name') || '').trim();
           const itemCat = String(box.getAttribute('data-cont-cat') || '').trim();
@@ -819,6 +834,7 @@ window.PAGES.bom = {
 
         if (allSerials.length > 0) {
           if (typeof window.saveSerialExcelDirectly === 'function') {
+            console.log('[BOM Verify] Saving Solar Panel serials to NAS Excel:', allSerials.length, 'serials for order:', orderNo || 'BOM');
             window.saveSerialExcelDirectly({
               orderNo: orderNo || (ctx.currentContinueOrder && ctx.currentContinueOrder.orderNo) || 'BOM',
               customerName: custName,
