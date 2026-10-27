@@ -373,8 +373,8 @@ if (!navigator.onLine) {
               <div class="login-ticker-card" data-slide="1">
                 <div class="ticker-icon" style="color:var(--gold); background:rgba(212,175,55,0.15);"><i class="fa-solid fa-shield-halved"></i></div>
                 <div class="ticker-text">
-                  <h4>Enterprise 2FA &amp; Security</h4>
-                  <p>Multi-device hardware tracking with email OTP protection &amp; active session audit.</p>
+                  <h4>Enterprise Access &amp; Security</h4>
+                  <p>Multi-device hardware tracking, encrypted sessions &amp; active security audit.</p>
                 </div>
               </div>
               <div class="login-ticker-card" data-slide="2">
@@ -451,25 +451,7 @@ if (!navigator.onLine) {
             <span>Sign In</span> <i class="fa-solid fa-arrow-right"></i>
           </button>
 
-          <div style="display:flex; align-items:center; margin:14px 0 10px 0; gap:10px;">
-            <div style="flex:1; height:1px; background:var(--border-light, rgba(255,255,255,0.12));"></div>
-            <span style="font-size:11px; font-weight:700; color:var(--txt-muted, #94a3b8); text-transform:uppercase; letter-spacing:0.5px;">OR</span>
-            <div style="flex:1; height:1px; background:var(--border-light, rgba(255,255,255,0.12));"></div>
-          </div>
-
-          <div id="googleSignInContainer" style="display:flex; justify-content:center; width:100%; margin-bottom:12px;">
-            <button type="button" class="btn btn-ghost" id="btnGoogleSignInDirect" style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding:9px 14px; font-size:13px; font-weight:600; background:rgba(255,255,255,0.06); border:1px solid var(--border-light, rgba(255,255,255,0.15)); border-radius:8px; cursor:pointer; color:var(--txt, #ffffff);">
-              <svg width="18" height="18" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>
-                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-              </svg>
-              <span>Continue with Google</span>
-            </button>
-          </div>
-
-          <div class="login-links">
+          <div class="login-links" style="margin-top:16px;">
             <a href="#" id="loginGoForgot">Forgot Password?</a>
             <a href="#" id="loginGoRegister">Create Account</a>
           </div>
@@ -1144,10 +1126,9 @@ if (!navigator.onLine) {
           errorBox.classList.add('show');
           return;
         }
-        // Password verified by the DB — an OTP has been emailed. Role is
-        // only handed over after the OTP step below, never from the UI.
-        pendingUsername = data.username;
-        showOtpStep(data.maskedEmail);
+
+        // Direct Login with ID and Password (OTP bypassed)
+        finishLogin(data);
       } catch (e) {
         errorBox.textContent = 'Could not reach the server. Please try again.';
         errorBox.classList.add('show');

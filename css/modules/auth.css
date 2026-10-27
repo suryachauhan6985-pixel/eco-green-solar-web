@@ -3,7 +3,11 @@
   position:fixed; inset:0; z-index:100000;
   display:none; align-items:center; justify-content:center;
   padding:18px;
-  background:var(--bg);
+  background:
+    radial-gradient(circle at 18% 22%, rgba(16, 185, 129, 0.12) 0%, transparent 48%),
+    radial-gradient(circle at 82% 78%, rgba(245, 158, 11, 0.10) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(59, 142, 208, 0.08) 0%, transparent 65%),
+    #080c14;
   overflow-y:auto;
   overflow-x:hidden;
 }
@@ -42,46 +46,47 @@
   50%{ box-shadow:0 0 0 14px rgba(59,142,208,0); }
 }
 @keyframes cardHalo{
-  0%,100%{ box-shadow: 0 24px 64px rgba(0,0,0,.6), 0 0 35px rgba(59,142,208,.12); }
-  50%{ box-shadow: 0 24px 64px rgba(0,0,0,.6), 0 0 60px rgba(212,175,55,.18); }
+  0%,100%{ box-shadow: 0 24px 64px rgba(0,0,0,.6), 0 0 35px rgba(59,142,208,.16); }
+  50%{ box-shadow: 0 24px 64px rgba(0,0,0,.6), 0 0 55px rgba(212,175,55,.18); }
 }
 
 .login-bg{
   position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0;
 }
 .login-orb{
-  position:absolute; border-radius:50%; filter:blur(60px); opacity:.5;
+  position:absolute; border-radius:50%; filter:blur(75px); opacity:.6;
 }
 .login-orb-a{
-  width:450px; height:450px; left:-100px; top:-80px;
-  background:radial-gradient(circle, rgba(59,142,208,0.7) 0%, rgba(59,142,208,0.1) 60%, transparent 75%);
-  animation:loginFloatA 18s ease-in-out infinite;
+  width:520px; height:520px; left:-100px; top:-80px;
+  background:radial-gradient(circle, rgba(59,142,208,0.55) 0%, rgba(37,99,235,0.12) 55%, transparent 75%);
+  animation:loginFloatA 20s ease-in-out infinite;
 }
 .login-orb-b{
-  width:400px; height:400px; right:-80px; bottom:5%;
-  background:radial-gradient(circle, rgba(212,175,55,0.65) 0%, rgba(243,156,18,0.1) 60%, transparent 75%);
-  animation:loginFloatB 15s ease-in-out infinite;
+  width:460px; height:460px; right:-80px; bottom:5%;
+  background:radial-gradient(circle, rgba(212,175,55,0.50) 0%, rgba(245,158,11,0.12) 55%, transparent 75%);
+  animation:loginFloatB 18s ease-in-out infinite;
 }
 .login-orb-c{
-  width:320px; height:320px; left:35%; bottom:-80px;
-  background:radial-gradient(circle, rgba(46,204,113,0.5) 0%, rgba(46,204,113,0.1) 60%, transparent 75%);
-  opacity:.35;
-  animation:loginFloatC 20s ease-in-out infinite;
+  width:380px; height:380px; left:35%; bottom:-80px;
+  background:radial-gradient(circle, rgba(16,185,129,0.42) 0%, rgba(5,150,105,0.10) 55%, transparent 75%);
+  opacity:.45;
+  animation:loginFloatC 22s ease-in-out infinite;
 }
 .login-orb-d{
-  width:300px; height:300px; right:30%; top:-60px;
-  background:radial-gradient(circle, rgba(155,89,182,0.45) 0%, transparent 70%);
-  opacity:.3;
-  animation:loginFloatA 22s ease-in-out infinite reverse;
+  width:340px; height:340px; right:30%; top:-60px;
+  background:radial-gradient(circle, rgba(99,102,241,0.38) 0%, transparent 70%);
+  opacity:.35;
+  animation:loginFloatA 24s ease-in-out infinite reverse;
 }
 .login-grid{
   position:absolute; inset:0;
   background-image:
-    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+    linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
   background-size:48px 48px;
-  mask-image:radial-gradient(ellipse at center, #000 30%, transparent 80%);
-  opacity:.65;
+  mask-image:radial-gradient(ellipse at center, #000 35%, transparent 85%);
+  -webkit-mask-image:radial-gradient(ellipse at center, #000 35%, transparent 85%);
+  opacity:.7;
   animation: gridDrift 20s linear infinite;
 }
 html[data-theme="light"] .login-grid{
@@ -98,11 +103,12 @@ html[data-theme="light"] .login-grid{
   gap:0;
   border-radius:22px;
   overflow:hidden;
-  border:1px solid rgba(255,255,255,0.1);
-  background:var(--panel);
-  box-shadow: 0 24px 64px rgba(0,0,0,.6), 0 0 35px rgba(59,142,208,.12);
+  border:1px solid rgba(255,255,255,0.14);
+  background:rgba(15, 23, 42, 0.92);
+  box-shadow: 0 28px 70px rgba(0,0,0,.68), 0 0 40px rgba(59,142,208,.16);
   animation: loginCardIn .45s cubic-bezier(.2,.8,.2,1), cardHalo 8s ease-in-out infinite;
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 @media (max-width:820px){
   .login-overlay{

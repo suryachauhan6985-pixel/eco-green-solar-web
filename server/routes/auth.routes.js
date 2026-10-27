@@ -72,40 +72,9 @@ module.exports = function registerAuthRoutes(app, deps) {
       const upgraded = await hashPassword(password);
       await pool.query(`UPDATE users SET password = ? WHERE username = ?`, [upgraded, user.username]);
     }
-    if (!user.is_verified) {
-      return res.status(403).json({
-        error: 'Please verify your email first. Use "Resend OTP" on the registration screen, or contact a SuperAdmin.',
-        unverified: true,
-        username: user.username,
-      });
-    }
-    if (!user.email) {
-      return res.status(400).json({
-        error: `No email is registered for '${user.username}'. Ask a SuperAdmin to add one in Masters > Users before OTP login will work.`,
-      });
-    }
 
-    const otp = generateOtp();
-    const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
-    await pool.query(
-      `INSERT INTO otp_codes (username, otp, expires_at, attempts) VALUES (?, ?, ?, 0)
-       ON DUPLICATE KEY UPDATE otp=VALUES(otp), expires_at=VALUES(expires_at), attempts=0`,
-      [user.username, otp, expiresAt]
-    );
-
-    try {
-      await sendOtpEmail(user.email, otp);
-    } catch (e) {
-      console.error('[Email OTP] Failed to send:', e.message);
-      return res.status(500).json({ error: 'Could not send OTP email. Please check SMTP setup / try again.' });
-    }
-
-    res.json({
-      success: true,
-      otpRequired: true,
-      username: user.username,
-      maskedEmail: maskEmail(user.email),
-    });
+    // Direct Login with ID and Password (OTP removed as requested)
+    await completeLoginSession(user.username, user.role, res, req);
   }));
 
   // Step 2 — verify the OTP and only now actually grant the session.
