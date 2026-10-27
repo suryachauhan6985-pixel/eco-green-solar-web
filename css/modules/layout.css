@@ -451,24 +451,24 @@ html[data-theme="light"] .egs-top-progress {
 }
 
 /* ==========================================================================
-   VIBRANT MODERN ENTERPRISE FLAT SIDEBAR NAVIGATION (NO ACCORDIONS)
+   CLEAN PROFESSIONAL ENTERPRISE SIDEBAR NAVIGATION
    ========================================================================== */
 .erp-nav-section-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 8px 4px 8px;
+  padding: 12px 10px 4px 10px;
   margin-top: 6px;
   font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   color: var(--txt-muted);
   user-select: none;
   white-space: nowrap;
   overflow: hidden;
   box-sizing: border-box;
-  opacity: 0.85;
+  opacity: 0.7;
 }
 .erp-nav-section-title:first-child {
   margin-top: 0;
@@ -477,7 +477,7 @@ html[data-theme="light"] .egs-top-progress {
 .erp-nav-section-title .section-divider-line {
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, var(--border-light, rgba(255,255,255,0.08)), transparent);
+  background: var(--border-light, rgba(255, 255, 255, 0.08));
 }
 
 .erp-nav-item {
@@ -485,132 +485,87 @@ html[data-theme="light"] .egs-top-progress {
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 7px 10px;
+  gap: 11px;
+  padding: 8px 12px;
   margin: 1.5px 0;
-  border-radius: 9px;
+  border-radius: 8px;
   background: transparent;
   border: 1px solid transparent;
-  color: var(--txt);
+  color: var(--txt-muted);
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 550;
   text-align: left;
   cursor: pointer;
   position: relative;
   user-select: none;
   overflow: hidden;
-  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s ease;
 }
 
-.erp-nav-item:hover {
-  background: var(--nav-btn-bg, rgba(255, 255, 255, 0.05));
-  border-color: var(--border-light, rgba(255, 255, 255, 0.08));
-  color: #FFFFFF;
-  transform: translateX(2px);
-}
-
-.erp-nav-item.active {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(59, 142, 208, 0.28)) !important;
-  border-color: rgba(56, 189, 248, 0.45) !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  font-weight: 700;
-}
-
-.nav-icon-badge {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
+.erp-nav-item .nav-icon {
+  font-size: 13.5px;
+  width: 18px;
+  min-width: 18px;
+  text-align: center;
+  color: var(--txt-muted);
+  transition: color 0.15s ease, transform 0.15s ease;
   flex-shrink: 0;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
-.erp-nav-item:hover .nav-icon-badge,
-.erp-nav-item.active .nav-icon-badge {
-  transform: scale(1.06);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-}
-
-.nav-text {
+.erp-nav-item .nav-text {
   flex: 1;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 12.5px;
+  letter-spacing: -0.01em;
 }
 
-.erp-hk-char {
-  color: var(--gold, #F39C12);
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 2.5px;
-}
-
-.erp-nav-item.active .erp-hk-char {
-  color: #FFFFFF;
-  text-decoration-color: #FFFFFF;
-}
-
-.nav-hk-keycap {
-  font-size: 9.5px;
-  font-weight: 700;
-  padding: 1.5px 5px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  color: var(--txt-muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: 0.3px;
-  flex-shrink: 0;
-  transition: all 0.15s ease;
-  margin-left: auto;
-}
-
-.erp-nav-item:hover .nav-hk-keycap {
-  border-color: rgba(255, 255, 255, 0.2);
+.erp-nav-item:hover {
+  background: var(--nav-btn-bg, rgba(255, 255, 255, 0.04));
+  border-color: rgba(255, 255, 255, 0.06);
   color: var(--txt);
 }
-
-.erp-nav-item.active .nav-hk-keycap {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #FFFFFF;
+.erp-nav-item:hover .nav-icon {
+  color: var(--blue, #38BDF8);
+  transform: scale(1.08);
 }
 
-.nav-pill-badge {
-  font-size: 9px;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: rgba(243, 156, 18, 0.16);
-  color: #F39C12;
-  border: 1px solid rgba(243, 156, 18, 0.35);
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-  flex-shrink: 0;
+.erp-nav-item.active {
+  background: rgba(56, 189, 248, 0.12) !important;
+  border-color: rgba(56, 189, 248, 0.28) !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+}
+.erp-nav-item.active .nav-icon {
+  color: var(--blue, #38BDF8);
 }
 
-.nav-active-glow {
+.erp-nav-item .nav-active-glow {
   position: absolute;
   left: 0;
   top: 15%;
   bottom: 15%;
-  width: 3.5px;
-  border-radius: 0 4px 4px 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
   background: var(--blue, #38BDF8);
-  box-shadow: 0 0 10px var(--blue, #38BDF8);
+  box-shadow: 0 0 8px var(--blue, #38BDF8);
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.15s ease;
 }
-
 .erp-nav-item.active .nav-active-glow {
   opacity: 1;
+}
+
+/* Hide obsolete elements */
+.nav-icon-badge,
+.nav-hk-keycap,
+.erp-hk-char {
+  all: unset;
+}
+.nav-hk-keycap {
+  display: none !important;
 }
 
 /* Backward compatibility fallbacks */
@@ -623,31 +578,32 @@ html[data-theme="light"] .egs-top-progress {
 
 /* Light Theme Support */
 html[data-theme="light"] .erp-nav-item {
-  color: #334155;
+  color: #475569;
+}
+html[data-theme="light"] .erp-nav-item .nav-icon {
+  color: #64748B;
 }
 html[data-theme="light"] .erp-nav-item:hover:not(.active) {
   background: #F1F5F9;
   border-color: #CBD5E1;
   color: #0F172A;
 }
+html[data-theme="light"] .erp-nav-item:hover:not(.active) .nav-icon {
+  color: #2563EB;
+}
 html[data-theme="light"] .erp-nav-item.active {
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(37, 99, 235, 0.25)) !important;
-  border-color: rgba(37, 99, 235, 0.4) !important;
+  background: rgba(37, 99, 235, 0.1) !important;
+  border-color: rgba(37, 99, 235, 0.3) !important;
   color: #1E3A8A !important;
 }
-html[data-theme="light"] .erp-nav-item.active .erp-hk-char {
-  color: #1E3A8A;
+html[data-theme="light"] .erp-nav-item.active .nav-icon {
+  color: #2563EB;
 }
 html[data-theme="light"] .erp-nav-section-title {
   color: #64748B;
 }
 html[data-theme="light"] .erp-nav-section-title .section-divider-line {
-  background: linear-gradient(90deg, #CBD5E1, transparent);
-}
-html[data-theme="light"] .nav-hk-keycap {
   background: #E2E8F0;
-  border-color: #CBD5E1;
-  color: #475569;
 }
 
 /* Hide old flyout backdrop / box if any exists */

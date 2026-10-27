@@ -437,18 +437,9 @@ window.applyErpModeRules = applyErpModeRules;
         btn.dataset.page = item.page || '';
         btn.dataset.sub = item.sub || item.tab || '';
         btn.dataset.action = item.action || '';
-        btn.dataset.filter = item.filter || '';
-        btn.dataset.hotkey = item.hotkey || '';
-
-        const badgeStyle = `color:${item.color || '#38bdf8'}; background:${item.bg || 'rgba(56,189,248,0.12)'}; border: 1px solid ${item.color ? item.color + '33' : 'rgba(56,189,248,0.2)'};`;
-
         btn.innerHTML = `
-          <span class="nav-icon-badge" style="${badgeStyle}">
-            <i class="fa-solid ${item.icon || 'fa-circle-dot'}"></i>
-          </span>
-          <span class="nav-text">${formatHkLabel(item.name, item.hotkey)}</span>
-          ${item.badge ? `<span class="nav-pill-badge">${item.badge}</span>` : ''}
-          ${item.hotkey ? `<span class="nav-hk-keycap">${item.hotkey}</span>` : ''}
+          <i class="nav-icon fa-solid ${item.icon || 'fa-circle-dot'}"></i>
+          <span class="nav-text">${item.name}</span>
           <span class="nav-active-glow"></span>
         `;
 
