@@ -1,0 +1,260 @@
+// Loads .env for LOCAL development only. On Render this is a harmless
+// no-op: there is no .env file in the deployed environment, and dotenv
+// never overrides a variable that's already set in process.env — so
+// Render's dashboard-configured env vars always win in production.
+// Must be the very first thing that runs, before any of the requires
+// below (cors.js, db/pool.js, middleware/auth.js, routes/backup.js all
+// read process.env the moment they're required).
+require('dotenv').config();
+
+// Eco Green Solar ERP - Web Backend API
+
+const express = require('express');
+const path = require('path');
+const compression = require('compression');
+const { corsMiddleware } = require('./config/cors');
+const { pool } = require('./db/pool');
+const { ensureStartupSchema, syncStockSummary } = require('./db/schema');
+const {
+  masterCache,
+  reportCache,
+  dashboardCache,
+  invalidateStockCaches,
+  invalidateLedgerCaches,
+  invalidateVoucherCaches
+} = require('./utils/cache');
+const { authenticateToken, issueToken, requireRole, setAuthPool } = require('./middleware/auth.middleware');
+const { globalLimiter, mutationLimiter, exportLimiter, loginLimiter, otpLimiter, registerLimiter, forgotPasswordLimiter } = require('./middleware/rateLimiters');
+const { hashPassword, verifyPassword } = require('./services/passwords');
+const { validatePasswordPolicy } = require('./services/passwordPolicy');
+const { OTP_TTL_MINUTES, generateOtp, sendOtpEmail, maskEmail, sendEmail, verifySmtpConnection } = require('./services/email');
+const { itemNameSlug, getItemId, validateSalesLineSerials, getOrCreateItem } = require('./services/stockHelpers');
+const { route } = require('./utils/route');
+const { getISTParts, ledgerTimestamp } = require('./utils/time');
+const registerAttachmentRoutes = require('./routes/attachments.routes');
+const registerHealthRoutes = require('./routes/health');
+const registerAuthRoutes = require('./routes/auth.routes');
+const registerMastersRoutes = require('./routes/masters.routes');
+const registerPurchaseRoutes = require('./routes/purchase.routes');
+const registerLedgersRoutes = require('./routes/ledgers.routes');
+const registerSalesRoutes = require('./routes/sales.routes');
+const registerStockassignRoutes = require('./routes/stockassign.routes');
+const registerScanSheetRoutes = require('./routes/scansheet.routes');
+const registerReportsRoutes = require('./routes/reports.routes');
+const registerBackupRoutes = require('./routes/backup.routes');
+const registerChallanRoutes = require('./routes/challan.routes');
+const registerBomRoutes = require('./routes/bom.routes');
+const registerBomKitsRoutes = require('./routes/bom_kits.routes');
+const registerSerialExcelRoutes = require('./routes/serial_excel.routes');
+const registerVouchersRoutes = require('./routes/vouchers.routes');
+const { registerAuditRoutes, logAuditEvent } = require('./routes/audit.routes');
+const { resolveTenant, requireTenantFeature } = require('./middleware/tenant.middleware');
+const registerPublicBrandingRoutes = require('./routes/public_branding.routes');
+const registerSaaSTenantsRoutes = require('./routes/saas_tenants.routes');
+
+// =====================================================================
+// PROCESS SAFETY & CRASH GUARDS
+// =====================================================================
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Process Safety] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[Process Safety] Uncaught Exception:', err);
+});
+
+const app = express();
+app.set('trust proxy', 1);
+
+// Disable server fingerprinting
+app.disable('x-powered-by');
+
+// 1. High-Performance Gzip / Deflate Compression Middleware
+// Compresses JSON API payloads and static assets by 70-80% for instant mobile load times
+app.use(compression({
+  threshold: 1024, // Only compress responses above 1KB
+  level: 6 // Optimal balance between compression ratio and CPU usage
+}));
+
+// 2. Canonical Custom Domain 301 Permanent Redirect Middleware
+// Automatically redirects requests from *.onrender.com (e.g. eco-green-solar-web-1.onrender.com)
+// to the official custom domain (https://eco-green-solar-erp.vprotech.online) preserving full path & query params.
+const CANONICAL_DOMAIN = process.env.CANONICAL_DOMAIN || 'eco-green-solar-erp.vprotech.online';
+
+app.use((req, res, next) => {
+  const rawHost = (req.headers['x-forwarded-host'] || req.get('host') || '').split(':')[0].trim().toLowerCase();
+
+  // If traffic comes through onrender.com host, redirect 301 permanently to the new custom domain
+  if (rawHost.endsWith('.onrender.com')) {
+    const targetUrl = `https://${CANONICAL_DOMAIN}${req.originalUrl || req.url || '/'}`;
+    res.setHeader('Location', targetUrl);
+    return res.status(301).send(`Redirecting to ${targetUrl}`);
+  }
+
+  next();
+});
+
+// 3. HTTP Security Headers Middleware
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(self), geolocation=(), microphone=()');
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https:; frame-src 'self' https://accounts.google.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self';"
+  );
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+  next();
+});
+
+app.use(corsMiddleware());
+
+// Rate limiters across API
+app.use('/api/', globalLimiter);
+app.use('/api/', mutationLimiter);
+
+// Parse JSON payloads (20mb for bulk uploads/serials)
+app.use(express.json({ limit: '20mb' }));
+app.use(resolveTenant);
+app.use(authenticateToken);
+
+// 3. Static Asset Edge & Browser Caching
+app.use(express.static(path.join(__dirname, '..'), {
+  maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0,
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    if (filePath.endsWith('.html') || filePath.endsWith('sw.js') || filePath.endsWith('manifest.webmanifest')) {
+      // Revalidate HTML, Service Worker, and Manifest immediately so deploys reflect without cache delay
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    } else if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff2|woff|ttf|webp)$/i)) {
+      // 1-year immutable edge/browser cache for versioned static assets (?v=...)
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+}));
+
+setAuthPool(pool);
+
+const deps = {
+  pool,
+  route,
+  masterCache,
+  reportCache,
+  dashboardCache,
+  invalidateStockCaches,
+  invalidateLedgerCaches,
+  invalidateVoucherCaches,
+  syncStockSummary,
+  requireRole,
+  requireTenantFeature,
+  issueToken,
+  hashPassword,
+  verifyPassword,
+  validatePasswordPolicy,
+  OTP_TTL_MINUTES,
+  generateOtp,
+  sendOtpEmail,
+  sendEmail,
+  verifySmtpConnection,
+  maskEmail,
+  globalLimiter,
+  mutationLimiter,
+  exportLimiter,
+  loginLimiter,
+  otpLimiter,
+  registerLimiter,
+  forgotPasswordLimiter,
+  itemNameSlug,
+  getItemId,
+  validateSalesLineSerials,
+  getOrCreateItem,
+  getISTParts,
+  ledgerTimestamp,
+  logAuditEvent
+};
+
+registerPublicBrandingRoutes(app, deps);
+registerSaaSTenantsRoutes(app, deps);
+registerAttachmentRoutes(app, deps);
+registerHealthRoutes(app, deps);
+registerAuthRoutes(app, deps);
+registerMastersRoutes(app, deps);
+registerPurchaseRoutes(app, deps);
+registerLedgersRoutes(app, deps);
+registerSalesRoutes(app, deps);
+registerStockassignRoutes(app, deps);
+registerScanSheetRoutes(app, deps);
+registerReportsRoutes(app, deps);
+const backupTasks = registerBackupRoutes(app, deps);
+registerChallanRoutes(app, deps);
+registerBomRoutes(app, deps);
+registerBomKitsRoutes(app, deps);
+registerSerialExcelRoutes(app, deps);
+registerVouchersRoutes(app, deps);
+registerAuditRoutes(app, deps);
+
+const PORT = process.env.PORT || 5000;
+let server;
+
+// In Vercel serverless environment, ensure startup schema lazily once
+let schemaPromise = null;
+function initSchemaOnce() {
+  if (!schemaPromise) {
+    schemaPromise = ensureStartupSchema(pool).catch((err) => {
+      console.warn('[Vercel Schema Init Warning]', err.message);
+    });
+  }
+  return schemaPromise;
+}
+
+if (process.env.VERCEL) {
+  app.use(async (_req, _res, next) => {
+    try {
+      await initSchemaOnce();
+    } catch (_) {}
+    next();
+  });
+} else if (require.main === module) {
+  server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`API running on port ${PORT}`);
+    ensureStartupSchema(pool).then(() => {
+      backupTasks.ensureBackupLogTable().then(() => {
+        setTimeout(backupTasks.checkAutoBackup, 4000);
+        setInterval(backupTasks.checkAutoBackup, backupTasks.BACKUP_AUTO_CHECK_INTERVAL_MS);
+      });
+    });
+  });
+
+  // Graceful shutdown handling for container & cloud redeployments
+  function handleGracefulShutdown(signal) {
+    console.log(`[Server] ${signal} received: draining HTTP connections & database pool...`);
+    if (server) {
+      server.close(() => {
+        console.log('[Server] HTTP server closed.');
+        pool.end().then(() => {
+          console.log('[Server] Database pool drained successfully.');
+          process.exit(0);
+        }).catch((err) => {
+          console.error('[Server] Error draining database pool:', err.message);
+          process.exit(1);
+        });
+      });
+    }
+    setTimeout(() => {
+      console.error('[Server] Forced shutdown timeout exceeded.');
+      process.exit(1);
+    }, 10000).unref();
+  }
+
+  process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => handleGracefulShutdown('SIGINT'));
+}
+
+module.exports = app;
+
+

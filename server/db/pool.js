@@ -10,15 +10,22 @@ if (missingDbEnvVars.length) {
   process.exit(1);
 }
 
+const dbHost = (process.env.DB_HOST || '').trim();
+const dbUser = (process.env.DB_USER || '').trim();
+const dbPassword = (process.env.DB_PASSWORD || '').trim();
+const dbName = (process.env.DB_NAME || '').trim();
+const dbPort = process.env.DB_PORT ? Number(process.env.DB_PORT.toString().trim()) : 3306;
+const isSsl = ((process.env.DB_SSL || '').toString().trim().toLowerCase() === 'true') || dbHost.includes('tidbcloud.com');
+
 const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  ssl: process.env.DB_SSL === 'true' ? { minVersion: 'TLSv1.2' } : undefined,
+  host: dbHost,
+  port: dbPort,
+  user: dbUser,
+  password: dbPassword,
+  database: dbName,
+  ssl: isSsl ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined,
   waitForConnections: true,
-  connectionLimit: 25,
+  connectionLimit: 15,
   queueLimit: 50,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,

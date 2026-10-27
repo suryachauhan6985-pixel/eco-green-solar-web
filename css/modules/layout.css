@@ -441,8 +441,226 @@ html[data-theme="light"] .egs-top-progress {
 }
 
 /* ==========================================================================
-   SHREE SAVA / TALLY STYLE SIDEBAR & FLOATING FLYOUT MENUS
+   SIMPLE LEFT-SIDE ACCORDION TABS NAVIGATION
    ========================================================================== */
+.erp-nav-single-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--nav-btn-bg);
+  color: var(--txt);
+  border: 1px solid var(--border-light);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+  user-select: none;
+  box-sizing: border-box;
+  width: 100%;
+}
+.erp-nav-single-btn i {
+  font-size: 14px;
+  color: var(--blue);
+  width: 18px;
+  text-align: center;
+}
+.erp-nav-single-btn:hover:not(.active) {
+  background: var(--panel-alt);
+  border-color: var(--blue);
+  color: var(--blue);
+  transform: translateX(3px);
+}
+.erp-nav-single-btn.active {
+  background: linear-gradient(135deg, var(--blue), var(--blue-hover));
+  border-color: var(--blue);
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(59, 142, 208, 0.35);
+}
+.erp-nav-single-btn.active i {
+  color: #fff !important;
+}
+
+/* Accordion Group Container */
+.erp-nav-group-container {
+  display: flex;
+  flex-direction: column;
+  margin-top: 3px;
+}
+
+/* Group Header Button */
+.erp-nav-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--nav-btn-bg);
+  color: var(--txt);
+  border: 1px solid var(--border-light);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+  user-select: none;
+  box-sizing: border-box;
+  width: 100%;
+}
+.erp-nav-group-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.erp-nav-group-header .header-left i {
+  font-size: 14px;
+  color: var(--blue);
+  width: 18px;
+  text-align: center;
+}
+.erp-nav-group-header .group-chevron {
+  font-size: 11px;
+  color: var(--txt-muted);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.erp-nav-group-header:hover {
+  background: var(--panel-alt);
+  border-color: var(--border);
+  color: var(--blue);
+}
+.erp-nav-group-header.expanded {
+  background: var(--panel-alt);
+  border-color: rgba(59, 142, 208, 0.35);
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+.erp-nav-group-header.expanded .group-chevron {
+  transform: rotate(180deg);
+  color: var(--blue);
+}
+.erp-nav-group-header.active-group {
+  border-left: 3px solid var(--blue);
+}
+
+/* Sub-items List (Inside Left Sidebar) */
+.erp-nav-sub-list {
+  display: none;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 0 6px 10px;
+  margin-left: 12px;
+  margin-top: 3px;
+  border-left: 2px solid var(--border);
+  animation: navSubSlideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.erp-nav-group-container.open > .erp-nav-sub-list {
+  display: flex;
+}
+
+@keyframes navSubSlideDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Sub-item Leaf Button */
+.erp-nav-sub-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  color: var(--txt-muted);
+  border: 1px solid transparent;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.16s ease;
+  text-align: left;
+  user-select: none;
+  box-sizing: border-box;
+  width: 100%;
+}
+.erp-nav-sub-item i {
+  font-size: 12px;
+  color: var(--txt-muted);
+  width: 16px;
+  text-align: center;
+  transition: color 0.16s ease;
+}
+.erp-nav-sub-item:hover:not(.active) {
+  background: var(--panel-alt);
+  color: var(--txt);
+  transform: translateX(3px);
+}
+.erp-nav-sub-item:hover:not(.active) i {
+  color: var(--blue);
+}
+.erp-nav-sub-item.active {
+  background: linear-gradient(135deg, var(--blue), var(--blue-hover));
+  color: #ffffff !important;
+  font-weight: 700;
+  border-color: var(--blue);
+  box-shadow: 0 3px 10px rgba(59, 142, 208, 0.35);
+}
+.erp-nav-sub-item.active i {
+  color: #ffffff !important;
+}
+
+/* Light Theme Clean Support */
+html[data-theme="light"] .erp-nav-single-btn,
+html[data-theme="light"] .erp-nav-group-header {
+  background: #FFFFFF;
+  color: #0F172A;
+  border-color: #CBD5E1;
+}
+html[data-theme="light"] .erp-nav-single-btn .header-left i,
+html[data-theme="light"] .erp-nav-group-header .header-left i {
+  color: #2563EB;
+}
+html[data-theme="light"] .erp-nav-group-header.expanded {
+  background: #F8FAFC;
+  border-color: #94A3B8;
+}
+html[data-theme="light"] .erp-nav-sub-list {
+  border-left-color: #CBD5E1;
+}
+html[data-theme="light"] .erp-nav-sub-item {
+  color: #475569;
+}
+html[data-theme="light"] .erp-nav-sub-item i {
+  color: #64748B;
+}
+html[data-theme="light"] .erp-nav-sub-item:hover:not(.active) {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+html[data-theme="light"] .erp-nav-sub-item:hover:not(.active) i {
+  color: #2563EB;
+}
+html[data-theme="light"] .erp-nav-single-btn.active,
+html[data-theme="light"] .erp-nav-sub-item.active {
+  background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
+}
+html[data-theme="light"] .erp-nav-single-btn.active i,
+html[data-theme="light"] .erp-nav-sub-item.active i {
+  color: #FFFFFF !important;
+}
+
+/* Hide old flyout backdrop / box if any exists */
+.egs-flyout-backdrop,
+.egs-flyout-box {
+  display: none !important;
+}
+
 .erp-sidebar-btn {
   display: flex;
   align-items: center;
@@ -692,31 +910,13 @@ html[data-theme="ocean"] .egs-flyout-item.selected {
   color: #FFFFFF !important;
 }
 
-/* Floating Flyout Menu System (Tally / Shree Sava) */
-.egs-flyout-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 10001;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(2px);
-}
-
-.egs-flyout-box {
-  position: fixed;
-  z-index: 10005;
-  background: var(--panel);
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.1);
-  min-width: 250px;
-  max-width: 320px;
-  display: flex;
-  flex-direction: column;
-  overflow: visible;
-  animation: egsFlyoutIn 0.14s ease-out;
+/* Floating Flyout Menu System (Disabled in favor of left-sidebar tabs) */
+.egs-flyout-backdrop,
+.egs-flyout-box,
+.egs-nested-flyout-box {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 @keyframes egsFlyoutIn {

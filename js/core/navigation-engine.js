@@ -37,53 +37,21 @@ window.applyErpModeRules = applyErpModeRules;
     const isQtyOnly = window.ERP && window.ERP.isQuantityOnly();
 
     const accountsItems = [
-      {
-        name: 'Ledger Info',
-        hotkey: 'L',
-        icon: 'fa-address-book',
-        hasNested: true,
-        nestedTitle: 'Ledger Info',
-        nestedItems: [
-          { name: 'Create', hotkey: 'C', icon: 'fa-plus', page: 'partyledger', action: 'create' },
-          { name: 'Display', hotkey: 'D', icon: 'fa-eye', page: 'partyledger', action: 'display' },
-          { name: 'Alter', hotkey: 'A', icon: 'fa-pen-to-square', page: 'partyledger', action: 'alter' }
-        ]
-      }
+      { name: 'Party Ledger / Statements', hotkey: 'L', icon: 'fa-address-book', page: 'partyledger', action: 'display' },
+      { name: 'Create Account / Ledger', hotkey: 'C', icon: 'fa-user-plus', page: 'partyledger', action: 'create' }
     ];
 
     if (!isFinOnly) {
       accountsItems.push(
-        {
-          name: 'Item / Product Info',
-          hotkey: 'I',
-          icon: 'fa-cubes',
-          hasNested: true,
-          nestedTitle: 'Item / Product Info',
-          nestedItems: [
-            { name: 'Create', hotkey: 'C', icon: 'fa-plus', page: 'masters', sub: 'item-reg', action: 'create' },
-            { name: 'Display', hotkey: 'D', icon: 'fa-eye', page: 'masters', sub: 'item-reg', action: 'display' },
-            { name: 'Alter', hotkey: 'A', icon: 'fa-pen-to-square', page: 'masters', sub: 'item-reg', action: 'alter' }
-          ]
-        },
-        {
-          name: 'Group / Category Info',
-          hotkey: 'G',
-          icon: 'fa-layer-group',
-          page: 'masters',
-          sub: 'category'
-        },
-        {
-          name: 'Unit of Measure (UOM)',
-          hotkey: 'U',
-          icon: 'fa-ruler-combined',
-          page: 'masters',
-          sub: 'uom'
-        }
+        { name: 'Item & Product Master', hotkey: 'I', icon: 'fa-cubes', page: 'masters', sub: 'item-reg', action: 'display' },
+        { name: 'Create Item / Product', hotkey: 'M', icon: 'fa-box-open', page: 'masters', sub: 'item-reg', action: 'create' },
+        { name: 'Group / Category Master', hotkey: 'G', icon: 'fa-layer-group', page: 'masters', sub: 'category' },
+        { name: 'Unit of Measure (UOM)', hotkey: 'U', icon: 'fa-ruler-combined', page: 'masters', sub: 'uom' }
       );
 
       if (window.ERP && window.ERP.isWarehouseEnabled()) {
         accountsItems.push({
-          name: 'Warehouse / Godown Info',
+          name: 'Warehouse & Godown Master',
           hotkey: 'W',
           icon: 'fa-warehouse',
           requires: 'warehouse',
@@ -102,16 +70,6 @@ window.applyErpModeRules = applyErpModeRules;
     }
 
     const transactionItems = [];
-    if (isAcc) {
-      transactionItems.push(
-        { name: 'Payment Voucher (F5)', hotkey: 'V', icon: 'fa-arrow-up-from-bracket', page: 'vouchers', action: 'Payment' },
-        { name: 'Receipt Voucher (F6)', hotkey: 'R', icon: 'fa-arrow-down-to-bracket', page: 'vouchers', action: 'Receipt' },
-        { name: 'Journal Voucher (F7)', hotkey: 'J', icon: 'fa-scale-balanced', page: 'vouchers', action: 'Journal' },
-        { name: 'Debit Note (Alt+F5)', hotkey: 'E', icon: 'fa-file-circle-minus', page: 'vouchers', action: 'DebitNote' },
-        { name: 'Credit Note (Alt+F6)', hotkey: 'O', icon: 'fa-file-circle-plus', page: 'vouchers', action: 'CreditNote' }
-      );
-    }
-
     if (!isFinOnly) {
       transactionItems.push(
         { name: 'Purchase Inward (Stock In)', hotkey: 'P', icon: 'fa-truck-ramp-box', page: 'purchase' },
@@ -142,53 +100,43 @@ window.applyErpModeRules = applyErpModeRules;
       }
     }
 
-    const accountBookItems = [
+    if (isAcc) {
+      transactionItems.push(
+        { name: 'Payment Voucher (F5)', hotkey: 'V', icon: 'fa-arrow-up-from-bracket', page: 'vouchers', action: 'Payment' },
+        { name: 'Receipt Voucher (F6)', hotkey: 'R', icon: 'fa-arrow-down-to-bracket', page: 'vouchers', action: 'Receipt' },
+        { name: 'Journal Voucher (F7)', hotkey: 'J', icon: 'fa-scale-balanced', page: 'vouchers', action: 'Journal' },
+        { name: 'Debit Note (Alt+F5)', hotkey: 'E', icon: 'fa-file-circle-minus', page: 'vouchers', action: 'DebitNote' },
+        { name: 'Credit Note (Alt+F6)', hotkey: 'O', icon: 'fa-file-circle-plus', page: 'vouchers', action: 'CreditNote' }
+      );
+    }
+
+    const displayItems = [
       { name: 'Party Ledger Statement', hotkey: 'L', icon: 'fa-money-check-dollar', page: 'partyledger', action: 'display' },
       { name: 'Purchase Register', hotkey: 'P', icon: 'fa-cart-shopping', page: 'purchaseregister' },
       { name: 'Sale Register', hotkey: 'S', icon: 'fa-money-bill-transfer', page: 'saleregister' }
     ];
 
-    if (isAcc) {
-      accountBookItems.push(
-        { name: 'Trial Balance', hotkey: 'T', icon: 'fa-list-ol', page: 'financialreports', tab: 'trial-balance' },
-        { name: 'Profit & Loss Statement', hotkey: 'O', icon: 'fa-chart-line', page: 'financialreports', tab: 'profit-loss' },
-        { name: 'Balance Sheet', hotkey: 'B', icon: 'fa-building-columns', page: 'financialreports', tab: 'balance-sheet' },
-        { name: 'Day Book Journal', hotkey: 'D', icon: 'fa-calendar-day', page: 'financialreports', tab: 'day-book' }
-      );
-    }
-
-    const displayItems = [
-      {
-        name: 'Account Books',
-        hotkey: 'A',
-        icon: 'fa-book',
-        hasNested: true,
-        nestedTitle: 'Account Books',
-        nestedItems: accountBookItems
-      }
-    ];
-
     if (!isFinOnly) {
-      const stockBookItems = [
+      displayItems.push(
         { name: 'Master Inventory Report', hotkey: 'M', icon: 'fa-clipboard-list', page: 'reports', requires: 'stock' },
-        { name: 'Low Stock Alert', hotkey: 'L', icon: 'fa-triangle-exclamation', page: 'lowstock', requires: 'stock' }
-      ];
+        { name: 'Low Stock Alert', hotkey: 'O', icon: 'fa-triangle-exclamation', page: 'lowstock', requires: 'stock' }
+      );
       if (window.ERP && window.ERP.isBomEnabled()) {
-        stockBookItems.push(
+        displayItems.push(
           { name: 'BOM Dispatch Register', hotkey: 'B', icon: 'fa-clipboard-list', page: 'bom', action: 'register', requires: 'bom' },
           { name: 'Delivery Challans Register', hotkey: 'C', icon: 'fa-file-invoice', page: 'bom', action: 'challan', requires: 'bom' },
           { name: 'Track BOM Order Progress', hotkey: 'T', icon: 'fa-route', page: 'bom', action: 'track', requires: 'bom' }
         );
       }
-      displayItems.push({
-        name: 'Stock Books',
-        hotkey: 'S',
-        icon: 'fa-boxes-stacked',
-        requires: 'stock',
-        hasNested: true,
-        nestedTitle: 'Stock Books',
-        nestedItems: stockBookItems
-      });
+    }
+
+    if (isAcc) {
+      displayItems.push(
+        { name: 'Trial Balance', hotkey: 'T', icon: 'fa-list-ol', page: 'financialreports', tab: 'trial-balance' },
+        { name: 'Profit & Loss Statement', hotkey: 'F', icon: 'fa-chart-line', page: 'financialreports', tab: 'profit-loss' },
+        { name: 'Balance Sheet', hotkey: 'K', icon: 'fa-building-columns', page: 'financialreports', tab: 'balance-sheet' },
+        { name: 'Day Book Journal', hotkey: 'D', icon: 'fa-calendar-day', page: 'financialreports', tab: 'day-book' }
+      );
     }
 
     const utilityItems = [
@@ -223,7 +171,7 @@ window.applyErpModeRules = applyErpModeRules;
       {
         type: 'single',
         id: 'dashboard',
-        name: 'Gateway / Dashboard',
+        name: 'Dashboard',
         hotkey: 'G',
         icon: 'fa-house-chimney',
         page: 'dashboard'
@@ -231,7 +179,7 @@ window.applyErpModeRules = applyErpModeRules;
       {
         type: 'group',
         id: 'grp-accounts',
-        name: 'Accounts Info',
+        name: 'Accounts & Masters',
         flyoutTitle: 'A/c Info',
         hotkey: 'A',
         icon: 'fa-folder-open',
@@ -249,8 +197,8 @@ window.applyErpModeRules = applyErpModeRules;
       {
         type: 'group',
         id: 'grp-display',
-        name: 'Display / Print',
-        flyoutTitle: 'Display / Print',
+        name: 'Reports & Registers',
+        flyoutTitle: 'Reports & Registers',
         hotkey: 'D',
         icon: 'fa-chart-pie',
         items: displayItems
@@ -278,412 +226,26 @@ window.applyErpModeRules = applyErpModeRules;
     return true;
   }
 
-  // Navigation State Engine
-  const navState = {
-    focusTier: 'none', // 'none' | 'sidebar' | 'flyout_tier1' | 'flyout_tier2'
-    sidebarIndex: 0,
-    tier1Index: 0,
-    tier2Index: -1,
-    activeFlyoutGroup: null,
-    activeNestedParentEl: null
-  };
-
-  function closeAllFlyouts(keepTrail = false) {
-    navState.focusTier = 'none';
-    navState.tier1Index = -1;
-    navState.tier2Index = -1;
-    navState.activeFlyoutGroup = null;
-    navState.activeNestedParentEl = null;
-    if (!keepTrail) {
-      lastFlyoutTrail = null;
-    }
-
+  // Simple Left Sidebar Navigation State & Utilities
+  function closeAllFlyouts() {
     const existing = document.getElementById('egsActiveSidebarFlyout');
     if (existing) existing.remove();
     const backdrop = document.getElementById('egsActiveFlyoutBackdrop');
     if (backdrop) backdrop.remove();
-    document.querySelectorAll('.erp-sidebar-btn').forEach((b) => {
-      b.classList.remove('flyout-open');
-    });
   }
-
-  // Ladder Navigation History & Step-by-Step StepBack Engine (Tally / Shree Sava Standard)
-  let lastFlyoutTrail = null;
-
-  function recordFlyoutTrail(groupId, tier1Index, tier2Index, wasNested) {
-    lastFlyoutTrail = {
-      groupId,
-      tier1Index: typeof tier1Index === 'number' ? tier1Index : 0,
-      tier2Index: typeof tier2Index === 'number' ? tier2Index : -1,
-      wasNested: !!wasNested
-    };
-  }
-
-  function clearFlyoutTrail() {
-    lastFlyoutTrail = null;
-  }
-
-  function resolveFlyoutTrail(pageId, opts = {}) {
-    if (lastFlyoutTrail) return lastFlyoutTrail;
-    if (!pageId || pageId === 'dashboard') return null;
-
-    const action = opts.action || opts.tab || opts.sub || '';
-    const sub = opts.sub || opts.tab || '';
-
-    const navGroups = typeof getErpNavGroups === 'function' ? getErpNavGroups() : (ERP_NAV_GROUPS || []);
-    for (const grp of navGroups) {
-      if (!grp.items) continue;
-      for (let t1Idx = 0; t1Idx < grp.items.length; t1Idx++) {
-        const item = grp.items[t1Idx];
-        if (item.hasNested && item.nestedItems) {
-          for (let t2Idx = 0; t2Idx < item.nestedItems.length; t2Idx++) {
-            const nItem = item.nestedItems[t2Idx];
-            if (nItem.page === pageId) {
-              if (action && (nItem.action || nItem.sub || nItem.tab)) {
-                if (nItem.action === action || nItem.sub === sub || nItem.tab === sub) {
-                  return { groupId: grp.id, tier1Index: t1Idx, tier2Index: t2Idx, wasNested: true };
-                }
-              } else {
-                return { groupId: grp.id, tier1Index: t1Idx, tier2Index: t2Idx, wasNested: true };
-              }
-            }
-          }
-        } else if (item.page === pageId) {
-          if (action && (item.action || item.sub || item.tab)) {
-            if (item.action === action || item.sub === sub || item.tab === sub) {
-              return { groupId: grp.id, tier1Index: t1Idx, tier2Index: -1, wasNested: false };
-            }
-          } else {
-            return { groupId: grp.id, tier1Index: t1Idx, tier2Index: -1, wasNested: false };
-          }
-        }
-      }
-    }
-    return null;
-  }
-
+  function openSidebarFlyout() {}
+  function clearFlyoutTrail() {}
+  function recordFlyoutTrail() {}
   function stepBackFromFlyoutTrail() {
-    const trail = resolveFlyoutTrail(window.CURRENT_PAGE_ID, window.CURRENT_PAGE_OPTS);
-    lastFlyoutTrail = null; // Consume the current trail
-
-    if (!trail) {
-      go('dashboard');
-      return;
-    }
-
-    const navGroups = typeof getErpNavGroups === 'function' ? getErpNavGroups() : (ERP_NAV_GROUPS || []);
-    const grp = navGroups.find((g) => g.id === trail.groupId);
-    if (!grp) {
-      go('dashboard');
-      return;
-    }
-    const anchorBtn = document.getElementById('btnNav_' + grp.id);
-    if (window.CURRENT_PAGE_ID !== 'dashboard') {
-      go('dashboard', {}, false);
-    }
-    openSidebarFlyout(grp, anchorBtn, false);
-
-    setTimeout(() => {
-      const flyout = document.getElementById('egsActiveSidebarFlyout');
-      if (!flyout) return;
-      const tier1Items = Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item'));
-      const t1Idx = Math.max(0, Math.min(trail.tier1Index, tier1Items.length - 1));
-      
-      suppressHoverUntilMouseMove = true;
-      if (trail.wasNested && trail.tier2Index >= 0) {
-        updateTier1Selection(t1Idx, true);
-        navState.focusTier = 'flyout_tier2';
-        updateTier2Selection(trail.tier2Index);
-      } else {
-        updateTier1Selection(t1Idx, false);
-        navState.focusTier = 'flyout_tier1';
-        navState.tier2Index = -1;
-        setNestedSubmenuOpen(null, false);
-      }
-    }, 40);
+    if (typeof go === 'function') go('dashboard');
   }
 
-  window.stepBackFromFlyoutTrail = stepBackFromFlyoutTrail;
-  window.recordFlyoutTrail = recordFlyoutTrail;
-  window.clearFlyoutTrail = clearFlyoutTrail;
-  window.resolveFlyoutTrail = resolveFlyoutTrail;
-
-  let suppressHoverUntilMouseMove = false;
-  window.addEventListener('mousemove', () => {
-    suppressHoverUntilMouseMove = false;
-  }, { passive: true });
-
-  function setNestedSubmenuOpen(parentRowEl, open = true) {
-    const flyout = document.getElementById('egsActiveSidebarFlyout');
-    if (!flyout) return;
-
-    flyout.querySelectorAll('.egs-flyout-item.has-nested').forEach((row) => {
-      if (row !== parentRowEl || !open) {
-        row.classList.remove('nested-open');
-        row.querySelectorAll('.egs-flyout-item').forEach((sub) => sub.classList.remove('selected'));
-      }
-    });
-
-    const tier1Items = Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item'));
-
-    if (open && parentRowEl) {
-      parentRowEl.classList.add('nested-open');
-      navState.activeNestedParentEl = parentRowEl;
-      const pIdx = tier1Items.indexOf(parentRowEl);
-      if (pIdx >= 0) {
-        navState.tier1Index = pIdx;
-        tier1Items.forEach((it, idx) => it.classList.toggle('selected', idx === pIdx));
-      }
-    } else if (!open) {
-      navState.activeNestedParentEl = null;
-      if (navState.tier1Index >= 0 && navState.tier1Index < tier1Items.length) {
-        tier1Items.forEach((it, idx) => it.classList.toggle('selected', idx === navState.tier1Index));
-      }
-    }
-  }
-
-  function updateTier1Selection(index, openNested = false) {
-    const flyout = document.getElementById('egsActiveSidebarFlyout');
-    if (!flyout) return;
-    const items = Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item'));
-    if (!items.length) return;
-
-    if (index < 0) index = 0;
-    if (index >= items.length) index = items.length - 1;
-    navState.tier1Index = index;
-
-    items.forEach((it, idx) => {
-      const isSel = (idx === index);
-      it.classList.toggle('selected', isSel);
-      if (isSel && it.classList.contains('has-nested') && openNested) {
-        setNestedSubmenuOpen(it, true);
-      }
-    });
-
-    if (!openNested) {
-      setNestedSubmenuOpen(null, false);
-    }
-  }
-
-  function updateTier2Selection(index) {
-    if (!navState.activeNestedParentEl) return;
-    const subItems = Array.from(navState.activeNestedParentEl.querySelectorAll('.egs-nested-flyout-box .tier2-item'));
-    if (!subItems.length) return;
-
-    if (index < 0) index = 0;
-    if (index >= subItems.length) index = subItems.length - 1;
-    navState.tier2Index = index;
-
-    subItems.forEach((it, idx) => {
-      it.classList.toggle('selected', idx === index);
-    });
-  }
-
-  function openSidebarFlyout(grp, anchorEl, selectFirst = true) {
-    closeAllFlyouts(true);
-    if (!grp) return;
-    navState.activeFlyoutGroup = grp;
-    navState.focusTier = 'flyout_tier1';
-    navState.tier1Index = selectFirst ? 0 : -1;
-    navState.tier2Index = -1;
-    suppressHoverUntilMouseMove = true;
-
-    if (anchorEl) anchorEl.classList.add('flyout-open');
-    if (document.activeElement && document.activeElement !== document.body) {
-      try { document.activeElement.blur(); } catch (e) {}
-    }
-    try { document.body.focus(); } catch (e) {}
-
-    // Create Backdrop
-    const backdrop = document.createElement('div');
-    backdrop.id = 'egsActiveFlyoutBackdrop';
-    backdrop.className = 'egs-flyout-backdrop';
-    backdrop.onclick = () => closeAllFlyouts(false);
-    document.body.appendChild(backdrop);
-
-    // Create Flyout Box
-    const flyout = document.createElement('div');
-    flyout.id = 'egsActiveSidebarFlyout';
-    flyout.className = 'egs-flyout-box';
-
-    const rect = anchorEl ? anchorEl.getBoundingClientRect() : { top: 120, right: 260, bottom: 160 };
-    const isMobile = window.innerWidth <= 900;
-    if (isMobile) {
-      if (typeof window.closeSidebar === 'function') window.closeSidebar();
-      flyout.style.left = '50%';
-      flyout.style.top = '50%';
-      flyout.style.transform = 'translate(-50%, -50%)';
-      flyout.style.width = 'min(340px, calc(100vw - 28px))';
-      flyout.style.maxWidth = 'calc(100vw - 28px)';
-      flyout.style.maxHeight = 'calc(100vh - 60px)';
-      flyout.style.overflowY = 'auto';
-      flyout.style.zIndex = '20000';
-      backdrop.style.zIndex = '19999';
-    } else {
-      flyout.style.left = (rect.right + 10) + 'px';
-      flyout.style.top = Math.min(Math.max(rect.top, 60), window.innerHeight - 380) + 'px';
-      flyout.style.zIndex = '10005';
-    }
-
-    let itemsHtml = '';
-    grp.items.forEach((item) => {
-      if (!shouldShowNavItem(item)) return;
-
-      const itemLabelHtml = formatHkLabel(item.name, item.hotkey);
-
-      if (item.hasNested) {
-        let nestedRows = '';
-        item.nestedItems.forEach((sub) => {
-          if (!shouldShowNavItem(sub)) return;
-          const subLabelHtml = formatHkLabel(sub.name, sub.hotkey);
-          nestedRows += `
-            <div class="egs-flyout-item tier2-item" data-page="${sub.page || ''}" data-sub="${sub.sub || sub.tab || ''}" data-action="${sub.action || ''}" data-filter="${sub.filter || ''}" data-group-id="${grp.id}" data-hotkey="${sub.hotkey || ''}">
-              <span class="item-text"><i class="fa-solid ${sub.icon}" style="color:var(--blue); font-size:12px;"></i> <span>${subLabelHtml}</span></span>
-            </div>
-          `;
-        });
-
-        itemsHtml += `
-          <div class="egs-flyout-item tier1-item has-nested" data-hotkey="${item.hotkey || ''}">
-            <span class="item-text"><i class="fa-solid ${item.icon}" style="color:var(--blue); font-size:12px;"></i> <span>${itemLabelHtml}</span></span>
-            <i class="fa-solid fa-chevron-right item-arrow"></i>
-            <div class="egs-nested-flyout-box">
-              <div class="egs-flyout-header"><span>${item.nestedTitle || item.name}</span></div>
-              <div class="egs-flyout-list">${nestedRows}</div>
-            </div>
-          </div>
-        `;
-      } else {
-        itemsHtml += `
-          <div class="egs-flyout-item tier1-item" data-page="${item.page || ''}" data-sub="${item.sub || item.tab || ''}" data-action="${item.action || ''}" data-filter="${item.filter || ''}" data-group-id="${grp.id}" data-hotkey="${item.hotkey || ''}">
-            <span class="item-text"><i class="fa-solid ${item.icon}" style="color:var(--blue); font-size:12px;"></i> <span>${itemLabelHtml}</span></span>
-          </div>
-        `;
-      }
-    });
-
-    flyout.innerHTML = `
-      <div class="egs-flyout-header">
-        <span>${grp.flyoutTitle || grp.name}</span>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span class="egs-flyout-esc-hint" style="cursor:pointer;"><kbd>Esc</kbd></span>
-          <button type="button" class="btn-flyout-close" style="background:transparent; border:none; color:var(--txt-muted); font-size:14px; cursor:pointer; padding:2px 6px; display:inline-flex; align-items:center;" aria-label="Close menu"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-      </div>
-      <div class="egs-flyout-list">${itemsHtml}</div>
-    `;
-
-    document.body.appendChild(flyout);
-
-    const escHint = flyout.querySelector('.egs-flyout-esc-hint');
-    if (escHint) {
-      escHint.addEventListener('click', (e) => {
-        e.stopPropagation();
-        closeAllFlyouts(false);
-      });
-    }
-
-    const closeBtn = flyout.querySelector('.btn-flyout-close');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        closeAllFlyouts(false);
-      });
-    }
-
-    function dismissMobileSidebar() {
-      if (window.innerWidth <= 900) {
-        const sidebar = document.querySelector('.sidebar');
-        if (sidebar) sidebar.classList.remove('open');
-        const overlay = document.getElementById('sidebarOverlay') || document.querySelector('.overlay');
-        if (overlay) overlay.classList.remove('show');
-      }
-    }
-
-    // Wire mouseenter and clicks on flyout items
-    const tier1Els = Array.from(flyout.querySelectorAll('.egs-flyout-list > .tier1-item'));
-    tier1Els.forEach((row, idx) => {
-      row.addEventListener('mouseenter', () => {
-        if (suppressHoverUntilMouseMove) return;
-        if (window.innerWidth <= 768) return; // Ignore hover on mobile/touch
-        navState.focusTier = 'flyout_tier1';
-        navState.tier1Index = idx;
-        tier1Els.forEach((r, i) => r.classList.toggle('selected', i === idx));
-        if (row.classList.contains('has-nested')) {
-          setNestedSubmenuOpen(row, true);
-        } else {
-          setNestedSubmenuOpen(null, false);
-        }
-      });
-
-      row.addEventListener('click', (e) => {
-        if (row.classList.contains('has-nested') && !e.target.closest('.egs-nested-flyout-box .tier2-item')) {
-          e.stopPropagation();
-          const isOpen = row.classList.contains('nested-open');
-          setNestedSubmenuOpen(row, !isOpen);
-          if (!isOpen) {
-            navState.focusTier = 'flyout_tier2';
-            navState.tier2Index = 0;
-            updateTier2Selection(0);
-          }
-          return;
-        }
-        e.stopPropagation();
-        const page = row.dataset.page;
-        const sub = row.dataset.sub;
-        const action = row.dataset.action;
-        const filter = row.dataset.filter;
-        const groupId = row.dataset.groupId;
-
-        recordFlyoutTrail(grp.id, idx, -1, false);
-        closeAllFlyouts(true);
-        dismissMobileSidebar();
-        if (action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
-          window.openSystemSettingsModal(sub || 'tab-erp-mode');
-        } else if (page) {
-          go(page, { sub, action, filter, groupId });
-        }
-      });
-    });
-
-    // Wire mouseenter and clicks on Tier 2 items
-    flyout.querySelectorAll('.tier2-item').forEach((subRow) => {
-      subRow.addEventListener('mouseenter', () => {
-        if (suppressHoverUntilMouseMove) return;
-        navState.focusTier = 'flyout_tier2';
-        const parentBox = subRow.closest('.egs-nested-flyout-box');
-        if (parentBox) {
-          const allSubs = Array.from(parentBox.querySelectorAll('.tier2-item'));
-          const sIdx = allSubs.indexOf(subRow);
-          navState.tier2Index = sIdx;
-          allSubs.forEach((sr, i) => sr.classList.toggle('selected', i === sIdx));
-        }
-      });
-
-      subRow.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const page = subRow.dataset.page;
-        const sub = subRow.dataset.sub;
-        const action = subRow.dataset.action;
-        const filter = subRow.dataset.filter;
-        const groupId = subRow.dataset.groupId;
-        const parentBox = subRow.closest('.egs-nested-flyout-box');
-        const allSubs = parentBox ? Array.from(parentBox.querySelectorAll('.tier2-item')) : [];
-        const sIdx = allSubs.indexOf(subRow);
-        recordFlyoutTrail(grp.id, navState.tier1Index, sIdx, true);
-        closeAllFlyouts(true);
-        dismissMobileSidebar();
-        if (page) go(page, { sub, action, filter, groupId });
-      });
-    });
-
-    if (selectFirst && tier1Els.length > 0) {
-      updateTier1Selection(0, false);
-    }
-  }
-
-  window.openSidebarFlyout = openSidebarFlyout;
   window.closeSidebarFlyout = closeAllFlyouts;
+  window.closeAllFlyouts = closeAllFlyouts;
+  window.openSidebarFlyout = openSidebarFlyout;
+  window.clearFlyoutTrail = clearFlyoutTrail;
+  window.recordFlyoutTrail = recordFlyoutTrail;
+  window.stepBackFromFlyoutTrail = stepBackFromFlyoutTrail;
 
   function renderNavButtons() {
     const navEl = document.getElementById('navScroll') || document.querySelector('.nav-scroll');
@@ -693,49 +255,100 @@ window.applyErpModeRules = applyErpModeRules;
     ERP_NAV_GROUPS = getErpNavGroups();
 
     ERP_NAV_GROUPS.forEach((grp, gIdx) => {
-      const labelHtml = formatHkLabel(grp.name, grp.hotkey);
-
+      // 1. Single Top-Level Tab (e.g. Dashboard)
       if (grp.type === 'single') {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'erp-sidebar-btn';
+        btn.className = 'erp-nav-single-btn';
         btn.id = 'btnNav_' + grp.id;
         btn.dataset.tab = grp.id;
         btn.dataset.index = gIdx;
         btn.innerHTML = `
-          <span class="btn-label"><i class="fa-solid ${grp.icon}" style="color:var(--blue);"></i> <span>${labelHtml}</span></span>
+          <i class="fa-solid ${grp.icon}"></i>
+          <span class="nav-text">${grp.name}</span>
         `;
         btn.onclick = () => {
-          clearFlyoutTrail();
-          closeAllFlyouts();
-          if (typeof window.closeSidebar === 'function') window.closeSidebar();
+          if (window.innerWidth <= 900 && typeof window.closeSidebar === 'function') {
+            window.closeSidebar();
+          }
           go(grp.page);
         };
         navEl.appendChild(btn);
         return;
       }
 
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'erp-sidebar-btn';
-      btn.id = 'btnNav_' + grp.id;
-      btn.dataset.groupId = grp.id;
-      btn.dataset.index = gIdx;
-      btn.innerHTML = `
-        <span class="btn-label"><i class="fa-solid ${grp.icon}" style="color:var(--blue);"></i> <span>${labelHtml}</span></span>
-        <i class="fa-solid fa-chevron-right btn-arrow"></i>
+      // 2. Accordion Group Container (Left Sidebar Tabs)
+      const groupContainer = document.createElement('div');
+      groupContainer.className = 'erp-nav-group-container';
+      groupContainer.id = 'grpContainer_' + grp.id;
+      groupContainer.dataset.groupId = grp.id;
+
+      // Group Header Button
+      const headerBtn = document.createElement('button');
+      headerBtn.type = 'button';
+      headerBtn.className = 'erp-nav-group-header';
+      headerBtn.id = 'btnNav_' + grp.id;
+      headerBtn.dataset.groupId = grp.id;
+      headerBtn.dataset.index = gIdx;
+      headerBtn.innerHTML = `
+        <span class="header-left">
+          <i class="fa-solid ${grp.icon}"></i>
+          <span class="nav-text">${grp.name}</span>
+        </span>
+        <i class="fa-solid fa-chevron-down group-chevron"></i>
       `;
 
-      btn.onclick = (e) => {
+      // Sub-items List inside Left Sidebar
+      const subList = document.createElement('div');
+      subList.className = 'erp-nav-sub-list';
+      subList.id = 'subList_' + grp.id;
+
+      let hasVisibleItems = false;
+      grp.items.forEach((item) => {
+        if (!shouldShowNavItem(item)) return;
+        hasVisibleItems = true;
+
+        const subBtn = document.createElement('button');
+        subBtn.type = 'button';
+        subBtn.className = 'erp-nav-sub-item';
+        subBtn.dataset.page = item.page || '';
+        subBtn.dataset.sub = item.sub || item.tab || '';
+        subBtn.dataset.action = item.action || '';
+        subBtn.dataset.filter = item.filter || '';
+        subBtn.dataset.groupId = grp.id;
+
+        subBtn.innerHTML = `
+          <i class="fa-solid ${item.icon || 'fa-circle-dot'}"></i>
+          <span class="sub-text">${item.name}</span>
+        `;
+
+        subBtn.onclick = (e) => {
+          e.stopPropagation();
+          if (window.innerWidth <= 900 && typeof window.closeSidebar === 'function') {
+            window.closeSidebar();
+          }
+          if (item.action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
+            window.openSystemSettingsModal(item.sub || 'tab-erp-mode');
+          } else if (item.page) {
+            go(item.page, { sub: item.sub || item.tab, action: item.action, filter: item.filter, groupId: grp.id });
+          }
+        };
+
+        subList.appendChild(subBtn);
+      });
+
+      if (!hasVisibleItems) return;
+
+      headerBtn.onclick = (e) => {
         e.stopPropagation();
-        if (navState.activeFlyoutGroup === grp) {
-          closeAllFlyouts();
-        } else {
-          openSidebarFlyout(grp, btn, true);
-        }
+        const isOpen = groupContainer.classList.contains('open');
+        groupContainer.classList.toggle('open', !isOpen);
+        headerBtn.classList.toggle('expanded', !isOpen);
       };
 
-      navEl.appendChild(btn);
+      groupContainer.appendChild(headerBtn);
+      groupContainer.appendChild(subList);
+      navEl.appendChild(groupContainer);
     });
 
     // Sync active state with currently open page
@@ -746,9 +359,9 @@ window.applyErpModeRules = applyErpModeRules;
       el.style.cursor = 'pointer';
       el.onclick = (e) => {
         e.stopPropagation();
-        clearFlyoutTrail();
-        closeAllFlyouts();
-        if (typeof window.closeSidebar === 'function') window.closeSidebar();
+        if (window.innerWidth <= 900 && typeof window.closeSidebar === 'function') {
+          window.closeSidebar();
+        }
         go('dashboard');
       };
     });
@@ -837,67 +450,69 @@ window.applyErpModeRules = applyErpModeRules;
   window.parseRouteHash = parseRouteHash;
 
   function updateSidebarActiveState(pageId, opts = {}) {
-    const navButtons = document.querySelectorAll('.erp-sidebar-btn');
-    if (!navButtons.length) return;
+    const singleBtns = document.querySelectorAll('.erp-nav-single-btn');
+    const groupContainers = document.querySelectorAll('.erp-nav-group-container');
+    const groupHeaders = document.querySelectorAll('.erp-nav-group-header');
+    const subItems = document.querySelectorAll('.erp-nav-sub-item');
+
+    // Reset active & expanded classes across the sidebar
+    singleBtns.forEach((b) => b.classList.remove('active'));
+    subItems.forEach((b) => b.classList.remove('active'));
+    groupHeaders.forEach((b) => b.classList.remove('active-group'));
 
     const action = opts.action || opts.tab || opts.sub || '';
     const sub = opts.sub || opts.tab || '';
 
-    // Find the correct group ID for this route
-    let matchedGroupId = opts.groupId || null;
-
-    if (!matchedGroupId && typeof ERP_NAV_GROUPS !== 'undefined' && ERP_NAV_GROUPS) {
-      for (const grp of ERP_NAV_GROUPS) {
-        if (grp.id === pageId) {
-          matchedGroupId = pageId;
-          break;
-        }
-        if (grp.items) {
-          const directMatch = grp.items.some((item) => {
-            if (item.page !== pageId) return false;
-            if (action && (item.action || item.sub || item.tab)) {
-              return (item.action === action || item.sub === sub || item.tab === sub);
-            }
-            return true;
-          });
-          if (directMatch) {
-            matchedGroupId = grp.id;
-            break;
-          }
-          const nestedMatch = grp.items.some((item) => {
-            if (!item.nestedItems) return false;
-            return item.nestedItems.some((nItem) => {
-              if (nItem.page !== pageId) return false;
-              if (action && (nItem.action || nItem.sub || nItem.tab)) {
-                return (nItem.action === action || nItem.sub === sub || nItem.tab === sub);
-              }
-              return true;
-            });
-          });
-          if (nestedMatch) {
-            matchedGroupId = grp.id;
-            break;
-          }
-        }
-      }
+    // Handle dashboard / single button route directly
+    if (pageId === 'dashboard') {
+      const dashBtn = document.querySelector('.erp-nav-single-btn[data-tab="dashboard"]') || document.getElementById('btnNav_dashboard');
+      if (dashBtn) dashBtn.classList.add('active');
+      return;
     }
 
-    navButtons.forEach((b) => {
-      let isMatch = false;
-      if (pageId === 'dashboard') {
-        isMatch = (b.dataset.tab === 'dashboard' || b.dataset.groupId === 'dashboard');
-      } else {
-        if (b.dataset.tab === 'dashboard') {
-          isMatch = false;
-        } else if (matchedGroupId && b.dataset.groupId === matchedGroupId) {
-          isMatch = true;
-        } else if (b.dataset.tab === pageId) {
-          isMatch = true;
+    // Check if matching a single root button
+    const directSingleBtn = document.querySelector(`.erp-nav-single-btn[data-tab="${pageId}"]`);
+    if (directSingleBtn) {
+      directSingleBtn.classList.add('active');
+      return;
+    }
+
+    // Match sub-items
+    let bestSubMatch = null;
+    let fallbackSubMatch = null;
+    let matchedGroupId = opts.groupId || null;
+
+    subItems.forEach((item) => {
+      if (item.dataset.page === pageId) {
+        if (!fallbackSubMatch) fallbackSubMatch = item;
+        const itemAction = item.dataset.action || '';
+        const itemSub = item.dataset.sub || '';
+        if (action && (itemAction === action || itemSub === sub || itemSub === action)) {
+          bestSubMatch = item;
         }
       }
-      b.classList.toggle('active', isMatch);
-      b.classList.remove('selected');
     });
+
+    const activeSubItem = bestSubMatch || fallbackSubMatch;
+    if (activeSubItem) {
+      activeSubItem.classList.add('active');
+      const parentContainer = activeSubItem.closest('.erp-nav-group-container');
+      if (parentContainer) {
+        parentContainer.classList.add('open');
+        const header = parentContainer.querySelector('.erp-nav-group-header');
+        if (header) {
+          header.classList.add('expanded', 'active-group');
+        }
+        matchedGroupId = parentContainer.dataset.groupId || matchedGroupId;
+      }
+    } else if (matchedGroupId) {
+      const targetContainer = document.getElementById('grpContainer_' + matchedGroupId);
+      if (targetContainer) {
+        targetContainer.classList.add('open');
+        const header = targetContainer.querySelector('.erp-nav-group-header');
+        if (header) header.classList.add('expanded', 'active-group');
+      }
+    }
   }
   window.updateSidebarActiveState = updateSidebarActiveState;
 

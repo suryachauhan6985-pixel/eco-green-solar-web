@@ -1,0 +1,11 @@
+.env
+.git
+node_modules
+tests
+scripts
+AI_PROJECT_CONTEXT
+Field.docx
+live_browser_full_log.json
+raw_live_qa_results.json
+nas_standalone_sync
+*.log
