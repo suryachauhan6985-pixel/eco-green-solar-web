@@ -28,7 +28,7 @@ window.applyErpModeRules = applyErpModeRules;
     return text.substring(0, idx) + `<span class="erp-hk-char">${match}</span>` + text.substring(idx + 1);
   }
 
-  function getErpNavGroups() {
+  function getErpNavSections() {
     const curRole = (window.currentUserRole || window.CURRENT_USER_ROLE || (window.CURRENT_USER && window.CURRENT_USER.role) || localStorage.getItem('user_role') || 'User').toLowerCase();
     const isSuperAdmin = curRole === 'superadmin' || curRole === 'super_admin';
     const isAdmin = isSuperAdmin || curRole === 'admin';
@@ -36,203 +36,366 @@ window.applyErpModeRules = applyErpModeRules;
     const isFinOnly = window.ERP && window.ERP.isFinancialOnly();
     const isQtyOnly = window.ERP && window.ERP.isQuantityOnly();
 
-    const accountsItems = [
-      { name: 'Party Ledger / Statements', hotkey: 'L', icon: 'fa-address-book', page: 'partyledger', action: 'display' },
-      { name: 'Create Account / Ledger', hotkey: 'C', icon: 'fa-user-plus', page: 'partyledger', action: 'create' }
+    const sections = [];
+
+    // 1. OVERVIEW
+    sections.push({
+      title: 'OVERVIEW',
+      items: [
+        {
+          id: 'dashboard',
+          name: 'Dashboard',
+          hotkey: 'G',
+          icon: 'fa-house-chimney',
+          page: 'dashboard',
+          color: '#38bdf8',
+          bg: 'rgba(56, 189, 248, 0.12)'
+        }
+      ]
+    });
+
+    // 2. MASTERS & ACCOUNTS
+    const masterItems = [
+      {
+        id: 'partyledger_disp',
+        name: 'Party Ledger & Statements',
+        hotkey: 'L',
+        icon: 'fa-address-book',
+        page: 'partyledger',
+        action: 'display',
+        color: '#34d399',
+        bg: 'rgba(52, 211, 153, 0.12)'
+      },
+      {
+        id: 'partyledger_create',
+        name: 'Create Account / Ledger',
+        hotkey: 'C',
+        icon: 'fa-user-plus',
+        page: 'partyledger',
+        action: 'create',
+        color: '#10b981',
+        bg: 'rgba(16, 185, 129, 0.12)'
+      }
     ];
 
     if (!isFinOnly) {
-      accountsItems.push(
-        { name: 'Item & Product Master', hotkey: 'I', icon: 'fa-cubes', page: 'masters', sub: 'item-reg', action: 'display' },
-        { name: 'Create Item / Product', hotkey: 'M', icon: 'fa-box-open', page: 'masters', sub: 'item-reg', action: 'create' },
-        { name: 'Group / Category Master', hotkey: 'G', icon: 'fa-layer-group', page: 'masters', sub: 'category' },
-        { name: 'Unit of Measure (UOM)', hotkey: 'U', icon: 'fa-ruler-combined', page: 'masters', sub: 'uom' }
+      masterItems.push(
+        {
+          id: 'item_master',
+          name: 'Item & Product Master',
+          hotkey: 'I',
+          icon: 'fa-boxes-stacked',
+          page: 'masters',
+          sub: 'item-reg',
+          action: 'display',
+          color: '#fbbf24',
+          bg: 'rgba(251, 191, 36, 0.12)'
+        },
+        {
+          id: 'item_create',
+          name: 'Create Item / Product',
+          hotkey: 'J',
+          icon: 'fa-box-open',
+          page: 'masters',
+          sub: 'item-reg',
+          action: 'create',
+          color: '#f97316',
+          bg: 'rgba(249, 115, 22, 0.12)'
+        },
+        {
+          id: 'categories',
+          name: 'Group / Category Master',
+          hotkey: 'M',
+          icon: 'fa-layer-group',
+          page: 'masters',
+          sub: 'category',
+          color: '#f43f5e',
+          bg: 'rgba(251, 113, 133, 0.12)'
+        },
+        {
+          id: 'uom',
+          name: 'Unit of Measure (UOM)',
+          hotkey: 'U',
+          icon: 'fa-ruler-combined',
+          page: 'masters',
+          sub: 'uom',
+          color: '#38bdf8',
+          bg: 'rgba(56, 189, 248, 0.12)'
+        }
       );
 
       if (window.ERP && window.ERP.isWarehouseEnabled()) {
-        accountsItems.push({
+        masterItems.push({
+          id: 'warehouses',
           name: 'Warehouse & Godown Master',
           hotkey: 'W',
           icon: 'fa-warehouse',
-          requires: 'warehouse',
           page: 'masters',
-          sub: 'warehouse'
+          sub: 'warehouse',
+          color: '#c084fc',
+          bg: 'rgba(192, 132, 252, 0.12)'
         });
       }
 
-      accountsItems.push({
+      masterItems.push({
+        id: 'brands',
         name: 'Brand Directory',
         hotkey: 'B',
         icon: 'fa-tags',
         page: 'masters',
-        sub: 'brand'
+        sub: 'brand',
+        color: '#f59e0b',
+        bg: 'rgba(245, 158, 11, 0.12)'
       });
     }
 
-    const transactionItems = [];
+    sections.push({
+      title: 'MASTERS & ACCOUNTS',
+      items: masterItems
+    });
+
+    // 3. OPERATIONS & INVENTORY
+    const opItems = [];
     if (!isFinOnly) {
-      transactionItems.push(
-        { name: 'Purchase Inward (Stock In)', hotkey: 'P', icon: 'fa-truck-ramp-box', page: 'purchase' },
-        { name: 'Project Sales & Dispatch', hotkey: 'S', icon: 'fa-handshake', page: 'sales' }
-      );
-      if (window.ERP && window.ERP.isBomEnabled()) {
-        if (isAdmin) {
-          transactionItems.push(
-            { name: 'BOM Kit Assembly & Creation', hotkey: 'B', icon: 'fa-boxes-packing', page: 'bom', action: 'create', requires: 'bom' },
-            { name: 'BOM Order Dispatch & Processing', hotkey: 'O', icon: 'fa-truck-fast', page: 'bom', action: 'dispatch', requires: 'bom' },
-            { name: 'Custom Delivery Challan', hotkey: 'C', icon: 'fa-pen-nib', page: 'bom', action: 'custom-challan', requires: 'bom' }
-          );
-        } else {
-          transactionItems.push(
-            { name: 'BOM Order Dispatch & Processing', hotkey: 'B', icon: 'fa-truck-fast', page: 'bom', action: 'dispatch', requires: 'bom' },
-            { name: 'Custom Delivery Challan', hotkey: 'C', icon: 'fa-pen-nib', page: 'bom', action: 'custom-challan', requires: 'bom' }
-          );
+      opItems.push(
+        {
+          id: 'purchase',
+          name: 'Purchase Inward (Stock In)',
+          hotkey: 'P',
+          icon: 'fa-truck-ramp-box',
+          page: 'purchase',
+          color: '#818cf8',
+          bg: 'rgba(129, 140, 248, 0.12)'
+        },
+        {
+          id: 'sales',
+          name: 'Project Sales & Dispatch',
+          hotkey: 'S',
+          icon: 'fa-handshake',
+          page: 'sales',
+          color: '#60a5fa',
+          bg: 'rgba(96, 165, 250, 0.12)'
         }
-      }
-      transactionItems.push(
-        { name: 'Stock Allocation & Journal', hotkey: 'A', icon: 'fa-tag', page: 'stockassign', requires: 'stock' },
-        { name: 'Sales Return & Damage', hotkey: 'M', icon: 'fa-arrow-rotate-left', page: 'returns' }
       );
+
+      if (window.ERP && window.ERP.isBomEnabled()) {
+        opItems.push({
+          id: 'bom',
+          name: 'Solar BOM & Kit Challans',
+          hotkey: 'O',
+          icon: 'fa-solar-panel',
+          page: 'bom',
+          action: 'dispatch',
+          badge: 'Solar',
+          color: '#fb923c',
+          bg: 'rgba(251, 146, 60, 0.12)'
+        });
+      }
+
+      opItems.push(
+        {
+          id: 'stockassign',
+          name: 'Stock Allocation & Journal',
+          hotkey: 'A',
+          icon: 'fa-tag',
+          page: 'stockassign',
+          color: '#f472b6',
+          bg: 'rgba(244, 114, 182, 0.12)'
+        },
+        {
+          id: 'returns',
+          name: 'Sales Return & Damage',
+          hotkey: 'R',
+          icon: 'fa-arrow-rotate-left',
+          page: 'returns',
+          color: '#f87171',
+          bg: 'rgba(248, 113, 113, 0.12)'
+        }
+      );
+
       if (!isQtyOnly) {
-        transactionItems.push(
-          { name: 'Serial Number Scan Sheet', hotkey: 'N', icon: 'fa-barcode', page: 'scansheet', requires: 'serial' }
-        );
+        opItems.push({
+          id: 'scansheet',
+          name: 'Serial Number Scan Sheet',
+          hotkey: 'N',
+          icon: 'fa-barcode',
+          page: 'scansheet',
+          color: '#38bdf8',
+          bg: 'rgba(56, 189, 248, 0.12)'
+        });
       }
     }
 
     if (isAcc) {
-      transactionItems.push(
-        { name: 'Payment Voucher (F5)', hotkey: 'V', icon: 'fa-arrow-up-from-bracket', page: 'vouchers', action: 'Payment' },
-        { name: 'Receipt Voucher (F6)', hotkey: 'R', icon: 'fa-arrow-down-to-bracket', page: 'vouchers', action: 'Receipt' },
-        { name: 'Journal Voucher (F7)', hotkey: 'J', icon: 'fa-scale-balanced', page: 'vouchers', action: 'Journal' },
-        { name: 'Debit Note (Alt+F5)', hotkey: 'E', icon: 'fa-file-circle-minus', page: 'vouchers', action: 'DebitNote' },
-        { name: 'Credit Note (Alt+F6)', hotkey: 'O', icon: 'fa-file-circle-plus', page: 'vouchers', action: 'CreditNote' }
-      );
+      opItems.push({
+        id: 'vouchers',
+        name: 'Accounting Vouchers',
+        hotkey: 'V',
+        icon: 'fa-receipt',
+        page: 'vouchers',
+        action: 'Payment',
+        color: '#2dd4bf',
+        bg: 'rgba(45, 212, 191, 0.12)'
+      });
     }
 
-    const displayItems = [
-      { name: 'Party Ledger Statement', hotkey: 'L', icon: 'fa-money-check-dollar', page: 'partyledger', action: 'display' },
-      { name: 'Purchase Register', hotkey: 'P', icon: 'fa-cart-shopping', page: 'purchaseregister' },
-      { name: 'Sale Register', hotkey: 'S', icon: 'fa-money-bill-transfer', page: 'saleregister' }
+    sections.push({
+      title: 'OPERATIONS & INVENTORY',
+      items: opItems
+    });
+
+    // 4. REGISTERS & REPORTS
+    const reportItems = [
+      {
+        id: 'purchaseregister',
+        name: 'Purchase Register',
+        hotkey: 'E',
+        icon: 'fa-cart-shopping',
+        page: 'purchaseregister',
+        color: '#facc15',
+        bg: 'rgba(250, 204, 21, 0.12)'
+      },
+      {
+        id: 'saleregister',
+        name: 'Sale Register',
+        hotkey: 'Y',
+        icon: 'fa-money-bill-transfer',
+        page: 'saleregister',
+        color: '#fbbf24',
+        bg: 'rgba(251, 191, 36, 0.12)'
+      }
     ];
 
     if (!isFinOnly) {
-      displayItems.push(
-        { name: 'Master Inventory Report', hotkey: 'M', icon: 'fa-clipboard-list', page: 'reports', requires: 'stock' },
-        { name: 'Low Stock Alert', hotkey: 'O', icon: 'fa-triangle-exclamation', page: 'lowstock', requires: 'stock' }
+      reportItems.push(
+        {
+          id: 'reports',
+          name: 'Master Inventory Report',
+          hotkey: 'H',
+          icon: 'fa-chart-pie',
+          page: 'reports',
+          color: '#a3e635',
+          bg: 'rgba(163, 230, 53, 0.12)'
+        },
+        {
+          id: 'lowstock',
+          name: 'Low Stock Alert',
+          hotkey: 'Q',
+          icon: 'fa-triangle-exclamation',
+          page: 'lowstock',
+          color: '#fb923c',
+          bg: 'rgba(251, 146, 60, 0.12)'
+        }
       );
+
       if (window.ERP && window.ERP.isBomEnabled()) {
-        displayItems.push(
-          { name: 'BOM Dispatch Register', hotkey: 'B', icon: 'fa-clipboard-list', page: 'bom', action: 'register', requires: 'bom' },
-          { name: 'Delivery Challans Register', hotkey: 'C', icon: 'fa-file-invoice', page: 'bom', action: 'challan', requires: 'bom' },
-          { name: 'Track BOM Order Progress', hotkey: 'T', icon: 'fa-route', page: 'bom', action: 'track', requires: 'bom' }
+        reportItems.push(
+          {
+            id: 'bom_register',
+            name: 'BOM Dispatch Register',
+            hotkey: 'B',
+            icon: 'fa-clipboard-list',
+            page: 'bom',
+            action: 'register',
+            color: '#38bdf8',
+            bg: 'rgba(56, 189, 248, 0.12)'
+          },
+          {
+            id: 'bom_challan',
+            name: 'Delivery Challans Register',
+            hotkey: 'C',
+            icon: 'fa-file-invoice',
+            page: 'bom',
+            action: 'challan',
+            color: '#06b6d4',
+            bg: 'rgba(6, 182, 212, 0.12)'
+          }
         );
       }
     }
 
     if (isAcc) {
-      displayItems.push(
-        { name: 'Trial Balance', hotkey: 'T', icon: 'fa-list-ol', page: 'financialreports', tab: 'trial-balance' },
-        { name: 'Profit & Loss Statement', hotkey: 'F', icon: 'fa-chart-line', page: 'financialreports', tab: 'profit-loss' },
-        { name: 'Balance Sheet', hotkey: 'K', icon: 'fa-building-columns', page: 'financialreports', tab: 'balance-sheet' },
-        { name: 'Day Book Journal', hotkey: 'D', icon: 'fa-calendar-day', page: 'financialreports', tab: 'day-book' }
-      );
+      reportItems.push({
+        id: 'financialreports',
+        name: 'Financial Statements',
+        hotkey: 'F',
+        icon: 'fa-scale-balanced',
+        page: 'financialreports',
+        tab: 'trial-balance',
+        color: '#34d399',
+        bg: 'rgba(52, 211, 153, 0.12)'
+      });
     }
 
+    sections.push({
+      title: 'REGISTERS & REPORTS',
+      items: reportItems
+    });
+
+    // 5. UTILITIES & SETUP
     const utilityItems = [
-      { name: 'ERP Mode & Feature Controls', hotkey: 'E', icon: 'fa-sliders', action: 'openSettings', sub: 'tab-erp-mode' },
-      { name: 'User Accounts & Roles', hotkey: 'U', icon: 'fa-users-gear', action: 'openSettings', sub: 'tab-users' }
+      {
+        id: 'erp_settings',
+        name: 'ERP Mode & Features',
+        hotkey: 'T',
+        icon: 'fa-sliders',
+        action: 'openSettings',
+        sub: 'tab-erp-mode',
+        color: '#94a3b8',
+        bg: 'rgba(148, 163, 184, 0.12)'
+      },
+      {
+        id: 'users',
+        name: 'User Accounts & Roles',
+        hotkey: 'K',
+        icon: 'fa-users-gear',
+        action: 'openSettings',
+        sub: 'tab-users',
+        color: '#a78bfa',
+        bg: 'rgba(167, 139, 250, 0.12)'
+      },
+      {
+        id: 'backup',
+        name: 'Backup & Restore',
+        hotkey: 'Z',
+        icon: 'fa-cloud-arrow-up',
+        page: 'backup',
+        color: '#60a5fa',
+        bg: 'rgba(96, 165, 250, 0.12)'
+      },
+      {
+        id: 'template_designer',
+        name: 'Print Template Designer',
+        hotkey: 'D',
+        icon: 'fa-compass-drafting',
+        page: 'template_designer',
+        color: '#e879f9',
+        bg: 'rgba(232, 121, 249, 0.12)'
+      }
     ];
 
     if (isSuperAdmin) {
       utilityItems.push({
-        name: 'SaaS Tenants & White-Label',
-        hotkey: 'T',
+        id: 'saas_tenants',
+        name: 'SaaS White-Label Studio',
+        hotkey: 'X',
         icon: 'fa-building-shield',
-        page: 'saas_tenants'
+        page: 'saas_tenants',
+        color: '#22d3ee',
+        bg: 'rgba(34, 211, 238, 0.12)'
       });
     }
 
-    utilityItems.push({
-      name: 'Backup & Restore',
-      hotkey: 'B',
-      icon: 'fa-cloud-arrow-up',
-      page: 'backup'
+    sections.push({
+      title: 'UTILITIES & SETUP',
+      items: utilityItems
     });
 
-    utilityItems.push({
-      name: 'Print Template Designer',
-      hotkey: 'P',
-      icon: 'fa-compass-drafting',
-      page: 'template_designer'
-    });
-
-    return [
-      {
-        type: 'single',
-        id: 'dashboard',
-        name: 'Dashboard',
-        hotkey: 'G',
-        icon: 'fa-house-chimney',
-        page: 'dashboard'
-      },
-      {
-        type: 'group',
-        id: 'grp-accounts',
-        name: 'Accounts & Masters',
-        flyoutTitle: 'A/c Info',
-        hotkey: 'A',
-        icon: 'fa-folder-open',
-        items: accountsItems
-      },
-      {
-        type: 'group',
-        id: 'grp-transactions',
-        name: 'Transaction Entry',
-        flyoutTitle: 'Transaction Entry',
-        hotkey: 'T',
-        icon: 'fa-receipt',
-        items: transactionItems
-      },
-      {
-        type: 'group',
-        id: 'grp-display',
-        name: 'Reports & Registers',
-        flyoutTitle: 'Reports & Registers',
-        hotkey: 'D',
-        icon: 'fa-chart-pie',
-        items: displayItems
-      },
-      {
-        type: 'group',
-        id: 'grp-utilities',
-        name: 'Utilities & Setup',
-        flyoutTitle: 'Utilities & Setup',
-        hotkey: 'U',
-        icon: 'fa-gear',
-        items: utilityItems
-      }
-    ];
+    return sections;
   }
 
-  let ERP_NAV_GROUPS = getErpNavGroups();
-
-  function shouldShowNavItem(item) {
-    if (!item.requires) return true;
-    if (item.requires === 'bom') return window.ERP ? window.ERP.isBomEnabled() : true;
-    if (item.requires === 'serial') return window.ERP ? window.ERP.isSerialEnabled() : true;
-    if (item.requires === 'warehouse') return window.ERP ? window.ERP.isWarehouseEnabled() : true;
-    if (item.requires === 'stock') return window.ERP ? !window.ERP.isAccountsOnly() : true;
-    return true;
-  }
-
-  // Simple Left Sidebar Navigation State & Utilities
-  function closeAllFlyouts() {
-    const existing = document.getElementById('egsActiveSidebarFlyout');
-    if (existing) existing.remove();
-    const backdrop = document.getElementById('egsActiveFlyoutBackdrop');
-    if (backdrop) backdrop.remove();
-  }
+  // Compatibility stubs
+  function closeAllFlyouts() {}
   function openSidebarFlyout() {}
   function clearFlyoutTrail() {}
   function recordFlyoutTrail() {}
@@ -252,77 +415,44 @@ window.applyErpModeRules = applyErpModeRules;
     if (!navEl) return;
     navEl.innerHTML = '';
 
-    ERP_NAV_GROUPS = getErpNavGroups();
+    const sections = getErpNavSections();
 
-    ERP_NAV_GROUPS.forEach((grp, gIdx) => {
-      // 1. Single Top-Level Tab (e.g. Dashboard)
-      if (grp.type === 'single') {
+    sections.forEach((sec) => {
+      if (!sec.items || sec.items.length === 0) return;
+
+      const secHeader = document.createElement('div');
+      secHeader.className = 'erp-nav-section-title';
+      secHeader.innerHTML = `
+        <span>${sec.title}</span>
+        <span class="section-divider-line"></span>
+      `;
+      navEl.appendChild(secHeader);
+
+      sec.items.forEach((item) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'erp-nav-single-btn';
-        btn.id = 'btnNav_' + grp.id;
-        btn.dataset.tab = grp.id;
-        btn.dataset.index = gIdx;
+        btn.className = 'erp-nav-item';
+        btn.id = 'btnNav_' + item.id;
+        btn.dataset.tab = item.id;
+        btn.dataset.page = item.page || '';
+        btn.dataset.sub = item.sub || item.tab || '';
+        btn.dataset.action = item.action || '';
+        btn.dataset.filter = item.filter || '';
+        btn.dataset.hotkey = item.hotkey || '';
+
+        const badgeStyle = `color:${item.color || '#38bdf8'}; background:${item.bg || 'rgba(56,189,248,0.12)'}; border: 1px solid ${item.color ? item.color + '33' : 'rgba(56,189,248,0.2)'};`;
+
         btn.innerHTML = `
-          <i class="fa-solid ${grp.icon}"></i>
-          <span class="nav-text">${grp.name}</span>
-        `;
-        btn.onclick = () => {
-          if (window.innerWidth <= 900 && typeof window.closeSidebar === 'function') {
-            window.closeSidebar();
-          }
-          go(grp.page);
-        };
-        navEl.appendChild(btn);
-        return;
-      }
-
-      // 2. Accordion Group Container (Left Sidebar Tabs)
-      const groupContainer = document.createElement('div');
-      groupContainer.className = 'erp-nav-group-container';
-      groupContainer.id = 'grpContainer_' + grp.id;
-      groupContainer.dataset.groupId = grp.id;
-
-      // Group Header Button
-      const headerBtn = document.createElement('button');
-      headerBtn.type = 'button';
-      headerBtn.className = 'erp-nav-group-header';
-      headerBtn.id = 'btnNav_' + grp.id;
-      headerBtn.dataset.groupId = grp.id;
-      headerBtn.dataset.index = gIdx;
-      headerBtn.innerHTML = `
-        <span class="header-left">
-          <i class="fa-solid ${grp.icon}"></i>
-          <span class="nav-text">${grp.name}</span>
-        </span>
-        <i class="fa-solid fa-chevron-down group-chevron"></i>
-      `;
-
-      // Sub-items List inside Left Sidebar
-      const subList = document.createElement('div');
-      subList.className = 'erp-nav-sub-list';
-      subList.id = 'subList_' + grp.id;
-
-      let hasVisibleItems = false;
-      grp.items.forEach((item) => {
-        if (!shouldShowNavItem(item)) return;
-        hasVisibleItems = true;
-
-        const subBtn = document.createElement('button');
-        subBtn.type = 'button';
-        subBtn.className = 'erp-nav-sub-item';
-        subBtn.dataset.page = item.page || '';
-        subBtn.dataset.sub = item.sub || item.tab || '';
-        subBtn.dataset.action = item.action || '';
-        subBtn.dataset.filter = item.filter || '';
-        subBtn.dataset.groupId = grp.id;
-
-        subBtn.innerHTML = `
-          <i class="fa-solid ${item.icon || 'fa-circle-dot'}"></i>
-          <span class="sub-text">${item.name}</span>
+          <span class="nav-icon-badge" style="${badgeStyle}">
+            <i class="fa-solid ${item.icon || 'fa-circle-dot'}"></i>
+          </span>
+          <span class="nav-text">${formatHkLabel(item.name, item.hotkey)}</span>
+          ${item.badge ? `<span class="nav-pill-badge">${item.badge}</span>` : ''}
+          ${item.hotkey ? `<span class="nav-hk-keycap">${item.hotkey}</span>` : ''}
+          <span class="nav-active-glow"></span>
         `;
 
-        subBtn.onclick = (e) => {
+        btn.onclick = (e) => {
           e.stopPropagation();
           if (window.innerWidth <= 900 && typeof window.closeSidebar === 'function') {
             window.closeSidebar();
@@ -330,25 +460,12 @@ window.applyErpModeRules = applyErpModeRules;
           if (item.action === 'openSettings' && typeof window.openSystemSettingsModal === 'function') {
             window.openSystemSettingsModal(item.sub || 'tab-erp-mode');
           } else if (item.page) {
-            go(item.page, { sub: item.sub || item.tab, action: item.action, filter: item.filter, groupId: grp.id });
+            go(item.page, { sub: item.sub || item.tab, action: item.action, filter: item.filter });
           }
         };
 
-        subList.appendChild(subBtn);
+        navEl.appendChild(btn);
       });
-
-      if (!hasVisibleItems) return;
-
-      headerBtn.onclick = (e) => {
-        e.stopPropagation();
-        const isOpen = groupContainer.classList.contains('open');
-        groupContainer.classList.toggle('open', !isOpen);
-        headerBtn.classList.toggle('expanded', !isOpen);
-      };
-
-      groupContainer.appendChild(headerBtn);
-      groupContainer.appendChild(subList);
-      navEl.appendChild(groupContainer);
     });
 
     // Sync active state with currently open page
@@ -450,68 +567,42 @@ window.applyErpModeRules = applyErpModeRules;
   window.parseRouteHash = parseRouteHash;
 
   function updateSidebarActiveState(pageId, opts = {}) {
-    const singleBtns = document.querySelectorAll('.erp-nav-single-btn');
-    const groupContainers = document.querySelectorAll('.erp-nav-group-container');
-    const groupHeaders = document.querySelectorAll('.erp-nav-group-header');
-    const subItems = document.querySelectorAll('.erp-nav-sub-item');
+    const navItems = document.querySelectorAll('.erp-nav-item');
+    if (!navItems.length) return;
 
-    // Reset active & expanded classes across the sidebar
-    singleBtns.forEach((b) => b.classList.remove('active'));
-    subItems.forEach((b) => b.classList.remove('active'));
-    groupHeaders.forEach((b) => b.classList.remove('active-group'));
+    navItems.forEach((b) => b.classList.remove('active'));
 
     const action = opts.action || opts.tab || opts.sub || '';
     const sub = opts.sub || opts.tab || '';
 
-    // Handle dashboard / single button route directly
+    // Handle dashboard directly
     if (pageId === 'dashboard') {
-      const dashBtn = document.querySelector('.erp-nav-single-btn[data-tab="dashboard"]') || document.getElementById('btnNav_dashboard');
+      const dashBtn = document.querySelector('.erp-nav-item[data-tab="dashboard"]') || document.getElementById('btnNav_dashboard');
       if (dashBtn) dashBtn.classList.add('active');
       return;
     }
 
-    // Check if matching a single root button
-    const directSingleBtn = document.querySelector(`.erp-nav-single-btn[data-tab="${pageId}"]`);
-    if (directSingleBtn) {
-      directSingleBtn.classList.add('active');
-      return;
-    }
+    let bestMatch = null;
+    let fallbackMatch = null;
 
-    // Match sub-items
-    let bestSubMatch = null;
-    let fallbackSubMatch = null;
-    let matchedGroupId = opts.groupId || null;
+    navItems.forEach((btn) => {
+      if (btn.dataset.page === pageId) {
+        if (!fallbackMatch) fallbackMatch = btn;
+        const itemAction = btn.dataset.action || '';
+        const itemSub = btn.dataset.sub || '';
+        const itemTab = btn.dataset.tab || '';
 
-    subItems.forEach((item) => {
-      if (item.dataset.page === pageId) {
-        if (!fallbackSubMatch) fallbackSubMatch = item;
-        const itemAction = item.dataset.action || '';
-        const itemSub = item.dataset.sub || '';
-        if (action && (itemAction === action || itemSub === sub || itemSub === action)) {
-          bestSubMatch = item;
+        if (action && (itemAction === action || itemSub === sub || itemSub === action || itemTab === action)) {
+          bestMatch = btn;
+        } else if (sub && (itemSub === sub || itemAction === sub || itemTab === sub)) {
+          bestMatch = btn;
         }
       }
     });
 
-    const activeSubItem = bestSubMatch || fallbackSubMatch;
-    if (activeSubItem) {
-      activeSubItem.classList.add('active');
-      const parentContainer = activeSubItem.closest('.erp-nav-group-container');
-      if (parentContainer) {
-        parentContainer.classList.add('open');
-        const header = parentContainer.querySelector('.erp-nav-group-header');
-        if (header) {
-          header.classList.add('expanded', 'active-group');
-        }
-        matchedGroupId = parentContainer.dataset.groupId || matchedGroupId;
-      }
-    } else if (matchedGroupId) {
-      const targetContainer = document.getElementById('grpContainer_' + matchedGroupId);
-      if (targetContainer) {
-        targetContainer.classList.add('open');
-        const header = targetContainer.querySelector('.erp-nav-group-header');
-        if (header) header.classList.add('expanded', 'active-group');
-      }
+    const activeItem = bestMatch || fallbackMatch;
+    if (activeItem) {
+      activeItem.classList.add('active');
     }
   }
   window.updateSidebarActiveState = updateSidebarActiveState;
@@ -988,36 +1079,12 @@ window.applyErpModeRules = applyErpModeRules;
           go('dashboard');
           return true;
         }
-        if (uKey === 'A') {
+        const navItems = Array.from(document.querySelectorAll('.erp-nav-item'));
+        const matched = navItems.find((b) => b.dataset.hotkey && b.dataset.hotkey.toUpperCase() === uKey);
+        if (matched) {
           e.preventDefault();
           e.stopPropagation();
-          const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-accounts');
-          const anchor = document.getElementById('btnNav_grp-accounts');
-          openSidebarFlyout(grp, anchor, true);
-          return true;
-        }
-        if (uKey === 'T' || uKey === 'V') {
-          e.preventDefault();
-          e.stopPropagation();
-          const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-transactions');
-          const anchor = document.getElementById('btnNav_grp-transactions');
-          openSidebarFlyout(grp, anchor, true);
-          return true;
-        }
-        if (uKey === 'D') {
-          e.preventDefault();
-          e.stopPropagation();
-          const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-display');
-          const anchor = document.getElementById('btnNav_grp-display');
-          openSidebarFlyout(grp, anchor, true);
-          return true;
-        }
-        if (uKey === 'U') {
-          e.preventDefault();
-          e.stopPropagation();
-          const grp = ERP_NAV_GROUPS.find((g) => g.id === 'grp-utilities');
-          const anchor = document.getElementById('btnNav_grp-utilities');
-          openSidebarFlyout(grp, anchor, true);
+          matched.click();
           return true;
         }
       }

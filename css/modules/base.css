@@ -32,7 +32,7 @@ html[data-theme="dark"]{
   --shadow:0 8px 30px rgba(0,0,0,.5);
   --overlay-bg:rgba(10,13,18,0.78);
   --radius:10px;
-  --sidebar-w:230px;
+  --sidebar-w:256px;
   --skeleton-base: rgba(255, 255, 255, 0.06);
   --skeleton-highlight: rgba(255, 255, 255, 0.13);
   color-scheme:dark;
