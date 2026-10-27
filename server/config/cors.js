@@ -27,6 +27,9 @@ function isOriginAllowed(origin) {
     // Allow render deployments
     if (hostname === 'onrender.com' || hostname.endsWith('.onrender.com')) return true;
 
+    // Allow vercel deployments
+    if (hostname === 'vercel.app' || hostname.endsWith('.vercel.app')) return true;
+
     // Allow local development
     if (hostname === 'localhost' || hostname === '127.0.0.1') return true;
   } catch (e) {}
@@ -38,7 +41,7 @@ function corsMiddleware() {
   return cors({
     origin(origin, callback) {
       if (isOriginAllowed(origin)) return callback(null, true);
-      return callback(new Error(`Not allowed by CORS: ${origin}`));
+      return callback(null, false);
     },
     credentials: true
   });

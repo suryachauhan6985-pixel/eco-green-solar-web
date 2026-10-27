@@ -1105,15 +1105,20 @@ if (!navigator.onLine) {
       errorBox.classList.remove('show');
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<span>Signing In...</span> <i class="fa-solid fa-circle-notch fa-spin"></i>';
+      let data = null;
       try {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: user, password: pwd }),
         });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-          if (data.unverified && data.username) {
+        try {
+          data = await res.json();
+        } catch (jsonErr) {
+          console.error('[Login] JSON parse failed:', jsonErr);
+        }
+        if (!res.ok || !data || !data.success) {
+          if (data && data.unverified && data.username) {
             // Account exists but registration was never completed — send a
             // fresh OTP straight away and drop them into that same step
             // instead of making them hunt for "Create Account" again.
@@ -1122,19 +1127,26 @@ if (!navigator.onLine) {
             attemptResendRegisterOtp();
             return;
           }
-          errorBox.textContent = data.error || 'Incorrect Username/Email or Password.';
+          errorBox.textContent = (data && data.error) || (res.status === 429 ? 'Too many login attempts. Please wait a moment.' : 'Incorrect Username/Email or Password.');
           errorBox.classList.add('show');
           return;
         }
-
-        // Direct Login with ID and Password (OTP bypassed)
-        finishLogin(data);
-      } catch (e) {
+      } catch (netErr) {
+        console.error('[Login] Network error:', netErr);
         errorBox.textContent = 'Could not reach the server. Please try again.';
         errorBox.classList.add('show');
+        return;
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<span>Sign In</span> <i class="fa-solid fa-arrow-right"></i>';
+      }
+
+      // Direct Login with ID and Password (outside network try/catch)
+      try {
+        finishLogin(data);
+      } catch (uiErr) {
+        console.error('[Login] Post-login UI error:', uiErr);
+        showApp();
       }
     }
 
